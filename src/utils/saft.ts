@@ -247,9 +247,82 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     credit_amt: a.credit_amt ?? ''
   }));
 
-  // AR/AP filtered transactions
-  const arTrxRows = trxRows.filter(r => String(r.customer_id || '').trim() !== '');
-  const apTrxRows = trxRows.filter(r => String(r.supplier_id || '').trim() !== '');
+  // AR/AP filtered transactions with enhanced data
+  const arTrxRows = trxRows
+    .filter(r => String(r.customer_id || '').trim() !== '')
+    .map(r => {
+      const customer = (data.customers || []).find(c => c.id === r.customer_id);
+      return {
+        ...r,
+        party_id: r.customer_id,
+        party_name: customer?.name || '',
+        party_type: 'customer'
+      };
+    });
+
+  const apTrxRows = trxRows
+    .filter(r => String(r.supplier_id || '').trim() !== '')
+    .map(r => {
+      const supplier = (data.suppliers || []).find(s => s.id === r.supplier_id);
+      return {
+        ...r,
+        party_id: r.supplier_id,
+        party_name: supplier?.name || '',
+        party_type: 'supplier'
+      };
+    });
+
+  // Aging buckets calculation
+  const calculateAgingBuckets = (transactions: any[], currentDate = new Date()) => {
+    const buckets = {
+      'current': { amount: 0, count: 0 },
+      '1-30_days': { amount: 0, count: 0 },
+      '31-60_days': { amount: 0, count: 0 },
+      '61-90_days': { amount: 0, count: 0 },
+      '90+_days': { amount: 0, count: 0 },
+      'no_due_date': { amount: 0, count: 0 }
+    };
+
+    transactions.forEach(t => {
+      const amount = Number(t.amount) || 0;
+      if (!t.due_date || String(t.due_date).trim() === '') {
+        buckets.no_due_date.amount += amount;
+        buckets.no_due_date.count += 1;
+        return;
+      }
+
+      try {
+        const dueDate = new Date(t.due_date);
+        const diffTime = currentDate.getTime() - dueDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 0) {
+          buckets.current.amount += amount;
+          buckets.current.count += 1;
+        } else if (diffDays <= 30) {
+          buckets['1-30_days'].amount += amount;
+          buckets['1-30_days'].count += 1;
+        } else if (diffDays <= 60) {
+          buckets['31-60_days'].amount += amount;
+          buckets['31-60_days'].count += 1;
+        } else if (diffDays <= 90) {
+          buckets['61-90_days'].amount += amount;
+          buckets['61-90_days'].count += 1;
+        } else {
+          buckets['90+_days'].amount += amount;
+          buckets['90+_days'].count += 1;
+        }
+      } catch (e) {
+        buckets.no_due_date.amount += amount;
+        buckets.no_due_date.count += 1;
+      }
+    });
+
+    return buckets;
+  };
+
+  const arAgingBuckets = calculateAgingBuckets(arTrxRows);
+  const apAgingBuckets = calculateAgingBuckets(apTrxRows);
 
   const sum = (ns: number[]) => ns.reduce((acc, v) => acc + (v ?? 0), 0);
   const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -293,7 +366,40 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
     { metric: 'balance_ok', value: Math.abs(totalSigned) <= 0.01 && journalsOk ? 'true' : 'false' },
     { metric: 'balance_diff_total', value: totalSigned },
     { metric: 'mva_ok', value: mvaOk ? 'true' : 'false' },
+    // AR Aging metrics
+    { metric: 'ar_current_amount', value: Math.round(arAgingBuckets.current.amount * 100) / 100 },
+    { metric: 'ar_1_30_days_amount', value: Math.round(arAgingBuckets['1-30_days'].amount * 100) / 100 },
+    { metric: 'ar_31_60_days_amount', value: Math.round(arAgingBuckets['31-60_days'].amount * 100) / 100 },
+    { metric: 'ar_61_90_days_amount', value: Math.round(arAgingBuckets['61-90_days'].amount * 100) / 100 },
+    { metric: 'ar_90_plus_days_amount', value: Math.round(arAgingBuckets['90+_days'].amount * 100) / 100 },
+    { metric: 'ar_no_due_date_amount', value: Math.round(arAgingBuckets.no_due_date.amount * 100) / 100 },
+    // AP Aging metrics
+    { metric: 'ap_current_amount', value: Math.round(apAgingBuckets.current.amount * 100) / 100 },
+    { metric: 'ap_1_30_days_amount', value: Math.round(apAgingBuckets['1-30_days'].amount * 100) / 100 },
+    { metric: 'ap_31_60_days_amount', value: Math.round(apAgingBuckets['31-60_days'].amount * 100) / 100 },
+    { metric: 'ap_61_90_days_amount', value: Math.round(apAgingBuckets['61-90_days'].amount * 100) / 100 },
+    { metric: 'ap_90_plus_days_amount', value: Math.round(apAgingBuckets['90+_days'].amount * 100) / 100 },
+    { metric: 'ap_no_due_date_amount', value: Math.round(apAgingBuckets.no_due_date.amount * 100) / 100 },
   ];
+
+  // Create aging summary sheets
+  const arAgingCols = ['aging_bucket', 'amount', 'count', 'percentage'];
+  const totalArAmount = Object.values(arAgingBuckets).reduce((sum, bucket) => sum + bucket.amount, 0);
+  const arAgingRows = Object.entries(arAgingBuckets).map(([bucket, data]) => ({
+    aging_bucket: bucket,
+    amount: Math.round(data.amount * 100) / 100,
+    count: data.count,
+    percentage: totalArAmount > 0 ? Math.round((data.amount / totalArAmount) * 100 * 100) / 100 : 0
+  }));
+
+  const apAgingCols = ['aging_bucket', 'amount', 'count', 'percentage'];
+  const totalApAmount = Object.values(apAgingBuckets).reduce((sum, bucket) => sum + bucket.amount, 0);
+  const apAgingRows = Object.entries(apAgingBuckets).map(([bucket, data]) => ({
+    aging_bucket: bucket,
+    amount: Math.round(data.amount * 100) / 100,
+    count: data.count,
+    percentage: totalApAmount > 0 ? Math.round((data.amount / totalApAmount) * 100 * 100) / 100 : 0
+  }));
 
   if (headerRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(headerRows, { header: headerCols }), 'Header');
   if (companyRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(companyRows, { header: companyCols }), 'Company');
@@ -306,8 +412,15 @@ export async function toXlsxBlob(data: SaftResult): Promise<Blob> {
   if (journalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(journalRows, { header: journalCols }), 'Journals');
   if (trxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trxRows, { header: trxCols }), 'Transactions');
   if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'TransactionLines');
-  if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arTrxRows, { header: trxCols }), 'AR_Transactions');
-  if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apTrxRows, { header: trxCols }), 'AP_Transactions');
+  // Enhanced AR/AP columns including party info
+  const arApCols = [...trxCols, 'party_id', 'party_name', 'party_type'];
+  
+  if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arTrxRows, { header: arApCols }), 'AR_Transactions');
+  if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apTrxRows, { header: arApCols }), 'AP_Transactions');
+  
+  // Add aging summary sheets
+  if (arTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(arAgingRows, { header: arAgingCols }), 'AR_Aging_Summary');
+  if (apTrxRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(apAgingRows, { header: apAgingCols }), 'AP_Aging_Summary');
   if (analysisLineRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analysisLineRows, { header: analysisLineCols }), 'LineAnalysis');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(qualityRows, { header: qualityCols }), 'Quality');
 
