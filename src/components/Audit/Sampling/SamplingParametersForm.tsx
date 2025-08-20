@@ -64,7 +64,7 @@ const SamplingParametersForm: React.FC<SamplingParametersFormProps> = ({
       setParams(prev => ({
         ...prev,
         materiality: materialityData.materiality || prev.materiality,
-        performanceMateriality: materialityData.performance_materiality || prev.performanceMateriality,
+        performanceMateriality: materialityData.working_materiality || prev.performanceMateriality,
         expectedMisstatement: materialityData.working_materiality ? 
           materialityData.working_materiality * 0.1 : prev.expectedMisstatement
       }));
@@ -213,7 +213,7 @@ const SamplingParametersForm: React.FC<SamplingParametersFormProps> = ({
               <div className="space-y-2">
                 <Label htmlFor="performanceMateriality">
                   Ytelsesvesentlighet (PM)
-                  {materialityData?.performance_materiality && (
+                  {materialityData?.working_materiality && (
                     <Badge variant="outline" className="ml-2">Hentet</Badge>
                   )}
                 </Label>

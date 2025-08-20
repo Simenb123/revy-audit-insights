@@ -144,7 +144,7 @@ export function preparePDFData(
       confidenceLevel: `${params.confidenceLevel}%`,
       riskLevel: params.riskLevel,
       materiality: params.materiality ? formatCurrency(params.materiality) : null,
-      performanceMateriality: params.performanceMaterialality ? formatCurrency(params.performanceMateriality) : null,
+      performanceMateriality: params.performanceMateriality ? formatCurrency(params.performanceMateriality) : null,
       expectedMisstatement: params.expectedMisstatement ? formatCurrency(params.expectedMisstatement) : null,
       thresholdMode: params.thresholdMode,
       thresholdAmount: result.metadata.thresholdUsed ? formatCurrency(result.metadata.thresholdUsed) : null
