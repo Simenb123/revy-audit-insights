@@ -28,15 +28,15 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
       )}
       
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Regnskapsår:</span>
+        <span className="text-sm text-white">Regnskapsår:</span>
         <Select
           value={selectedFiscalYear.toString()}
           onValueChange={(value) => setSelectedFiscalYear(parseInt(value, 10))}
         >
-          <SelectTrigger className="w-[120px] bg-background border-input text-foreground">
+          <SelectTrigger className="w-[120px] bg-white border-white/20 text-foreground hover:bg-white/90">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border z-50">
+          <SelectContent className="bg-popover border-border z-[60]">
             {fiscalYearOptions.map((year) => (
               <SelectItem 
                 key={year} 

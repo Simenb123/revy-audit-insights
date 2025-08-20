@@ -62,7 +62,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
               {centerContent}
             </div>
             
-            <div className="flex items-center min-w-0">
+            <div className="flex items-center min-w-0 justify-end">
               {rightContent}
             </div>
           </>

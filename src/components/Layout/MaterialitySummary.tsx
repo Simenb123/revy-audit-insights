@@ -91,37 +91,37 @@ const MaterialitySummary: React.FC = () => {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-2 text-xs text-white">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
-              <span className="font-medium">V:</span>
-              <Badge variant="outline" className="font-mono">{formatCurrency(data?.materiality)}</Badge>
+              <span className="font-medium text-white">V:</span>
+              <Badge variant="outline" className="font-mono bg-white/10 text-white border-white/20 hover:bg-white/20">{formatCurrency(data?.materiality)}</Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="z-[60]">
             <p>Vesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
-              <span className="font-medium">AV:</span>
-              <Badge variant="outline" className="font-mono">{formatCurrency(data?.working_materiality)}</Badge>
+              <span className="font-medium text-white">AV:</span>
+              <Badge variant="outline" className="font-mono bg-white/10 text-white border-white/20 hover:bg-white/20">{formatCurrency(data?.working_materiality)}</Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="z-[60]">
             <p>Arbeidsvesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1">
-              <span className="font-medium">UF:</span>
-              <Badge variant="outline" className="font-mono">{formatCurrency(data?.clearly_trivial)}</Badge>
+              <span className="font-medium text-white">UF:</span>
+              <Badge variant="outline" className="font-mono bg-white/10 text-white border-white/20 hover:bg-white/20">{formatCurrency(data?.clearly_trivial)}</Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="z-[60]">
             <p>Ubetydelig feil</p>
           </TooltipContent>
         </Tooltip>
@@ -129,7 +129,7 @@ const MaterialitySummary: React.FC = () => {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button size="icon" variant="ghost" aria-label="Rediger vesentlighet">
+          <Button size="icon" variant="ghost" aria-label="Rediger vesentlighet" className="text-white hover:bg-white/10 hover:text-white">
             <Pencil className="h-4 w-4" />
           </Button>
         </DialogTrigger>
