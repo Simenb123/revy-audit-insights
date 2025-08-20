@@ -352,7 +352,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             <CardHeader>
               <CardTitle>Velg klienter for å starte</CardTitle>
               <CardDescription>
-                Velg ett eller flere klienter under Omfang for å bygge rapporter på tvers.
+            
               </CardDescription>
             </CardHeader>
           </Card>
