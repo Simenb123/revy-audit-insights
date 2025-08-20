@@ -52,6 +52,7 @@ import NotFound from "./pages/NotFound";
 import ClientRedirect from "./components/Layout/ClientRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 import Sandbox from "./pages/Sandbox";
+import Revisorskolen from "./pages/Revisorskolen";
 import ResourcePlanner from "./pages/ResourcePlanner";
 import AllocationImport from "./pages/AllocationImport";
 import Superadmin from "./pages/Superadmin";
@@ -160,6 +161,7 @@ function App() {
                   <Route path="communication" element={<Communication />} />
                   <Route path="collaboration" element={<Collaboration />} />
                   <Route path="training" element={<Training />} />
+                  <Route path="revisorskolen" element={<ProtectedRoute><Revisorskolen /></ProtectedRoute>} />
                   
                   <Route path="accounting" element={<AccountingData />} />
                   <Route path="documents" element={<PDFDocuments />} />

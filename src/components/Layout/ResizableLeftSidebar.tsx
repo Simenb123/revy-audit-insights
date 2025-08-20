@@ -128,6 +128,11 @@ const resourceItems = [
     icon: GraduationCap,
   },
   {
+    title: 'Revisorskolen',
+    url: '/revisorskolen',
+    icon: GraduationCap,
+  },
+  {
     title: 'Kommunikasjon',
     url: '/communication',
     icon: MessageSquare,

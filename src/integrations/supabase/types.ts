@@ -10355,6 +10355,71 @@ export type Database = {
         }
         Relationships: []
       }
+      training_actions: {
+        Row: {
+          action_type: string
+          consequences: Json | null
+          cost: number
+          created_at: string
+          description: string
+          id: string
+          is_mandatory: boolean | null
+          prerequisites: Json | null
+          reveal_text: string | null
+          risk_impact: string | null
+          scenario_id: string
+          score_impact: number | null
+          sort_order: number | null
+          step_number: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          consequences?: Json | null
+          cost?: number
+          created_at?: string
+          description: string
+          id?: string
+          is_mandatory?: boolean | null
+          prerequisites?: Json | null
+          reveal_text?: string | null
+          risk_impact?: string | null
+          scenario_id: string
+          score_impact?: number | null
+          sort_order?: number | null
+          step_number: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          consequences?: Json | null
+          cost?: number
+          created_at?: string
+          description?: string
+          id?: string
+          is_mandatory?: boolean | null
+          prerequisites?: Json | null
+          reveal_text?: string | null
+          risk_impact?: string | null
+          scenario_id?: string
+          score_impact?: number | null
+          sort_order?: number | null
+          step_number?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_actions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "training_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_progress: {
         Row: {
           attempts: number | null
@@ -10421,6 +10486,158 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_run_states: {
+        Row: {
+          action_id: string
+          applied_at: string
+          cost_paid: number
+          created_at: string
+          id: string
+          notes: string | null
+          run_id: string
+        }
+        Insert: {
+          action_id: string
+          applied_at?: string
+          cost_paid?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          run_id: string
+        }
+        Update: {
+          action_id?: string
+          applied_at?: string
+          cost_paid?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_run_states_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "training_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_run_states_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "training_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_runs: {
+        Row: {
+          actions_taken: number
+          completed_at: string | null
+          created_at: string
+          current_budget: number
+          current_step: number
+          id: string
+          scenario_id: string
+          started_at: string
+          status: string
+          time_spent_minutes: number | null
+          total_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actions_taken?: number
+          completed_at?: string | null
+          created_at?: string
+          current_budget: number
+          current_step?: number
+          id?: string
+          scenario_id: string
+          started_at?: string
+          status?: string
+          time_spent_minutes?: number | null
+          total_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actions_taken?: number
+          completed_at?: string | null
+          created_at?: string
+          current_budget?: number
+          current_step?: number
+          id?: string
+          scenario_id?: string
+          started_at?: string
+          status?: string
+          time_spent_minutes?: number | null
+          total_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_runs_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "training_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_scenarios: {
+        Row: {
+          company_context: Json
+          company_name: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty_level: string
+          estimated_duration_minutes: number | null
+          id: string
+          initial_budget: number
+          is_active: boolean
+          learning_objectives: string[] | null
+          target_actions: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_context?: Json
+          company_name: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty_level?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          initial_budget?: number
+          is_active?: boolean
+          learning_objectives?: string[] | null
+          target_actions?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_context?: Json
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty_level?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          initial_budget?: number
+          is_active?: boolean
+          learning_objectives?: string[] | null
+          target_actions?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       trial_balance_mappings: {
         Row: {
