@@ -33,7 +33,7 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
           value={selectedFiscalYear.toString()}
           onValueChange={(value) => setSelectedFiscalYear(parseInt(value, 10))}
         >
-          <SelectTrigger className="w-[120px] bg-white/10 border-white/30 text-white hover:bg-white/20">
+          <SelectTrigger className="w-[80px] h-8 bg-white/10 border-white/30 text-white hover:bg-white/20 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-white border-gray-200 z-[60]">
