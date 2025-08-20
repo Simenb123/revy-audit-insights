@@ -39,7 +39,7 @@ const RESBAL_REGEX = /^(resbalref)$|^res\s*bal\s*ref$|^na[-_\s]*konto(nr|nummer)
 const RESULTAT_REGEX = /^resultatregnskap$/i;
 const BALANSE_REGEX = /^balanse$/i;
 
-function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
+function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): { row: number | null; debug: string[] } {
   const mat: any[][] = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     raw: true,
@@ -47,11 +47,23 @@ function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
     blankrows: true,
   });
   const limit = Math.min(mat.length, maxScan);
+  const debug: string[] = [];
+  
   for (let i = 0; i < limit; i++) {
     const row = mat[i] || [];
-    if (row.some((c: any) => KONTO_REGEX.test(String(c)) || RESBAL_REGEX.test(String(c)))) return i + 1; // 1-basert
+    const nonEmptyCells = row.filter(c => String(c).trim() !== "");
+    debug.push(`Rad ${i + 1}: ${nonEmptyCells.length} ikke-tomme celler: [${nonEmptyCells.map(c => `"${String(c).trim()}"`).join(', ')}]`);
+    
+    const kontoMatch = row.find((c: any) => KONTO_REGEX.test(String(c)));
+    const resbalMatch = row.find((c: any) => RESBAL_REGEX.test(String(c)));
+    
+    if (kontoMatch || resbalMatch) {
+      debug.push(`  → Funnet match på rad ${i + 1}: Konto="${kontoMatch || 'ingen'}", ResBalRef="${resbalMatch || 'ingen'}"`);
+      return { row: i + 1, debug }; // 1-basert
+    }
   }
-  return null;
+  debug.push("Ingen header-rad funnet i de første 10 radene");
+  return { row: null, debug };
 }
 
 function guessKontoHeader(headers: string[]): string | null {
@@ -414,30 +426,45 @@ export default function DataredigeringPage() {
       let kontoCol = guessKontoHeader(sbColumns);
       let resBalCol = guessResBalHeader(sbColumns);
 
+      // Debug info om hvilke kolonner som ble funnet på valgt rad
+      setStatus(prev => `${prev} - Rad ${sbHeaderRow} kolonner: [${sbColumns.join(', ')}]`);
+      
       // Hvis ikke funnet: scan topp-10 rader for korrekt header-rad og prøv igjen
       if (!kontoCol && !resBalCol) {
-        const autoRow = detectHeaderRow(sbWs);
+        const { row: autoRow, debug } = detectHeaderRow(sbWs);
+        
+        // Vis debug info
+        setStatus(prev => `${prev} - Header-scan debug: ${debug.join(' | ')}`);
+        
         if (autoRow && autoRow !== sbHeaderRow) {
           const { columns: autoColumns, rows: autoRowsNew, mergeInfo: autoMergeInfo } = sheetToRows(sbWs, autoRow);
           
           if (autoMergeInfo) {
             setStatus(prev => `${prev} ${autoMergeInfo}`);
           }
-          kontoCol = guessKontoHeader(autoColumns);
-          resBalCol = guessResBalHeader(autoColumns);
-          if (kontoCol || resBalCol) {
+          
+          const autoKontoCol = guessKontoHeader(autoColumns);
+          const autoResbalCol = guessResBalHeader(autoColumns);
+          
+          setStatus(prev => `${prev} - Auto-rad ${autoRow} kolonner: [${autoColumns.join(', ')}] → Konto="${autoKontoCol || 'ingen'}", ResBalRef="${autoResbalCol || 'ingen'}"`);
+          
+          if (autoKontoCol || autoResbalCol) {
             // Oppdater til den automatisk detekterte header-raden
             sbColumns.length = 0;
             sbColumns.push(...autoColumns);
             sbRows.length = 0;
             sbRows.push(...autoRowsNew);
-            setStatus(`Auto-detekterte header på rad ${autoRow} (i stedet for ${sbHeaderRow})`);
+            kontoCol = autoKontoCol;
+            resBalCol = autoResbalCol;
+            setStatus(`BRUKER auto-detektert header på rad ${autoRow} (i stedet for ${sbHeaderRow})`);
           }
         }
       }
 
       if (!kontoCol && !resBalCol) {
-        setErrors(prev => [...prev, `Kunne ikke finne verken konto- eller ResBalRef-kolonne i saldobalansen. Funnet kolonner: ${sbColumns.join(', ')}`]);
+        setErrors(prev => [...prev, `Kunne ikke finne verken konto- eller ResBalRef-kolonne i saldobalansen. Funnet kolonner: ${sbColumns.join(', ')}. 
+        KONTO_REGEX matcher: ${sbColumns.filter(col => KONTO_REGEX.test(col)).join(', ') || 'ingen'}. 
+        RESBAL_REGEX matcher: ${sbColumns.filter(col => RESBAL_REGEX.test(col)).join(', ') || 'ingen'}.`]);
         return;
       }
 
@@ -613,7 +640,7 @@ export default function DataredigeringPage() {
           let resBalCol = guessResBalHeader(sbColumns);
 
           if (!kontoCol && !resBalCol) {
-            const autoRow = detectHeaderRow(sbWs);
+            const { row: autoRow, debug } = detectHeaderRow(sbWs);
             if (autoRow && autoRow !== sbHeaderRow) {
             const { columns: autoColumns, rows: autoRowsNew, mergeInfo: autoMergeInfo } = sheetToRows(sbWs, autoRow);
             
