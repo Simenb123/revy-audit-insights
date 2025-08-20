@@ -47,7 +47,7 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
             <MaterialitySummary />
           </div>
         }
-        showBackButton={showBackButton}
+        showBackButton={false}
       />
     );
     return () => clearSubHeader();
