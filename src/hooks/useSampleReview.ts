@@ -34,7 +34,7 @@ export const useSampleReview = (planId: string) => {
     queryFn: async () => {
       // First get the sampling items
       const { data: items, error: itemsError } = await supabase
-        .from('audit_sampling_items')
+        .from('audit_sampling_samples')
         .select('*')
         .eq('plan_id', planId)
         .order('transaction_date', { ascending: true });
@@ -79,7 +79,7 @@ export const useSampleReview = (planId: string) => {
       reviewStatus: 'pending' | 'ok' | 'deviation' | 'follow_up';
     }) => {
       const { error } = await supabase
-        .from('audit_sampling_items')
+        .from('audit_sampling_samples')
         .update({
           is_reviewed: isReviewed,
           reviewer_id: isReviewed ? (await supabase.auth.getUser()).data.user?.id : null,

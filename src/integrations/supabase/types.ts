@@ -2298,7 +2298,150 @@ export type Database = {
           },
         ]
       }
-      audit_sampling_items: {
+      audit_sampling_exports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          export_type: string
+          file_path: string | null
+          id: string
+          metadata: Json | null
+          plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          export_type: string
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          export_type?: string
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_sampling_exports_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sampling_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_sampling_plans: {
+        Row: {
+          actual_sample_size: number
+          client_id: string
+          confidence_factor: number | null
+          confidence_level: number
+          coverage_percentage: number
+          created_at: string
+          created_by: string | null
+          expected_deviation_rate: number | null
+          expected_misstatement: number | null
+          fiscal_year: number
+          id: string
+          materiality: number | null
+          metadata: Json | null
+          method: string
+          min_per_stratum: number | null
+          notes: string | null
+          param_hash: string | null
+          performance_materiality: number | null
+          plan_name: string | null
+          population_size: number
+          population_sum: number
+          recommended_sample_size: number
+          risk_level: string
+          risk_matrix: Json | null
+          risk_weighting: string | null
+          seed: number | null
+          strata_bounds: number[] | null
+          test_type: string
+          threshold_amount: number | null
+          threshold_mode: string | null
+          tolerable_deviation_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_sample_size?: number
+          client_id: string
+          confidence_factor?: number | null
+          confidence_level?: number
+          coverage_percentage?: number
+          created_at?: string
+          created_by?: string | null
+          expected_deviation_rate?: number | null
+          expected_misstatement?: number | null
+          fiscal_year: number
+          id?: string
+          materiality?: number | null
+          metadata?: Json | null
+          method?: string
+          min_per_stratum?: number | null
+          notes?: string | null
+          param_hash?: string | null
+          performance_materiality?: number | null
+          plan_name?: string | null
+          population_size?: number
+          population_sum?: number
+          recommended_sample_size?: number
+          risk_level?: string
+          risk_matrix?: Json | null
+          risk_weighting?: string | null
+          seed?: number | null
+          strata_bounds?: number[] | null
+          test_type?: string
+          threshold_amount?: number | null
+          threshold_mode?: string | null
+          tolerable_deviation_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_sample_size?: number
+          client_id?: string
+          confidence_factor?: number | null
+          confidence_level?: number
+          coverage_percentage?: number
+          created_at?: string
+          created_by?: string | null
+          expected_deviation_rate?: number | null
+          expected_misstatement?: number | null
+          fiscal_year?: number
+          id?: string
+          materiality?: number | null
+          metadata?: Json | null
+          method?: string
+          min_per_stratum?: number | null
+          notes?: string | null
+          param_hash?: string | null
+          performance_materiality?: number | null
+          plan_name?: string | null
+          population_size?: number
+          population_sum?: number
+          recommended_sample_size?: number
+          risk_level?: string
+          risk_matrix?: Json | null
+          risk_weighting?: string | null
+          seed?: number | null
+          strata_bounds?: number[] | null
+          test_type?: string
+          threshold_amount?: number | null
+          threshold_mode?: string | null
+          tolerable_deviation_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_sampling_samples: {
         Row: {
           account_name: string
           account_no: string
@@ -2318,6 +2461,7 @@ export type Database = {
             | null
           reviewer_id: string | null
           risk_score: number | null
+          sample_type: string | null
           selection_method: string | null
           stratum_id: number | null
           transaction_date: string | null
@@ -2342,6 +2486,7 @@ export type Database = {
             | null
           reviewer_id?: string | null
           risk_score?: number | null
+          sample_type?: string | null
           selection_method?: string | null
           stratum_id?: number | null
           transaction_date?: string | null
@@ -2366,6 +2511,7 @@ export type Database = {
             | null
           reviewer_id?: string | null
           risk_score?: number | null
+          sample_type?: string | null
           selection_method?: string | null
           stratum_id?: number | null
           transaction_date?: string | null
@@ -2381,86 +2527,46 @@ export type Database = {
           },
         ]
       }
-      audit_sampling_plans: {
+      audit_sampling_strata: {
         Row: {
-          actual_sample_size: number
-          client_id: string
-          confidence_level: number
-          coverage_percentage: number
           created_at: string
-          created_by: string | null
-          expected_deviation_rate: number | null
-          expected_misstatement: number | null
-          fiscal_year: number
           id: string
-          materiality: number | null
-          metadata: Json | null
-          method: string
-          notes: string | null
-          plan_name: string | null
-          population_size: number
-          population_sum: number
-          recommended_sample_size: number
-          risk_level: string
-          strata_bounds: number[] | null
-          test_type: string
-          threshold_amount: number | null
-          tolerable_deviation_rate: number | null
-          updated_at: string
+          lower_bound: number
+          min_sample_size: number | null
+          plan_id: string
+          stratum_index: number
+          upper_bound: number | null
+          weight_factor: number | null
         }
         Insert: {
-          actual_sample_size?: number
-          client_id: string
-          confidence_level?: number
-          coverage_percentage?: number
           created_at?: string
-          created_by?: string | null
-          expected_deviation_rate?: number | null
-          expected_misstatement?: number | null
-          fiscal_year: number
           id?: string
-          materiality?: number | null
-          metadata?: Json | null
-          method?: string
-          notes?: string | null
-          plan_name?: string | null
-          population_size?: number
-          population_sum?: number
-          recommended_sample_size?: number
-          risk_level?: string
-          strata_bounds?: number[] | null
-          test_type?: string
-          threshold_amount?: number | null
-          tolerable_deviation_rate?: number | null
-          updated_at?: string
+          lower_bound: number
+          min_sample_size?: number | null
+          plan_id: string
+          stratum_index: number
+          upper_bound?: number | null
+          weight_factor?: number | null
         }
         Update: {
-          actual_sample_size?: number
-          client_id?: string
-          confidence_level?: number
-          coverage_percentage?: number
           created_at?: string
-          created_by?: string | null
-          expected_deviation_rate?: number | null
-          expected_misstatement?: number | null
-          fiscal_year?: number
           id?: string
-          materiality?: number | null
-          metadata?: Json | null
-          method?: string
-          notes?: string | null
-          plan_name?: string | null
-          population_size?: number
-          population_sum?: number
-          recommended_sample_size?: number
-          risk_level?: string
-          strata_bounds?: number[] | null
-          test_type?: string
-          threshold_amount?: number | null
-          tolerable_deviation_rate?: number | null
-          updated_at?: string
+          lower_bound?: number
+          min_sample_size?: number | null
+          plan_id?: string
+          stratum_index?: number
+          upper_bound?: number | null
+          weight_factor?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_sampling_strata_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sampling_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_working_papers: {
         Row: {

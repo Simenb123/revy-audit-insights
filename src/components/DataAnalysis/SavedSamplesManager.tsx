@@ -81,7 +81,7 @@ const SavedSamplesManager: React.FC<SavedSamplesManagerProps> = ({
 
       // Also delete associated sampling items
       await supabase
-        .from('audit_sampling_items')
+        .from('audit_sampling_samples')
         .delete()
         .eq('plan_id', sampleId);
 
