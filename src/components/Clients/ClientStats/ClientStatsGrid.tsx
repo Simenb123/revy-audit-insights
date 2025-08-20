@@ -34,7 +34,7 @@ const ClientStatsGrid = ({ clients, announcements, selectedClientId }: ClientSta
           value={clients.reduce((acc, client) => 
             acc + client.documents.filter(doc => doc.status === 'pending').length, 0)}
           footer={
-            <span>Neste frist: 15. mai 2025 (Aksjonærregisteroppgave)</span>
+            <span></span>
           }
         />
         
