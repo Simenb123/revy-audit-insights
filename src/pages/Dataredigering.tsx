@@ -35,6 +35,10 @@ const KONTO_REGEX = /^(konto(?:nr|nummer)?\.?)$|konto\s*[-.]?\s*nr\.?|^account(?
 // ResBalRef matcher for NAKonto-kolonne  
 const RESBAL_REGEX = /^(resbalref)$|^res\s*bal\s*ref$|^na[-_\s]*konto(nr|nummer)?$|^næringsspesifikasjon$/i;
 
+// Regnskapslinjer matchers for sammenslåing
+const RESULTAT_REGEX = /^resultatregnskap$/i;
+const BALANSE_REGEX = /^balanse$/i;
+
 function detectHeaderRow(sheet: XLSX.WorkSheet, maxScan = 10): number | null {
   const mat: any[][] = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
@@ -60,6 +64,16 @@ function guessKontoHeader(headers: string[]): string | null {
 
 function guessResBalHeader(headers: string[]): string | null {
   const idx = headers.findIndex((h) => RESBAL_REGEX.test(String(h)));
+  return idx >= 0 ? headers[idx] : null;
+}
+
+function guessResultatRegnskapHeader(headers: string[]): string | null {
+  const idx = headers.findIndex((h) => RESULTAT_REGEX.test(String(h)));
+  return idx >= 0 ? headers[idx] : null;
+}
+
+function guessBalanseHeader(headers: string[]): string | null {
+  const idx = headers.findIndex((h) => BALANSE_REGEX.test(String(h)));
   return idx >= 0 ? headers[idx] : null;
 }
 
@@ -102,7 +116,7 @@ function readWorkbook(data: ArrayBuffer): XLSX.WorkBook {
   return XLSX.read(data, { type: "array" });
 }
 
-function sheetToRows(sheet: XLSX.WorkSheet, headerRow = 1): { columns: string[]; rows: Record<string, any>[] } {
+function sheetToRows(sheet: XLSX.WorkSheet, headerRow = 1): { columns: string[]; rows: Record<string, any>[]; mergeInfo?: string } {
   const mat: any[][] = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     raw: true,
@@ -112,12 +126,17 @@ function sheetToRows(sheet: XLSX.WorkSheet, headerRow = 1): { columns: string[];
   });
 
   const idx = Math.max(1, headerRow) - 1;
-  const head = (mat[idx] || []).map((h: any, i: number) => {
+  let head = (mat[idx] || []).map((h: any, i: number) => {
     const v = (h ?? "").toString().trim();
     return v || `Kolonne_${i + 1}`;
   }) as string[];
 
-  const rows = mat
+  // Detekter Resultatregnskap og Balanse kolonner
+  const resultatCol = guessResultatRegnskapHeader(head);
+  const balanseCol = guessBalanseHeader(head);
+  let mergeInfo: string | undefined;
+
+  let rows = mat
     .slice(idx + 1)
     // behold bare rader som har minst én ikke-tom verdi
     .filter((r) => (r || []).some((c) => `${c}`.trim() !== ""))
@@ -127,7 +146,50 @@ function sheetToRows(sheet: XLSX.WorkSheet, headerRow = 1): { columns: string[];
       return o;
     });
 
-  return { columns: head, rows };
+  // Utfør sammenslåing hvis begge kolonner finnes
+  if (resultatCol && balanseCol) {
+    let mergedCount = 0;
+    
+    // Opprett ny regnskapslinje kolonne og fjern originale
+    const newRows = rows.map(row => {
+      const resultatValue = String(row[resultatCol] || "").trim();
+      const balanseValue = String(row[balanseCol] || "").trim();
+      
+      // Velg ikke-tom verdi, prioriter Resultatregnskap
+      let regnskapslinje = "";
+      if (resultatValue) {
+        regnskapslinje = resultatValue;
+      } else if (balanseValue) {
+        regnskapslinje = balanseValue;
+      }
+      
+      if (regnskapslinje) mergedCount++;
+      
+      // Opprett ny rad uten originale kolonner, men med ny regnskapslinje
+      const newRow = { ...row };
+      delete newRow[resultatCol];
+      delete newRow[balanseCol];
+      newRow.regnskapslinje = regnskapslinje;
+      
+      return newRow;
+    });
+    
+    // Oppdater kolonner - fjern originale og legg til regnskapslinje
+    const newHead = head.filter(h => h !== resultatCol && h !== balanseCol);
+    
+    // Finn beste posisjon for regnskapslinje (etter konto-kolonne hvis den finnes)
+    const kontoCol = guessKontoHeader(head);
+    const kontoIndex = kontoCol ? newHead.indexOf(kontoCol) : -1;
+    const insertIndex = kontoIndex >= 0 ? kontoIndex + 1 : 0;
+    
+    newHead.splice(insertIndex, 0, 'regnskapslinje');
+    
+    head = newHead;
+    rows = newRows;
+    mergeInfo = `Sammenslått ${resultatCol} og ${balanseCol} til regnskapslinje (${mergedCount} rader behandlet)`;
+  }
+
+  return { columns: head, rows, mergeInfo };
 }
 
 function unionColumns(colGroups: string[][], firstCols: string[] = []): string[] {
@@ -178,7 +240,7 @@ export default function DataredigeringPage() {
   const [masseFiles, setMasseFiles] = useState<File[]>([]);
   const [masseOutputFormat, setMasseOutputFormat] = useState<"merged" | "separate">("merged");
   const [masseProcessing, setMasseProcessing] = useState(false);
-  const [masseProgress, setMasseProgress] = useState({ current: 0, total: 0 });
+  const [masseProgress, setMasseProgress] = useState({ current: 0, total: 0, info: "" });
 
   // Tab 1: Filer → Tabell
   const [filesA, setFilesA] = useState<File[]>([]);
@@ -223,12 +285,16 @@ export default function DataredigeringPage() {
         const ab = await toArrayBuffer(f);
         const wb = readWorkbook(ab);
         const sh = wb.Sheets[wb.SheetNames[0]];
-        const { columns, rows } = sheetToRows(sh, headerRow);
+        const { columns, rows, mergeInfo } = sheetToRows(sh, headerRow);
         parsedCols.push(columns);
         const company = f.name.replace(/\.[^.]+$/i, "").replace(/^Kontoplan\s*/i, "").trim();
         rows.forEach((r) => {
           allRows.push(useFilenameAsCompany ? { Selskap: company, ...r } : r);
         });
+        
+        if (mergeInfo) {
+          setStatus(prev => `${prev} ${f.name}: ${mergeInfo}`);
+        }
       } catch (e: any) {
         setErrors((prev) => [...prev, `${f.name}: ${e?.message || e}`]);
       }
@@ -338,7 +404,11 @@ export default function DataredigeringPage() {
       const sbAb = await toArrayBuffer(sbFile);
       const sbWb = readWorkbook(sbAb);
       const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
-      const { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
+      const { columns: sbColumns, rows: sbRows, mergeInfo } = sheetToRows(sbWs, sbHeaderRow);
+      
+      if (mergeInfo) {
+        setStatus(prev => `${prev} ${mergeInfo}`);
+      }
 
       // 2) Finn kolonner med auto-deteksjon og fallback
       let kontoCol = guessKontoHeader(sbColumns);
@@ -348,7 +418,11 @@ export default function DataredigeringPage() {
       if (!kontoCol && !resBalCol) {
         const autoRow = detectHeaderRow(sbWs);
         if (autoRow && autoRow !== sbHeaderRow) {
-          const { columns: autoColumns, rows: autoRowsNew } = sheetToRows(sbWs, autoRow);
+          const { columns: autoColumns, rows: autoRowsNew, mergeInfo: autoMergeInfo } = sheetToRows(sbWs, autoRow);
+          
+          if (autoMergeInfo) {
+            setStatus(prev => `${prev} ${autoMergeInfo}`);
+          }
           kontoCol = guessKontoHeader(autoColumns);
           resBalCol = guessResBalHeader(autoColumns);
           if (kontoCol || resBalCol) {
@@ -481,7 +555,7 @@ export default function DataredigeringPage() {
     }
 
     setMasseProcessing(true);
-    setMasseProgress({ current: 0, total: masseFiles.length });
+    setMasseProgress({ current: 0, total: masseFiles.length, info: "" });
     setStatus("Starter masseimport av saldobalanse-filer...");
 
     try {
@@ -520,7 +594,7 @@ export default function DataredigeringPage() {
       // Prosesser hver fil
       for (let i = 0; i < masseFiles.length; i++) {
         const file = masseFiles[i];
-        setMasseProgress({ current: i + 1, total: masseFiles.length });
+        setMasseProgress({ current: i + 1, total: masseFiles.length, info: "" });
         setStatus(`Prosesserer fil ${i + 1}/${masseFiles.length}: ${file.name}`);
 
         try {
@@ -528,7 +602,11 @@ export default function DataredigeringPage() {
           const sbAb = await toArrayBuffer(file);
           const sbWb = readWorkbook(sbAb);
           const sbWs = sbWb.Sheets[sbWb.SheetNames[0]];
-          let { columns: sbColumns, rows: sbRows } = sheetToRows(sbWs, sbHeaderRow);
+          let { columns: sbColumns, rows: sbRows, mergeInfo } = sheetToRows(sbWs, sbHeaderRow);
+          
+          if (mergeInfo) {
+            setMasseProgress(prev => ({ ...prev, info: mergeInfo }));
+          }
 
           // Auto-detekter kolonner for denne filen
           let kontoCol = guessKontoHeader(sbColumns);
@@ -537,7 +615,11 @@ export default function DataredigeringPage() {
           if (!kontoCol && !resBalCol) {
             const autoRow = detectHeaderRow(sbWs);
             if (autoRow && autoRow !== sbHeaderRow) {
-              const { columns: autoColumns, rows: autoRowsNew } = sheetToRows(sbWs, autoRow);
+            const { columns: autoColumns, rows: autoRowsNew, mergeInfo: autoMergeInfo } = sheetToRows(sbWs, autoRow);
+            
+            if (autoMergeInfo) {
+              setMasseProgress(prev => ({ ...prev, info: autoMergeInfo }));
+            }
               kontoCol = guessKontoHeader(autoColumns);
               resBalCol = guessResBalHeader(autoColumns);
               if (kontoCol || resBalCol) {
@@ -659,7 +741,7 @@ export default function DataredigeringPage() {
       setErrors(prev => [...prev, `Feil ved masseimport: ${e?.message || e}`]);
     } finally {
       setMasseProcessing(false);
-      setMasseProgress({ current: 0, total: 0 });
+      setMasseProgress({ current: 0, total: 0, info: "" });
     }
   }, [masseFiles, naSource, naFile, sbHeaderRow, masseOutputFormat]);
 
