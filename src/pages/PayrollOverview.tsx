@@ -9,7 +9,7 @@ import { useClientDetails } from '@/hooks/useClientDetails'
 import { useFiscalYear } from '@/contexts/FiscalYearContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DollarSign, FileText, BarChart3, Upload, Download } from 'lucide-react'
+import { DollarSign, FileText, BarChart3, Upload, Download, Calculator } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const PayrollOverview = () => {
@@ -53,7 +53,7 @@ const PayrollOverview = () => {
               />
             }
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* A07 Data Card */}
               <Card className="hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -70,6 +70,28 @@ const PayrollOverview = () => {
                       <Link to={`/clients/${clientId}/payroll/a07`}>
                         <FileText className="h-3 w-3 mr-1" />
                         Vis data
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Kontrolloppstilling lønn Card */}
+              <Card className="hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Kontrolloppstilling</CardTitle>
+                  <Calculator className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold mb-2">Avstemming</div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    A-E beregning og eksakt match av lønnsdata
+                  </p>
+                  <div className="flex gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/clients/${clientId}/payroll/kontrolloppstilling`}>
+                        <Calculator className="h-3 w-3 mr-1" />
+                        Åpne
                       </Link>
                     </Button>
                   </div>
