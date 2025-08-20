@@ -154,12 +154,8 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   return <>
       <header data-global-header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 grid grid-cols-3 items-center px-6 text-white h-[var(--global-header-height)] shadow-sm">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center hover:opacity-90 transition-opacity">
-            <img 
-              src="/lovable-uploads/36391d7c-a868-4ad1-9a11-bd7e5d623bae.png" 
-              alt="Revio Logo" 
-              className="h-8 w-8"
-            />
+          <Link to="/" className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90">
+            Revio
           </Link>
         </div>
         <h1 className="text-2xl font-bold text-center truncate" data-testid="page-title">
