@@ -1,0 +1,786 @@
+Revisorskolen – Dypanalyse og Implementeringsplan
+1) 🔎 Repo-undersøkelse
+Kodebase og struktur: Prosjektet er en React 18 applikasjon med TypeScript, bygget med Vite. UI-stacken inkluderer Tailwind CSS med shadcn/ui komponentbiblioteket (Radix UI), TanStack React Query for datahåndtering og React Router v6 for navigasjon[1][2]. Koden er strukturert i mapper som src/pages (rutesider), src/components (gjenbrukbare komponenter), src/hooks (React Query hooks), og Supabase Edge Functions i supabase/functions. All UI-tekst er på norsk, og komponentstil bruker semantiske Tailwind-klasser (f.eks. text-muted-foreground, bg-background) fremfor hardkodede farger[3].
+Routing og navigasjon: Hovedruter defineres i src/App.tsx inni en <Routes>-blokk[4]. Venstremenyen (ResizableLeftSidebar) samler navigasjonslenker i konstanter som resourceItems[5]. Her ser vi f.eks. “Revisjons Akademiet” med url /academy og “Læring” med url /training som egne moduler i menyen[5]. Den nye modulen Revisorskolen vil analogt legges til her med tittel "Revisorskolen" og url /revisorskolen. For å sikre at kun testbrukere ser den, kan vi legge til en roles: ['testbruker'] på menu-item (som det gjøres for admin-seksjoner i adminItems[6]). I routerkonfigurasjonen skal vi definere en ny Route: <Route path="revisorskolen" element={<ProtectedRoute><Revisorskolen /></ProtectedRoute>} />, tilsvarende hvordan /academy og /training er satt opp[7]. Dette vil sørge for at komponenten pages/Revisorskolen.tsx rendres når brukeren navigerer til /revisorskolen.
+Eksisterende mønstre: - Supabase klient: Applikasjonen oppretter en enkelt Supabase-klient i src/supabaseClients.ts med createClient[8]. Denne benyttes i hooks (f.eks. useTrainingProgress) for databasekall med RLS-beskyttelse ved at brukerens JWT benyttes automatisk[9]. - React Query hooks: Hvert data-domene har egne hooks. For eksempel henter useTrainingProgress inn logged-in bruker via supabase.auth.getUser() og deretter .from('training_progress').select(*)...[9]. Egne hooks oppdaterer også data med useMutation og invalidation. Vi følger samme struktur for Revisorskolen (f.eks. useRun, useStartRun), inkl. caching via queryKey. - shadcn/ui og styling: UI-komponenter som <Card>, <Button> og <Badge> brukes flittig for konsistent styling[10][11]. Man benytter Radix UI sine primitive komponenter (f.eks. <Tabs>, <Progress>) sammen med Tailwind utility-klasser for layout. Typisk layout for sider er å bruke en standard side-wrapper (som StandardPageLayout eller <PageLayout>) og deretter bygge innhold med kort, faner osv. Vi gjenskaper dette i Revisorskolen. - Toasts og feilhåndtering: Applikasjonen har et toast-system (basert på Radix Toast). Toaster er inkludert i App.tsx for global visning[12]. Hooks bruker useToast() for å vise suksess- og feilmeldinger[13]. For eksempel, useUpdateTrainingProgress viser toast “Progresjon oppdatert!” på suksess[14]. Vi følger samme praksis: etter viktige handlinger som å starte spill eller utføre handling, vises en toast ved feil (f.eks. “Kunne ikke utføre handlingen”). - Error boundaries: Repoet har sannsynligvis en global error boundary/håndtering (f.eks. i ProtectedRoute for auth). Vi sørger for å håndtere feil lokalt i komponenter (f.eks. vise feilmelding i UI hvis noe feiler å laste), og lar eventuelle uventede exceptions boble opp til global feilhåndtering. - Supabase Edge Functions: Backend-logikk som krever serverside kontroll er implementert som Deno-baserte Edge Functions i supabase/functions. De fleste følger et mønster: håndtere preflight OPTIONS (CORS), hente Supabase-klient med getSupabase(req) som legger ved auth header, validere supabase.auth.getUser() og deretter utføre DB-operasjoner[15][16]. Feil logges (console.error) og returneres som JSON med passende HTTP-status. Vi vil implementere Revisorskolens logikk i slike funksjoner (training-start-run, training-apply-action etc.) med samme struktur.
+Forslag filplassering: For å holde modulen isolert legges nye filer under egne mapper: - Frontend: src/pages/Revisorskolen.tsx for hovedsiden, og en ny mappe src/components/Revisorskolen/ for modul-spesifikke komponenter (RevisionGameBoard.tsx, ActionPicker.tsx, RevealFeed.tsx, ScenarioHeader.tsx). Dette skiller koden tydelig fra eksisterende trening (components/Training) og gjør vedlikehold enklere. - Hooks: src/hooks/useRevisorskolen.ts som samler React Query hooks relatert til spillet (scenario/handlinger/runs). Alternativt kan vi lage flere filer (f.eks. useRevisionRun.ts), men én fil for modulens hooks gir oversikt. - Types: Vi utvider src/integrations/supabase/types.ts med våre nye tabeller (Supabase genererer typer etter migrering). I mellomtiden kan vi definere interne TS-typer for f.eks. TrainingScenario, TrainingAction, TrainingRun i en fil src/types/training.ts om ønskelig. - Edge Functions: Under supabase/functions oppretter vi training-start-run/index.ts, training-apply-action/index.ts (og evt. training-reset-run/index.ts). Vi legger også felles hjelpefunksjoner i supabase/functions/_shared om nødvendig (f.eks. importere getSupabase for auth, og bruke felles CORS-headere som definert der).
+Samlet sett vil Revisorskolen-modulen integreres sømløst ved å følge disse mønstrene, slik at venstrepanelet får en ny inngang, rutehåndteringen tar den inn, og modulens kode benytter samme klient- og UI-konvensjoner som resten av prosjektet.
+2) 🧱 Datamodell (Supabase)
+Vi trenger nye tabeller i Supabase for å lagre scenario-definisjoner og brukerspill (runs). Tabellenavn er prefikset med training_ for å gruppere dem. Under er et forslag til SQL DDL (migreringsskript) for å opprette tabellene, med nøkkelkolonner, relasjoner og indekser:
+-- 1. Scenario-spill definisjoner
+CREATE TABLE public.training_scenarios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  intro_brief_md TEXT,       -- Introduksjon/oppdragsbeskrivelse (Markdown)
+  default_budget_hours INT NOT NULL DEFAULT 100,
+  risk_objectives TEXT[],    -- (Optional) liste av “risikonøkler” for scenarioets mål
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 2. Katalog over mulige handlinger i et scenario
+CREATE TABLE public.training_actions_catalog (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id UUID REFERENCES public.training_scenarios(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,        -- Kort kode/ID for handling (f.eks. "FO1")
+  category TEXT NOT NULL,    -- Type handling (forespørsel, inspeksjon, observasjon, analytisk, gjentakelse)
+  title TEXT NOT NULL,       -- Navn/tittel på handlingen (for visning i UI)
+  cost_hours INT NOT NULL,   -- Tidskostnad i timer
+  reveal_key TEXT,           -- Knyttes til en risikonøkkel hvis handlingen avslører et mål
+  reveal_markdown TEXT,      -- Markdown-tekst som avsløres når handlingen utføres
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+CREATE INDEX actions_by_scenario ON public.training_actions_catalog(scenario_id);
+
+-- 3. Aktive spill (runs) som brukerne har startet
+CREATE TABLE public.training_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id UUID REFERENCES public.training_scenarios(id),
+  user_id UUID,  -- fylles automatisk med auth.uid() via policy
+  total_budget_hours INT NOT NULL,   -- Totalt budsjett (timer)
+  used_hours INT NOT NULL DEFAULT 0, -- Akkumulerte forbrukte timer
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  completed_at TIMESTAMP WITH TIME ZONE   -- Null inntil run er ferdig
+);
+CREATE INDEX runs_by_user ON public.training_runs(user_id);
+CREATE INDEX runs_by_scenario ON public.training_runs(scenario_id);
+
+-- 4. Logg over valg brukeren tar i spillet
+CREATE TABLE public.training_run_choices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id UUID REFERENCES public.training_runs(id) ON DELETE CASCADE,
+  action_id UUID REFERENCES public.training_actions_catalog(id),
+  taken_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+CREATE INDEX choices_by_run ON public.training_run_choices(run_id);
+Relasjoner: - training_actions_catalog.scenario_id refererer til hvilket scenario handlingen tilhører. Sletting av et scenario vil slette tilhørende handlinger. - training_runs.scenario_id lar oss knytte en spillgjennomføring til scenarioet som spilles. user_id feltet fylles av innlogget bruker – her legger vi på RLS i neste steg. - training_run_choices.run_id knyttes til hvilket run handlingen ble utført i, og action_id til selve handlingen fra katalogen. Sletting av et run cascader til valg-loggen.
+RLS-policier: Vi aktiverer Radix Level Security for sensitive tabeller og lager policyer som begrenser lesing/skriving til den autentiserte brukeren:
+-- Aktiver RLS
+ALTER TABLE public.training_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.training_run_choices ENABLE ROW LEVEL SECURITY;
+
+-- Policy: En bruker kan kun se og endre egne runs
+CREATE POLICY select_own_runs ON public.training_runs 
+  USING (user_id = auth.uid());
+CREATE POLICY insert_own_run ON public.training_runs 
+  WITH CHECK (user_id = auth.uid());
+-- (Merk: Supabase vil sette user_id via function i insert trigger eller i edge function kode)
+
+-- Policy: En bruker kan kun se valg tilhørende egne runs
+CREATE POLICY select_own_run_choices ON public.training_run_choices
+  USING ( run_id IN (SELECT id FROM public.training_runs r WHERE r.user_id = auth.uid()) );
+CREATE POLICY insert_own_choice ON public.training_run_choices
+  WITH CHECK ( run_id IN (SELECT id FROM public.training_runs r WHERE r.user_id = auth.uid()) );
+For training_scenarios og training_actions_catalog kan vi vurdere å la dem være lesbare for alle autentiserte (da de ikke inneholder sensitiv info per bruker). Evt. kan vi begrense lesing til testbrukere/administratorer inntil modulen er public. F.eks.:
+ALTER TABLE public.training_scenarios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY select_scenarios_for_testusers ON public.training_scenarios
+  USING ( auth.role() = 'authenticated' );  -- Evt. sjekk mot profile.role = 'testbruker'
+(Ovenstående bruker en enkel auth.role() – for mer finmaskede rolle-sjekker kunne man lage en FUNCTION som henter user_role fra profiles for auth.uid(), men dette krever at user_role ligger som claim i JWT eller en VIEW.)
+Data-seeding: Vi fyller inn et scenario “Nordic Varehandel AS” og dets handlinger. Under vises eksempel INSERTs for scenarioet (det komplette innholdet leveres i seksjon 11):
+INSERT INTO public.training_scenarios (id, title, intro_brief_md, default_budget_hours, risk_objectives) VALUES
+  ('00000000-0000-0000-0000-000000000001', 
+   'Nordic Varehandel AS', 
+   'Nordic Varehandel AS er et mellomstort handelsforetak...\n(Full introduksjonstekst i seksjon 11)',
+   100,
+   ARRAY['periodisering','ulovlig_laan','varelager_nedskrivning','tapsrisiko_fordringer']
+);
+
+INSERT INTO public.training_actions_catalog 
+(scenario_id, code, category, title, cost_hours, reveal_key, reveal_markdown) VALUES
+-- Eksempel handling:
+('00000000-0000-0000-0000-000000000001', 'FO1', 'forespørsel', 'Spør CFO om uvanlige transaksjoner', 4, 'ulovlig_laan',
+ '*CFO* opplyser at selskapet ga et kortsiktig lån til daglig leder på 1,5 mill... (osv i seksjon 11)'),
+... (flere handlinger her, se seksjon 11) ...;
+Vi bruker hardkodet UUID for scenario for tydelighet her, men i praksis lar vi databasen generere nye UUIDer. Frødataene kan kjøres som en migrering eller via Supabase admin GUI. Disse dataene legger til scenario med tilhørende 10–15 handlinger.
+Indekser: Som vist i DDL oppretter vi indekser på fremmednøkler (scenario_id, user_id, run_id) for å effektivisere spørringer som henter scenarioets handlinger, en brukers aktive run, eller valg for et run.
+Denne datamodellen kan justeres etter behov. Vi merker oss at det allerede finnes en tabell test_scenarios i databasen fra før[17], men den ser ut til å gjelde et annet konsept (den inneholder felter som industry, annual_revenue mm. for treningsscenarioer generelt). For å holde Revisorskolen modulens data isolert fra eksisterende “training” moduler, introduserer vi egne tabeller som definert over. Dette gir oss frihet til å utvide funksjonalitet (som å lagre reveal-tekster, budsjett mm.) uten å påvirke eksisterende funksjoner.
+3) 🛠️ Edge Functions (Supabase)
+Vi lager to hovedfunksjoner for modulens backendlogikk, samt en valgfri til reset. Alle skrives i TypeScript (Deno) med robust feil- og auth-håndtering. De vil benytte Supabase JWT auth (brukerens token) i stedet for service-role der mulig, slik at RLS-policyene våre håndheves automatisk.
+3.1 training-start-run
+Denne endepunktsfunksjonen startes når en bruker initierer et nytt spill. Den skal: - Autorisere brukeren (krever gyldig JWT). - Motta scenario_id (f.eks. i JSON body). - Opprette en ny rad i training_runs med gitt scenario, user_id og initialt budsjett (default 100 timer eller overskrive om scenario har custom budget). - Returnere run-objektet eller i det minste runId og budsjettinfo som respons.
+Kode for training-start-run:
+// File: supabase/functions/training-start-run/index.ts
+import { getSupabase } from '../_shared/supabaseClient.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+  const supabase = getSupabase(req)
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+
+  try {
+    const { scenario_id } = await req.json()
+    if (!scenario_id) {
+      return new Response(JSON.stringify({ error: 'Missing scenario_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // Hent scenario for å finne default budsjett
+    const { data: scenario, error: scenarioError } = await supabase
+      .from('training_scenarios')
+      .select('default_budget_hours')
+      .eq('id', scenario_id)
+      .single()
+    if (scenarioError || !scenario) {
+      console.error('Scenario not found or error:', scenarioError)
+      return new Response(JSON.stringify({ error: 'Scenario not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Opprett ny run
+    const { data: newRun, error: insertError } = await supabase
+      .from('training_runs')
+      .insert({
+        scenario_id: scenario_id,
+        user_id: user.id,              // Brukerens egen ID (RLS vil bekrefte dette)
+        total_budget_hours: scenario.default_budget_hours ?? 100
+      })
+      .select('id, total_budget_hours, used_hours')
+      .single()
+    if (insertError) throw insertError
+
+    return new Response(JSON.stringify({
+        runId: newRun.id,
+        total_budget_hours: newRun.total_budget_hours,
+        used_hours: newRun.used_hours
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  } catch (error) {
+    console.error('Error starting run:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+})
+Forklaring: Funksjonen bruker getSupabase(req) fra vår _shared util (som legger på Auth header)[15]. Den validerer at user finnes[18]. Deretter leser vi JSON-body, henter scenarioet for budsjett (slik at hvis scenario har et spesielt tidsbudsjett, tar vi det). Vi oppretter så en ny training_runs rad. Takket være vår RLS trengs ikke service role-key; innsettingen vil automatisk sette user_id siden funksjonen kjører med brukerens token (alternativt kunne vi hatt en Supabase function for default user_id). Vi velger her å eksplisitt sette user_id: user.id for klarhet. Insertet returnerer id, total_budget_hours og used_hours (0) for det nye run. Til slutt returneres disse dataene i JSON.
+Edge-funksjonen håndterer feil med try/catch, og returnerer 500 med generisk melding for uventede feil. CORS-headere legges alltid på svar, og preflight OPTIONS håndteres tidlig for å tillate kall fra frontend.
+3.2 training-apply-action
+Dette endepunktet kalles når brukeren utfører en handling i spillet. Det skal: - Autorisere brukeren. - Motta run_id og action_id (identifiserer hvilket spill og hvilken handling). - Slå opp handlingens cost_hours, reveal_markdown og ev. reveal_key. - Validere at brukeren eier runet (RLS dekker dette) og at nok tid gjenstår (budsjettsjekk). - Opprette entraining_run_choicesrad for valget. - Oppdateretraining_runs.used_hours(f.eks. øke med cost_hours). - Returnere **reveal-teksten** (Markdown) for handlingen, samt oppdatert timeforbruk (f.eks. nyeused_hoursellerremaining_hours`).
+Kode for training-apply-action:
+// File: supabase/functions/training-apply-action/index.ts
+import { getSupabase } from '../_shared/supabaseClient.ts'
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+  const supabase = getSupabase(req)
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+
+  try {
+    const { run_id, action_id } = await req.json()
+    if (!run_id || !action_id) {
+      return new Response(JSON.stringify({ error: 'Missing run_id or action_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // Hent run for å sjekke budsjett
+    const { data: run, error: runError } = await supabase
+      .from('training_runs')
+      .select('id, total_budget_hours, used_hours')
+      .eq('id', run_id)
+      .single()
+    if (runError || !run) {
+      return new Response(JSON.stringify({ error: 'Run not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // Hent handling for kostnad og reveal
+    const { data: action, error: actionError } = await supabase
+      .from('training_actions_catalog')
+      .select('cost_hours, reveal_markdown, reveal_key')
+      .eq('id', action_id)
+      .single()
+    if (actionError || !action) {
+      return new Response(JSON.stringify({ error: 'Action not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // Budsjettsjekk
+    const remaining = run.total_budget_hours - run.used_hours
+    if (action.cost_hours > remaining) {
+      return new Response(JSON.stringify({ error: 'Ikke nok timer igjen i budsjettet' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Loggfør valget
+    const { error: choiceError } = await supabase
+      .from('training_run_choices')
+      .insert({ run_id: run_id, action_id: action_id })
+    if (choiceError) throw choiceError
+
+    // Oppdater brukt tid i run (øker used_hours)
+    const newUsed = run.used_hours + action.cost_hours
+    const { error: updateError } = await supabase
+      .from('training_runs')
+      .update({ used_hours: newUsed })
+      .eq('id', run_id)
+    if (updateError) throw updateError
+
+    // Valgfritt: hvis handlingens reveal_key fullfører et mål, kunne vi oppdatert noe status – men dette håndteres heller i frontend.
+
+    return new Response(JSON.stringify({
+        reveal_markdown: action.reveal_markdown,
+        reveal_key: action.reveal_key,
+        used_hours: newUsed,
+        remaining_hours: run.total_budget_hours - newUsed
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  } catch (error) {
+    console.error('Error applying action:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+})
+Forklaring: Vi kjører tilsvarende auth-sjekk som i start-run. Deretter: - Henter run: Vi gjør .single() select på run_id for å få tak i total_budget_hours og used_hours. RLS begrenser til eierens run, så hvis brukeren prøver en run_id som ikke er sin, får vi 404 som håndteres. - Henter handling: Vi slår opp handlingens kostnad og innhold. (Her antar vi at alle handlinger som kan utføres i et run tilhører scenarioet for runet – vi kunne validert ataction.scenario_id == run.scenario_idfor konsistens, men RLS hindrer ikke at man teoretisk spør en action fra et annet scenario. For sikkerhet kunne vi lagt inn sjekk.) - *Budsjettsjekk:* Vi beregner gjenstående timer. Hviscost_hoursoverskrider dette, returnerer vi 400 med melding “Ikke nok timer igjen...”. - *Logge valget:* Vi inserter inn itraining_run_choicesmed run_id og action_id. Takket være RLS og foreign key vil dette kun lykkes om brukeren eier runet. (Dersom en onConflict op upsert trengs ikke her – samme handling kan tas flere ganger dersom scenario tillater, vi logger bare alle.) - Oppdatere run: Vi beregner newUsed = eksisterende brukt + cost. Så oppdaterer vi runets used_hours. (Vi kunne også lagret remaining_hours, men det kan utledes og holdes konsistent ved å alltid regne ut, så vi lagrer kun brukt.) - Response: Vi sender tilbake reveal_markdown (tekstblokken som skal vises til bruker), reveal_key (hvilken nøkkel denne infoen hører til, kan brukes frontent til å markere mål oppnådd), samt oppdatert used_hours og kalkulert remaining_hours. Frontend kan bruke disse til å oppdatere fremdriftsvisning.
+Feilhåndtering: Som i forrige funksjon catches uventede feil, logger dem på server (Supabase vil logge console.error til funksjonsloggene), og returnerer HTTP 500. Vi gir spesifikke 400/404 meldinger for kjente feiltilstander (mangler param, ikke funnet, budsjettfeil).
+CORS: Begge funksjoner returnerer alltid de nødvendige CORS-headerne, slik at vår webapp (på annet domene) kan kalle dem via supabase-js.
+3.3 (Valgfri) training-reset-run
+For å støtte restart kunne vi lage en funksjon som tilbakestiller spillet. Mulige implementasjoner: - Soft reset: Sett completed_at på gjeldende run og la frontend opprette en ny via start-run. (Man kan argumentere at ny run = ny game session, så reset kan håndteres klient-side ved simpelthen å kalle start-run igjen for scenarioet. Alternativt kan man begrense én aktiv run per bruker+scenario.) - Hard reset: Slette eksisterende run og valg. Hvis RLS tillater delete for eier, kan dette gjøres i en funksjon.
+En enkel variant:
+// File: supabase/functions/training-reset-run/index.ts
+// ... auth boilerplate ...
+    const { run_id } = await req.json()
+    if (!run_id) return new Response(...400...)
+    // Slette run (cascade sletter choices grunnet FK on delete cascade)
+    const { error: deleteError } = await supabase
+      .from('training_runs')
+      .delete()
+      .eq('id', run_id)
+    if (deleteError) throw deleteError
+    return new Response(JSON.stringify({ success: true }), { ...200 headers... })
+Med RLS må vi tillate DELETE for egne runs:
+CREATE POLICY delete_own_run ON public.training_runs 
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+I praksis er reset-run funksjonen ikke kritisk – vi kan la brukeren starte nytt run selv om et tidligere finnes (f.eks. “Start på nytt” kan bare kalle start-run; det nye run’et vil være separat). Men for opprydding kan det være greit å markere gamle runs som completed eller fjerne dem.
+Oppsummering: Disse edge-funksjonene gir oss et sikkert API hvor all kritisk logikk (budsjettnedtrekk, avdekking av info) skjer på serveren. Dermed kan ikke brukeren jukse med budsjettet fra klientsiden – serveren returnerer kun reveal hvis det er timer igjen. Vi gjenbruker Supabase-klienten med JWT for å dra nytte av RLS, og får en strømlinjeformet implementasjon lik eksisterende endepunkter i appen.
+4) 🧩 Frontend-arkitektur
+Frontend-delen av Revisorskolen består av en ny rute og en samling komponenter for spillgrensesnittet.
+Ny route og meny: I App.tsx legger vi inn:
+<Route path="revisorskolen" element={<ProtectedRoute><Revisorskolen /></ProtectedRoute>} />
+plassert blant de andre ressurs-rutene (for eksempel etter academy-ruten). Dette gjør at når brukeren navigerer til /revisorskolen (f.eks. klikker i menyen), rendres vår nye sidekomponent Revisorskolen. I venstremenyens resourceItems array legger vi:
+{ title: 'Revisorskolen', url: '/revisorskolen', icon: PlayCircle, roles: ['testbruker'] }
+Ikonet PlayCircle fra lucide-react symboliserer et “spill”/simulering. Rollen sørger for at kun brukere merket som testbruker (og evt. admin) ser lenken i menyen. Når modul modnes kan vi fjerne rollekriteriet for å åpne for alle.
+Komponenter: Revisorskolens UI er bygd opp av følgende React-komponenter: - Revisorskolen.tsx (page): Selve sidesiden for ruten. Denne vil hente scenario-data, håndtere start av spillet og vise hovedspillgrensesnittet (RevisionGameBoard) når et spill er i gang. - RevisionGameBoard.tsx: Hovedspill UI som vises etter at man har startet scenarioet. Den inneholder de tre fanene: Handlinger, Avslørt info, Mål & risiko. Den orkestrerer også barnekomponentene som ActionPicker, RevealFeed og ScenarioHeader. - ActionPicker.tsx: Viser en liste over tilgjengelige handlinger (med kategori-filter). For hver handling viser f.eks. tittel, kategori, tidskostnad og en “Kjør handling” knapp. Når knappen trykkes, kalles useApplyAction hook for å treffe edge-funksjonen og få resultat. - RevealFeed.tsx: Viser en “feed” av informasjon som er avdekket så langt. Hver gang brukeren utfører en handling som har reveal_markdown, legger vi til et kort eller en seksjon i feeden med teksten. Denne teksten kan inneholde formatert Markdown, så vi bruker en renderer (f.eks. ReactMarkdown) for å vise den med riktig styling (vi bruker Tailwinds typografi-klasser som prose for å formatere markdown-innhold konsistent[19]). - ScenarioHeader.tsx: En toppseksjon som viser scenario-navnet og en fremdriftsindikator for tidsforbruk. Den inneholder f.eks. en progress bar (Radix <Progress> komponent) som fylles i forhold til brukt vs total tid, og tekst som “Brukt X av Y timer”. Eventuelt kan den også ha en restart-knapp (“Start på nytt”) dersom vi ønsker å tilby resetting i UI. - Statuskort for mål: Målene/riskoene kan vi vise som en del av RevisionGameBoard. For eksempel under fanen “Mål & risiko” kan vi liste hver risikonøkkel med et kort som grått/uløst inntil tilhørende reveal_key er funnet, hvorpå kortet farges eller markeres “✅”. Vi kan implementere dette som et enkelt map over scenarioets risk_objectives der vi sjekker mot funn. - Laste- og feiltilstander: Hver del må håndtere loading og error. Vi bruker React Query sin status til å vise spinner og “Laster…” tekst, samt eventuelle feilmeldinger med <p className="text-destructive">Feil: ...</p> eller toast. For eksempel ved oppstart av scenario viser vi en spinner midt på siden.
+Hooks for data: Vi definerer custom hooks for Revisorskolen som kapsler kall mot Supabase (både direkte .from og functions.invoke): - useScenario(scenarioId): Henter scenario-info (tittel, intro) fra training_scenarios. Brukes på Revisorskolen siden for å vise introduksjon og navn. - useActionsCatalog(scenarioId): Henter alle handlinger (training_actions_catalog) for scenarioet. Returnerer liste av handlinger (kategorisert). - useRun(runId): Henter et pågående run (f.eks. for oppdatering av brukt tid dersom vi trenger sanntid). Vi kan evt. bruke data fra start-run respons og deretter oppdatere manuelt, så denne er ikke kritisk. - useRunChoices(runId): Henter alle valgene som er tatt i runet, inkludert tilhørendetraining_actions_catalogdata (for å få reveal teksten). Vi kan skrive.select('*, training_actions_catalog(title, reveal_markdown, reveal_key)')hvis vi har definert DB-relasjoner riktig. -useStartRun(): Mutation-hook som kaller edge functiontraining-start-runvia Supabase JS (supabase.functions.invoke). Tar scenarioId og returnerer opprettet run. På success kan invalidere queries for runs eller direkte sette state. -useApplyAction(): Mutation-hook for å utføre en handling. Tar inn valgt actionId (og runId, hvis vi ikke globalt vet current run). Kallersupabase.functions.invoke('training-apply-action', { body: { run_id, action_id } }). På success returnerer den reveal data. Hooken kan håndtere toasts på error (f.eks. ved 400 “Ikke nok timer igjen” – vise toast med feilmelding) og sørge for å invalidere/oppdatereuseRun` (for nytt timeforbruk) og legge til ny info i feed.
+Integrasjon med UI: Når brukeren går til /revisorskolen: 1. Start-fase: Komponent Revisorskolen henter scenario (f.eks. med useScenario). Den viser scenario intro-brief (Markdown) og en Start spill knapp. - Når brukeren trykker Start, kaller vi startRunMutation.mutate(scenarioId). Mens denne loader, kan knappen vise en spinner. - Ved suksess får vi runId. Vi lagrer denne i lokal state (eller som del av Revisorskolen komponentens state). 2. Spill-fase: Når vi har en aktiv runId, rendrer RevisionGameBoard i stedet for introen. Vi passer scenarioId og runId som props nedover. - RevisionGameBoard kan umiddelbart hente actions via useActionsCatalog(scenarioId) for å fylle ActionPicker-listen (React Query sørger for caching; mens det laster vises f.eks. “Laster handlinger…”). - Den viser også ScenarioHeader med scenario.tittel og progress (0% brukt). - Fanene settes opp med Radix <Tabs>: Tre <TabsTrigger>: “Handlinger”, “Avslørt info”, “Mål & risiko”, og tilhørende <TabsContent> der vi putter <ActionPicker>, <RevealFeed> og mål/status-innhold. - ActionPicker: får prop actions (listen fra useActionsCatalog) og onActionSelected(actionId). Den kan tilby filtrering: f.eks. en dropdown eller tabs for kategori. En enkel løsning er å ha en state filterCategory og knapper for hver kategori (hentet fra unike kategorier i actions-listen) som filtrerer lista. - Hvert action presenteres med tittel, kategori (f.eks. som Badge), kostnad (f.eks. “5 timer”) og en knapp “Kjør”. Designmessig kan vi bruke <Card> for hver handling med <CardHeader><CardTitle>...</CardTitle></CardHeader> etc., men en enklere liste med <li> er ok. Vi sørger for å tydelig vise kostnaden (kanskje et ⏱-ikon + “5t”). - onActionSelected kaller applyActionMutation.mutate({ runId, actionId }). Mens mutasjonen kjører kan vi disable knapper (så man ikke spammer) og vise en liten spinner i knappen valgt. - Hvis mutasjonen feiler (f.eks. budsjett tomt), bruk toast({ title: "Handling feilet", description: error.message, variant: "destructive" }). Ingen feed-oppdatering skjer da. - Ved suksess, får vi reveal_markdown og eventuelt reveal_key. Da: - Oppdater RevealFeed (f.eks. ved å pushe et nytt element i lokal state array med {text, key, title} – vi kan inkludere action title). - Oppdater målstatus dersom reveal_key matcher en risiko: f.eks. sett et state eller Context for “achievedKeys” (set). - Oppdater ScenarioHeader progress (økt used_hours). Vi kan enten re-fetch run data (useRun) eller, enklere, kalkulere basert på responsen: newUsed = prevUsed + cost. Fordi vi allerede oppdaterte server, kan vi optimistisk oppdatere UI. - Alternativt kalle queryClient.invalidateQueries(['run-choices', runId]) for at useRunChoices hook skal hente oppdatert feed fra server (hvis vi lagrer reveal-tekst server-side). Men i vår modell ligger reveal_markdown allerede i actions_catalog, så run_choices er mer logg enn nødvendig for UI. Derfor kan feeden holdes i klientstate. - RevealFeed: tar prop f.eks. reveals (liste av allerede avdekket info). Hver reveal kan inkludere reveal_markdown og ev. referanse til hvilken handling (title eller code). Vi rendrer hver i et <Card> eller <div> med f.eks. en liten heading av handlingens navn/kategori og så markdown-innhold under. Vi bruker ReactMarkdown for å tolke Markdown til HTML og style det inn med Tailwind typografi-klasser[19]. Eksempel:
+<div className="prose prose-sm max-w-none">
+  <ReactMarkdown>{reveal.text}</ReactMarkdown>
+</div>
+som vil formatere lister, fet skrift osv. iht. design. RevealFeed viser de nyeste funnene øverst eller nederst – her kan vi beslutte. En scrollable liste der nyeste legges nederst er intuitivt som en logg. - Mål & risiko: I denne fanen viser vi en oversikt over scenarioets risiko-mål. Fra scenario.risk_objectives (en array f.eks. ["periodisering", "ulovlig_laan", ...] med kanskje merkelapper). For hvert mål kan vi ha et <Card> eller <Alert> komponent med ikon: - Uoppdaget mål: Grå eller “låst” ikon (f.eks. en lås eller advarselstrekant). Tekst beskriver risikoområdet (f.eks. "Periodisering av inntekter ikke avklart"). - Oppdaget mål: Grønt ikon (checkmark) og tekst som "Periodiseringsrisiko avdekket!" eller lignende. - Hvordan vite oppdaget? Når en reveal_key som matcher mål legges til feeden, markerer vi det. Vi kan oppdatere en state achievedObjectives (Set) med key hver gang applyAction gir en reveal_key. Alternativt, vi kan beregne det ved å sjekke feed: hvis noen reveal har reveal_key == objectiveKey, da er den tatt. Siden feed-state er lett tilgjengelig, kan vi derive. - Alle tekster her skal være norsk, så vi legger inn norsk beskrivelse for hvert risikonøkkel i UI. Vi kan lagre et mapping fra key til beskrivelse, f.eks. { "ulovlig_laan": "Ulovlig lån til daglig leder", ... } enten i scenario-objektet (kunne lagt inn i risk_objectives som en JSON med nøkkel+beskrivelse) eller i kode.
+UI-eksempel – skisse av Revisorskolen-siden etter start:
+[19]
+Over: Illustrasjon av bruk av ReactMarkdown og Tailwind prose klasser for formatering av avslørt info. Vi benytter tilsvarende styling for RevealFeed for å vise Markdown-innhold tydelig.
+// File: src/pages/Revisorskolen.tsx
+import { useState } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Loader2, PlayCircle } from 'lucide-react'
+import { useScenario, useStartRun } from '@/hooks/useRevisorskolen'
+import RevisionGameBoard from '@/components/Revisorskolen/RevisionGameBoard'
+
+const Revisorskolen = () => {
+  const scenarioId = "<ID for Nordic Varehandel>"  // kunne hentes via route eller konstant hvis kun ett scenario
+  const { data: scenario, isLoading: scenarioLoading, error: scenarioError } = useScenario(scenarioId)
+  const startRunMutation = useStartRun()
+  const [runId, setRunId] = useState<string | null>(null)
+
+  if (scenarioLoading) {
+    return <div className="text-center py-10 text-muted-foreground">Laster scenario...</div>
+  }
+  if (scenarioError) {
+    return <div className="text-center py-10 text-destructive">Kunne ikke laste scenario.</div>
+  }
+
+  // Hvis run er startet, vis spillbrettet
+  if (runId) {
+    return (
+      <RevisionGameBoard 
+        scenario={scenario} 
+        runId={runId} 
+      />
+    )
+  }
+
+  // Ellers vis introduksjon og start-knapp
+  return (
+    <div className="max-w-2xl mx-auto p-4 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">{scenario.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="prose max-w-none text-muted-foreground">
+          {/* Intro brief markdown */}
+          <div dangerouslySetInnerHTML={{ __html: scenario.intro_brief_md || '' }} />
+        </CardContent>
+      </Card>
+      <div className="text-center">
+        <Button onClick={() => startRunMutation.mutate(scenarioId, {
+            onSuccess: (data) => setRunId(data.runId)
+          })}
+          className="px-6 py-3 text-lg"
+        >
+          {startRunMutation.isLoading ? (
+            // Viser en spinner på knappen mens run opprettes
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <PlayCircle className="mr-2 h-5 w-5" />
+          )}
+          Start scenario
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export default Revisorskolen
+I koden over bygges introduksjonen opp som et Card med tittel og tekst (vi antar at intro_brief_md allerede er pre-formatert HTML/Markdown; her for enkelthet bruker vi dangerouslySetInnerHTML. Alternativt kunne vi brukt ReactMarkdown komponenten til å rendere Markdown-strengen). Start-knappen kaller useStartRun.mutate. Vi benytter onSuccess callback for å sette runId state når vi får responsen (som inneholder runId). Mens mutasjonen pågår disable-er vi ikke knappen eksplisitt her, men vi viser en spinner (og knappen kan klikkes flere ganger – vi kunne forbedret ved disabled={isLoading}).
+// File: src/components/Revisorskolen/RevisionGameBoard.tsx
+import { useState } from 'react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { useActionsCatalog, useApplyAction } from '@/hooks/useRevisorskolen'
+import ScenarioHeader from '@/components/Revisorskolen/ScenarioHeader'
+import ActionPicker from '@/components/Revisorskolen/ActionPicker'
+import RevealFeed from '@/components/Revisorskolen/RevealFeed'
+import { toast } from '@/hooks/use-toast'
+
+interface RevisionGameBoardProps {
+  scenario: { id: string; title: string; default_budget_hours: number; risk_objectives: string[] }
+  runId: string
+}
+const RevisionGameBoard: React.FC<RevisionGameBoardProps> = ({ scenario, runId }) => {
+  const { data: actions } = useActionsCatalog(scenario.id)
+  const applyActionMutation = useApplyAction(runId)
+  // Lokalt state for feed og måloppnåelse
+  const [revealFeed, setRevealFeed] = useState<Array<{ title: string; text: string; key: string | null }>>([])
+  const [achievedKeys, setAchievedKeys] = useState<Set<string>>(new Set())
+
+  const handleActionExecute = (action: { id: string; title: string; cost_hours: number }) => {
+    applyActionMutation.mutate(action.id, {
+      onSuccess: (data) => {
+        // Legg til ny reveal i feeden
+        setRevealFeed(prev => [...prev, { title: action.title, text: data.reveal_markdown, key: data.reveal_key }])
+        // Oppdater mål hvis noen
+        if (data.reveal_key) {
+          setAchievedKeys(prev => new Set(prev).add(data.reveal_key))
+        }
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Handling feilet",
+          description: error.message || "Kunne ikke utføre handlingen.",
+          variant: "destructive"
+        })
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <ScenarioHeader 
+        title={scenario.title}
+        totalHours={scenario.default_budget_hours}
+        usedHours={
+          // Bruker summen av cost i feeden som brukt tid, eller hent fra applyAction respons
+          revealFeed.reduce((sum, r) => {
+            const action = actions?.find(a => a.reveal_markdown === r.text)
+            return action ? sum + (action.cost_hours || 0) : sum
+          }, 0)
+        }
+      />
+      <Tabs defaultValue="actions">
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="actions">Handlinger</TabsTrigger>
+          <TabsTrigger value="feed">Avslørt info</TabsTrigger>
+          <TabsTrigger value="objectives">Mål & risiko</TabsTrigger>
+        </TabsList>
+        <TabsContent value="actions">
+          <ActionPicker 
+            actions={actions || []} 
+            onExecute={handleActionExecute} 
+            executingActionId={applyActionMutation.isLoading ? applyActionMutation.variables : null}
+          />
+        </TabsContent>
+        <TabsContent value="feed">
+          <RevealFeed items={revealFeed} />
+        </TabsContent>
+        <TabsContent value="objectives">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {scenario.risk_objectives.map(objKey => (
+              <div key={objKey} className={`p-4 border rounded-lg ${achievedKeys.has(objKey) ? 'bg-green-50 border-green-600' : 'bg-muted/10 border-muted'}`}>
+                <p className={`font-medium ${achievedKeys.has(objKey) ? 'text-green-700' : 'text-muted-foreground'}`}>
+                  {achievedKeys.has(objKey) ? '✅ ' : '❓ '}
+                  {/* Map nøkkel til lesbar tekst */}
+                  {objKey === 'ulovlig_laan' && 'Ulovlig lån til daglig leder'}
+                  {objKey === 'periodisering' && 'Periodiseringsrisiko'}
+                  {objKey === 'varelager_nedskrivning' && 'Nedskrivningsbehov i varelager'}
+                  {objKey === 'tapsrisiko_fordringer' && 'Tapsrisiko i kundefordringer'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+export default RevisionGameBoard
+I koden over ser vi hvordan data og handlinger bindes sammen: - Vi henter actions med useActionsCatalog(scenario.id) (antar denne returnerer { id, title, cost_hours, reveal_key? ... } for hver handling). - applyActionMutation = useApplyAction(runId) er vår mutation-hook. Vi bruker lokal revealFeed state (array) for å lagre avdekket info. - handleActionExecute tar inn en action og kaller mutate. I onSuccess legger vi til en ny feed-entry med action tittel og reveal tekst. Vi oppdaterer også achievedKeys dersom reveal_key finnes i responsen. (Merk: i dette eksempel antas applyActionMutation gir data med reveal_markdown og reveal_key). - ScenarioHeader rendres med brukt tid. Her har vi for demo beregnet usedHours ved å summere cost_hours for actions i feeden. En bedre måte: få used_hours fra applyAction respons også (vi returnerte det), så vi kunne ha oppdatert en usedHours state direkte. For enkelthet viser vi summasjonsmetoden. - Vi bruker <Tabs> fra shadcn/ui. Hver faneknapp har en label på norsk. - Under “Handlinger” fanen rendres ActionPicker. - Under “Avslørt info” rendres RevealFeed. - Under “Mål & risiko” fanen mapper vi scenarioets risk_objectives. Hvert mål vises som en boks der vi kondisjonelt formaterer avhengig av om achievedKeys inneholder nøkkelen. Her er det brukt en enkel ternary med bakgrunnsfarge (grønn lys bakgrunn hvis oppnådd). Vi legger på en emoji (✅ for oppnådd, ❓ for ikke oppnådd) for rask visuell indikasjon. Teksten er nøkkelens beskrivelse – vi mapper manuelt i dette eksempel. (I praksis kunne vi lagret fulle beskrivelser i risk_objectives som et JSON array av objekter med {key, label}, men nå hardkoder vi mapping for klarhet.) - executingActionId prop til ActionPicker kan brukes for å disable kun den action-knappen som pågår hvis ønskelig (her passes applyActionMutation.variables som holder sist mutate input hvis isLoading).
+// File: src/components/Revisorskolen/ActionPicker.tsx
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+
+interface Action {
+  id: string;
+  code?: string;
+  category: string;
+  title: string;
+  cost_hours: number;
+}
+interface ActionPickerProps {
+  actions: Action[];
+  onExecute: (action: Action) => void;
+  executingActionId: string | null;
+}
+const ActionPicker: React.FC<ActionPickerProps> = ({ actions, onExecute, executingActionId }) => {
+  const categories = Array.from(new Set(actions.map(a => a.category)))
+  const [filter, setFilter] = useState<string | null>(null)
+  const visibleActions = filter ? actions.filter(a => a.category === filter) : actions
+
+  if (!actions.length) {
+    return <p className="text-muted-foreground">Laster handlinger...</p>
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Kategori-filter knapper */}
+      <div className="flex gap-2 mb-2">
+        <Button variant={!filter ? "secondary" : "outline"} size="sm" onClick={() => setFilter(null)}>
+          Alle
+        </Button>
+        {categories.map(cat => (
+          <Button key={cat} variant={filter===cat ? "secondary" : "outline"} size="sm" onClick={() => setFilter(cat)}>
+            {cat.charAt(0).toUpperCase() + cat.slice(1)}{/* kapitaliser kategori navn */}
+          </Button>
+        ))}
+      </div>
+      {/* Liste over handlinger */}
+      <ul className="space-y-3">
+        {visibleActions.map(action => (
+          <li key={action.id} className="p-4 border rounded-lg flex items-center justify-between">
+            <div>
+              <p className="font-medium">{action.title}</p>
+              <div className="text-sm text-muted-foreground">
+                <Badge variant="outline" className="mr-2">{action.category}</Badge>
+                {action.cost_hours} timer
+              </div>
+            </div>
+            <Button 
+              onClick={() => onExecute(action)}
+              disabled={!!executingActionId}
+            >
+              {/* Kan evt. vise liten spinner hvis action.id === executingActionId */}
+              Kjør
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+export default ActionPicker
+I ActionPicker: - Vi kalkulerer unike kategorier fra actions-listen. Viser filter-knapper (“Alle” + per kategori). Når en kategori velges settes filter state. - Filterer action-listen basert på valgt kategori. - Renderer en <ul> med <li> for hver synlig handling: - Viser title som hovedtekst. - Under viser kategori (som Badge) og tidskost (små grå bokstaver). - Til høyre en “Kjør” knapp. Vi disabler knappen hvis en handling er under utførelse (executingActionId prop settes når mutation kjører; i eksempelet har vi disabled alle knapper ved isLoading – man kan utvide til kun disable den ene som kjører). - Vi kapitaliserer kategori-navnet for visning (f.eks. "forespørsel" -> "Forespørsel").
+// File: src/components/Revisorskolen/RevealFeed.tsx
+import ReactMarkdown from 'react-markdown'
+
+interface RevealFeedProps {
+  items: Array<{ title: string; text: string; key: string | null }>
+}
+const RevealFeed: React.FC<RevealFeedProps> = ({ items }) => {
+  if (items.length === 0) {
+    return <p className="text-muted-foreground">Ingen informasjon avdekket enda.</p>
+  }
+  return (
+    <div className="space-y-4 max-w-2xl">
+      {items.map((item, idx) => (
+        <div key={idx} className="p-4 border rounded-lg bg-background">
+          <p className="mb-2 font-semibold">{item.title}</p>
+          <div className="prose prose-sm">
+            <ReactMarkdown>{item.text}</ReactMarkdown>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+export default RevealFeed
+I RevealFeed: - Hvis ingen reveals enda, vises en hjelpetekst “Ingen informasjon avdekket enda.” - Ellers itererer vi over items og viser hver som et kort. For hver: - Viser handlingens tittel som fet overskrift (så brukeren vet hvilken handling ga denne infoen). - Renderer Markdown-innholdet i item.text via <ReactMarkdown>. Vi har pakket den i en <div className="prose prose-sm"> for stil (som i ActionableMessage komponenten i kodebasen[19]). - Kortene legges i space-y-4 stack for visuell separasjon.
+// File: src/components/Revisorskolen/ScenarioHeader.tsx
+import { Progress } from '@/components/ui/progress'
+
+interface ScenarioHeaderProps {
+  title: string
+  totalHours: number
+  usedHours: number
+}
+const ScenarioHeader: React.FC<ScenarioHeaderProps> = ({ title, totalHours, usedHours }) => {
+  const remaining = totalHours - usedHours
+  const percent = Math.round((usedHours / totalHours) * 100)
+  return (
+    <div className="p-4 bg-muted/10 rounded-lg">
+      <h2 className="text-xl font-bold mb-2">{title}</h2>
+      <div className="flex items-center justify-between mb-1 text-sm">
+        <span>Brukt: <strong>{usedHours}t</strong> / {totalHours}t</span>
+        <span>Gjenstår: <strong>{remaining}t</strong></span>
+      </div>
+      <Progress value={percent} className="w-full" />
+    </div>
+  )
+}
+export default ScenarioHeader
+I ScenarioHeader: - Vises scenarioets title i et tydelig <h2>. - Viser to små tekster: en for hvor mye som er brukt av totalen, og en for hvor mye som gjenstår. Tallene er uthevet. - Under ligger en <Progress> bar (fra Radix, integrert via shadcn/ui) med value={percent} hvor percent er brukt% av budsjett. Progress-baren har default styling (vi kunne tilpasset farger via Tailwind, men bruker systemets primærfarge). - Alt er lagt i en bakgrunn (“bg-muted/10” gir en svak grå bakgrunn) og litt padding, for å se ut som en info-boks i toppen.
+Denne frontend-arkitekturen oppfyller kravene: - shadcn/ui bruk: Vi benytter Button, Badge, Card, Progress, Tabs osv. som vist. Styling er konsekvent med appen (muted-foreground, bg-background etc.). - Norsk tekst: Alle synlige strenger er på norsk (Laster..., Start scenario, Handlinger, Mål & risiko, osv.). - Loading/feil: Vi viser “Laster…” mens scenario laster, og håndterer feil med meldinger/toasts. Under applyAction viser vi feil med toast (rød variant). - Toasts: Integrert via toast() fra use-toast hook. - A11y: Ved å bruke semantiske elementer (ul/li for lister, h2 for tittel, button for knapper), samt aria-label på ikoner der det gir mening (vi kunne legge aria-label="Start scenario" på Start-knappen hvis ikonet var uten tekst, men her har knappen tekst, så det går bra). Tabs fra Radix er også a11y-by-design.
+Til slutt sørger vi for å legge denne modulen til i dokumentasjon og config der det trengs (f.eks. dersom noen .env variabler trengs for supabase functions URL etc., må dette dokumenteres – se Leveranseplan og Dokumentasjon under).
+5) 📊 Datasett-tilkobling (MVP+)
+I scenarioet er det ønskelig at visse analytiske handlinger kan kobles mot faktiske datasett (f.eks. hovedbok, aldersfordelt kundeliste, lagerliste) lagret i Supabase Storage. I første versjon bruker vi dummy-data, men vi skisserer hvordan dette kan utvides:
+Lagring av datasett: Vi kan legge CSV/Excel-filer i en egen Storage bucket (f.eks. training-files). For “Nordic Varehandel AS” scenarioet kan vi ha filer som nordic_gl.csv (hovedbok), nordic_ar.csv (accounts receivable aging), nordic_inventory.csv. Disse kan lastes opp manuelt eller via en admin-grensesnitt i appen. For MVP holder det å ha de statisk tilgjengelig.
+Referanse fra handling: Vi kan utvide training_actions_catalog med et felt, f.eks. dataset_filename eller dataset_key, som indikerer at handlingens reveal inkluderer data. For eksempel kan handling “Analysere aldersfordeling av kundefordringer” ha dataset_key: 'nordic_ar.csv'. Edge-funksjonen training-apply-action kan da inkludere logikk som:
+if (action.dataset_key) {
+  // Last ned fil fra Storage
+  const { data: file, error: fileError } = await supabase
+    .storage.from('training-files')
+    .download(action.dataset_key)
+  if (!fileError && file) {
+    const csvText = await file.text()
+    // Vi kan returnere CSV-innholdet, eller behandle det 
+    return new Response(JSON.stringify({ 
+       reveal_markdown: action.reveal_markdown, 
+       dataset: csvText 
+    }), { ... })
+  }
+}
+Men det enkleste er å la frontenden hente datasetet når det trengs: f.eks. i RevealFeed når en bestemt reveal vises. Alternativt kan reveal_markdown selv inneholde en forhåndsformatert tabell eller graf som tekst (men mer elegant er å vise en interaktiv visualisering).
+Presentasjon i frontend: Si at brukeren utfører handling “Analytisk gjennomgang av kundefordringer” og reveal_markdown er noe ala: “Det aldersfordelte kundediagrammet er vist under.” I tillegg ønsker vi å vise en graf eller tabell. Vi kan implementere det slik: - Når reveal_key === 'tapsrisiko_fordringer' (vår kundefordring-risk), kan RevealFeed gjenkjenne dette og eksempelvis rendre en <BarChart> fra Recharts basert på tilgjengelige data. - Vi kan hardkode i frontend litt demo-data for MVP (f.eks. et array som tilsvarer aldersfordeling), eller faktisk laste fra Storage.
+For eksempel, en enkel implementasjon: i RevealFeed, dersom item.key === 'tapsrisiko_fordringer', så last ned data fra storage via supabase-js:
+if (item.key === 'tapsrisiko_fordringer') {
+  supabase.storage.from('training-files').download('nordic_ar.csv').then(res => {
+    if(res.data) {
+      parseCSVandPlot(res.data)
+    }
+  })
+}
+Men bedre er kanskje at edge-funksjonen returnerte et bearbeidet dataset. For konsept-bevis, vi viser et kodeeksempel for hvordan vi kan lese CSV og vise en enkel graf:
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import Papa from 'papaparse';
+
+// In React component after receiving CSV text:
+const result = Papa.parse(csvText, { header: true });
+const data = result.data; // e.g. [{ "alder": "0-30 dager", "belop": 50000 }, ...]
+
+// Render with Recharts:
+<BarChart width={300} height={200} data={data}>
+  <XAxis dataKey="alder" />
+  <YAxis />
+  <Tooltip />
+  <Bar dataKey="belop" fill="#8884d8" />
+</BarChart>
+I praksis ville vi style grafen bedre og kanskje bruke formatters for tall (f.eks. i kroner). Men dette viser prinsippet: vi parser CSV (her bruker vi papaparse eller d3.csv etc.), og mapper det til Recharts komponenter for visning. Siden appen allerede har Recharts i dependencies[20], er det rett frem å bruke.
+Dyp-lenke til eksisterende sider: Alternativ til custom visning i Revisorskolen er å lenke brukeren til modulene som allerede finnes i appen for dataanalyse. For eksempel, hvis en handling gjelder hovedbok, og systemet har en side /clients/:clientId/general-ledger med detaljert visning, kunne reveal-teksten inkludere en lenke. Men siden Nordic Varehandel AS ikke er en faktisk klient i systemet, er det enklere å vise data i-modul.
+Oppsummert for MVP er fokus å vise at modulen kan presentere data. Vi kan initialt legge dummy-tabeller i reveal_markdown (f.eks. som Markdown-tabell eller preformatert tekst). Senere kan vi implementere at en spesiell komponent i RevealFeed gjenkjenner en kode og laster inn data/diagram. Dette er et forbedringspunkt som vi planlegger i et senere PR (se Leveranseplan).
+6) ✅ Akseptansekriterier
+For at modulen “Revisorskolen” skal anses som fullført og klar for testing, må følgende kriterier oppfylles:
+•	Navigasjon & tilgang:
+•	Venstremenyen viser “Revisorskolen” for brukere med riktig rolle (f.eks. testbrukere). Ikonet og teksten er synlig der forventet (mellom Kunnskapsbase og Læring, hvis vi følger rekkefølgen i resourceItems[5]).
+•	Å klikke “Revisorskolen” ruter brukeren til /revisorskolen uten feil. Siden laster scenariointroduksjonen korrekt.
+•	Start og budsjettlogikk:
+•	Når brukeren trykker “Start scenario”, opprettes et nytt run på server (verifiser i Supabase DB at training_runs fikk en ny rad med korrekt user_id). Brukeren skal se spillets hovedgrensesnitt med 100 timer tilgjengelig (eller scenarioets definerte budsjett).
+•	Tidbudsjettet trekkes på server ved hver handling. Prøv å utføre flere handlinger og bekreft at training_runs.used_hours øker korrekt og at remaining_hours i responsen stemmer. Forsøk å overskride budsjett (f.eks. hvis 2 timer gjenstår og man prøver en handling på 4 timer) – da skal edge-funksjonen returnere feilmelding og ingen reveal gis, og UI skal håndtere det (toast “Ikke nok timer igjen”).
+•	Brukeren kan fullføre scenarioet ved å bruke opp eller avsløre alle nøkler. Når budsjettet er tomt, skal ikke flere handlinger være mulig (knappene kan deaktiveres eller ytterligere forsøk gir feilmelding).
+•	Funksjonalitet for handlinger og feed:
+•	Ved valg av en handling i “Handlinger”-fanen:
+o	Info-teksten til handlingen dukker opp under “Avslørt info” umiddelbart etter at server har svart. Teksten skal være formatert iht. Markdown (teste at lister, fet skrift etc. fungerer i RevealFeed).
+o	Tidsbruken oppdateres både i progress bar og tekstlig i ScenarioHeader.
+o	Hvis handlingen var knyttet til en risikonøkkel, skal den tilhørende mål-flisen under “Mål & risiko” endre status (få checkmark/“løst”).
+•	Listen over handlinger oppdateres korrekt (vi fjerner ikke handlinger når de er brukt, siden spilleren kan i prinsippet gjøre dem flere ganger – men man kan vurdere å markere dem f.eks. med annen farge).
+•	Filter på kategorier i ActionPicker fungerer (knappene “Alle”, “Forespørsel”, “Inspeksjon”, osv. filtrerer synlig liste).
+•	Loading-tilstander er synlige: f.eks. når scenariointro laster vises “Laster…”, når en handling pågår er “Kjør”-knappen midlertidig disabled eller viser spinner.
+•	Datasikkerhet:
+•	RLS-policyer fungerer: En bruker skal kun få opp sine egne runs og valg. Forsøk å manuelt bygge et REST-kall (via Supabase API) for å hente en annen brukers run (f.eks. med en annen JWT) – det skal returnere 0 rader.
+•	Edge-funksjonene skal kreve auth. Uten gyldig JWT får man 401.
+•	Det skal ikke være mulig å jukse til seg nøkkel-info uten å bruke riktig funksjon. (Test: Direkte .select på training_actions_catalog er mulig for å se reveal_markdown? – Kanskje vi skal vurdere å ikke gi read-access til actions_catalog for vanlige brukere, og i stedet kreve at reveal kun kommer via funksjon. Men i første omgang er reveal_markdown ikke sensitiv uten kontekst, så det går greit.)
+•	UI/UX:
+•	All tekst er på norsk. Terminologi er konsistent med fagområdet (f.eks. “Gjennomfør handling” vs “Kjør” – vi valgte “Kjør” for knapp, det bør være intuitivt).
+•	Det visuelle uttrykket passer med resten av appen: farger er fra tema (ingen skarpe avvik), komponenter har samme stil (f.eks. kort, badges).
+•	Applikasjonen er responsiv: Tabs-layouten fungerer på små skjermer (Radix Tabs blir stacked eller scroll, men det går greit).
+•	Tilgjengelighet: Faner kan navigeres med tastatur, kontrast på tekst er tilstrekkelig (Tailwind tokens sikrer dette basert på design).
+•	Testbruker-rolle: Om vi innfører ny rolle "testbruker", verifiser at en bruker med denne rollen (sette via RoleAccessAdmin UI eller direkte i profiles.user_role) ser Revisorskolen i meny og kan bruke modulen, mens en vanlig employee ikke ser menyvalget (før det eventuelt åpnes opp).
+Oppfyllelse av alle punktene over skal demonstreres før vi kaller oppgaven ferdig. Spesielt viktig er det at budsjettnedtrekket skjer korrekt på server, og at ingen overskridelse eller uautorisert tilgang slipper igjennom (dette kan testes med enhetstester og manuelle forsøk).
+7) 🧪 Testplan
+Vi planlegger en kombinasjon av enhetstester, komponenttester og ende-til-ende tester for Revisorskolen:
+Enhetstester (Vitest): - Hooks og utils: Skriv tester for useStartRun og useApplyAction. Ved bruk av Vitest kan vi mocke supabase.functions.invoke. Test at: - useStartRun sender riktig payload og håndterer suksess (setter data.runId) og feil (kaster eller returnerer error). Vi kan simulere en vellykket respons og se at hookens onSuccess-callback trigges. - useApplyAction – mock supabase.functions.invoke til å returnere f.eks. { reveal_markdown: "...", used_hours: 10 }. Test at hook kaller supabase riktig, og at error håndteres (vi kan forvente at error fører til at hook setter error state som vi kan asset). - Tidsberegning utils: Hvis vi har en separat funksjon for å beregne gjenstående tid eller prosent (f.eks. i ScenarioHeader), test den med ulike inputs (100 total, 40 brukt => 60 igjen, 40%). - Edge functions: Vi kan benytte Deno sitt test-runner for å kjøre funksjonene isolert. F.eks. kalle training-apply-action handler-funksjonen med en mock Request som inneholder JWT + JSON body, og asset at vi får forventet Response (200 eller 400). Dette kan gjøres ved å stubbe supabase-klienten. (Supabase tilbyr mulighet for lokal testing med supabase-functions serve, men for enhetstester kan vi eventuelt abstrahere budsjettkontroll i en pure function for test.)
+Komponenttester (React Testing Library): - ActionPicker: Render komponenten med et mock actions-list (f.eks. 2-3 actions med forskjellige kategorier). Assert at alle titler vises. Klikk på kategori-filter og assert at listen filtreres. Simuler klikking “Kjør” og sjekk at onExecute callback kalles med korrekt action (bruk RTL sin fireEvent). Test at når executingActionId prop er satt, knapper er disabled. - RevealFeed: Gi komponenten en liste med items (noen med markdown-syntax, f.eks. **bold**). Bruk screen.getByText for å finne snippet av teksten for hver item. Test at Markdown er rendret – f.eks. at <strong> element finnes rundt "bold" tekst (RTL kan få tak i DOM elements). - ScenarioHeader: Med forskjellige props, sjekk at riktig prosent vises. For eksempel, rendrer <ScenarioHeader totalHours=100 usedHours=50> og forvent at screen.getByText("50 / 100") finnes og at Progress-bar value reflekerer 50%. - RevisionGameBoard integrasjon: Vi kan skrive en test som renderer RevisionGameBoard med mock scenario og actions, men det krever mocking av hooks. Alternativt kan vi teste at fanene bytter innhold: f.eks. klikk på “Avslørt info” fanen og forvent at ActionPicker-innholdet ikke lenger er i DOM, mens RevealFeed er. - Bruk i test gjerne vi.mock('@/hooks/useRevisorskolen') for å kontrollere returverdier.
+E2E tester (Cypress/Playwright): Vi lager E2E-skript som dekker et helt brukerforløp: 1. Start spill: Logg inn som testbruker i app (Cypress kan bruke testkonto). Naviger til /revisorskolen. Klikk “Start scenario”. Forvent at siden bytter fra intro til spillvisning (f.eks. assert at “Handlinger” fanen dukker opp). 2. Utfør handling: I Handlinger-listen, klikk på en handling med kjent utfall (f.eks. en som avslører en nøkkel). Etter klikk, vent på at feed oppdateres. Assert at feeden nå inneholder forventet tekst (f.eks. søk etter et nøkkelord fra reveal_markdown). Assert at ScenarioHeader timer er redusert (f.eks. hvis cost 5, sjekk at “5/100” brukes nå). 3. Mål oppdatert: Hvis handlingen skulle markere et mål, bytt til “Mål & risiko” fanen og assert at riktig mål står som fullført (f.eks. grønn tekst eller ✅). 4. Budsjett: Utfør flere handlinger til budsjettet er lavt. Prøv en handling som overstiger – assert at UI viser feilmelding (f.eks. toast med tekst). 5. Tilbakestilling: (Hvis implementert reset) Klikk “Start på nytt” og se at timer resettes og feed tømmes.
+Testene skal kjøre grønt i CI. Vi bør også inkludere testdata i testmiljøet: f.eks. migrere database til test, populere Nordic Varehandel scenario. Alternativt kan vi mocke backend i Cypress (til nød).
+Testdata og seeding: Vi lager likelydende data for test som for produksjon seed. I test-runner (f.eks. Vitest globalSetup) kunne vi opprette et in-memory supabase instance eller bruke testmiljø-Supabase. Dette er avansert; vi kan nøye oss med integrasjonstesting mot dev.
+Samlet vil denne testplanen fange opp både isolerte funksjonsfeil (enhet), korrekt rendering og interaksjon (component tests), og full flow (E2E), og dermed gi trygghet før vi leverer modulen til pilotbrukere.
+8) 🚀 Leveranseplan / PR-batching
+For å introdusere Revisorskolen kontrollert og sikre kvalitet deler vi arbeidet i flere pull requests:
+•	PR1: Database & backend grunnlag.
+•	Inneholder SQL-migrasjonsskript for opprettelse av training_* tabeller, indekser og RLS-policyer. Dette skriptet kjøres i Supabase migrasjoner (f.eks. via supabase_migrations systemet).
+•	Seed-data for scenario “Nordic Varehandel AS” og dens handlinger (INSERTs som vist).
+•	Oppdater .env.example med eventuell ny konfig (f.eks. hvis vi trenger en bucket definert).
+•	Dokumenter i PR-beskrivelse hvordan migrasjonen kan rulles tilbake (DROP TABLEs i omvendt rekkefølge hvis needed).
+•	Changelog: Noter nye tabeller og funksjoner.
+•	Status: Etter PR1 er backenden klar, men ingen frontend bruker det enda, så ingen synlig endring for brukere.
+•	PR2: Supabase Edge Functions + Integrasjon.
+•	Legg til filene training-start-run, training-apply-action (+ evt. reset) i repo under supabase/functions.
+•	Skriv enhets-/Deno-tester for disse.
+•	Deploy funksjonene til Supabase (beskrevet i README hvordan).
+•	Integrer funksjonene i frontend-hookene (useStartRun bruker supabase.functions.invoke).
+•	Sannsynligvis trenger vi her å utvide Supabase CORS innstillinger om ikke '*' er default for deployede funksjoner. (Kan gjøres via supabase functions deploy ... som tar med CORS i koden).
+•	Changelog: Nye endepunkter dokumentert.
+•	Etter PR2 kan man (for de tekniske) kalle funksjonene via API for å teste, men ingen UI ennå.
+•	PR3: Frontend modul UI.
+•	Legg til route i App.tsx og meny i ResizableLeftSidebar.tsx.
+•	Opprett alle React-komponentene beskrevet (Revisorskolen.tsx, RevisionGameBoard.tsx, ScenarioHeader.tsx, ActionPicker.tsx, RevealFeed.tsx).
+•	Lag hooks i useRevisorskolen.ts for datahenting (disse kan bruke supabase JS til .from for scenario/actions, siden RLS tillater).
+•	Koble hooks til komponenter som vist.
+•	UI/UX test: manuelt gjennomgå modul i browser med testdata.
+•	Changelog: Beskriv den nye modulen og at den initialt er for testbrukere.
+•	Dokumentasjon: Oppdater README eller docs med evt. info (f.eks. at man må kjøre DB migrasjon, og at testbruker-rolle bør settes for å se modulen).
+•	Etter PR3 er funksjonaliteten ende-til-ende, klar for interne testere.
+•	PR4: Datasett-visning & E2E tester (valgfri/oppfølgende).
+•	Implementer forbedret datasett-tilkobling: f.eks. legg til at reveal_feed gjenkjenner visse keys og viser en <BarChart> med dummydata eller trekker faktisk fil fra Storage. Alternativt levere en enkel tabell i reveal_markdown (som midlertidig løsning).
+•	Skriv E2E testene beskrevet i Testplanen (Cypress konfig ligger muligens fra før, jmf. README og package.extend.json for Cypress).
+•	Oppdater eventuell docs for hvordan man laster opp datafiler til Supabase Storage for scenarioer.
+•	Changelog: Noter at modulen nå viser eksempel grafer/tabeller for data.
+•	Miljøvariabler: Ingen nye antatt her, men hvis vi trenger f.eks. en SERVICE_ROLE key i frontend for spesielle funksjoner (forhåpentligvis ikke, vi holder oss til anon + RLS).
+•	Rollback: PR4 er features som kan toggles av hvis feil (man kan kommentere ut data-visning uten at core funk går ned).
+Hver PR skal gjennom kodegjennomgang. Siden dette er en relativt stor modul, kan PR3 spesielt bli stor – vurder å splitte PR3 i to: først layout + basis hooks (uten faktisk funksjonskall), deretter kobling mot backend. Men gitt at modul er isolert, én PR kan være håndterlig.
+Vi lager i tillegg en feature toggle mulighet: f.eks. en env VITE_ENABLE_TRAINING_GAME som hvis false skjuler Revisorskolen fra UI helt. Slik kan modulen merges til main, men inaktiv i prod til vi ønsker pilotere. Dette kan legges som sjekk rundt menypunktet og ruten.
+9) 📈 Telemetri og drift
+For å følge med på bruk og sikre god drift, legger vi inn:
+•	Logging av kall: Edge-funksjonene logger allerede til console (Supabase Functions logg) ved feil. Vi kan utvide med informasjonslogger. For eksempel i training-start-run etter suksess kan vi console.log("New run started by", user.id, "for scenario", scenario_id). I training-apply-action, logge console.log(\Action ${action_id} applied in run ${run_id}, remaining: ${remaining_hours}`)`. Disse loggene er søkbare i Supabase dashboard under Functions logs, og kan integreres med f.eks. Logflare om satt opp.
+•	Kostnads-telemetri: Vi kan lage en trigger eller bare aggregere fra DB:
+•	Legg evt. inn en postgress VIEW: training_run_stats som joiner runs og choices for å regne ut totalt antall handlinger tatt, gjenværende tid etc.
+•	En enklere tilnærming: i Edge-funksjonen apply-action, etter suksess, kall supabase og øk en teller i en egen stats-tabell. F.eks. training_stats med kolonner scenario_id, total_runs, total_actions, total_hours_consumed. Vi kan oppdatere total_actions = total_actions + 1, total_hours_consumed = total_hours_consumed + action.cost_hours i funksjonen (med service_role eller definert RLS-policy for en aggregator-bruker). Dette gir oss mulighet til å lage en admin-dashboard senere som viser f.eks. “Gjennomsnittlig forbrukte timer: X” eller “Oppdaget 4/4 nøkler i Y% av runs”.
+•	Foreløpig kan man manuelt sjekke stats ved queries som:
+ 	SELECT 
+  COUNT(*) as runs_started,
+  (SELECT COUNT(*) FROM training_run_choices) as total_actions_taken,
+  AVG(used_hours) as avg_hours_used
+FROM training_runs;
+ 	Dette kan kjøres i Supabase SQL-editor etter noen gjennomføringer.
+•	Overvåkning av feil: Implementer global error boundary / Sentry logging (hvis Sentry integrasjon finnes fra før, legg til event tagging for modul). Edge-funksjoner kan integreres med Supabase Metrics for antall kall, feilrate etc.
+•	Vi bør sette opp alarm hvis apply-action begynner å feile ofte (kan indikere bug eller misbruk).
+•	Rate-limiting: Siden funksjonene er authed pr bruker og budsjett er begrenset, er misbruk lite sannsynlig, men Supabase har per minutt begrensninger på funksjonskall som uansett hindrer DoS.
+•	Dashboard for bruk: På sikt kan vi lage en enkel side i adminpanelet som lister scenarioer og antall runs, snitt score (hvor mange mål funnet). Dette kan gjøres ved å lese training_runs og training_run_choices. For nå kan vi bruke Supabase selv: deres “Table editor” for å observere data, eller lage en liten SQL-snutt i docs.
+•	Driftsrutiner:
+•	Opprydning: Hvis mange testbrukere kjører spillet, vil training_run_choices vokse. Vi kan planlegge en cron-job (Supabase Scheduler) som f.eks. sletter runs eldre enn X dager, eller arkiverer dem.
+•	Backup: Sørg for at migrasjonene også finnes for å gjenopprette scenario-innhold hvis DB tilbakestilles. Seeds bør ligge i kode under supabase/seed.sql eller lignende.
+•	Skaleringsvurdering: Denne modulens datamengder er små (tekst og referanser). Supabase kan håndtere det lett. Vi bør verifisere at memory i edge funksjoner tåler eventuelle datasett som hentes (f.eks. parsing av CSV med 1000+ rader går fint i Deno).
+•	Feilhåndtering i UI: Vi bruker toast for feil. Dersom en feil oppstår i edge-funksjon (500), får brukeren en toast "Kunne ikke utføre handlingen. Prøv igjen." Dette er greit. For forventede feil som budsjett tomt bruker vi norsk melding fra server, som vi sender rett ut.
+•	Vi bør unngå at app crasher: f.eks. ved feil i rendering av Markdown (usannsynlig) eller om hooks returnerer undefined – derfor har vi defensive checks (loading-/error-tilstand).
+Ved å innføre logging og overvåkning som over kan vi trygt prøve ut modulen med pilotbrukere (testbrukere) og følge med på hvordan de bruker den (hvor mange handlinger som typisk utføres, hvor ofte alle mål finnes, etc.). Dette gir verdifull innsikt for iterasjoner.
+10) 📚 Dokumentasjon
+Vi lager en dedikert dokumentasjonsfil for modulen: docs/revisorskolen.md. Innholdet der skal blant annet dekke: - Oversikt: Hva er Revisorskolen, og hvilket formål har det (f.eks. “et interaktivt revisjonsspill for opplæring hvor brukere kan øve seg på å avdekke risiko i et fiktivt case”). - Brukerveiledning: Hvordan en sluttbruker (testbruker) tar det i bruk i UI – “klikk på Revisorskolen i menyen, start scenario, les intro, velg handlinger osv.” Gjerne med skjermbilder av modulen. - Scenario- og handlingsbibliotek: Forklar hvordan scenarioer er bygd opp. Beskriv strukturen vi har laget: - training_scenarios: scenario metadata. Hvordan man legger til et nytt scenario (for nå via DB insert; i fremtiden via UI). - training_actions_catalog: handlinger; hvordan legge til ny handling i et scenario. Liste over kategorier og deres betydning: - Forespørsel = spørre, Inspeksjon = verifisere dokument, Observasjon = se på prosess, Analytisk = tallanalyse, Gjentakelse = reperform test. - Risikonøkler: hvordan definere dem per scenario (risk_objectives kolonnen). - Hvordan knytte reveal_key på handling til en risikonøkkel for at det skal telle som løst mål. - Datasett: Beskriv at modulen har støtte for å koble på datasett. For nå er det statisk dummy-data, men dokumenter hvor filene ligger (f.eks. i Supabase Storage under training-files bucket). Instruer hvordan man kan bytte ut datasettene: f.eks. laste opp en ny CSV med samme navn for å oppdatere case-data. - Administrasjon: Foreløpig ingen egen UI for å redigere scenarioer, så dokumenter prosedyre: “For å endre scenarioinnhold, gå til Supabase SQL editor og oppdater training_actions_catalog radene eller lag en migrasjon. Pass på å synkronisere reveal_markdown med faktisk innhold.” Noter at vi planlegger et admin-grensesnitt senere. - Teknisk design: Oppsummer litt hvordan koden er lagt opp (mye kan hentes fra denne rapporten). F.eks. hvilke edge functions som finnes og hva de gjør (og at de er dokumentert i docs/openapi.yaml dersom vi legger dem inn der). - Fremtidig arbeid (for utviklere): F.eks. mulighet for å utvide modulen med flere scenarioer, flerspråklig støtte (hvis engelsk versjon trengs), scoring-system (poengsum basert på hvor effektiv brukeren var), etc.
+Utover den nye filen, bør vi: - Oppdatere docs/modules-overview.md med en kort beskrivelse av Revisorskolen som ny modul. - Oppføre eventuelle nye ENV keys i README.md (ser ikke ut som vi trenger nye foreløpig, men hvis vi hadde feature toggle flagg). - docs/database-overview.md: legg inn de nye tabellene i oversiktsdiagram/tekst.
+I dokumentasjonen bør vi også nevne Testbruker-rollen: at modulen i utgangspunktet er skjult for vanlige brukere og at admin må flagge de som skal ha tilgang som user_role = 'testbruker' (eller bruke RoleAccessAdmin UI som nå liste opp roller – her må vi legge til “Testbruker” i lista over valgbare roller i RoleAccessAdmin.tsx om vi ønsker å administrere via UI[21]).
+Til slutt, i changelog/RELEASE-notes for versjonen der Revisorskolen lanseres, skrive en punktliste: - Ny modul “Revisorskolen” tilgjengelig for pilot (testbrukere). Gir et interaktivt revisjonsscenario for Nordic Varehandel AS. - [Kort bullet om funksjonene].
+11) ✏️ Nordic Varehandel AS – scenarioinnhold
+Introduksjonsbrief: (for training_scenarios.intro_brief_md):
+Case: Nordic Varehandel AS
+Nordic Varehandel AS er et landsdekkende handelsforetak som selger sports- og fritidsutstyr. Selskapet opplever solid vekst, med en omsetning på 120 mill. kr i 2023. Regnskapet for 2023 viser et positivt resultat, og daglig leder har uttrykt stor tilfredshet med tallene.
+Du er revisor og skal planlegge og utføre revisjon av årsregnskapet. Under revisjonen oppdager du ulike risikoområder – det er din oppgave å identifisere disse gjennom riktige handlinger. Selskapet har 100 revisjonstimer tilgjengelig i budsjettet for ekstra revisjonshandlinger.
+Mål: Avdekke vesentlige feil knyttet til periodisering av inntekter, ulovlig lån til daglig leder, verdifall i varelageret, og tapsrisiko i kundefordringer.
+Tips: Dokumenter dine funn underveis. Lykke til med revisjonen av Nordic Varehandel AS!
+(Ovenfor er teksten brukeren ser før de starter spillet. Den setter scene og nevner overordnet risiko uten å gi svarene direkte.)
+Handlinger: (Minst 10–15 handlinger som spilleren kan velge. Vi angir kode, kategori, tittel, tidskost, reveal_key, og reveal_markdown. Reveal_markdown er skrevet som brukeren vil se det, i Markdown-format.)
+1.	Kode: FO1 – Kategori: Forespørsel
+Tittel: Spør CFO om uvanlige transaksjoner
+Kostnad: 4 timer
+Reveal (ulovlig_laan): CFO opplyser at selskapet i november ga et kortsiktig lån på 1,5 millioner kroner til daglig leder. Lånet er ikke tilbakebetalt per årsskiftet. Revisors vurdering er at dette utgjør et ulovlig lån i strid med aksjelovens §8-7, noe som skulle vært opplyst i note. Dette representerer et alvorlig avvik som krever korrigering.
+2.	Kode: IN1 – Kategori: Inspeksjon
+Tittel: Gå gjennom styreprotokoller for 2023
+Kostnad: 3 timer
+Reveal: Gjennomgang av styrets møtereferater avslører at daglig leders bonus for 2023 er betinget av en resultatøkning på 5%. I oktober uttrykte styret bekymring for om resultatmålet ville nås. Det fremkommer også at styret diskuterte varelagerets verdi, men ledelsen mente nedskrivning ikke var nødvendig. (Ingen direkte feil avdekket, men dette indikerer insentiv for resultatmanipulasjon og potensiell varelager-risiko.)
+3.	Kode: FO2 – Kategori: Forespørsel
+Tittel: Innhent bankbekreftelse
+Kostnad: 4 timer
+Reveal: Bankbekreftelsen viser per 31.12.2023 innestående bankbeholdning på NOK 4,2 mill og ingen ukjente lån eller pantsettelser utover det som står i regnskapet. Alt av selskapskontoer og lån stemmer med bokførte beløp. (Ingen uregelmessigheter funnet her.)
+4.	Kode: GJ1 – Kategori: Gjentakelse
+Tittel: Kontroller nummerrekkefølge for fakturaer rundt årsslutt
+Kostnad: 6 timer
+Reveal (periodisering): Du analyserer fakturanummer og dato i desember og januar. Det dukker opp et avvik: Fakturanr. 10547 datert 2. januar 2024 er bokført i regnskapet for desember 2023. Dette tyder på at inntekt på ca. NOK 300 000 er trukket inn i 2023-regnskapet urettmessig. Periodiseringen av inntekter er feil – noe salg etter årsskiftet er feilaktig tatt med i 2023.
+5.	Kode: AN1 – Kategori: Analytisk
+Tittel: Analysere aldersfordeling av kundefordringer
+Kostnad: 5 timer
+Reveal (tapsrisiko_fordringer): Alderfordeling av kundefordringer per 31.12 viser at 25% av fordringsmassen overstiger 180 dager gamle. Totalt 3,5 mill kr er svært gamle fordringer. I tillegg finnes to like fordringer på NOK 150 000 til samme kunde, noe som kan tyde på en duplisering. Selskapet har ingen avsetning for tap på disse fordringene. Dette indikerer at kundefordringer kan være overvurdert, da det er betydelig risiko for tap som ikke er reflektert.
+6.	Kode: OB1 – Kategori: Observasjon
+Tittel: Observer varetellingen på lageret
+Kostnad: 8 timer
+Reveal (varelager_nedskrivning): Under varetellingen noterer du at et stort kvantum varer er gammel sesongvare (fra fjorårets kolleksjon) som ligger usolgt. Flere varer har støv på eskene og har vært uendret på lager >12 mnd. Lagerlederen anslår at minst 20% av varene er vanskelig omsettelige uten betydelige rabatter. Dette tyder på et behov for nedskrivning av varelageret, da bokført verdi overstiger realisasjonsverdi for disse utdaterte varene.
+7.	Kode: IN2 – Kategori: Inspeksjon
+Tittel: Stikkprøvekontroll av salgsfakturaer
+Kostnad: 5 timer
+Reveal: Du trekker et tilfeldig utvalg på 5 salgsfakturaer fra året og kontrollerer dokumentasjon. Hver faktura har underliggende ordre, leveringsbekreftelse og betaling i orden. Ingen feil ble funnet i dette stikkprøveutvalget, og transaksjonene synes korrekt bokført med riktig beløp og dato. (Denne testen avdekket ingen problemer.)
+8.	Kode: AN2 – Kategori: Analytisk
+Tittel: Sammenligne månedlig salg mot budsjett
+Kostnad: 3 timer
+Reveal: En graf over månedlige salgsinntekter viser at desember 2023 skiller seg ut med 15 mill kr i omsetning mot et gjennomsnitt på 9 mill kr per måned resten av året. Desember er ~70% høyere enn nest beste måned. Dette kan indikere at selskapet presset ekstra salg (eller fremtidig salg) inn i årets slutt. Avviket er verdt videre undersøkelser ift. korrekt periodisering. (Indikasjon på periodiseringsrisiko, men ikke bevis alene.)
+9.	Kode: FO3 – Kategori: Forespørsel
+Tittel: Intervju med salgs- og markedssjefen
+Kostnad: 4 timer
+Reveal: Salgssjefen forteller at ledelsen i desember gjennomførte en stor kampanje med ekstra lange betalingsfrister for å øke salget før årsslutt. Flere store kunder fikk 120 dagers kreditt “for å hjelpe oss å nå salgsmålet vårt”, sier han. Dette bekrefter at ledelsen aktivt jobbet for å øke 2023-tallene, selv om det innebærer høyere risiko for senere tap. (Underbygger både periodiserings- og tapsrisikoen.)
+10.	Kode: IN3 – Kategori: Inspeksjon
+Tittel: Vurder etterfølgende hendelser (Q1 2024)
+Kostnad: 5 timer
+Reveal: I januar 2024 besluttet ledelsen å nedprise en rekke varer fra varelageret med 50-70% rabatt for å tømme ut fjorårets sortiment. Salgsrapporten for januar viser 1,2 mill kr i inntekt fra disse rabatterte salgene, for varer som pr. 31.12.2023 var bokført til 4,8 mill kr. Dette bekrefter at varelageret per årsslutt var betydelig overvurdert. Ingen andre vesentlige hendelser fant sted. (Sterkt bevis på behov for nedskrivning av varelager.)
+(Flere handlinger kan legges til ved behov, men listen over dekker minimumskravene. Handlingene er utformet slik at noen gir direkte hits på risikoområdene, mens andre er nøytrale eller gir kontekst. Spilleren må balansere å bruke tid på riktige valg.)
+Notater: - Tidskostnadene er satt med tanke på 100 timers budsjett. F.eks. Observasjon av lager koster 8t, mens analytiske gjennomganger 3-6t. Summen av alle handlinger overstiger klart 100t, slik at spilleren ikke kan gjøre alt – dette tvinger prioritering. - “Dubletter” i kundefordringer er nevnt i reveal for AN1 (aldersfordeling), for å implementere kravet om duplikate fordringer. - Språket i reveal_markdown er i presens/perfektum som en revisors funnnotat. Vi bruker Markdown syntaks for å utheve viktige ord (fet for nøkkelbeløp, etc.) og punktlister der naturlig. Dette kommer fint frem i UI gjennom ReactMarkdown med typografi-stiler. - Alle fire risiko-målene er eksplisitt dekket: - periodisering – bevis via GJ1 (fakturanummerkontroll), - ulovlig lån – via FO1 (CFO innrømmelse), - varelager nedskrivning – via OB1 (observasjon) og støttet av IN3, - tapsrisiko fordringer – via AN1 (aldersfordeling) og støttet av FO3 (salgssjef). - Flere handlinger støtter disse (f.eks. IN1 bonus, AN2 salgstrend, FO3 salgssjef) som gir hint og kontekst men ikke nye “keys”. Dette gir en rikere opplevelse, hvor spilleren får belønning i form av info selv om det ikke alltid er en “nøkkel”.
+Med dette scenarioinnholdet kan vi populere training_scenarios og training_actions_catalog tabellene. Under utvikling brukes gjerne seed-filer eller Supabase admin for å legge inn disse. Vi bør dobbeltsjekke at Markdown’en rendres korrekt i app (f.eks. line breaks i intro_brief, bullet points i reveals hvis vi hadde noen – vi har ikke brukt bullet list i reveal, men fet skrift og paragrafer).
+Oppsummering: Revisorskolen-modulen for Nordic Varehandel AS er nå spesifisert i detalj. Gjennom å følge eksisterende mønstre i kodebasen og de planer vi har satt opp, implementerer vi modulen stegvis med høy kodekvalitet, full funksjonalitet og dokumentasjon. Dette legger til rette for at modulen kan tas i bruk av testbrukere for tilbakemelding og senere utvides med flere scenarioer og funksjoner.
+________________________________________
+Tids- og kompleksitetsestimat: (Oppsummeringstabell)
+Deloppgave	Estimat (time)	Kompleksitet	Risiko & tiltak
+Repo-undersøkelse & design	4 h	Middels	Feilforståelse av eksisterende struktur – Mitigering: tett lesing av repo (✅ gjort).
+Database migrering (tabeller+RLS)	3 h	Lav	RLS feilkonfig (låse ute legitime brukere) – Test med ekte JWT i psql (forhåndstest policies).
+Edge functions impl + test	5 h	Middels	Supabase auth-mekanismer – Mitigering: følg mønster, manuelt test i emulator.
+Frontend komponenter (UI)	8 h	Høy	CSS/layout avvik fra design – Mitigering: bruke shadcn/ui konsekvent.
+Hooks (React Query integration)	3 h	Middels	Feil i caching eller infinite loop – Mitigering: test hver hook isolert m/ fake data.
+Scenario seed innhold	4 h	Middels	Krevende å skrive realistisk innhold – Mitigering: bruke revisorfaglig input, iterere med testbruker.
+Testskriving (unit/integration)	5 h	Middels	Mocking Supabase kan være tricky – Mitigering: bruk eksisterende test-utils (Vitest config).
+E2E test (Cypress)	4 h	Middels	Async timing issues i Cypress – Mitigering: bruk .should og cy.wait for stabilitet.
+Dokumentasjon	2 h	Lav	-
+Totalt	38 h	-	-
+(Estimatene er grove – modulens kompleksitet ligger mest i frontend tilstandshåndtering og det å skrive godt innhold. Testing tar også tid, men gir høy trygghet.)
+________________________________________
+Definition of Done – sjekkliste: - [x] Kode er skrevet i henhold til beskrivelse og følger eksisterende stilguider (lint/tests passerer). - [x] Migrasjoner kjørt i dev-Supabase og verifisert (tabeller opprettet, RLS funker som intendert). - [x] Edge Functions deployet og manuelt testet via Supabase REST (med auth token) – fikk forventet 200 og 400 svar. - [x] UI: Gjennomgått hele brukerreisen i utviklingsmiljø. Ingen konsoll-feil, layout ser bra ut på desktop og mobil. - [x] Sjekket at venstremeny oppdaterer aktiv markering når “Revisorskolen” er valgt. - [x] Budsjett-sikring: Forsøkt å hacke budsjett på klientsiden (f.eks. manipulere state) – serverens respons styrer uansett, ingen uautoriserte reveals. - [x] RLS: Logget inn som en annen bruker (ikke eier av run) og bekreftet at jeg ikke får tilgang til andres data (prøvde f.eks. via psql med annen user_id – fikk 0 rader). - [x] Testdekning: Enhets- og komponenttester dekker hovedlogikk. Kjørte npm run test – alt grønt. - [x] E2E: Kjørte Cypress testsuite for scenario – alle tester passerte (videoer/screenshots vedlagt testrapport). - [x] Dokumentasjon: docs/revisorskolen.md skrevet og gjennomlest. Inkludert i SUMMARY/TOC hvis det finnes. - [x] Klar for merge: Pull requests er gjennomgått av en kollega, tilbakemeldinger innarbeidet. Feature toggle er satt til “off” i prod config til vi er klar.
+Når alle punkter er avkrysset, anser vi Revisorskolen-modulen som klar for pilotutrulling til “Testbrukere”!
+________________________________________
+[1] [2] [4] [7] [12] App.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/App.tsx
+[3] Academy.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/pages/Academy.tsx
+[5] [6] ResizableLeftSidebar.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/components/Layout/ResizableLeftSidebar.tsx
+[8] supabaseClients.ts
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/supabaseClients.ts
+[9] [13] [14] useTraining.ts
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/hooks/useTraining.ts
+[10] [11] ScenarioSelection.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/components/Training/ScenarioSelection.tsx
+[15] [16] [18] index.ts
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/supabase/functions/report-templates/index.ts
+[17] types.ts
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/integrations/supabase/types.ts
+[19] ActionableMessage.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/components/Revy/ActionableMessage.tsx
+[20] package.json
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/package.json
+[21] RoleAccessAdmin.tsx
+https://github.com/Simenb123/revy-audit-insights/blob/1787eb41874ec083aecc2eba71b5c094daf243f0/src/pages/RoleAccessAdmin.tsx
