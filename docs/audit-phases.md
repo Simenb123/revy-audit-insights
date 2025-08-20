@@ -1,6 +1,6 @@
 # Audit Phases
 
-AI Revy divides the audit workflow into seven phases. These phases are stored as the `audit_phase` enum in the database and used throughout the application.
+AI Revi divides the audit workflow into seven phases. These phases are stored as the `audit_phase` enum in the database and used throughout the application.
 
 ## The seven phases
 

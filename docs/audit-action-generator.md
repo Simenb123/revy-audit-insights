@@ -1,6 +1,6 @@
 # Audit Action Generator
 
-The audit action generator lets Revy propose new audit steps based on your selected subject area. It relies on Supabase to store the action templates and an AI service to produce the initial text.
+The audit action generator lets Revi propose new audit steps based on your selected subject area. It relies on Supabase to store the action templates and an AI service to produce the initial text.
 
 ## Prerequisites
 
