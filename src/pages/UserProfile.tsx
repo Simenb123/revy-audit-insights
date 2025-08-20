@@ -11,6 +11,7 @@ import { User, Lock, ArrowLeft, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import RoleDisplay from '@/components/Profile/RoleDisplay';
 
 const UserProfile = () => {
   const { data: userProfile, isLoading, refetch } = useUserProfile();
@@ -226,12 +227,16 @@ const UserProfile = () => {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Rolle</Label>
-                <Input
-                  value={userProfile?.userRole || ''}
-                  disabled
-                  className="bg-muted capitalize"
-                />
+                <Label>Rolle og tilganger</Label>
+                <div className="min-h-[40px] flex items-center p-3 bg-muted rounded-md">
+                  {userProfile?.userRole && (
+                    <RoleDisplay 
+                      userRole={userProfile.userRole} 
+                      userId={userProfile.id}
+                      showBadges={true}
+                    />
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Ansettelsesdato</Label>

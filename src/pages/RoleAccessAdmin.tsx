@@ -11,6 +11,7 @@ import ConstrainedWidth from '@/components/Layout/ConstrainedWidth';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import SecureRoleSelect from '@/components/Security/SecureRoleSelect';
 import { useToast } from '@/hooks/use-toast';
+import RoleDisplay from '@/components/Profile/RoleDisplay';
 
 const RoleAccessAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -100,7 +101,13 @@ const RoleAccessAdmin = () => {
                     <tr key={u.id} className="border-t">
                       <td className="py-2">{u.first_name} {u.last_name}</td>
                       <td className="py-2">{u.email}</td>
-                      <td className="py-2">
+                      <td className="py-2 space-y-2">
+                        <RoleDisplay 
+                          userRole={u.user_role} 
+                          userId={u.id}
+                          showBadges={true}
+                          className="mb-2"
+                        />
                         <SecureRoleSelect
                           currentRole={u.user_role}
                           userId={u.id}
