@@ -20,7 +20,7 @@ const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutP
   }, [title, setPageTitle]);
 
   const moduleIndicator = (
-    <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+    <div className="text-xs text-white/70 bg-white/10 px-2 py-1 rounded">
       Kunnskapsbase
     </div>
   );

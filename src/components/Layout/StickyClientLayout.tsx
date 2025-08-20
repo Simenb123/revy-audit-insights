@@ -4,6 +4,9 @@ import FiscalYearSelector from './FiscalYearSelector';
 import MaterialitySummary from './MaterialitySummary';
 import { useSubHeader } from './SubHeaderContext';
 import { formatOrgNumber } from '@/utils/formatOrgNumber';
+import GlobalSubHeader from './GlobalSubHeader';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from 'lucide-react';
 
 interface StickyClientLayoutProps {
   clientName: string;
@@ -24,19 +27,19 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
 
   React.useEffect(() => {
     setSubHeader(
-      <ClientSubHeader
+      <GlobalSubHeader
         leftContent={
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">{clientName}</h1>
+            <h1 className="text-lg font-semibold text-white">{clientName}</h1>
             {orgNumber && (
-              <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+              <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-1 rounded">
                 {formatOrgNumber(orgNumber)}
               </span>
             )}
           </div>
         }
         centerContent={
-          <h2 className="text-sm text-muted-foreground">{pageTitle}</h2>
+          <h2 className="text-sm text-white/80">{pageTitle}</h2>
         }
         rightContent={
           <div className="flex items-center gap-3">
@@ -47,10 +50,11 @@ const StickyClientLayout: React.FC<StickyClientLayoutProps> = ({
             <MaterialitySummary />
           </div>
         }
+        showBackButton={showBackButton}
       />
     );
     return () => clearSubHeader();
-  }, [clientName, orgNumber, pageTitle, setSubHeader, clearSubHeader]);
+  }, [clientName, orgNumber, pageTitle, showBackButton, setSubHeader, clearSubHeader]);
 
   return (
     <div className="flex-1 min-h-0">
