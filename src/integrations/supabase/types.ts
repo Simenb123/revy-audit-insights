@@ -9361,6 +9361,33 @@ export type Database = {
           },
         ]
       }
+      rate_limit_log: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       reconciliation_suggestions: {
         Row: {
           bank_transaction_id: string
@@ -9848,6 +9875,42 @@ export type Database = {
           risk_number?: number
           sort_order?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string | null
+          description: string
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -11394,6 +11457,15 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: boolean
       }
+      log_security_event: {
+        Args: {
+          p_description?: string
+          p_event_type: string
+          p_metadata?: Json
+          p_severity?: string
+        }
+        Returns: undefined
+      }
       match_knowledge_articles: {
         Args: {
           p_match_count: number
@@ -11449,6 +11521,10 @@ export type Database = {
           p_role_requested?: Database["public"]["Enums"]["user_role_type"]
         }
         Returns: string
+      }
+      secure_update_user_role: {
+        Args: { p_new_role: string; p_user_id: string }
+        Returns: boolean
       }
       set_active_version: {
         Args: { p_version_id: string }

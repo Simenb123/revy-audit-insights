@@ -333,8 +333,13 @@ const ArticleView = () => {
           ) : (
             <div 
               className="prose prose-gray max-w-none prose-p:mb-4 prose-p:leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: formatTextContent(article.content) }}
-            />
+            >
+              {formatTextContent(article.content).split('\n').map((line, index) => (
+                <p key={index} className="mb-4 leading-relaxed">
+                  {line}
+                </p>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
