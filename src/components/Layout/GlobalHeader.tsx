@@ -155,7 +155,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
       <header data-global-header className="sticky top-0 z-50 bg-revio-500 border-b border-revio-600 grid grid-cols-3 items-center px-6 text-white h-[var(--global-header-height)] shadow-sm">
         <div className="flex items-center">
           <Link to="/" className="text-2xl font-extrabold tracking-wide text-white hover:opacity-90">
-            Revio
+            R
           </Link>
         </div>
         <h1 className="text-2xl font-bold text-center truncate" data-testid="page-title">
