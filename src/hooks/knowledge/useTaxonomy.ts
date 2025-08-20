@@ -33,7 +33,8 @@ function createTaxonomyHooks<
           .eq('id' as any, id)
           .single();
         if (error) throw error;
-        return data as unknown as T;
+        // @ts-ignore - Skip deep type instantiation issue
+        return data as any;
       },
       enabled: !!id
     });
