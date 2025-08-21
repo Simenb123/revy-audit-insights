@@ -10365,6 +10365,7 @@ export type Database = {
           id: string
           is_mandatory: boolean | null
           prerequisites: Json | null
+          reveal_key: string | null
           reveal_text: string | null
           risk_impact: string | null
           scenario_id: string
@@ -10383,6 +10384,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           prerequisites?: Json | null
+          reveal_key?: string | null
           reveal_text?: string | null
           risk_impact?: string | null
           scenario_id: string
@@ -10401,6 +10403,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           prerequisites?: Json | null
+          reveal_key?: string | null
           reveal_text?: string | null
           risk_impact?: string | null
           scenario_id?: string
@@ -10601,6 +10604,7 @@ export type Database = {
           initial_budget: number
           is_active: boolean
           learning_objectives: string[] | null
+          risk_objectives: string[] | null
           target_actions: number
           title: string
           updated_at: string
@@ -10617,6 +10621,7 @@ export type Database = {
           initial_budget?: number
           is_active?: boolean
           learning_objectives?: string[] | null
+          risk_objectives?: string[] | null
           target_actions?: number
           title: string
           updated_at?: string
@@ -10633,6 +10638,7 @@ export type Database = {
           initial_budget?: number
           is_active?: boolean
           learning_objectives?: string[] | null
+          risk_objectives?: string[] | null
           target_actions?: number
           title?: string
           updated_at?: string

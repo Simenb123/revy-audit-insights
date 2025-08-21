@@ -12,6 +12,7 @@ export interface TrainingScenario {
   difficulty_level: 'beginner' | 'intermediate' | 'advanced';
   estimated_duration_minutes: number;
   learning_objectives: string[];
+  risk_objectives: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

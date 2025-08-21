@@ -14,7 +14,7 @@ interface TrainingAction {
   cost: number;
   reveal_text: string;
   score_impact: number;
-  risk_impact: 'positive' | 'neutral' | 'negative';
+  risk_impact: string;
   sort_order: number;
 }
 

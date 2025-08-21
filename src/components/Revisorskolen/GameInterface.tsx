@@ -1,41 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  DollarSign, 
-  Target, 
-  Trophy, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle,
-  RotateCcw,
-  Home
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { TrainingScenario } from '@/hooks/useTrainingScenarios';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActionsList } from './ActionsList';
-import { RevealModal } from './RevealModal';
-
-interface GameInterfaceProps {
-  runId: string;
-  scenarioId: string;
-  onComplete: () => void;
-}
-
-interface TrainingRun {
-  id: string;
-  scenario_id: string;
-  current_budget: number;
-  actions_taken: number;
-  current_step: number;
-  total_score: number;
-  status: 'active' | 'completed' | 'abandoned';
-}
+import { RevealFeed, RevealItem } from './RevealFeed';
+import { RiskObjectives } from './RiskObjectives';
+import { ScenarioHeader } from './ScenarioHeader';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { TrainingScenario } from '@/hooks/useTrainingScenarios';
+import { Play, Eye, Target } from 'lucide-react';
 
 interface TrainingAction {
   id: string;
@@ -45,26 +18,36 @@ interface TrainingAction {
   description: string;
   cost: number;
   reveal_text: string;
+  reveal_key?: string | null;
   score_impact: number;
-  risk_impact: 'positive' | 'neutral' | 'negative';
+  risk_impact: string;
   sort_order: number;
+}
+
+interface GameInterfaceProps {
+  runId: string;
+  scenarioId: string;
+  onComplete: () => void;
 }
 
 export const GameInterface = ({ runId, scenarioId, onComplete }: GameInterfaceProps) => {
   const [scenario, setScenario] = useState<TrainingScenario | null>(null);
-  const [run, setRun] = useState<TrainingRun | null>(null);
   const [actions, setActions] = useState<TrainingAction[]>([]);
   const [appliedActionIds, setAppliedActionIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const [revealData, setRevealData] = useState<{
-    text: string;
-    scoreImpact: number;
-    actionTitle: string;
-  } | null>(null);
+  const [currentBudget, setCurrentBudget] = useState(0);
+  const [totalBudget, setTotalBudget] = useState(0);
+  const [revealedItems, setRevealedItems] = useState<RevealItem[]>([]);
+  const [achievedKeys, setAchievedKeys] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadGameData();
+  }, [runId, scenarioId]);
+
+  const loadGameData = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       
       // Load scenario
       const { data: scenarioData, error: scenarioError } = await supabase
@@ -76,17 +59,7 @@ export const GameInterface = ({ runId, scenarioId, onComplete }: GameInterfacePr
       if (scenarioError) throw scenarioError;
       setScenario(scenarioData as TrainingScenario);
 
-      // Load run
-      const { data: runData, error: runError } = await supabase
-        .from('training_runs')
-        .select('*')
-        .eq('id', runId)
-        .single();
-
-      if (runError) throw runError;
-      setRun(runData as TrainingRun);
-
-      // Load actions for this scenario
+      // Load training actions
       const { data: actionsData, error: actionsError } = await supabase
         .from('training_actions')
         .select('*')
@@ -94,115 +67,146 @@ export const GameInterface = ({ runId, scenarioId, onComplete }: GameInterfacePr
         .order('sort_order');
 
       if (actionsError) throw actionsError;
-      setActions(actionsData as TrainingAction[]);
+      setActions((actionsData || []) as TrainingAction[]);
 
-      // Load applied actions
-      const { data: appliedActions, error: appliedError } = await supabase
-        .from('training_run_states')
-        .select('action_id')
-        .eq('run_id', runId);
+      // Load run data
+      const { data: runData, error: runError } = await supabase
+        .from('training_runs')
+        .select('*')
+        .eq('id', runId)
+        .single();
+
+      if (runError) throw runError;
+      setCurrentBudget(runData.current_budget || 0);
+      setTotalBudget(scenarioData.initial_budget || 10000);
+
+    const { data: appliedData, error: appliedError } = await supabase
+      .from('training_run_states')
+      .select('action_id, created_at')
+      .eq('run_id', runId)
+      .order('created_at');
 
       if (appliedError) throw appliedError;
       
-      const appliedIds = new Set(appliedActions.map(state => state.action_id));
+      const appliedIds = new Set(appliedData?.map(item => item.action_id) || []);
       setAppliedActionIds(appliedIds);
+
+      // Build reveal feed from applied actions
+      const revealItems: RevealItem[] = [];
+      const keys = new Set<string>();
+      
+      for (const applied of appliedData || []) {
+        const action = actionsData?.find(a => a.id === applied.action_id);
+        if (action && action.reveal_text) {
+          revealItems.push({
+            id: action.id,
+            title: action.title,
+            text: action.reveal_text,
+            reveal_key: action.reveal_key,
+            action_type: action.action_type,
+            cost: action.cost,
+            timestamp: new Date(applied.created_at)
+          });
+          
+          if (action.reveal_key) {
+            keys.add(action.reveal_key);
+          }
+        }
+      }
+      
+      setRevealedItems(revealItems);
+      setAchievedKeys(keys);
 
     } catch (error) {
       console.error('Error loading game data:', error);
       toast({
-        title: "Feil ved lasting",
-        description: "Kunne ikke laste øvingsdata. Prøv igjen.",
-        variant: "destructive"
+        title: "Feil",
+        description: "Kunne ikke laste spilldata",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [runId, scenarioId]);
-
   const handleApplyAction = async (actionId: string) => {
-    const action = actions.find(a => a.id === actionId);
-    if (!action || !run) return;
-
     try {
-      const { data, error } = await supabase.functions.invoke('training-apply-action', {
+      const response = await supabase.functions.invoke('training-apply-action', {
         body: { 
-          runId, 
-          actionId,
-          notes: '' 
+          runId,
+          actionId 
         }
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
-      if (data.success) {
-        // Update local state
-        setRun(prev => prev ? {
-          ...prev,
-          current_budget: data.newBudget,
-          actions_taken: prev.actions_taken + 1,
-          total_score: (prev.total_score || 0) + (data.scoreImpact || 0)
-        } : null);
-
+      const result = response.data;
+      const action = actions.find(a => a.id === actionId);
+      
+      if (action && result) {
+        // Update budget
+        setCurrentBudget(prev => prev - action.cost);
+        
+        // Mark action as applied
         setAppliedActionIds(prev => new Set([...prev, actionId]));
-
-        // Show reveal modal if there's reveal text
-        if (data.revealText) {
-          setRevealData({
-            text: data.revealText,
-            scoreImpact: data.scoreImpact || 0,
-            actionTitle: action.title
-          });
+        
+        // Add to reveal feed
+        const newRevealItem: RevealItem = {
+          id: action.id,
+          title: action.title,
+          text: result.revealText || action.reveal_text,
+          reveal_key: action.reveal_key,
+          action_type: action.action_type,
+          cost: action.cost,
+          timestamp: new Date()
+        };
+        
+        setRevealedItems(prev => [...prev, newRevealItem]);
+        
+        // Update achieved keys
+        if (action.reveal_key) {
+          setAchievedKeys(prev => new Set([...prev, action.reveal_key!]));
         }
 
         toast({
           title: "Handling utført",
-          description: `${action.title} ble utført for kr ${action.cost.toLocaleString()}`,
+          description: `${action.title} er gjennomført`,
         });
-      } else {
-        throw new Error(data.error || 'Ukjent feil');
       }
     } catch (error) {
       console.error('Error applying action:', error);
       toast({
-        title: "Feil ved utførelse",
-        description: "Kunne ikke utføre handlingen. Prøv igjen.",
-        variant: "destructive"
+        title: "Feil",
+        description: "Kunne ikke utføre handlingen",
+        variant: "destructive",
       });
     }
   };
 
-  const handleResetRun = async () => {
+  const handleRestart = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('training-reset-run', {
+      await supabase.functions.invoke('training-reset-run', {
         body: { runId }
       });
-
-      if (error) throw error;
-
-      if (data.success) {
-        toast({
-          title: "Øving tilbakestilt",
-          description: "Øvingen er tilbakestilt til start."
-        });
-        await loadData(); // Reload all data
-      } else {
-        throw new Error(data.error || 'Ukjent feil');
-      }
-    } catch (error) {
-      console.error('Error resetting run:', error);
+      
       toast({
-        title: "Feil ved tilbakestilling",
-        description: "Kunne ikke tilbakestille øvingen. Prøv igjen.",
-        variant: "destructive"
+        title: "Scenario startet på nytt",
+        description: "Budsjettet og fremdriften er tilbakestilt",
+      });
+      
+      // Reload game data
+      loadGameData();
+    } catch (error) {
+      console.error('Error restarting:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke starte på nytt",
+        variant: "destructive",
       });
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -210,124 +214,60 @@ export const GameInterface = ({ runId, scenarioId, onComplete }: GameInterfacePr
     );
   }
 
-  if (!scenario || !run) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Kunne ikke laste øvingsdata. Prøv å gå tilbake og start øvingen på nytt.
-        </AlertDescription>
-      </Alert>
-    );
+  if (!scenario) {
+    return <div>Scenario ikke funnet</div>;
   }
-
-  const budgetPercentage = (run.current_budget / scenario.initial_budget) * 100;
-  const progressPercentage = (run.actions_taken / scenario.target_actions) * 100;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-xl">{scenario.title}</CardTitle>
-              <CardDescription>{scenario.company_name}</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleResetRun}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Start på nytt
-              </Button>
-              <Button variant="outline" size="sm" onClick={onComplete}>
-                <Home className="h-4 w-4 mr-2" />
-                Tilbake
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Status Dashboard */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Budsjett</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                kr {run.current_budget.toLocaleString()}
-              </div>
-              <Progress value={budgetPercentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {budgetPercentage.toFixed(0)}% gjenstående
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Fremgang</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {run.actions_taken}/{scenario.target_actions}
-              </div>
-              <Progress value={progressPercentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                handlinger utført
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Poengsum</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {run.total_score || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                akkumulerte poeng
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Actions */}
-      <ActionsList 
-        actions={actions}
-        appliedActionIds={appliedActionIds}
-        currentBudget={run.current_budget}
-        onApplyAction={handleApplyAction}
+      <ScenarioHeader
+        title={scenario.title}
+        totalBudget={totalBudget}
+        usedBudget={totalBudget - currentBudget}
+        currency="NOK"
+        onRestart={handleRestart}
+        achievedObjectives={achievedKeys.size}
+        totalObjectives={scenario.risk_objectives?.length || 0}
       />
 
-      {/* Reveal Modal */}
-      {revealData && (
-        <RevealModal
-          isOpen={true}
-          onClose={() => setRevealData(null)}
-          title={revealData.actionTitle}
-          content={revealData.text}
-          scoreImpact={revealData.scoreImpact}
-        />
-      )}
+      <Card className="p-6">
+        <Tabs defaultValue="actions" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="actions" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Handlinger
+            </TabsTrigger>
+            <TabsTrigger value="revealed" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Avslørt info
+            </TabsTrigger>
+            <TabsTrigger value="objectives" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Mål & risiko
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="actions" className="mt-6">
+            <ActionsList
+              actions={actions}
+              appliedActionIds={appliedActionIds}
+              currentBudget={currentBudget}
+              onApplyAction={handleApplyAction}
+            />
+          </TabsContent>
+
+          <TabsContent value="revealed" className="mt-6">
+            <RevealFeed items={revealedItems} />
+          </TabsContent>
+
+          <TabsContent value="objectives" className="mt-6">
+            <RiskObjectives
+              objectives={scenario.risk_objectives || []}
+              achievedKeys={achievedKeys}
+            />
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };
