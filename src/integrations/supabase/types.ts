@@ -9211,7 +9211,7 @@ export type Database = {
           id: string
           initials: string | null
           initials_color: string | null
-          is_active: boolean | null
+          is_active: boolean
           last_name: string | null
           updated_at: string
           user_role: Database["public"]["Enums"]["user_role_type"] | null
@@ -9227,7 +9227,7 @@ export type Database = {
           id: string
           initials?: string | null
           initials_color?: string | null
-          is_active?: boolean | null
+          is_active?: boolean
           last_name?: string | null
           updated_at?: string
           user_role?: Database["public"]["Enums"]["user_role_type"] | null
@@ -9243,7 +9243,7 @@ export type Database = {
           id?: string
           initials?: string | null
           initials_color?: string | null
-          is_active?: boolean | null
+          is_active?: boolean
           last_name?: string | null
           updated_at?: string
           user_role?: Database["public"]["Enums"]["user_role_type"] | null
@@ -10081,6 +10081,36 @@ export type Database = {
           severity?: string
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_rate_limits: {
+        Row: {
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          id: string
+          last_attempt_at: string | null
+          operation_type: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          operation_type: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          operation_type?: string
+          user_id?: string
         }
         Relationships: []
       }
