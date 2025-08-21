@@ -137,7 +137,7 @@ useEffect(() => {
           : 'general';
 
     return (
-      <div className="flex h-full flex-1 flex-col min-h-0">
+      <div className="flex h-full flex-col">
         {activeTab === 'figures' ? (
           <ClientFiguresPanel clientId={clientId} />
         ) : (
