@@ -113,7 +113,7 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
                             <SelectValue placeholder="Velg felt..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">-- Ikke tildelt --</SelectItem>
+                            <SelectItem key="none" value="none">-- Ikke tildelt --</SelectItem>
                             {fieldDefinitions
                               .sort((a, b) => a.sort_order - b.sort_order)
                               .map((field) => (

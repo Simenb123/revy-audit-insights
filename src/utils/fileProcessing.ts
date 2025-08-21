@@ -2,11 +2,26 @@ import * as XLSX from 'xlsx';
 import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx';
 
 /**
- * Safely converts any value to a string, handling dates, numbers, null/undefined
+ * Safely converts any value to a string, handling dates, numbers, null/undefined, Excel Date objects
  */
 function safeToString(value: any): string {
   if (value === null || value === undefined) return '';
-  if (value instanceof Date) return value.toISOString();
+  
+  // Handle Excel's complex Date objects
+  if (value && typeof value === 'object' && value._type === 'Date' && value.value) {
+    try {
+      return new Date(value.value.iso || value.value.value).toLocaleDateString('nb-NO');
+    } catch {
+      return String(value);
+    }
+  }
+  
+  // Handle regular Date objects  
+  if (value instanceof Date) return value.toLocaleDateString('nb-NO');
+  
+  // Handle other objects by converting to string
+  if (typeof value === 'object') return JSON.stringify(value);
+  
   return String(value);
 }
 
@@ -493,16 +508,16 @@ export async function processExcelFile(file: File, options?: { extraTerms?: stri
     // Detect the header row
     const headerRowIndex = detectHeaderRow(jsonData, options?.extraTerms);
     
-    // Extract headers from detected row
-    const headers = (jsonData[headerRowIndex] as any[]).map(h => h?.toString() || '');
+    // Extract headers from detected row - ensure they are strings
+    const headers = (jsonData[headerRowIndex] as any[]).map(h => safeToString(h || ''));
     
     // Extract skipped rows (rows before header)
     const skippedRows = jsonData.slice(0, headerRowIndex).map((row, index) => ({
       rowIndex: index,
-      content: (row as any[]).map(cell => cell?.toString() || '')
+      content: (row as any[]).map(cell => safeToString(cell || ''))
     }));
     
-    // Extract data rows (rows after header) - preserve original types for better preview
+    // Extract data rows (rows after header) - convert all to safe strings for React
     const dataRows = jsonData.slice(headerRowIndex + 1);
     const allRows = dataRows.map(row => {
       if (!Array.isArray(row)) return [];
@@ -516,8 +531,8 @@ export async function processExcelFile(file: File, options?: { extraTerms?: stri
         if (cell === null || cell === undefined) {
           processedRow.push('');
         } else {
-          // Keep original value but ensure it's handled correctly
-          processedRow.push(cell);
+          // Convert all cells to safe strings for React rendering
+          processedRow.push(safeToString(cell));
         }
       }
       
