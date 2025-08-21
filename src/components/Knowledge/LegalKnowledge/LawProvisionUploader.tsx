@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import { processExcelFile, processCSVFile, suggestColumnMappings, FilePreview, ColumnMapping } from '@/utils/fileProcessing';
 import { LEGAL_PROVISION_FIELDS, NORWEGIAN_LEGAL_TERMS } from '@/utils/legalProvisionFields';
-import ColumnMappingTable from '@/components/DataUpload/ColumnMappingTable';
+import { SmartColumnMapper } from '@/components/Upload';
+import { FieldDefinition } from '@/types/upload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateLegalProvisionTemplate } from '@/services/legal-knowledge/legalProvisionTemplate';
@@ -300,6 +301,18 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
   const renderMappingStep = () => {
     if (!filePreview) return null;
 
+    // Convert LEGAL_PROVISION_FIELDS to FieldDefinition format for SmartColumnMapper
+    const fieldDefinitions: FieldDefinition[] = LEGAL_PROVISION_FIELDS.map((field, index) => ({
+      field_key: field.key,
+      field_label: field.label,
+      field_description: `Felt for ${field.label.toLowerCase()}`,
+      is_required: field.required,
+      data_type: field.type === 'date' ? 'date' : 'text',
+      sort_order: index,
+      category: field.required ? 'Påkrevd' : 'Valgfri',
+      example_values: field.aliases?.slice(0, 3) || []
+    }));
+
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -314,16 +327,15 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
           </Badge>
         </div>
 
-        <ColumnMappingTable
-          fileName={file?.name || 'Ukjent fil'}
+        <SmartColumnMapper
+          fileName={file?.name || ''}
           headers={filePreview.headers}
-          sampleRows={filePreview.rows}
-          mapping={columnMapping}
-          fieldDefinitions={LEGAL_PROVISION_FIELDS}
+          sampleRows={filePreview.rows.slice(0, 5)}
+          fieldDefinitions={fieldDefinitions}
           suggestedMappings={suggestedMappings}
+          mapping={columnMapping}
           validationErrors={validationErrors}
           requiredStatus={requiredStatus}
-          headerRowIndex={filePreview.headerRowIndex}
           onMappingChange={handleMappingChange}
         />
 

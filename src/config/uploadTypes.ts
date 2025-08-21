@@ -214,69 +214,114 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
 
   'legal-documents': {
     id: 'legal-documents',
-    name: 'Juridiske dokumenter', 
-    description: 'Last opp juridiske dokumenter og kontrakter',
-    icon: 'FileText',
+    name: 'Juridiske bestemmelser', 
+    description: 'Last opp juridiske bestemmelser og lovverk fra Excel/CSV',
+    icon: 'Scale',
     acceptedFileTypes: {
-      '.pdf': ['application/pdf'],
-      '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-      '.doc': ['application/msword']
+      '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+      '.xls': ['application/vnd.ms-excel'],
+      '.csv': ['text/csv']
     },
     maxFileSize: 50 * 1024 * 1024, // 50MB
-    maxFiles: 10,
-    enableAISuggestions: false,
-    enablePreview: false,
+    maxFiles: 5,
+    enableAISuggestions: true,
+    enablePreview: true,
     processingSteps: [
-      { id: 'upload', title: 'Last opp dokumenter' },
-      { id: 'extract', title: 'Trekk ut metadata' },
-      { id: 'categorize', title: 'Kategoriser dokumenter' },
-      { id: 'save', title: 'Lagre til database' }
+      { id: 'upload', title: 'Last opp fil', description: 'Velg Excel eller CSV fil med juridiske bestemmelser' },
+      { id: 'mapping', title: 'Kolonnemapping', description: 'Map filkolonner til juridiske feltdefinisjoner' },
+      { id: 'validation', title: 'Validering', description: 'Valider dataformat og obligatoriske felt' },
+      { id: 'import', title: 'Import', description: 'Importer validerte juridiske bestemmelser' }
     ],
     fieldDefinitions: [
       {
-        field_key: 'document_title',
-        field_label: 'Dokumenttittel',
+        field_key: 'provision_id',
+        field_label: 'Bestemmelse ID',
+        field_description: 'Unik identifikator for bestemmelsen',
         is_required: true,
         data_type: 'text',
         sort_order: 1,
-        category: 'Metadata',
-        example_values: ['Arbeidskontrakt', 'Samarbeidsavtale', 'Leieavtale']
+        category: 'Identifikasjon',
+        example_values: ['LOV-001', 'REG-123', 'BEST-456']
       },
       {
-        field_key: 'document_type',
-        field_label: 'Dokumenttype',
+        field_key: 'law_identifier',
+        field_label: 'Lov ID/Kode',
+        field_description: 'Identifikator for loven bestemmelsen tilhører',
         is_required: true,
         data_type: 'text',
         sort_order: 2,
-        category: 'Klassifikasjon',
-        example_values: ['Kontrakt', 'Avtale', 'Juridisk dokument']
+        category: 'Identifikasjon',
+        example_values: ['LOV-2005-05-20-28', 'FOR-2017-06-21-915']
       },
       {
-        field_key: 'party_names',
-        field_label: 'Parter',
-        is_required: false,
+        field_key: 'provision_type',
+        field_label: 'Bestemmelsestype',
+        field_description: 'Type bestemmelse (paragraf, ledd, etc.)',
+        is_required: true,
         data_type: 'text',
         sort_order: 3,
-        category: 'Metadata',
-        example_values: ['Eksempel AS, Test Bedrift AS', 'John Doe, Jane Smith']
+        category: 'Klassifikasjon',
+        example_values: ['paragraf', 'ledd', 'punkt']
       },
       {
-        field_key: 'effective_date',
-        field_label: 'Gyldig fra dato',
-        is_required: false,
-        data_type: 'date',
+        field_key: 'provision_number',
+        field_label: 'Paragrafnummer',
+        field_description: 'Nummer på bestemmelsen',
+        is_required: true,
+        data_type: 'text',
         sort_order: 4,
-        category: 'Metadata',
-        example_values: ['01.01.2024', '2024-01-01']
+        category: 'Identifikasjon',
+        example_values: ['1', '2-1', '15a']
       },
       {
-        field_key: 'expiry_date',
-        field_label: 'Utløpsdato',
+        field_key: 'title',
+        field_label: 'Tittel',
+        field_description: 'Overskrift eller tittel på bestemmelsen',
+        is_required: true,
+        data_type: 'text',
+        sort_order: 5,
+        category: 'Innhold',
+        example_values: ['Formål', 'Definisjoner', 'Anvendelsesområde']
+      },
+      {
+        field_key: 'content',
+        field_label: 'Innhold/Tekst',
+        field_description: 'Hovedteksten i bestemmelsen',
+        is_required: true,
+        data_type: 'text',
+        sort_order: 6,
+        category: 'Innhold',
+        example_values: ['Lovens formål er å...', 'I denne loven forstås med...']
+      },
+      {
+        field_key: 'parent_provision_id',
+        field_label: 'Overordnet bestemmelse',
+        field_description: 'ID til overordnet bestemmelse (valgfri)',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 7,
+        category: 'Struktur',
+        example_values: ['CAP-001', 'SEC-123']
+      },
+      {
+        field_key: 'valid_from',
+        field_label: 'Gyldig fra',
+        field_description: 'Dato bestemmelsen trer i kraft',
         is_required: false,
         data_type: 'date',
-        sort_order: 5,
-        category: 'Metadata',
-        example_values: ['31.12.2024', '2024-12-31']
+        sort_order: 8,
+        category: 'Gyldighet',
+        example_values: ['2023-01-01', '2024-07-01']
+      },
+      {
+        field_key: 'valid_until',
+        field_label: 'Gyldig til',
+        field_description: 'Dato bestemmelsen opphører',
+        is_required: false,
+        data_type: 'date',
+        sort_order: 9,
+        category: 'Gyldighet',
+        example_values: ['2025-12-31', '2030-06-30']
       }
     ]
   }
