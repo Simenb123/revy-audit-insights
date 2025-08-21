@@ -1,6 +1,15 @@
 import * as XLSX from 'xlsx';
 import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx';
 
+/**
+ * Safely converts any value to a string, handling dates, numbers, null/undefined
+ */
+function safeToString(value: any): string {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
 export interface FilePreview {
   headers: string[];
   rows: any[][]; // Preview rows (limited)
@@ -621,7 +630,7 @@ export function suggestColumnMappings(
     if (bestMatch && sampleData && sampleData.length > 0) {
       const columnIndex = headers.indexOf(header);
       if (columnIndex !== -1) {
-        const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim() !== '');
+        const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => safeToString(val).trim() !== '');
         const contentConfidence = validateContentType(columnData, bestMatch.type);
         
         // Apply smart content-based confidence adjustment
@@ -754,13 +763,13 @@ function levenshteinDistance(str1: string, str2: string): number {
 
 // Validate if content matches expected data type
 function validateContentType(sampleData: string[], expectedType: 'text' | 'number' | 'date'): number {
-  const validSamples = sampleData.filter(val => val && val.trim()).slice(0, 5);
+  const validSamples = sampleData.filter(val => val && safeToString(val).trim()).slice(0, 5);
   if (validSamples.length === 0) return 0.5;
   
   let validCount = 0;
   
   for (const value of validSamples) {
-    const trimmedValue = value.trim();
+    const trimmedValue = safeToString(value).trim();
     
     switch (expectedType) {
       case 'number':
@@ -901,7 +910,7 @@ function applyContextualMatching(
   if (fieldPattern.contentValidators && sampleData && headers) {
     const columnIndex = headers.indexOf(header);
     if (columnIndex !== -1 && sampleData.length > 0) {
-      const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => val.trim());
+      const columnData = sampleData.map(row => row[columnIndex] || '').filter(val => safeToString(val).trim());
       const contentScore = fieldPattern.contentValidators(columnData);
       if (contentScore > 0.7) {
         boost += 0.2;
@@ -953,7 +962,7 @@ export function validateDataTypes(
   const sampleSize = Math.min(rows.length, 10);
   
   for (let i = 0; i < sampleSize; i++) {
-    const value = rows[i][columnIndex]?.trim();
+    const value = safeToString(rows[i][columnIndex]).trim();
     if (!value) continue;
     
     switch (expectedType) {
