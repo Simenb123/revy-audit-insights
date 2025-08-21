@@ -10,6 +10,9 @@ import TrainingReports from '@/components/Revisorskolen/TrainingReports';
 import { ContentLibrary } from '@/components/Revisorskolen/ContentLibrary';
 import { PersonalizedLearningPath } from '@/components/Revisorskolen/PersonalizedLearningPath';
 import { UserPreferences } from '@/components/Revisorskolen/UserPreferences';
+import { TrainingClientIntegration } from '@/components/Revisorskolen/TrainingClientIntegration';
+import { TrainingAuditIntegration } from '@/components/Revisorskolen/TrainingAuditIntegration';
+import { TrainingSystemBridge } from '@/components/Revisorskolen/TrainingSystemBridge';
 import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
 import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
@@ -19,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function Revisorskolen() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('sessions');
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const { data: programs, isLoading: programsLoading } = useTrainingPrograms();
@@ -81,7 +85,7 @@ export default function Revisorskolen() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Sesjoner
@@ -117,6 +121,10 @@ export default function Revisorskolen() {
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Rapporter
+          </TabsTrigger>
+          <TabsTrigger value="integration" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Integrering
           </TabsTrigger>
           <TabsTrigger value="preferences" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -264,6 +272,22 @@ export default function Revisorskolen() {
 
         <TabsContent value="reports" className="space-y-6">
           <TrainingReports />
+        </TabsContent>
+
+        <TabsContent value="integration" className="space-y-6">
+          <TrainingSystemBridge 
+            selectedClientId={selectedClientId}
+            onClientChange={setSelectedClientId}
+          />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TrainingClientIntegration 
+              onSelectClient={setSelectedClientId}
+            />
+            <TrainingAuditIntegration 
+              clientId={selectedClientId}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-6">
