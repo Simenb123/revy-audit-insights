@@ -82,16 +82,18 @@ const SmartReviAssistant = ({
 
   if (embedded) {
     return (
-      <EmbeddedRevyAssistant
-        messages={messages}
-        input={input}
-        isLoading={isLoading}
-        selectedVariant={activeVariant}
-        contextDisplayName={contextDisplayName}
-        onInputChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        onSendMessage={handleSendMessage}
-      />
+      <div className="h-full">
+        <EmbeddedRevyAssistant
+          messages={messages}
+          input={input}
+          isLoading={isLoading}
+          selectedVariant={activeVariant}
+          contextDisplayName={contextDisplayName}
+          onInputChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onSendMessage={handleSendMessage}
+        />
+      </div>
     );
   }
 
