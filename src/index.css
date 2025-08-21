@@ -14,12 +14,12 @@
     --card-foreground: 213 29% 18%;
     --popover: 0 0% 100%;
     --popover-foreground: 213 29% 18%;
-    --primary: 175 80% 35%; /* Klar blågrønn hovedfarge */
+    --primary: 175 80% 28%; /* Klar blågrønn hovedfarge - mørkere for bedre kontrast */
     --primary-foreground: 0 0% 100%;
     --secondary: 215 30% 90%;
     --secondary-foreground: 213 29% 18%;
     --muted: 215 30% 95%;
-    --muted-foreground: 213 15% 50%;
+    --muted-foreground: 213 15% 40%; /* Mørkere for bedre kontrast */
     --accent: 213 100% 92%;
     --accent-foreground: 213 29% 18%;
     --destructive: 0 78% 59%;
