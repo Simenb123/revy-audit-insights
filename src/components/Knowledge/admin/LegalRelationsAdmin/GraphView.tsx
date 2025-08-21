@@ -334,7 +334,10 @@ const GraphView: React.FC<GraphViewProps> = ({ draftRelations, demoMode }) => {
                 <Controls />
                 <MiniMap
                   nodeColor={(node) => {
-                    const nodeType = resolveNodeType(node.data?.anchor, node.data?.docType);
+                    const nodeType = resolveNodeType(
+                      node.data?.anchor as string, 
+                      node.data?.docType as string
+                    );
                     return DOCTYPE_COLORS[nodeType];
                   }}
                   maskColor="rgb(240, 240, 240, 0.6)"
@@ -418,14 +421,14 @@ const GraphView: React.FC<GraphViewProps> = ({ draftRelations, demoMode }) => {
                   )}
                   
                   {detailPanel.data.anchor && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyAnchor(detailPanel.data.anchor)}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Kopier anker
-                    </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopyAnchor(detailPanel.data.anchor as string)}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Kopier anker
+                  </Button>
                   )}
                   
                   <Button
@@ -444,7 +447,7 @@ const GraphView: React.FC<GraphViewProps> = ({ draftRelations, demoMode }) => {
                 <div>
                   <h4 className="font-semibold mb-2">Relasjon</h4>
                   <Badge variant="secondary">
-                    {REF_TYPE_LABELS[detailPanel.data.refType]}
+                    {REF_TYPE_LABELS[detailPanel.data.refType as LegalCrossRef['ref_type']]}
                   </Badge>
                 </div>
 

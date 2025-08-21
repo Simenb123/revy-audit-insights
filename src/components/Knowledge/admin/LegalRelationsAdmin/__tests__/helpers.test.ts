@@ -134,7 +134,7 @@ describe('buildCrossRefPayload', () => {
       ...mockDraftRelation,
       toProvision: {
         ...mockDraftRelation.toProvision,
-        anchor: undefined
+        anchor: undefined as string | undefined
       }
     };
     
@@ -146,7 +146,7 @@ describe('buildCrossRefPayload', () => {
   it('should handle null refText', () => {
     const draftWithoutRefText = {
       ...mockDraftRelation,
-      refText: undefined
+      refText: undefined as string | undefined
     };
     
     const payload = buildCrossRefPayload(draftWithoutRefText, 123);
@@ -169,7 +169,7 @@ describe('buildCrossRefPayload', () => {
       ...mockDraftRelation,
       toDocument: {
         ...mockDraftRelation.toDocument,
-        document_number: undefined
+        document_number: undefined as string | undefined
       }
     };
     

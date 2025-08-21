@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 import { suggestRefType } from './helpers';
-import type { LegalDocument, LegalProvision, DraftRelation, LegalCrossRef } from '@/types/legal-knowledge';
+import type { LegalDocument, LegalProvision, DraftRelation, LegalCrossRef, DocumentNodeType } from '@/types/legal-knowledge';
 
 interface ProvisionsPickerProps {
   sourceDocument: LegalDocument;
@@ -88,6 +88,47 @@ const REF_TYPE_LABELS: Record<LegalCrossRef['ref_type'], string> = {
   mentions: 'Nevner'
 };
 
+// Helper function to fetch provisions with explicit types - avoiding Supabase type inference
+const fetchProvisions = async (documentId: string, searchTerm: string, demoMode: boolean): Promise<LegalProvision[]> => {
+  if (demoMode) {
+    return MOCK_PROVISIONS[documentId] || [];
+  }
+
+  // Use raw query to avoid type inference issues
+  let queryString = `document_id.eq.${documentId},is_active.eq.true`;
+  
+  if (searchTerm.trim()) {
+    queryString += `,or(provision_number.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%)`;
+  }
+
+  try {
+    const response = await (supabase as any)
+      .from('legal_provisions')
+      .select('*')
+      .or(`document_id.eq.${documentId}`)
+      .eq('is_active', true)
+      .limit(200);
+    
+    if (response.error) throw response.error;
+    
+    let data = response.data || [];
+    
+    // Apply search filter in memory if needed
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      data = data.filter((item: any) => 
+        item.provision_number?.toLowerCase().includes(searchLower) ||
+        item.title?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return data as LegalProvision[];
+  } catch (error) {
+    console.error('Error fetching provisions:', error);
+    return [];
+  }
+};
+
 const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
   sourceDocument,
   targetDocument,
@@ -109,52 +150,14 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
   // Fetch provisions for source document
   const { data: sourceProvisions = [] } = useQuery({
     queryKey: ['legal-provisions', sourceDocument.id, sourceSearch],
-    queryFn: async () => {
-      if (demoMode) {
-        return MOCK_PROVISIONS[sourceDocument.id] || [];
-      }
-      
-      let query = supabase
-        .from('legal_provisions')
-        .select('*')
-        .eq('document_id', sourceDocument.id)
-        .eq('is_active', true)
-        .limit(200);
-      
-      if (sourceSearch.trim()) {
-        query = query.or(`provision_number.ilike.%${sourceSearch}%,title.ilike.%${sourceSearch}%`);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchProvisions(sourceDocument.id, sourceSearch, demoMode),
     enabled: !!sourceDocument.id
   });
 
   // Fetch provisions for target document
   const { data: targetProvisions = [] } = useQuery({
     queryKey: ['legal-provisions', targetDocument.id, targetSearch],
-    queryFn: async () => {
-      if (demoMode) {
-        return MOCK_PROVISIONS[targetDocument.id] || [];
-      }
-      
-      let query = supabase
-        .from('legal_provisions')
-        .select('*')
-        .eq('document_id', targetDocument.id)
-        .eq('is_active', true)
-        .limit(200);
-      
-      if (targetSearch.trim()) {
-        query = query.or(`provision_number.ilike.%${targetSearch}%,title.ilike.%${targetSearch}%`);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchProvisions(targetDocument.id, targetSearch, demoMode),
     enabled: !!targetDocument.id
   });
 
@@ -162,12 +165,12 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
   React.useEffect(() => {
     if (autoSuggest && selectedProvisions.source && selectedProvisions.target) {
       const suggested = suggestRefType(
-        sourceDocument.document_type_id as any,
-        targetDocument.document_type_id as any
+        sourceDocument.document_type_id as DocumentNodeType,
+        targetDocument.document_type_id as DocumentNodeType
       );
       setRefType(suggested);
     }
-  }, [selectedProvisions.source, selectedProvisions.target, autoSuggest, sourceDocument.document_type_id, targetDocument.document_type_id]);
+  }, [selectedProvisions.source?.id, selectedProvisions.target?.id, autoSuggest, sourceDocument.document_type_id, targetDocument.document_type_id]);
 
   const handleAddToDraft = () => {
     if (!selectedProvisions.source || !selectedProvisions.target) {

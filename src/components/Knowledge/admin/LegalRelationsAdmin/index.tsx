@@ -73,7 +73,7 @@ const LegalRelationsAdmin: React.FC = () => {
   };
 
   const canProceedToProvisions = selectedDocuments.source && selectedDocuments.target;
-  const canCreateRelation = selectedProvisions.source && selectedProvisions.target;
+  const canCreateRelation = !!(selectedProvisions.source && selectedProvisions.target);
 
   return (
     <div className="space-y-6 p-6">

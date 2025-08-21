@@ -85,6 +85,7 @@ import TransactionAnalysis from "./pages/TransactionAnalysis";
 import AuditSampling from "./pages/AuditSampling";
 import { InvestmentSecuritiesRedirect, InvestmentPricesRedirect, InvestmentCurrenciesRedirect } from "./components/InvestmentRedirects";
 import DataredigeringPage from "./pages/Dataredigering";
+import LegalRelationsAdmin from "./components/Knowledge/admin/LegalRelationsAdmin";
 const queryClient = new QueryClient();
 
 function App() {
@@ -171,6 +172,7 @@ function App() {
                   <Route path="admin/account-relationships" element={<AccountRelationshipsPage />} />
                   <Route path="admin/audit-action-library" element={<AuditActionLibrary />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
+                  <Route path="admin/rag/juridisk" element={<ProtectedRoute><LegalRelationsAdmin /></ProtectedRoute>} />
                   <Route path="academy" element={<Academy />} />
                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                   <Route path="admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
