@@ -17,6 +17,7 @@ import type { LegalDocument, LegalProvision, LegalDocumentType } from '@/types/l
 import { LawSelectionWizard } from './LawSelectionWizard';
 import { LawProvisionUploader } from './LawProvisionUploader';
 import LegalProvisionsTable from './LegalProvisionsTable';
+import KnowledgeLayout from '../KnowledgeLayout';
 import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
@@ -347,90 +348,89 @@ export const LegalKnowledgeManager: React.FC = () => {
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Juridisk Kunnskapsbase</h1>
-            <p className="text-muted-foreground">
-              Strukturert lagring og søk i juridiske dokumenter med relasjoner
-            </p>
+  // Layout actions and filters
+  const actions = (
+    <>
+      <Button 
+        onClick={() => setShowWizard(true)}
+        className="flex items-center gap-2"
+      >
+        <Zap className="h-4 w-4" />
+        Guidet opplastning
+      </Button>
+    </>
+  );
+
+  const filters = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Search className="h-5 w-5" />
+          Søk i Juridisk Kunnskapsbase
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Input
+              placeholder="Søk etter lover, paragrafer, dommer, etc..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
           </div>
+          <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Dokumenttype" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle typer</SelectItem>
+              {documentTypes?.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Button 
-          onClick={() => setShowWizard(true)}
-          className="flex items-center gap-2"
-        >
-          <Zap className="h-4 w-4" />
-          Guidet opplastning
-        </Button>
-      </div>
 
-      {/* Search Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Søk i Juridisk Kunnskapsbase
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Søk etter lover, paragrafer, dommer, etc..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Dokumenttype" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle typer</SelectItem>
-                {documentTypes?.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {searchResults && (
-            <div className="mt-6">
-              <h3 className="font-semibold mb-4">
-                Søkeresultater ({searchResults.search_metadata.total_results} funnet)
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Dokumenter ({searchResults.documents.length})
-                  </h4>
-                  <ScrollArea className="h-96">
-                    {searchResults.documents.map(renderDocumentCard)}
-                  </ScrollArea>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Scale className="h-4 w-4" />
-                    Bestemmelser ({searchResults.provisions.length})
-                  </h4>
-                  <ScrollArea className="h-96">
-                    {searchResults.provisions.map(renderProvisionCard)}
-                  </ScrollArea>
-                </div>
+        {searchResults && (
+          <div className="mt-6">
+            <h3 className="font-semibold mb-4">
+              Søkeresultater ({searchResults.search_metadata.total_results} funnet)
+            </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Dokumenter ({searchResults.documents.length})
+                </h4>
+                <ScrollArea className="h-96">
+                  {searchResults.documents.map(renderDocumentCard)}
+                </ScrollArea>
+              </div>
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Scale className="h-4 w-4" />
+                  Bestemmelser ({searchResults.provisions.length})
+                </h4>
+                <ScrollArea className="h-96">
+                  {searchResults.provisions.map(renderProvisionCard)}
+                </ScrollArea>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
+  return (
+    <KnowledgeLayout
+      title="Juridisk Kunnskapsbase"
+      actions={actions}
+      filters={filters}
+    >
       {/* Excel Import/Export Section */}
       <Card>
         <CardHeader>
@@ -654,6 +654,6 @@ export const LegalKnowledgeManager: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </KnowledgeLayout>
   );
 };
