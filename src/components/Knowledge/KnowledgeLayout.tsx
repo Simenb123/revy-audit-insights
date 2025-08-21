@@ -1,6 +1,5 @@
 
 import React from 'react';
-import GlobalSubHeader from '@/components/Layout/GlobalSubHeader';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { useSubHeader } from '@/components/Layout/SubHeaderContext';
 
@@ -13,33 +12,48 @@ interface KnowledgeLayoutProps {
 
 const KnowledgeLayout = ({ children, title, actions, filters }: KnowledgeLayoutProps) => {
   const { setPageTitle } = usePageTitle();
-  const { setSubHeader, clearSubHeader } = useSubHeader();
+  const { clearSubHeader } = useSubHeader();
 
   React.useEffect(() => {
     if (title) setPageTitle(title);
   }, [title, setPageTitle]);
 
-  const moduleIndicator = (
-    <div className="text-xs text-white/70 bg-white/10 px-2 py-1 rounded">
-      Kunnskapsbase
-    </div>
-  );
-
+  // Clear any existing subheader since we're not using sticky subheader
   React.useEffect(() => {
-    setSubHeader(
-      <GlobalSubHeader
-        title={title}
-        actions={actions}
-        filters={filters}
-        moduleIndicator={moduleIndicator}
-      />
-    );
-    return () => clearSubHeader();
-  }, [title, actions, filters, moduleIndicator, setSubHeader, clearSubHeader]);
+    clearSubHeader();
+  }, [clearSubHeader]);
 
   return (
-    <div className="flex-1 min-h-0 p-4 space-y-4">
-      {children}
+    <div className="space-y-[var(--content-gap)] w-full">
+      {/* Header section - non-sticky */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+              Kunnskapsbase
+            </div>
+          </div>
+        </div>
+        
+        {actions && (
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
+        )}
+      </div>
+
+      {/* Filters section */}
+      {filters && (
+        <div className="w-full">
+          {filters}
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="w-full">
+        {children}
+      </div>
     </div>
   );
 };
