@@ -213,7 +213,7 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
       const provisions = processedData.map((row, index) => {
         // Create valid provision data ensuring required fields are not empty
         const provision = {
-          provision_id: row.provision_id || `${lawIdentifier}_${index + 1}`,
+          provision_id: row.provision_id || crypto.randomUUID(),
           law_identifier: row.law_identifier || lawIdentifier,
           provision_type: row.provision_type || 'section',
           provision_number: row.provision_number || `${index + 1}`,
