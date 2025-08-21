@@ -9,6 +9,7 @@ import { LEGAL_PROVISION_FIELDS, NORWEGIAN_LEGAL_TERMS } from '@/utils/legalProv
 import ColumnMappingTable from '@/components/DataUpload/ColumnMappingTable';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateLegalProvisionTemplate } from '@/services/legal-knowledge/legalProvisionTemplate';
 
 interface LawProvisionUploaderProps {
   lawIdentifier: string;
@@ -56,24 +57,35 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
     if (!file) return;
 
     try {
+      console.log('Starting file processing...', { fileName: file.name, fileSize: file.size });
       toast.info('Behandler fil...');
       
       let preview: FilePreview;
       if (file.name.toLowerCase().endsWith('.csv')) {
+        console.log('Processing as CSV file');
         preview = await processCSVFile(file, { extraAliasHeaders: NORWEGIAN_LEGAL_TERMS });
       } else {
+        console.log('Processing as Excel file');
         preview = await processExcelFile(file, { extraTerms: NORWEGIAN_LEGAL_TERMS });
       }
+
+      console.log('File preview generated:', {
+        headers: preview.headers,
+        totalRows: preview.totalRows,
+        sampleRows: preview.rows.slice(0, 2)
+      });
 
       setFilePreview(preview);
 
       // Generate column mapping suggestions
+      console.log('Generating column mapping suggestions...');
       const suggestions = suggestColumnMappings(
         preview.headers,
         LEGAL_PROVISION_FIELDS,
         preview.rows
       );
 
+      console.log('Generated suggestions:', suggestions);
       setSuggestedMappings(suggestions);
 
       // Apply suggested mappings
@@ -95,11 +107,15 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
         initialMapping['_auto_law_id'] = 'law_identifier';
       }
 
+      console.log('Initial mapping:', initialMapping);
       setColumnMapping(initialMapping);
+      
+      console.log('Moving to mapping step...');
       setStep('mapping');
       toast.success(`Fil behandlet: ${preview.totalRows} rader funnet`);
     } catch (error) {
-      toast.error(`Feil ved behandling av fil: ${error}`);
+      console.error('File processing error:', error);
+      toast.error(`Feil ved behandling av fil: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
     }
   };
 
@@ -234,8 +250,13 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
         <Button 
           variant="outline" 
           onClick={() => {
-            const { generateLegalProvisionTemplate } = require('@/services/legal-knowledge/legalProvisionTemplate');
-            generateLegalProvisionTemplate(lawIdentifier, lawTitle);
+            try {
+              generateLegalProvisionTemplate(lawIdentifier, lawTitle);
+              toast.success('Excel-template lastet ned');
+            } catch (error) {
+              console.error('Template generation error:', error);
+              toast.error('Feil ved generering av template');
+            }
           }}
           className="mb-4"
         >
