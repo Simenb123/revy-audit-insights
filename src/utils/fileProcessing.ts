@@ -600,7 +600,7 @@ export async function processCSVFile(file: File, options?: { extraAliasHeaders?:
 }
 
 // Enhanced column mapping with Norwegian language support and content analysis
-export function suggestColumnMappings(
+export function suggestColumnMappingsOriginal(
   headers: string[],
   fieldDefinitions: FieldDefinition[],
   sampleData?: string[][],
@@ -1393,4 +1393,91 @@ function parseAmount(value: any): number | null {
     return convertNorwegianNumber(value);
   }
   return null;
+}
+
+// Alias for compatibility with new upload system
+export async function parseFilePreview(file: File): Promise<FilePreview> {
+  return parseFile(file);
+}
+
+// Main parse function that can handle different file types
+export async function parseFile(file: File, options?: { extraTerms?: string[] }): Promise<FilePreview> {
+  const fileExtension = file.name.toLowerCase().split('.').pop();
+  
+  if (fileExtension === 'csv') {
+    return processCSVFile(file);
+  } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+    return processExcelFile(file, options);
+  } else {
+    throw new Error(`Unsupported file type: ${fileExtension}`);
+  }
+}
+
+// Main function with new field definition format support
+export async function suggestColumnMappings(
+  headers: string[],
+  fieldDefinitions: any[]
+): Promise<ColumnMapping[]> {
+  // Convert new field definition format to legacy format for compatibility
+  const legacyFields: FieldDefinition[] = fieldDefinitions.map(f => ({
+    key: f.field_key || f.key,
+    label: f.field_label || f.label,
+    required: f.is_required !== undefined ? f.is_required : f.required,
+    type: f.data_type || f.type,
+    aliases: f.aliases || []
+  }));
+
+  return suggestColumnMappingsOriginal(headers, legacyFields);
+}
+
+// Legacy function with original field definition format
+export async function suggestColumnMappingsLegacy(
+  headers: string[],
+  fieldDefinitions: FieldDefinition[]
+): Promise<ColumnMapping[]> {
+  const mappings: ColumnMapping[] = [];
+
+  headers.forEach(header => {
+    let bestMatch = { field: '', score: 0, confidence: 0 };
+    
+    fieldDefinitions.forEach(field => {
+      // Exact match with field key
+      if (header.toLowerCase() === field.key.toLowerCase()) {
+        bestMatch = { field: field.key, score: 100, confidence: 1.0 };
+        return;
+      }
+      
+      // Check aliases
+      let aliasScore = 0;
+      field.aliases.forEach(alias => {
+        const headerLower = header.toLowerCase();
+        const aliasLower = alias.toLowerCase();
+        
+        if (headerLower === aliasLower) {
+          aliasScore = Math.max(aliasScore, 90);
+        } else if (headerLower.includes(aliasLower) || aliasLower.includes(headerLower)) {
+          aliasScore = Math.max(aliasScore, 70);
+        }
+      });
+      
+      if (aliasScore > bestMatch.score) {
+        bestMatch = { 
+          field: field.key, 
+          score: aliasScore, 
+          confidence: aliasScore / 100 
+        };
+      }
+    });
+    
+    // Only include mappings with reasonable confidence
+    if (bestMatch.score >= 50) {
+      mappings.push({
+        sourceColumn: header,
+        targetField: bestMatch.field,
+        confidence: bestMatch.confidence
+      });
+    }
+  });
+
+  return mappings;
 }

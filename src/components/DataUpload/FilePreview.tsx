@@ -35,17 +35,25 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   // Auto-suggest mappings when field definitions are provided
   useEffect(() => {
     if (fieldDefinitions.length > 0) {
-      const suggestions = suggestColumnMappings(preview.headers, fieldDefinitions);
-      setSuggestedMappings(suggestions);
-      
-      // Auto-apply high-confidence suggestions
-      const autoMapping: Record<string, string> = {};
-      suggestions.forEach(suggestion => {
-        if (suggestion.confidence > 0.8) {
-          autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+      const generateSuggestionsAsync = async () => {
+        try {
+          const suggestions = await suggestColumnMappings(preview.headers, fieldDefinitions);
+          setSuggestedMappings(suggestions);
+          
+          // Auto-apply high-confidence suggestions
+          const autoMapping: Record<string, string> = {};
+          suggestions.forEach(suggestion => {
+            if (suggestion.confidence > 0.8) {
+              autoMapping[suggestion.sourceColumn] = suggestion.targetField;
+            }
+          });
+          setMapping(autoMapping);
+        } catch (error) {
+          console.error('Error generating mapping suggestions:', error);
         }
-      });
-      setMapping(autoMapping);
+      };
+      
+      generateSuggestionsAsync();
     }
   }, [preview.headers, fieldDefinitions]);
 

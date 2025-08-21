@@ -79,22 +79,27 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
 
       // Generate column mapping suggestions
       console.log('Generating column mapping suggestions...');
-      const suggestions = suggestColumnMappings(
-        preview.headers,
-        LEGAL_PROVISION_FIELDS,
-        preview.rows
-      );
+      
+      let initialMapping: Record<string, string> = {};
+      
+      try {
+        const suggestions = await suggestColumnMappings(
+          preview.headers,
+          LEGAL_PROVISION_FIELDS
+        );
 
-      console.log('Generated suggestions:', suggestions);
-      setSuggestedMappings(suggestions);
+        console.log('Generated suggestions:', suggestions);
+        setSuggestedMappings(suggestions);
 
-      // Apply suggested mappings
-      const initialMapping: Record<string, string> = {};
-      suggestions.forEach(suggestion => {
-        if (suggestion.confidence > 0.6) {
-          initialMapping[suggestion.sourceColumn] = suggestion.targetField;
-        }
-      });
+        // Apply suggested mappings
+        suggestions.forEach(suggestion => {
+          if (suggestion.confidence > 0.6) {
+            initialMapping[suggestion.sourceColumn] = suggestion.targetField;
+          }
+        });
+      } catch (error) {
+        console.error('Error generating mapping suggestions:', error);
+      }
       
       // Pre-populate law_identifier for all rows
       const lawIdHeader = preview.headers.find(h => 

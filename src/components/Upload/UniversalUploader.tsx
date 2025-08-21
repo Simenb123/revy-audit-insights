@@ -120,7 +120,7 @@ const UniversalUploader: React.FC<UniversalUploaderProps> = ({
               progress: 100,
               preview: {
                 headers: result.headers,
-                sampleRows: result.sampleRows,
+                sampleRows: result.rows.slice(0, 5), // Take first 5 rows as sample
                 totalRows: result.totalRows
               }
             }
@@ -317,7 +317,7 @@ const UniversalUploader: React.FC<UniversalUploaderProps> = ({
             <SmartColumnMapper
               fileName={currentFile.file.name}
               headers={currentFile.preview!.headers}
-              sampleRows={currentFile.preview!.sampleRows}
+              sampleRows={currentFile.preview!.sampleRows || []}
               mapping={mapping}
               fieldDefinitions={config.fieldDefinitions}
               suggestedMappings={[]} // Suggestions would be populated from AI service
