@@ -13,8 +13,7 @@ interface TrainingClientIntegrationProps {
   onSelectClient?: (clientId: string) => void;
 }
 
-// Fix database references and simplify
-const TrainingClientIntegration: React.FC<TrainingClientIntegrationProps> = ({
+export const TrainingClientIntegration: React.FC<TrainingClientIntegrationProps> = ({
   onSelectClient
 }) => {
   const { toast } = useToast();

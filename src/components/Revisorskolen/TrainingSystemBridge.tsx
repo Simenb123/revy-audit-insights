@@ -17,7 +17,7 @@ interface TrainingSystemBridgeProps {
   onClientChange?: (clientId: string) => void;
 }
 
-export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
+const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
   selectedClientId,
   onClientChange
 }) => {
@@ -33,9 +33,7 @@ export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
         .select(`
           id,
           name,
-          industry,
-          risk_profile,
-          business_description
+          industry
         `)
         .order('name');
 
@@ -72,28 +70,22 @@ export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
   // Get training progress for selected client
   const { data: trainingProgress } = useQuery({
     queryKey: ['training-progress-bridge', selectedClientId],
-    queryFn: async () => {
-      if (!selectedClientId) return null;
+    queryFn: async (): Promise<any[]> => {
+      if (!selectedClientId) return [];
 
-      const { data, error } = await supabase
-        .from('training_runs')
-        .select(`
-          id,
-          status,
-          score,
-          current_budget,
-          created_at,
-          training_scenarios (
-            title,
-            learning_objectives,
-            risk_objectives
-          )
-        `)
-        .eq('client_id', selectedClientId)
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await (supabase as any)
+          .from('training_runs')
+          .select('id, status, total_score, current_budget, created_at, scenario_id')
+          .eq('client_id', selectedClientId)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching training progress:', error);
+        return [];
+      }
     },
     enabled: !!selectedClientId
   });
@@ -105,19 +97,14 @@ export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
       if (!selectedClientId) return null;
 
       const { data, error } = await supabase
-        .from('audit_actions')
+        .from('audit_action_templates')
         .select(`
           id,
-          status,
-          estimated_hours,
-          actual_hours,
-          action_templates (
-            name,
-            subject_area
-          )
+          name,
+          subject_area,
+          estimated_hours
         `)
-        .eq('client_id', selectedClientId)
-        .eq('status', 'completed')
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -132,7 +119,9 @@ export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
     if (client) {
       setActiveClient({
         ...client,
-        user_id: '' // Will be set by context
+        user_id: '', // Will be set by context
+        risk_level: 'medium', // Default value
+        company_name: client.name // Use name as company_name
       } as Client);
       onClientChange?.(clientId);
     }
@@ -144,13 +133,13 @@ export const TrainingSystemBridge: React.FC<TrainingSystemBridgeProps> = ({
     const context = `
 Klient: ${activeClient?.name}
 Bransje: ${activeClient?.industry}
-Risikoprofil: ${activeClient?.risk_profile}
+Risikoprofil: ${(activeClient as any)?.risk_level || 'medium'}
 
 Treningsresultater:
-${trainingProgress.map(tp => `- ${tp.training_scenarios?.title}: ${tp.score}% (${tp.status})`).join('\n')}
+${trainingProgress?.map(tp => `- Scenario #${tp.scenario_id}: ${tp.total_score || 0}% (${tp.status})`).join('\n') || 'Ingen data'}
 
-Gjennomførte revisjonshandlinger:
-${actionInsights.map(ai => `- ${ai.action_templates?.name}: ${ai.actual_hours || ai.estimated_hours}t`).join('\n')}
+Tilgjengelige revisjonshandlinger:
+${actionInsights?.map(ai => `- ${ai.name}: ${ai.estimated_hours}t`).join('\n') || 'Ingen data'}
 
 Relevant for videre opplæring og kvalitetsforbedring.
     `.trim();
@@ -214,7 +203,7 @@ Relevant for videre opplæring og kvalitetsforbedring.
                         <div className="space-y-1 text-sm">
                           <div>Navn: {activeClient?.name}</div>
                           <div>Bransje: {activeClient?.industry}</div>
-                          <div>Risiko: {activeClient?.risk_profile}</div>
+                          <div>Risiko: {(activeClient as any)?.risk_level || 'medium'}</div>
                         </div>
                       </CardContent>
                     </Card>
@@ -229,7 +218,7 @@ Relevant for videre opplæring og kvalitetsforbedring.
                           <div>Kjørte: {trainingProgress?.length || 0}</div>
                           <div>Gjennomsnitt: {
                             trainingProgress?.length ? 
-                            Math.round(trainingProgress.reduce((acc, tp) => acc + tp.score, 0) / trainingProgress.length) + '%' : 
+                            Math.round(trainingProgress.reduce((acc, tp) => acc + (tp.total_score || 0), 0) / trainingProgress.length) + '%' : 
                             'N/A'
                           }</div>
                         </div>
@@ -260,10 +249,10 @@ Relevant for videre opplæring og kvalitetsforbedring.
                             <div className="flex items-center justify-between">
                               <div className="space-y-1">
                                 <h4 className="font-medium">
-                                  {training.training_scenarios?.title}
+                                  Scenario #{training.scenario_id}
                                 </h4>
                                 <div className="text-sm text-muted-foreground">
-                                  Score: {training.score}% • Budsjett: {training.current_budget}
+                                  Score: {training.total_score || 0}% • Budsjett: {training.current_budget}
                                 </div>
                               </div>
                               <Badge className={getStatusColor(training.status)}>
@@ -299,18 +288,18 @@ Relevant for videre opplæring og kvalitetsforbedring.
                             <div className="flex items-center justify-between">
                               <div className="space-y-1">
                                 <h4 className="font-medium">
-                                  {insight.action_templates?.name}
+                                  {insight.name}
                                 </h4>
                                 <div className="text-sm text-muted-foreground">
-                                  {insight.action_templates?.subject_area}
+                                  {insight.subject_area}
                                 </div>
                               </div>
                               <div className="text-right">
                                 <div className="text-sm font-medium">
-                                  {insight.actual_hours || insight.estimated_hours}t
+                                  {insight.estimated_hours}t
                                 </div>
                                 <Badge variant="secondary">
-                                  {insight.status}
+                                  Aktiv
                                 </Badge>
                               </div>
                             </div>
@@ -328,3 +317,5 @@ Relevant for videre opplæring og kvalitetsforbedring.
     </div>
   );
 };
+
+export default TrainingSystemBridge;

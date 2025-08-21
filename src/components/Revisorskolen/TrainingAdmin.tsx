@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StandardDataTable } from '@/components/ui/data-table';
+import DataTable from '@/components/ui/data-table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -241,49 +241,50 @@ const TrainingAdmin = () => {
 
   const scenarioColumns = [
     {
-      accessorKey: 'title',
+      key: 'title',
       header: 'Tittel',
-      cell: ({ row }: { row: any }) => (
-        <div className="font-medium">{row.getValue('title')}</div>
-      )
+      accessor: 'title' as keyof TrainingScenario,
+      format: (value: any) => <div className="font-medium">{value}</div>
     },
     {
-      accessorKey: 'difficulty_level',
+      key: 'difficulty_level',
       header: 'Vanskelighetsgrad',
-      cell: ({ row }: { row: any }) => (
-        <Badge variant="outline">{row.getValue('difficulty_level')}</Badge>
-      )
+      accessor: 'difficulty_level' as keyof TrainingScenario,
+      format: (value: any) => <Badge variant="outline">{value}</Badge>
     },
     {
-      accessorKey: 'company_name',
+      key: 'company_name',
       header: 'Selskap',
-      cell: ({ row }: { row: any }) => row.getValue('company_name') || 'Generisk'
+      accessor: 'company_name' as keyof TrainingScenario,
+      format: (value: any) => value || 'Generisk'
     },
     {
-      accessorKey: 'is_active',
+      key: 'is_active',
       header: 'Status',
-      cell: ({ row }: { row: any }) => (
-        <Badge variant={row.getValue('is_active') ? 'success' : 'secondary'}>
-          {row.getValue('is_active') ? 'Aktiv' : 'Inaktiv'}
+      accessor: 'is_active' as keyof TrainingScenario,
+      format: (value: any) => (
+        <Badge variant={value ? 'success' : 'secondary'}>
+          {value ? 'Aktiv' : 'Inaktiv'}
         </Badge>
       )
     },
     {
-      id: 'actions',
+      key: 'actions',
       header: 'Handlinger',
-      cell: ({ row }: { row: any }) => (
+      accessor: (): null => null,
+      format: (value: any, row: TrainingScenario) => (
         <div className="flex gap-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setEditingItem(row.original)}
+            onClick={() => setEditingItem(row)}
           >
             <Edit className="h-3 w-3" />
           </Button>
           <Button
             size="sm"
             variant="destructive"
-            onClick={() => deleteScenarioMutation.mutate(row.original.id)}
+            onClick={() => deleteScenarioMutation.mutate(row.id)}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -294,59 +295,60 @@ const TrainingAdmin = () => {
 
   const actionColumns = [
     {
-      accessorKey: 'name',
+      key: 'name',
       header: 'Navn',
-      cell: ({ row }: { row: any }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
-      )
+      accessor: 'name' as keyof ActionTemplate,
+      format: (value: any) => <div className="font-medium">{value}</div>
     },
     {
-      accessorKey: 'subject_area',
+      key: 'subject_area',
       header: 'Fagområde',
-      cell: ({ row }: { row: any }) => (
-        <Badge variant="outline">{row.getValue('subject_area')}</Badge>
-      )
+      accessor: 'subject_area' as keyof ActionTemplate,
+      format: (value: any) => <Badge variant="outline">{value}</Badge>
     },
     {
-      accessorKey: 'action_type',
+      key: 'action_type',
       header: 'Type',
-      cell: ({ row }: { row: any }) => row.getValue('action_type')
+      accessor: 'action_type' as keyof ActionTemplate
     },
     {
-      accessorKey: 'risk_level',
+      key: 'risk_level',
       header: 'Risikonivå',
-      cell: ({ row }: { row: any }) => (
+      accessor: 'risk_level' as keyof ActionTemplate,
+      format: (value: any) => (
         <Badge 
           variant={
-            row.getValue('risk_level') === 'high' ? 'destructive' :
-            row.getValue('risk_level') === 'medium' ? 'warning' : 'success'
+            value === 'high' ? 'destructive' :
+            value === 'medium' ? 'warning' : 'success'
           }
         >
-          {row.getValue('risk_level')}
+          {value}
         </Badge>
       )
     },
     {
-      accessorKey: 'estimated_hours',
+      key: 'estimated_hours',
       header: 'Timer',
-      cell: ({ row }: { row: any }) => `${row.getValue('estimated_hours') || 0}h`
+      accessor: 'estimated_hours' as keyof ActionTemplate,
+      format: (value: any) => `${value || 0}h`
     },
     {
-      id: 'actions',
+      key: 'actions',
       header: 'Handlinger',
-      cell: ({ row }: { row: any }) => (
+      accessor: (): null => null,
+      format: (value: any, row: ActionTemplate) => (
         <div className="flex gap-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setEditingItem(row.original)}
+            onClick={() => setEditingItem(row)}
           >
             <Edit className="h-3 w-3" />
           </Button>
           <Button
             size="sm"
             variant="destructive"
-            onClick={() => deleteActionMutation.mutate(row.original.id)}
+            onClick={() => deleteActionMutation.mutate(row.id)}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -459,7 +461,8 @@ const TrainingAdmin = () => {
                 </Card>
               )}
 
-              <StandardDataTable
+              <DataTable
+                title="Treningsscenarioer"
                 data={scenarios || []}
                 columns={scenarioColumns}
                 isLoading={scenariosLoading}
@@ -549,7 +552,8 @@ const TrainingAdmin = () => {
                 </Card>
               )}
 
-              <StandardDataTable
+              <DataTable
+                title="Handlingsmaler"
                 data={actionTemplates || []}
                 columns={actionColumns}
                 isLoading={actionsLoading}

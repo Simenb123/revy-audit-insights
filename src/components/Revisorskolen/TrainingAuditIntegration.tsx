@@ -13,7 +13,6 @@ interface TrainingAuditIntegrationProps {
   clientId?: string;
 }
 
-// Fix database references and simplify queries
 const TrainingAuditIntegration: React.FC<TrainingAuditIntegrationProps> = ({
   clientId
 }) => {
@@ -172,3 +171,5 @@ const TrainingAuditIntegration: React.FC<TrainingAuditIntegrationProps> = ({
     </div>
   );
 };
+
+export default TrainingAuditIntegration;
