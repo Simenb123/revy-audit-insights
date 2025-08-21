@@ -128,7 +128,7 @@ const Auth = () => {
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-background p-4">
+    <main className="flex items-center justify-center min-h-screen bg-background p-4" style={{ minHeight: '100vh' }}>
       {/* Error dialog for invalid/expired email link */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
@@ -250,10 +250,10 @@ const Auth = () => {
               )}
 
               {!isSignUp && (
-                <Alert variant="outline" className="mt-4">
+                <Alert variant="outline" className="mt-4" style={{ transform: 'translateZ(0)' }}>
                   <Info className="h-4 w-4" />
                   <AlertTitle>Tips</AlertTitle>
-                  <AlertDescription>
+                  <AlertDescription style={{ willChange: 'auto' }}>
                     Du kan logge inn selv om du ikke har bekreftet e-posten din.
                   </AlertDescription>
                 </Alert>
