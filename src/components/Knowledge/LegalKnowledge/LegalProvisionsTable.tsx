@@ -25,14 +25,28 @@ const LegalProvisionsTable: React.FC<LegalProvisionsTableProps> = ({
       accessor: 'law_identifier',
       sortable: true,
       searchable: true,
-      format: (value, item) => (
-        <div className="space-y-1">
-          <div className="font-medium text-sm">{value}</div>
-          {item.law_full_name && (
-            <div className="text-xs text-muted-foreground">{item.law_full_name}</div>
-          )}
-        </div>
-      )
+      format: (value, item) => {
+        // Create readable law name from identifier if full name not available
+        const getReadableLawName = (identifier: string) => {
+          if (identifier.includes('regnskaps')) return 'Regnskapsloven';
+          if (identifier.includes('revisor')) return 'Revisorloven';
+          if (identifier.includes('aksje')) return 'Aksjeloven';
+          if (identifier.includes('allmennaksje')) return 'Allmennaksjeloven';
+          if (identifier.includes('bokføring')) return 'Bokføringsloven';
+          // Convert LOV-YYYY-MM-DD-NN format to readable
+          if (identifier.match(/^LOV-\d{4}-/)) {
+            return `Lov ${identifier}`;
+          }
+          return identifier.charAt(0).toUpperCase() + identifier.slice(1);
+        };
+
+        return (
+          <div className="space-y-1">
+            <div className="font-medium text-sm">{item.law_full_name || getReadableLawName(value)}</div>
+            <div className="text-xs text-muted-foreground font-mono">{value}</div>
+          </div>
+        );
+      }
     },
     {
       key: 'provision_number',
