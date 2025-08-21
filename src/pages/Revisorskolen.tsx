@@ -11,8 +11,12 @@ import { ContentLibrary } from '@/components/Revisorskolen/ContentLibrary';
 import { PersonalizedLearningPath } from '@/components/Revisorskolen/PersonalizedLearningPath';
 import { UserPreferences } from '@/components/Revisorskolen/UserPreferences';
 import { TrainingClientIntegration } from '@/components/Revisorskolen/TrainingClientIntegration';
-import { TrainingAuditIntegration } from '@/components/Revisorskolen/TrainingAuditIntegration';
-import { TrainingSystemBridge } from '@/components/Revisorskolen/TrainingSystemBridge';
+import TrainingAuditIntegration from '@/components/Revisorskolen/TrainingAuditIntegration';
+import TrainingSystemBridge from '@/components/Revisorskolen/TrainingSystemBridge';
+import TestDataManager from '@/components/Revisorskolen/TestDataManager';
+import TrainingDocumentation from '@/components/Revisorskolen/TrainingDocumentation';
+import PerformanceMonitor from '@/components/Revisorskolen/PerformanceMonitor';
+import TrainingSettings from '@/components/Revisorskolen/TrainingSettings';
 import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
 import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
@@ -126,9 +130,21 @@ export default function Revisorskolen() {
             <Users className="h-4 w-4" />
             Integrering
           </TabsTrigger>
-          <TabsTrigger value="preferences" className="flex items-center gap-2">
+          <TabsTrigger value="settings" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Innstillinger
+          </TabsTrigger>
+          <TabsTrigger value="testing" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Testing
+          </TabsTrigger>
+          <TabsTrigger value="docs" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Dokumentasjon
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Overvåking
           </TabsTrigger>
         </TabsList>
 

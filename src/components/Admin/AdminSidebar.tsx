@@ -19,6 +19,7 @@ import {
   Shield, 
   Activity, 
   Settings,
+  BookOpen,
   ChevronLeft
 } from 'lucide-react';
 
@@ -28,6 +29,7 @@ const adminItems = [
   { title: "Tilgangsforespørsler", url: "/admin/access-requests", icon: UserCheck },
   { title: "Roller & Tilgang", url: "/admin/roles", icon: Shield },
   { title: "Aktivitetslogg", url: "/admin/audit", icon: Activity },
+  { title: "Revisorskolen", url: "/admin/training", icon: BookOpen },
   { title: "Systeminnstillinger", url: "/admin/settings", icon: Settings },
 ];
 

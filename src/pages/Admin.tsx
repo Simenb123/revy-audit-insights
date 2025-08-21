@@ -11,6 +11,7 @@ import FirmAccessRequests from '@/components/Admin/FirmAccessRequests';
 import RolePermissions from '@/components/Admin/RolePermissions';
 import AuditActivity from '@/components/Admin/AuditActivity';
 import SystemSettings from '@/components/Admin/SystemSettings';
+import TrainingAdmin from '@/components/Revisorskolen/TrainingAdmin';
 
 const AdminPage = () => {
   const { data: userProfile, isLoading } = useUserProfile();
@@ -62,6 +63,7 @@ const AdminPage = () => {
             <Route path="access-requests" element={<FirmAccessRequests />} />
             <Route path="roles" element={<RolePermissions />} />
             <Route path="audit" element={<AuditActivity />} />
+            <Route path="training" element={<TrainingAdmin />} />
             <Route path="settings" element={<SystemSettings />} />
           </Routes>
         </main>
