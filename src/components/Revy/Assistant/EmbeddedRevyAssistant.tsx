@@ -64,7 +64,8 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
 
       {/* Messages area - flex-1 with overflow */}
       <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto">
-        <div ref={contentWrapperRef} className="flex min-h-full flex-col justify-end">
+        <div ref={contentWrapperRef} className="flex flex-col h-full">
+          <div className="flex-1"></div>
           <div className="space-y-0.5 px-1 pb-4">
             {messages.length === 0 ? (
               <div className="text-xs text-muted-foreground p-2 text-center">
