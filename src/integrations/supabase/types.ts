@@ -9878,6 +9878,176 @@ export type Database = {
         }
         Relationships: []
       }
+      sampling_results: {
+        Row: {
+          conclusion: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          id: string
+          projected_misstatement: number | null
+          run_id: string | null
+          upper_misstatement: number | null
+        }
+        Insert: {
+          conclusion?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          projected_misstatement?: number | null
+          run_id?: string | null
+          upper_misstatement?: number | null
+        }
+        Update: {
+          conclusion?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          projected_misstatement?: number | null
+          run_id?: string | null
+          upper_misstatement?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sampling_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "sampling_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sampling_runs: {
+        Row: {
+          budget_hours: number | null
+          cl: number | null
+          created_at: string | null
+          em: number | null
+          id: string
+          pm: number | null
+          population_size: number | null
+          seed: string | null
+          session_id: string | null
+          tm: number | null
+          user_id: string | null
+        }
+        Insert: {
+          budget_hours?: number | null
+          cl?: number | null
+          created_at?: string | null
+          em?: number | null
+          id?: string
+          pm?: number | null
+          population_size?: number | null
+          seed?: string | null
+          session_id?: string | null
+          tm?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          budget_hours?: number | null
+          cl?: number | null
+          created_at?: string | null
+          em?: number | null
+          id?: string
+          pm?: number | null
+          population_size?: number | null
+          seed?: string | null
+          session_id?: string | null
+          tm?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sampling_runs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sampling_selections: {
+        Row: {
+          coverage_amount: number | null
+          coverage_count: number | null
+          created_at: string | null
+          hours_est: number | null
+          id: string
+          method: string | null
+          params: Json | null
+          run_id: string | null
+          selected_ids: Json | null
+        }
+        Insert: {
+          coverage_amount?: number | null
+          coverage_count?: number | null
+          created_at?: string | null
+          hours_est?: number | null
+          id?: string
+          method?: string | null
+          params?: Json | null
+          run_id?: string | null
+          selected_ids?: Json | null
+        }
+        Update: {
+          coverage_amount?: number | null
+          coverage_count?: number | null
+          created_at?: string | null
+          hours_est?: number | null
+          id?: string
+          method?: string | null
+          params?: Json | null
+          run_id?: string | null
+          selected_ids?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sampling_selections_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "sampling_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sampling_tests: {
+        Row: {
+          finding_amount: number | null
+          finding_type: string | null
+          id: string
+          notes: string | null
+          selection_id: string | null
+          tested_at: string | null
+          txn_id: string
+        }
+        Insert: {
+          finding_amount?: number | null
+          finding_type?: string | null
+          id?: string
+          notes?: string | null
+          selection_id?: string | null
+          tested_at?: string | null
+          txn_id: string
+        }
+        Update: {
+          finding_amount?: number | null
+          finding_type?: string | null
+          id?: string
+          notes?: string | null
+          selection_id?: string | null
+          tested_at?: string | null
+          txn_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sampling_tests_selection_id_fkey"
+            columns: ["selection_id"]
+            isOneToOne: false
+            referencedRelation: "sampling_selections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_events: {
         Row: {
           created_at: string | null
@@ -10423,6 +10593,154 @@ export type Database = {
           },
         ]
       }
+      training_actions_catalog: {
+        Row: {
+          assertions: Json | null
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          isa_refs: Json | null
+          reveal_markdown: string | null
+          session_id: string | null
+          time_cost_minutes: number | null
+          title: string
+        }
+        Insert: {
+          assertions?: Json | null
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          isa_refs?: Json | null
+          reveal_markdown?: string | null
+          session_id?: string | null
+          time_cost_minutes?: number | null
+          title: string
+        }
+        Update: {
+          assertions?: Json | null
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          isa_refs?: Json | null
+          reveal_markdown?: string | null
+          session_id?: string | null
+          time_cost_minutes?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_actions_catalog_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_library_collections: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          program_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          program_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          program_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_library_collections_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_library_items: {
+        Row: {
+          article_id: string | null
+          collection_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          article_id?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          article_id?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_library_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_library_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "training_library_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_programs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       training_progress: {
         Row: {
           attempts: number | null
@@ -10486,6 +10804,47 @@ export type Database = {
             columns: ["scenario_id"]
             isOneToOne: false
             referencedRelation: "test_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_run_choices: {
+        Row: {
+          action_code: string
+          created_at: string | null
+          id: string
+          minutes_cost: number | null
+          revealed_key: string | null
+          revealed_text_md: string | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_code: string
+          created_at?: string | null
+          id?: string
+          minutes_cost?: number | null
+          revealed_key?: string | null
+          revealed_text_md?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_code?: string
+          created_at?: string | null
+          id?: string
+          minutes_cost?: number | null
+          revealed_key?: string | null
+          revealed_text_md?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_run_choices_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -10644,6 +11003,165 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      training_session_access: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_access_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_library: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          session_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string | null
+          session_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_library_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "training_library_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_library_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_progress: {
+        Row: {
+          id: string
+          score: Json | null
+          session_id: string | null
+          status: string | null
+          time_spent_minutes: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          score?: Json | null
+          session_id?: string | null
+          status?: string | null
+          time_spent_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          score?: Json | null
+          session_id?: string | null
+          status?: string | null
+          time_spent_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_progress_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          ai_mode: string | null
+          created_at: string | null
+          default_params: Json | null
+          goals: Json | null
+          id: string
+          is_published: boolean | null
+          open_at: string | null
+          program_id: string | null
+          session_index: number | null
+          slug: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_mode?: string | null
+          created_at?: string | null
+          default_params?: Json | null
+          goals?: Json | null
+          id?: string
+          is_published?: boolean | null
+          open_at?: string | null
+          program_id?: string | null
+          session_index?: number | null
+          slug?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_mode?: string | null
+          created_at?: string | null
+          default_params?: Json | null
+          goals?: Json | null
+          id?: string
+          is_published?: boolean | null
+          open_at?: string | null
+          program_id?: string | null
+          session_index?: number | null
+          slug?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trial_balance_mappings: {
         Row: {

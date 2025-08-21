@@ -1,16 +1,65 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScenarioSelector } from '@/components/Revisorskolen/ScenarioSelector';
-import { GameInterface } from '@/components/Revisorskolen/GameInterface';
-import { useTrainingScenarios } from '@/hooks/useTrainingScenarios';
+import { TrainingSessionCard } from '@/components/Revisorskolen/TrainingSessionCard';
+import { DocumentsPanel } from '@/components/Revisorskolen/DocumentsPanel';
+import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
+import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
-import { GraduationCap, BookOpen, Trophy } from 'lucide-react';
+import { GraduationCap, BookOpen, Trophy, Users, Settings } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Revisorskolen() {
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
-  const [activeRunId, setActiveRunId] = useState<string | null>(null);
-  const { data: scenarios, isLoading } = useTrainingScenarios();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('sessions');
+  const { toast } = useToast();
+  
+  const { data: programs, isLoading: programsLoading } = useTrainingPrograms();
+  const { data: sessions, isLoading: sessionsLoading } = useTrainingSessions(
+    programs?.[0]?.id // Use first active program for now
+  );
+  const updateProgress = useUpdateSessionProgress();
+
+  // Get progress for all sessions
+  const sessionProgresses = sessions?.map(session => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { data } = useSessionProgress(session.id);
+    return { sessionId: session.id, progress: data };
+  }) || [];
+
+  const handleStartSession = async (sessionId: string) => {
+    try {
+      await updateProgress.mutateAsync({
+        sessionId,
+        status: 'in_progress'
+      });
+      setSelectedSessionId(sessionId);
+      setActiveTab('active');
+      toast({
+        title: "Sesjon startet",
+        description: "Du har startet en ny treningssesjon.",
+      });
+    } catch (error) {
+      toast({
+        title: "Feil",
+        description: "Kunne ikke starte sesjonen. Prøv igjen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleContinueSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setActiveTab('active');
+  };
+
+  // Determine if sessions are locked (simplified logic for now)
+  const getSessionLockStatus = (sessionIndex: number) => {
+    // For now, all sessions are unlocked. In production, this would check access rights
+    return false;
+  };
+
+  const isLoading = programsLoading || sessionsLoading;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -19,19 +68,23 @@ export default function Revisorskolen() {
         <div>
           <h1 className="text-3xl font-bold">Revisorskolen</h1>
           <p className="text-muted-foreground">
-            Øv på revisjonssituasjoner i et trygt miljø med interaktive scenarioer
+            Lær praktisk revisjon gjennom interaktive scenarioer og kurert faginnhold
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="scenarios" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="scenarios" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Scenarioer
-          </TabsTrigger>
-          <TabsTrigger value="active" className="flex items-center gap-2" disabled={!activeRunId}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="sessions" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
+            Sesjoner
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Dokumenter
+          </TabsTrigger>
+          <TabsTrigger value="active" className="flex items-center gap-2" disabled={!selectedSessionId}>
+            <Users className="h-4 w-4" />
             Aktiv øving
           </TabsTrigger>
           <TabsTrigger value="results" className="flex items-center gap-2">
@@ -40,13 +93,13 @@ export default function Revisorskolen() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="scenarios" className="space-y-6">
+        <TabsContent value="sessions" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Velg et øvingsscenario</CardTitle>
+              <CardTitle>Tilgjengelige treningssesjoner</CardTitle>
               <CardDescription>
-                Hvert scenario gir deg muligheten til å øve på spesifikke revisjonssituasjoner
-                med et begrenset budsjett og mål om å levere høy kvalitet.
+                Velg en sesjon for å begynne din praktiske revisjonstrening. 
+                Hver sesjon fokuserer på spesifikke ferdigheter og scenarioer.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -54,34 +107,75 @@ export default function Revisorskolen() {
                 <div className="flex items-center justify-center p-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
+              ) : sessions && sessions.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {sessions.map((session) => {
+                    const progressData = sessionProgresses.find(p => p.sessionId === session.id);
+                    return (
+                      <TrainingSessionCard
+                        key={session.id}
+                        session={session}
+                        progress={progressData?.progress}
+                        isLocked={getSessionLockStatus(session.session_index)}
+                        onStart={handleStartSession}
+                        onContinue={handleContinueSession}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
-                <ScenarioSelector 
-                  scenarios={scenarios || []}
-                  onSelectScenario={(scenarioId, runId) => {
-                    setSelectedScenarioId(scenarioId);
-                    setActiveRunId(runId);
-                  }}
-                />
+                <div className="text-center p-8">
+                  <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-medium mb-2">Ingen sesjoner tilgjengelig</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Det er ingen aktive treningssesjoner for øyeblikket.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="active" className="space-y-6">
-          {activeRunId && selectedScenarioId ? (
-            <GameInterface 
-              runId={activeRunId}
-              scenarioId={selectedScenarioId}
-              onComplete={() => {
-                setActiveRunId(null);
-                setSelectedScenarioId(null);
-              }}
-            />
+        <TabsContent value="documents" className="space-y-6">
+          {selectedSessionId ? (
+            <DocumentsPanel sessionId={selectedSessionId} />
           ) : (
             <Card>
               <CardContent className="p-8 text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">Velg en sesjon</h3>
                 <p className="text-muted-foreground">
-                  Ingen aktiv øving. Velg et scenario fra "Scenarioer"-fanen for å begynne.
+                  Velg en treningssesjon fra "Sesjoner"-fanen for å se fagbiblioteket.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="active" className="space-y-6">
+          {selectedSessionId ? (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aktiv treningssesjon</CardTitle>
+                  <CardDescription>
+                    Du arbeider nå med en interaktiv treningssesjon.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Treningsgrensesnitt kommer snart...
+                  </p>
+                  {/* Here we would include the actual training interface */}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Ingen aktiv øving. Velg en sesjon fra "Sesjoner"-fanen for å begynne.
                 </p>
               </CardContent>
             </Card>
@@ -93,12 +187,12 @@ export default function Revisorskolen() {
             <CardHeader>
               <CardTitle>Dine resultater</CardTitle>
               <CardDescription>
-                Oversikt over gjennomførte øvinger og prestasjoner
+                Oversikt over gjennomførte sesjoner og prestasjoner
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground text-center p-8">
-                Resultater vil vises her etter gjennomførte øvinger.
+                Resultater vil vises her etter gjennomførte sesjoner.
               </p>
             </CardContent>
           </Card>

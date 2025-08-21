@@ -13,31 +13,56 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { message, context, variantName, clientData, clientDocuments } = await req.json();
+    const { message, context, variantName, clientData, clientDocuments, sessionId, mode } = await req.json();
     
     log(`💬 [REVY-AI-CHAT] Processing message: "${message.substring(0, 100)}..."`);
-    log(`🔍 [REVY-AI-CHAT] Context: ${context}, Variant: ${variantName}`);
+    log(`🔍 [REVY-AI-CHAT] Context: ${context}, Variant: ${variantName}, Mode: ${mode || 'normal'}`);
     
     const supabase = getSupabase(req);
     
     // Enhanced knowledge search with timeout and better error handling
+    // Skip knowledge search in school mode as we use curated library instead
     let knowledgeArticles = [];
-    try {
-      const { data: knowledgeData, error: knowledgeError } = await Promise.race([
-        supabase.functions.invoke('knowledge-search', {
-          body: { query: message, matchThreshold: 0.3, matchCount: 5 }
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Knowledge search timeout')), 5000))
-      ]);
-      
-      if (knowledgeError) {
-        log(`⚠️ [REVY-AI-CHAT] Knowledge search error: ${knowledgeError.message}`);
-      } else if (knowledgeData?.matches) {
-        knowledgeArticles = knowledgeData.matches;
-        log(`📚 [REVY-AI-CHAT] Found ${knowledgeArticles.length} relevant knowledge articles`);
+    let trainingContext = null;
+    
+    if (mode === 'school' && sessionId) {
+      // Get training context for school mode
+      try {
+        log(`🎓 [REVY-AI-CHAT] Fetching training context for session: ${sessionId}`);
+        const { data: contextData, error: contextError } = await supabase.functions.invoke('training-context', {
+          body: { sessionId }
+        });
+        
+        if (contextError) {
+          log(`⚠️ [REVY-AI-CHAT] Training context error: ${contextError.message}`);
+        } else {
+          trainingContext = contextData;
+          // Use library articles as knowledge source in school mode
+          knowledgeArticles = contextData.library || [];
+          log(`🎓 [REVY-AI-CHAT] Using ${knowledgeArticles.length} curated articles from training library`);
+        }
+      } catch (error) {
+        log(`⚠️ [REVY-AI-CHAT] Training context failed: ${error.message}`);
       }
-    } catch (error) {
-      log(`⚠️ [REVY-AI-CHAT] Knowledge search failed: ${error.message}`);
+    } else {
+      // Normal mode - use knowledge search
+      try {
+        const { data: knowledgeData, error: knowledgeError } = await Promise.race([
+          supabase.functions.invoke('knowledge-search', {
+            body: { query: message, matchThreshold: 0.3, matchCount: 5 }
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Knowledge search timeout')), 5000))
+        ]);
+        
+        if (knowledgeError) {
+          log(`⚠️ [REVY-AI-CHAT] Knowledge search error: ${knowledgeError.message}`);
+        } else if (knowledgeData?.matches) {
+          knowledgeArticles = knowledgeData.matches;
+          log(`📚 [REVY-AI-CHAT] Found ${knowledgeArticles.length} relevant knowledge articles`);
+        }
+      } catch (error) {
+        log(`⚠️ [REVY-AI-CHAT] Knowledge search failed: ${error.message}`);
+      }
     }
 
     // Enhanced document context formatting
@@ -87,7 +112,41 @@ ${readableDocuments.length === 0 ? '\n💡 For å gjøre dokumenter lesbare for 
     }
 
     // Enhanced system prompt with better document handling and guidance
-    const systemPrompt = `Du er AI-Revy, en intelligent revisjonsassistent for norske revisorer.
+    let systemPrompt = '';
+    
+    if (mode === 'school' && trainingContext) {
+      // School mode system prompt
+      systemPrompt = `Du er AI-Revy i SCHOOL-modus - en pedagogisk revisjonsassistent for treningssesjon "${trainingContext.session?.title}".
+
+OPPGAVE: Hjelp studenten å lære praktisk revisjon gjennom scenariobasert øving.
+
+PEDAGOGISK TILNÆRMING:
+- Svar kort og konkret (maks 3-4 setninger)
+- Knytt råd til relevante påstander (Gyldighet, Fullstendighet, Periodisering, Klassifisering, Nøyaktighet)
+- Henvis til ISA-standarder når relevant
+- Avslutt alltid med ett kontrollspørsmål og forslag til neste steg
+
+${trainingContext.session ? `SESJON: ${trainingContext.session.title}
+${trainingContext.session.summary ? 'Beskrivelse: ' + trainingContext.session.summary : ''}
+${trainingContext.session.goals ? 'Læringsmål: ' + JSON.stringify(trainingContext.session.goals) : ''}` : ''}
+
+${trainingContext.userChoices?.length > 0 ? `STUDENTENS HANDLINGER SÅ LANGT:
+${trainingContext.userChoices.map((choice: any) => `- ${choice.action_code}: ${choice.revealed_key || choice.revealed_text_md}`).join('\n')}` : ''}
+
+${knowledgeArticles.length > 0 ? `TILLATTE FAGARTIKLER (kun disse):
+${knowledgeArticles.map((article: any) => 
+  `📖 ${article.title}${article.reference_code ? ' (' + article.reference_code + ')' : ''}\n${article.summary || article.content?.substring(0, 200) || ''}...\n`
+).join('\n')}` : ''}
+
+HUSKER: 
+- Bruk KUN informasjon fra tillatte fagartikler ovenfor
+- Hvis spørsmålet går utenfor sesjonens omfang, veiledd studenten tilbake til sesjonens læringsmål
+- Vær pedagogisk - spør hva studenten tenker før du gir fasit
+- Knytt læring til praktiske revisjonshandlinger`;
+
+    } else {
+      // Normal mode system prompt
+      systemPrompt = `Du er AI-Revy, en intelligent revisjonsassistent for norske revisorer.
 
 KONTEKST: ${context}
 VARIANT: ${variantName || 'standard'}
@@ -123,6 +182,7 @@ VED PROBLEMER MED DOKUMENTLESING:
 - Gi konstruktive råd for bedre dokumenthåndtering
 
 Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumentinnsikt med fagkunnskap for best mulig rådgivning.`;
+    }
 
     const data = await callOpenAI('chat/completions', {
       model: 'gpt-5-2025-08-07',
