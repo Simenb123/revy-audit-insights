@@ -20,7 +20,9 @@ import {
   Activity, 
   Settings,
   BookOpen,
-  ChevronLeft
+  ChevronLeft,
+  Database,
+  Brain
 } from 'lucide-react';
 
 const adminItems = [
@@ -31,6 +33,10 @@ const adminItems = [
   { title: "Aktivitetslogg", url: "/admin/audit", icon: Activity },
   { title: "Revisorskolen", url: "/admin/training", icon: BookOpen },
   { title: "Systeminnstillinger", url: "/admin/settings", icon: Settings },
+];
+
+const ragItems = [
+  { title: "Juridisk Relasjonskart", url: "/admin/rag/juridisk", icon: Database },
 ];
 
 const AdminSidebar = () => {
@@ -67,6 +73,27 @@ const AdminSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} className={getNavCls(item.url)}>
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+            <Brain className="h-4 w-4 inline mr-2" />
+            RAG & Kunnskapsstyring
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ragItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls(item.url)}>
