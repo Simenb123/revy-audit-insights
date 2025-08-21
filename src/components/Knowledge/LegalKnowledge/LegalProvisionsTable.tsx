@@ -18,35 +18,42 @@ const LegalProvisionsTable: React.FC<LegalProvisionsTableProps> = ({
   error,
   onLawClick
 }) => {
+  // Create readable law name from identifier if full name not available
+  const getReadableLawName = (identifier: string) => {
+    if (identifier.includes('regnskaps')) return 'Regnskapsloven';
+    if (identifier.includes('revisor')) return 'Revisorloven';
+    if (identifier.includes('aksje')) return 'Aksjeloven';
+    if (identifier.includes('allmennaksje')) return 'Allmennaksjeloven';
+    if (identifier.includes('bokføring')) return 'Bokføringsloven';
+    // Convert LOV-YYYY-MM-DD-NN format to readable
+    if (identifier.match(/^LOV-\d{4}-/)) {
+      return `Lov ${identifier}`;
+    }
+    return identifier.charAt(0).toUpperCase() + identifier.slice(1);
+  };
+
   const columns: StandardDataTableColumn<LegalProvision>[] = [
     {
       key: 'law_identifier',
-      header: 'Lov',
+      header: 'Lovkode',
       accessor: 'law_identifier',
       sortable: true,
       searchable: true,
-      format: (value, item) => {
-        // Create readable law name from identifier if full name not available
-        const getReadableLawName = (identifier: string) => {
-          if (identifier.includes('regnskaps')) return 'Regnskapsloven';
-          if (identifier.includes('revisor')) return 'Revisorloven';
-          if (identifier.includes('aksje')) return 'Aksjeloven';
-          if (identifier.includes('allmennaksje')) return 'Allmennaksjeloven';
-          if (identifier.includes('bokføring')) return 'Bokføringsloven';
-          // Convert LOV-YYYY-MM-DD-NN format to readable
-          if (identifier.match(/^LOV-\d{4}-/)) {
-            return `Lov ${identifier}`;
-          }
-          return identifier.charAt(0).toUpperCase() + identifier.slice(1);
-        };
-
-        return (
-          <div className="space-y-1">
-            <div className="font-medium text-sm">{item.law_full_name || getReadableLawName(value)}</div>
-            <div className="text-xs text-muted-foreground font-mono">{value}</div>
-          </div>
-        );
-      }
+      format: (value) => (
+        <div className="font-mono text-sm">{value}</div>
+      )
+    },
+    {
+      key: 'law_full_name',
+      header: 'Lovnavn',
+      accessor: 'law_full_name',
+      sortable: true,
+      searchable: true,
+      format: (value, item) => (
+        <div className="font-medium text-sm">
+          {value || getReadableLawName(item.law_identifier)}
+        </div>
+      )
     },
     {
       key: 'provision_number',
