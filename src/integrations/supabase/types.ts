@@ -7705,6 +7705,7 @@ export type Database = {
           law_full_name: string | null
           law_identifier: string
           parent_provision_id: string | null
+          provision_id: string | null
           provision_number: string
           provision_type: string
           sort_order: number | null
@@ -7722,6 +7723,7 @@ export type Database = {
           law_full_name?: string | null
           law_identifier: string
           parent_provision_id?: string | null
+          provision_id?: string | null
           provision_number: string
           provision_type: string
           sort_order?: number | null
@@ -7739,6 +7741,7 @@ export type Database = {
           law_full_name?: string | null
           law_identifier?: string
           parent_provision_id?: string | null
+          provision_id?: string | null
           provision_number?: string
           provision_type?: string
           sort_order?: number | null

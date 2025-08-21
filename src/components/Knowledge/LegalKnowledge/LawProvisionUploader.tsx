@@ -210,32 +210,50 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
       toast.info('Importerer juridiske bestemmelser...');
 
       // Prepare data for database insertion
-      const provisions = processedData.map(row => ({
-        provision_id: row.provision_id || '',
-        law_identifier: row.law_identifier || lawIdentifier,
-        provision_type: row.provision_type || 'provision',
-        provision_number: row.provision_number || '',
-        title: row.title || '',
-        content: row.content || '',
-        parent_provision_id: row.parent_provision_id || null,
-        valid_from: row.valid_from ? new Date(row.valid_from).toISOString() : null,
-        valid_until: row.valid_until ? new Date(row.valid_until).toISOString() : null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }));
+      const provisions = processedData.map((row, index) => {
+        // Create valid provision data ensuring required fields are not empty
+        const provision = {
+          provision_id: row.provision_id || `${lawIdentifier}_${index + 1}`,
+          law_identifier: row.law_identifier || lawIdentifier,
+          provision_type: row.provision_type || 'section',
+          provision_number: row.provision_number || `${index + 1}`,
+          title: row.title || `Bestemmelse ${index + 1}`,
+          content: row.content || '',
+          parent_provision_id: row.parent_provision_id || null,
+          valid_from: row.valid_from ? (
+            typeof row.valid_from === 'string' ? row.valid_from.split('T')[0] : 
+            new Date(row.valid_from).toISOString().split('T')[0]
+          ) : null,
+          valid_until: row.valid_until ? (
+            typeof row.valid_until === 'string' ? row.valid_until.split('T')[0] : 
+            new Date(row.valid_until).toISOString().split('T')[0]
+          ) : null,
+          is_active: true
+        };
+        
+        console.log(`Row ${index + 1} prepared:`, provision);
+        return provision;
+      });
 
       // Insert provisions in batch
-      const { error } = await supabase
+      console.log('Attempting to insert provisions:', provisions.length);
+      const { data, error } = await supabase
         .from('legal_provisions')
-        .insert(provisions);
+        .insert(provisions)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database insert error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
+      console.log('Successfully inserted provisions:', data?.length || provisions.length);
       toast.success(`${provisions.length} juridiske bestemmelser importert!`);
       onComplete?.();
     } catch (error) {
-      toast.error(`Feil ved import: ${error}`);
+      console.error('Import error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ukjent feil';
+      toast.error(`Feil ved import: ${errorMessage}`);
       setStep('preview');
     }
   };
