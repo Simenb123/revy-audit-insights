@@ -66,7 +66,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
         </div>
       </div>
       <div className="flex flex-col flex-1 min-h-0">
-        <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+        <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0">
           { !hideTabs && (
             <div className="px-2 pt-2">
               <TabsList>
@@ -75,7 +75,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
               </TabsList>
             </div>
           ) }
-          <TabsContent value="ai" className="mt-0 flex-1 min-h-0 flex flex-col">
+          <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
             <SmartReviAssistant
               embedded
               context={context}
