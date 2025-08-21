@@ -345,7 +345,7 @@ export const AssertionsMatrix: React.FC<AssertionsMatrixProps> = ({
   const getISAReferences = (assertion: AssertionType): string[] => {
     const references: Record<AssertionType, string[]> = {
       'Gyldighet': ['ISA 500', 'ISA 505'],
-      'Fullstendigkeit': ['ISA 500', 'ISA 520'],
+      'Fullstendighet': ['ISA 500', 'ISA 520'],
       'Nøyaktighet': ['ISA 500', 'ISA 530'],
       'Periodisering': ['ISA 500', 'ISA 540'],
       'Klassifisering': ['ISA 500', 'ISA 315']
@@ -582,6 +582,7 @@ export const AssertionsMatrix: React.FC<AssertionsMatrixProps> = ({
                   data={selectedTests}
                   columns={testTableColumns}
                   tableName="assertion-tests"
+                  title="Foreslåtte tester"
                   enableExport={true}
                   pageSize={10}
                 />

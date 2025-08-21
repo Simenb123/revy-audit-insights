@@ -20,9 +20,10 @@ import SampleResultsDisplay from '@/components/Audit/Sampling/SampleResultsDispl
 import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 
 // Reuse existing sampling services
-import { SamplingParams, SamplingResult, SampleItem } from '@/services/sampling/types';
-import { executeSampling } from '@/services/sampling/algorithms';
+import { generateAuditSample } from '@/services/sampling/algorithms';
+import { SamplingParams, SamplingResult, SampleItem, Transaction } from '@/services/sampling/types';
 import { formatCurrency, formatNumber } from '@/services/sampling/utils';
+import { Label } from '@/components/ui/label';
 
 // Training-specific hooks
 import { useTrainingContext } from '@/hooks/useTrainingContext';
@@ -54,6 +55,7 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
   const [selectedSamples, setSelectedSamples] = useState<SampleItem[]>([]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const [sampleData, setSampleData] = useState<any[]>([]);
   
   const { data: context } = useTrainingContext(sessionId);
   const updateProgress = useUpdateSessionProgress();
@@ -78,11 +80,11 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
   };
 
   const handleGenerateSample = async () => {
-    if (!samplingParams) return;
+    if (!samplingParams?.populationSize || sampleData.length === 0) return;
 
     try {
       // Apply training-specific budget constraints
-      const estimatedHours = (samplingParams.sampleSize || 50) * (MINUTES_PER_SAMPLE / 60);
+      const estimatedHours = (samplingParams.populationSize || 50) * (MINUTES_PER_SAMPLE / 60);
       
       if (estimatedHours > MAX_BUDGET_HOURS) {
         const maxSamples = Math.floor(MAX_BUDGET_HOURS / (MINUTES_PER_SAMPLE / 60));
@@ -94,9 +96,19 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
         return;
       }
 
+      // Convert sample data to transactions format
+      const transactions: Transaction[] = sampleData.map((item, index) => ({
+        id: `tx-${index}`,
+        transaction_date: new Date().toISOString().split('T')[0],
+        account_no: item.accountNo || '1000',
+        account_name: item.accountName || 'Ukjent konto',
+        description: item.description || 'Transaksjon',
+        amount: item.amount || 0,
+        voucher_number: item.voucherNo
+      }));
+
       // Use existing sampling algorithms
-      const mockPopulation = generateMockPopulation();
-      const result = executeSampling(mockPopulation, samplingParams);
+      const result = generateAuditSample(transactions, samplingParams);
       
       setSamplingResult(result);
       setSelectedSamples(result.samples.total || []);
@@ -129,8 +141,8 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
       sum + (result.finding_amount || 0), 0
     );
     
-    const projectionFactor = samplingResult.populationSum / 
-      (samplingResult.samples.total?.reduce((sum, item) => sum + item.bookValue, 0) || 1);
+    const projectionFactor = samplingParams?.populationSum || 0 / 
+      (samplingResult.samples.total?.reduce((sum, item) => sum + item.amount, 0) || 1);
       
     return totalFindings * projectionFactor;
   };
@@ -139,7 +151,7 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
     const projected = calculateProjectedMisstatement();
     const confidenceFactor = samplingParams?.confidenceLevel === 95 ? 1.96 : 2.58;
     const sampleSize = selectedSamples.length;
-    const standardError = Math.sqrt(projected * (samplingResult?.populationSum || 0) / sampleSize);
+    const standardError = Math.sqrt(projected * (samplingParams?.populationSum || 0) / sampleSize);
     
     return projected + (confidenceFactor * standardError);
   };
@@ -186,9 +198,9 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
       accessor: 'description',
     },
     {
-      key: 'bookValue',
+      key: 'amount',
       header: 'Bokført beløp',
-      accessor: 'bookValue',
+      accessor: 'amount',
       format: (value) => formatCurrency(value),
       align: 'right'
     },
@@ -346,6 +358,7 @@ export const SamplingWizard: React.FC<SamplingWizardProps> = ({
                 data={selectedSamples}
                 columns={testColumns}
                 tableName="sampling-testing"
+                title="Utvalgsresultater"
                 enableExport={false}
                 pageSize={10}
               />
