@@ -137,7 +137,7 @@ useEffect(() => {
           : 'general';
 
     return (
-      <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="flex h-full flex-1 flex-col min-h-0">
         {activeTab === 'figures' ? (
           <ClientFiguresPanel clientId={clientId} />
         ) : (
@@ -195,8 +195,8 @@ useEffect(() => {
       data-testid="right-sidebar"
       className="fixed bg-background flex flex-col h-full z-10 overflow-hidden"
       style={{
-        top: 'calc(var(--global-header-current-height) + var(--sub-header-current-height))',
-        height: 'calc(100dvh - (var(--global-header-current-height) + var(--sub-header-current-height)))',
+        top: 'calc(var(--global-header-current-height, 60px) + var(--sub-header-current-height, 0px))',
+        height: 'calc(100dvh - (var(--global-header-current-height, 60px) + var(--sub-header-current-height, 0px)))',
         right: 0
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
@@ -214,8 +214,8 @@ useEffect(() => {
         <div className="absolute left-0 top-0 h-full w-px bg-border pointer-events-none" />
       )}
 
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background">
+      {/* Header - non-sticky to avoid positioning conflicts */}
+      <div className="flex-shrink-0 bg-background border-b">
         <TooltipProvider>
           {isCollapsed ? (
             <div 
@@ -352,7 +352,7 @@ useEffect(() => {
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
           {renderContent()}
         </div>
       )}

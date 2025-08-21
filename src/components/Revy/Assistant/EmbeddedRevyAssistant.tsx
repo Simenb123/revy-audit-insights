@@ -51,10 +51,10 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
     });
   }, [messages, isLoading]);
   return (
-    <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto]">
+    <div className="flex flex-col h-full min-h-0">
       {/* Context indicator - minimized (only when empty state) */}
       {messages.length === 0 && (
-        <div className="px-1 py-0.5">
+        <div className="flex-shrink-0 px-1 py-0.5">
           <Badge variant="outline" className="text-xs">
             {contextDisplayName}
             {selectedVariant && ` • ${selectedVariant.display_name}`}
@@ -62,7 +62,7 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
         </div>
       )}
 
-      {/* Messages area - flex-grow with overflow */}
+      {/* Messages area - flex-1 with overflow */}
       <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto">
         <div ref={contentWrapperRef} className="flex min-h-full flex-col justify-end">
           <div className="space-y-0.5 px-1 pb-4">
@@ -89,8 +89,8 @@ const EmbeddedRevyAssistant: React.FC<EmbeddedRevyAssistantProps> = ({
           </div>
         </div>
       </div>
-      {/* Input area - flex-shrink-0 and sticky bottom */}
-      <div className="flex-none bg-background border-t p-1 flex gap-1">
+      {/* Input area - fixed at bottom with flexbox */}
+      <div className="flex-shrink-0 bg-background border-t p-1 flex gap-1">
         <Input
           value={input}
           onChange={onInputChange}
