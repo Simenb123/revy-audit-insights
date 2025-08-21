@@ -20,15 +20,34 @@ const LegalProvisionsTable: React.FC<LegalProvisionsTableProps> = ({
 }) => {
   // Create readable law name from identifier if full name not available
   const getReadableLawName = (identifier: string) => {
-    if (identifier.includes('regnskaps')) return 'Regnskapsloven';
-    if (identifier.includes('revisor')) return 'Revisorloven';
-    if (identifier.includes('aksje')) return 'Aksjeloven';
-    if (identifier.includes('allmennaksje')) return 'Allmennaksjeloven';
-    if (identifier.includes('bokføring')) return 'Bokføringsloven';
-    // Convert LOV-YYYY-MM-DD-NN format to readable
+    // Map specific law identifiers to their proper names
+    const lawMap: Record<string, string> = {
+      'LOV-1998-07-17-56': 'Lov om årsregnskap m.v. (regnskapsloven)',
+      'LOV-1999-01-15-2': 'Lov om revisor og revisjon (revisorloven)',
+      'LOV-1997-06-13-44': 'Lov om aksjeselskaper (aksjeloven)',
+      'LOV-1997-06-13-45': 'Lov om allmennaksjeselskaper (allmennaksjeloven)',
+      'LOV-2004-11-19-73': 'Lov om bokføring (bokføringsloven)',
+      'LOV-2005-06-17-67': 'Lov om betaling og innkreving av skatte- og avgiftskrav (skattebetalingsloven)',
+      'LOV-1999-03-26-14': 'Lov om skatt av formue og inntekt (skatteloven)'
+    };
+    
+    // Check for exact match first
+    if (lawMap[identifier]) {
+      return lawMap[identifier];
+    }
+    
+    // Fallback patterns for common law types
+    if (identifier.includes('regnskaps') || identifier === 'LOV-1998-07-17-56') return 'Lov om årsregnskap m.v. (regnskapsloven)';
+    if (identifier.includes('revisor') || identifier === 'LOV-1999-01-15-2') return 'Lov om revisor og revisjon (revisorloven)';
+    if (identifier.includes('aksje') && !identifier.includes('allmenn')) return 'Lov om aksjeselskaper (aksjeloven)';
+    if (identifier.includes('allmennaksje')) return 'Lov om allmennaksjeselskaper (allmennaksjeloven)';
+    if (identifier.includes('bokføring')) return 'Lov om bokføring (bokføringsloven)';
+    
+    // Generic fallback for LOV format
     if (identifier.match(/^LOV-\d{4}-/)) {
       return `Lov ${identifier}`;
     }
+    
     return identifier.charAt(0).toUpperCase() + identifier.slice(1);
   };
 
