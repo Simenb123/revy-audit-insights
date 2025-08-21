@@ -23,6 +23,7 @@ export interface LegalProvision {
   parent_provision_id?: string;
   law_identifier: string; // e.g., "regnskapsloven", "revisorloven"
   law_full_name?: string; // e.g., "Lov om årsregnskap m.v."
+  anchor?: string; // Unique anchor for cross-references
   valid_from?: string;
   valid_until?: string;
   hierarchy_path?: string; // e.g., "regnskapsloven.kap1.§3.ledd1"
@@ -179,3 +180,29 @@ export interface LegalReferenceParser {
   pattern: RegExp;
   extract: (text: string) => LegalCitation[];
 }
+
+// Legal Cross Reference for RAG Admin
+export interface LegalCrossRef {
+  id: number;
+  from_provision_id: number;
+  to_document_number: string;
+  to_anchor?: string;
+  ref_type: 'clarifies' | 'enabled_by' | 'implements' | 'cites' | 'interprets' | 'applies' | 'mentions';
+  ref_text?: string;
+  created_at: string;
+  created_by?: string;
+}
+
+// Draft relation for UI state management
+export interface DraftRelation {
+  fromProvision: LegalProvision;
+  toProvision: LegalProvision;
+  fromDocument: LegalDocument;
+  toDocument: LegalDocument;
+  refType: LegalCrossRef['ref_type'];
+  refText?: string;
+  tempId: string;
+}
+
+// Node type for graph visualization
+export type DocumentNodeType = 'lov' | 'forskrift' | 'dom' | 'rundskriv' | 'forarbeid' | 'ukjent';

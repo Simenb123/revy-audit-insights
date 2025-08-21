@@ -7588,6 +7588,39 @@ export type Database = {
           },
         ]
       }
+      legal_cross_refs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_provision_id: number
+          id: number
+          ref_text: string | null
+          ref_type: string
+          to_anchor: string | null
+          to_document_number: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_provision_id: number
+          id?: number
+          ref_text?: string | null
+          ref_type: string
+          to_anchor?: string | null
+          to_document_number: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_provision_id?: number
+          id?: number
+          ref_text?: string | null
+          ref_type?: string
+          to_anchor?: string | null
+          to_document_number?: string
+        }
+        Relationships: []
+      }
       legal_document_types: {
         Row: {
           authority_weight: number | null
@@ -7697,6 +7730,7 @@ export type Database = {
       }
       legal_provisions: {
         Row: {
+          anchor: string | null
           content: string | null
           created_at: string
           hierarchy_path: string | null
@@ -7715,6 +7749,7 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          anchor?: string | null
           content?: string | null
           created_at?: string
           hierarchy_path?: string | null
@@ -7733,6 +7768,7 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          anchor?: string | null
           content?: string | null
           created_at?: string
           hierarchy_path?: string | null
