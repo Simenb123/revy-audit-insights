@@ -16,6 +16,7 @@ import { LegalKnowledgeService } from '@/services/legal-knowledge/legalKnowledge
 import type { LegalDocument, LegalProvision, LegalDocumentType } from '@/types/legal-knowledge';
 import { LawSelectionWizard } from './LawSelectionWizard';
 import { LawProvisionUploader } from './LawProvisionUploader';
+import LegalProvisionsTable from './LegalProvisionsTable';
 import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
@@ -75,7 +76,7 @@ export const LegalKnowledgeManager: React.FC = () => {
   });
 
   // Fetch legal provisions
-  const { data: provisions } = useQuery({
+  const { data: provisions, isLoading: provisionsLoading } = useQuery({
     queryKey: ['legal-provisions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -560,25 +561,11 @@ export const LegalKnowledgeManager: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="provisions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Juridiske Bestemmelser</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Strukturerte lovbestemmelser med hierarkiske relasjoner
-              </p>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-96">
-                {provisions?.length ? (
-                  provisions.map(renderProvisionCard)
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Ingen bestemmelser funnet
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          <LegalProvisionsTable
+            provisions={provisions || []}
+            isLoading={provisionsLoading}
+            onLawClick={handleLawClick}
+          />
         </TabsContent>
 
         <TabsContent value="import" className="space-y-4">
