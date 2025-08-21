@@ -5,10 +5,12 @@ import { TrainingSessionCard } from '@/components/Revisorskolen/TrainingSessionC
 import { DocumentsPanel } from '@/components/Revisorskolen/DocumentsPanel';
 import { CertificationManager } from '@/components/Revisorskolen/CertificationManager';
 import { EnhancedTrainingChat } from '@/components/Revisorskolen/EnhancedTrainingChat';
+import ScenarioStatistics from '@/components/Revisorskolen/ScenarioStatistics';
+import TrainingReports from '@/components/Revisorskolen/TrainingReports';
 import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
 import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
-import { GraduationCap, BookOpen, Trophy, Users, Settings } from 'lucide-react';
+import { GraduationCap, BookOpen, Trophy, Users, Settings, BarChart3, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Revisorskolen() {
@@ -76,7 +78,7 @@ export default function Revisorskolen() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Sesjoner
@@ -96,6 +98,14 @@ export default function Revisorskolen() {
           <TabsTrigger value="results" className="flex items-center gap-2">
             <Trophy className="h-4 w-4" />
             Sertifisering
+          </TabsTrigger>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Statistikk
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Rapporter
           </TabsTrigger>
         </TabsList>
 
@@ -223,6 +233,14 @@ export default function Revisorskolen() {
 
         <TabsContent value="results" className="space-y-6">
           <CertificationManager />
+        </TabsContent>
+
+        <TabsContent value="statistics" className="space-y-6">
+          <ScenarioStatistics />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <TrainingReports />
         </TabsContent>
       </Tabs>
     </div>
