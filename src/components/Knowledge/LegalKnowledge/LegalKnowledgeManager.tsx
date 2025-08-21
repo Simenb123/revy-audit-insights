@@ -268,8 +268,19 @@ export const LegalKnowledgeManager: React.FC = () => {
         {doc.summary && (
           <p className="text-sm text-muted-foreground mb-3">{doc.summary}</p>
         )}
-        <div className="text-xs text-muted-foreground">
-          Publisert: {doc.publication_date ? new Date(doc.publication_date).toLocaleDateString('nb-NO') : 'Ukjent'}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            Publisert: {doc.publication_date ? new Date(doc.publication_date).toLocaleDateString('nb-NO') : 'Ukjent'}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleLawClick(doc.document_number || doc.id, doc.title)}
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Last opp bestemmelser
+          </Button>
         </div>
       </CardContent>
     </Card>
