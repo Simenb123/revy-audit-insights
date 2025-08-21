@@ -209,17 +209,23 @@ export const LawProvisionUploader: React.FC<LawProvisionUploaderProps> = ({
       setStep('importing');
       toast.info('Importerer juridiske bestemmelser...');
 
+      // Helper function to validate UUID
+      const isValidUUID = (str: string) => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(str);
+      };
+
       // Prepare data for database insertion
       const provisions = processedData.map((row, index) => {
         // Create valid provision data ensuring required fields are not empty
         const provision = {
-          provision_id: row.provision_id || crypto.randomUUID(),
+          provision_id: (row.provision_id && isValidUUID(row.provision_id)) ? row.provision_id : crypto.randomUUID(),
           law_identifier: row.law_identifier || lawIdentifier,
           provision_type: row.provision_type || 'section',
           provision_number: row.provision_number || `${index + 1}`,
           title: row.title || `Bestemmelse ${index + 1}`,
           content: row.content || '',
-          parent_provision_id: row.parent_provision_id || null,
+          parent_provision_id: (row.parent_provision_id && isValidUUID(row.parent_provision_id)) ? row.parent_provision_id : null,
           valid_from: row.valid_from ? (
             typeof row.valid_from === 'string' ? row.valid_from.split('T')[0] : 
             new Date(row.valid_from).toISOString().split('T')[0]
