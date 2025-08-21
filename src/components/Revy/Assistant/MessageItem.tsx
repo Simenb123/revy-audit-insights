@@ -80,9 +80,11 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, compact = false }) =
               sources={message.sources || []}
             />
           ) : (
-            <ReactMarkdown className="prose prose-sm max-w-none dark:prose-invert">
-              {typeof message.content === 'string' ? message.content : ''}
-            </ReactMarkdown>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown>
+                {typeof message.content === 'string' ? message.content : ''}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
 
