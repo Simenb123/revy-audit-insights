@@ -13,10 +13,14 @@
     <!-- Google Fonts with Norwegian character support -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin,latin-ext" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin,latin-ext" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin,latin-ext" rel="stylesheet"></noscript>
-    <link rel="preload" href="/assets/index-BTiFr04_.css" as="style">
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="preload" href="/assets/index-BTiFr04_.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/assets/index-BTiFr04_.css"></noscript>
+    <style>
+    /* Critical CSS to prevent FOUC */
+    html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0;font-family:Inter,sans-serif}#root{min-height:100vh}
+    </style>
   </head>
   <body>
     <div id="root"></div>
