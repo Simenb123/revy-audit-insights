@@ -9,16 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { BookOpen, FileText, Scale, Search, Plus, Link2, Target, Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { BookOpen, FileText, Scale, Search, Plus, Link2, Target, Upload, Download, FileSpreadsheet, Zap } from 'lucide-react';
 import { LegalExcelService, ExcelImportResult } from '@/services/legal-knowledge/excelService';
 import { supabase } from '@/integrations/supabase/client';
 import { LegalKnowledgeService } from '@/services/legal-knowledge/legalKnowledgeService';
 import type { LegalDocument, LegalProvision, LegalDocumentType } from '@/types/legal-knowledge';
+import { LawSelectionWizard } from './LawSelectionWizard';
 import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('all');
+  const [showWizard, setShowWizard] = useState(false);
   const [newDocument, setNewDocument] = useState({
     title: '',
     content: '',
@@ -302,16 +304,30 @@ export const LegalKnowledgeManager: React.FC = () => {
     </Card>
   );
 
+  // Toggle wizard view
+  if (showWizard) {
+    return <LawSelectionWizard onBack={() => setShowWizard(false)} />;
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <BookOpen className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Juridisk Kunnskapsbase</h1>
-          <p className="text-muted-foreground">
-            Strukturert lagring og søk i juridiske dokumenter med relasjoner
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <BookOpen className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Juridisk Kunnskapsbase</h1>
+            <p className="text-muted-foreground">
+              Strukturert lagring og søk i juridiske dokumenter med relasjoner
+            </p>
+          </div>
         </div>
+        <Button 
+          onClick={() => setShowWizard(true)}
+          className="flex items-center gap-2"
+        >
+          <Zap className="h-4 w-4" />
+          Guidet opplastning
+        </Button>
       </div>
 
       {/* Search Section */}
