@@ -15,12 +15,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { LegalKnowledgeService } from '@/services/legal-knowledge/legalKnowledgeService';
 import type { LegalDocument, LegalProvision, LegalDocumentType } from '@/types/legal-knowledge';
 import { LawSelectionWizard } from './LawSelectionWizard';
+import { LawProvisionUploader } from './LawProvisionUploader';
 import { toast } from 'sonner';
 
 export const LegalKnowledgeManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('all');
   const [showWizard, setShowWizard] = useState(false);
+  const [selectedLaw, setSelectedLaw] = useState<{ identifier: string; title: string } | null>(null);
   const [newDocument, setNewDocument] = useState({
     title: '',
     content: '',
@@ -274,7 +276,8 @@ export const LegalKnowledgeManager: React.FC = () => {
   );
 
   const renderProvisionCard = (provision: LegalProvision) => (
-    <Card key={provision.id} className="mb-4">
+    <Card key={provision.id} className="mb-4 cursor-pointer hover:bg-muted/30" 
+          onClick={() => handleLawClick(provision.law_identifier, provision.law_full_name || provision.law_identifier)}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -291,6 +294,9 @@ export const LegalKnowledgeManager: React.FC = () => {
                   {provision.law_full_name}
                 </Badge>
               )}
+              <Badge variant="outline" className="text-xs">
+                Klikk for å laste opp flere bestemmelser
+              </Badge>
             </div>
           </div>
           <Scale className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -304,9 +310,29 @@ export const LegalKnowledgeManager: React.FC = () => {
     </Card>
   );
 
+  const handleLawClick = (lawIdentifier: string, lawTitle: string) => {
+    setSelectedLaw({ identifier: lawIdentifier, title: lawTitle });
+  };
+
   // Toggle wizard view
   if (showWizard) {
     return <LawSelectionWizard onBack={() => setShowWizard(false)} />;
+  }
+
+  // Show law provision uploader if law is selected
+  if (selectedLaw) {
+    return (
+      <LawProvisionUploader
+        lawIdentifier={selectedLaw.identifier}
+        lawTitle={selectedLaw.title}
+        onBack={() => setSelectedLaw(null)}
+        onComplete={() => {
+          setSelectedLaw(null);
+          // Refresh the provisions list
+          queryClient.invalidateQueries({ queryKey: ['legal-provisions'] });
+        }}
+      />
+    );
   }
 
   return (
