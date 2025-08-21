@@ -66,27 +66,42 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
         </div>
       </div>
       <div className="flex flex-col flex-1 min-h-0">
-        <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0">
-          { !hideTabs && (
+        {hideTabs ? (
+          // Desktop: Render directly without Tabs wrapper
+          <div className="flex-1 min-h-0 flex flex-col">
+            {currentTab === 'ai' ? (
+              <SmartReviAssistant
+                embedded
+                context={context}
+                clientData={clientData}
+                userRole={userRole}
+              />
+            ) : (
+              <GroupChatSidebar />
+            )}
+          </div>
+        ) : (
+          // Mobile: Use Tabs with visible tab list
+          <Tabs value={currentTab} onValueChange={(v) => handleTabChange(v as 'ai' | 'chat')} className="flex-1 flex flex-col min-h-0">
             <div className="px-2 pt-2">
               <TabsList>
                 <TabsTrigger value="ai">AI</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
               </TabsList>
             </div>
-          ) }
-          <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
-            <SmartReviAssistant
-              embedded
-              context={context}
-              clientData={clientData}
-              userRole={userRole}
-            />
-          </TabsContent>
-          <TabsContent value="chat" className="flex-1 min-h-0 flex flex-col">
-            <GroupChatSidebar />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="ai" className="flex-1 min-h-0 flex flex-col">
+              <SmartReviAssistant
+                embedded
+                context={context}
+                clientData={clientData}
+                userRole={userRole}
+              />
+            </TabsContent>
+            <TabsContent value="chat" className="flex-1 min-h-0 flex flex-col">
+              <GroupChatSidebar />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   )
