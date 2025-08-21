@@ -12,6 +12,7 @@ import RolePermissions from '@/components/Admin/RolePermissions';
 import AuditActivity from '@/components/Admin/AuditActivity';
 import SystemSettings from '@/components/Admin/SystemSettings';
 import TrainingAdmin from '@/components/Revisorskolen/TrainingAdmin';
+import LegalRelationsAdmin from '@/components/Knowledge/admin/LegalRelationsAdmin';
 
 const AdminPage = () => {
   const { data: userProfile, isLoading } = useUserProfile();
@@ -65,6 +66,7 @@ const AdminPage = () => {
             <Route path="audit" element={<AuditActivity />} />
             <Route path="training" element={<TrainingAdmin />} />
             <Route path="settings" element={<SystemSettings />} />
+            <Route path="rag/juridisk" element={<LegalRelationsAdmin />} />
           </Routes>
         </main>
       </div>

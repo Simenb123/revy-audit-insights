@@ -9,7 +9,9 @@ import {
   TrendingUp, 
   Clock,
   Shield,
-  UserX
+  UserX,
+  Database,
+  Brain
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAllUserProfiles } from '@/hooks/useAllUserProfiles';
@@ -41,6 +43,7 @@ const AdminOverview = () => {
     { title: 'Behandle forespørsler', description: `${pendingRequests.length} ventende`, href: '/admin/access-requests', icon: UserCheck, color: 'bg-green-500' },
     { title: 'Roller & tilgang', description: 'Administrer rettigheter', href: '/admin/roles', icon: Shield, color: 'bg-purple-500' },
     { title: 'Aktivitetslogg', description: 'Se systemaktivitet', href: '/admin/audit', icon: Clock, color: 'bg-orange-500' },
+    { title: 'RAG Admin', description: 'Juridisk relasjonskart', href: '/admin/rag/juridisk', icon: Database, color: 'bg-indigo-500' },
   ];
 
   return (
@@ -118,7 +121,7 @@ const AdminOverview = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {quickActions.map((action) => (
                 <Link key={action.title} to={action.href}>
                   <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-l-4 border-l-transparent hover:border-l-primary">
@@ -214,18 +217,61 @@ const AdminOverview = () => {
                 <span className="font-medium">{pendingRequests.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Aktive ansatte</span>
-                <span className="font-medium">{activeEmployees.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Inaktive ansatte</span>
-                <span className="font-medium">{inactiveEmployees.length}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+                 <span className="text-muted-foreground">Aktive ansatte</span>
+                 <span className="font-medium">{activeEmployees.length}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-muted-foreground">Inaktive ansatte</span>
+                 <span className="font-medium">{inactiveEmployees.length}</span>
+               </div>
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+
+       {/* RAG & Knowledge Management */}
+       <div className="grid grid-cols-1 gap-6">
+         <Card>
+           <CardHeader>
+             <CardTitle className="flex items-center gap-2">
+               <Brain className="h-5 w-5 text-indigo-500" />
+               RAG & Kunnskapsstyring
+             </CardTitle>
+             <CardDescription>
+               Administrer AI-drevne kunnskapssystemer
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <div className="space-y-4">
+               <div className="flex items-center gap-3 p-3 border rounded-lg">
+                 <div className="p-2 rounded-full bg-indigo-50">
+                   <Database className="h-4 w-4 text-indigo-600" />
+                 </div>
+                 <div className="flex-1">
+                   <h4 className="font-medium">Juridisk Relasjonskart</h4>
+                   <p className="text-sm text-muted-foreground">
+                     Administrer relasjoner mellom juridiske kilder og bestemmelser
+                   </p>
+                 </div>
+                 <Button variant="outline" size="sm" asChild>
+                   <Link to="/admin/rag/juridisk">Åpne</Link>
+                 </Button>
+               </div>
+               
+               <div className="bg-muted/50 p-3 rounded-lg">
+                 <h5 className="text-sm font-medium mb-2">Funksjoner:</h5>
+                 <ul className="text-xs text-muted-foreground space-y-1">
+                   <li>• Dokumentvalg og type-kategorisering</li>
+                   <li>• Bestemmelsessøk og relasjonsadministrasjon</li>
+                   <li>• Grafisk visualisering med React Flow</li>
+                   <li>• Demo-modus for testing</li>
+                 </ul>
+               </div>
+             </div>
+           </CardContent>
+         </Card>
+       </div>
+     </div>
   );
 };
 
