@@ -7,10 +7,13 @@ import { CertificationManager } from '@/components/Revisorskolen/CertificationMa
 import { EnhancedTrainingChat } from '@/components/Revisorskolen/EnhancedTrainingChat';
 import ScenarioStatistics from '@/components/Revisorskolen/ScenarioStatistics';
 import TrainingReports from '@/components/Revisorskolen/TrainingReports';
+import { ContentLibrary } from '@/components/Revisorskolen/ContentLibrary';
+import { PersonalizedLearningPath } from '@/components/Revisorskolen/PersonalizedLearningPath';
+import { UserPreferences } from '@/components/Revisorskolen/UserPreferences';
 import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
 import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
-import { GraduationCap, BookOpen, Trophy, Users, Settings, BarChart3, FileText } from 'lucide-react';
+import { GraduationCap, BookOpen, Trophy, Users, Settings, BarChart3, FileText, Library, Target, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Revisorskolen() {
@@ -78,10 +81,18 @@ export default function Revisorskolen() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Sesjoner
+          </TabsTrigger>
+          <TabsTrigger value="library" className="flex items-center gap-2">
+            <Library className="h-4 w-4" />
+            Bibliotek
+          </TabsTrigger>
+          <TabsTrigger value="paths" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Læringsbaner
           </TabsTrigger>
           <TabsTrigger value="documents" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
@@ -106,6 +117,10 @@ export default function Revisorskolen() {
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Rapporter
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Innstillinger
           </TabsTrigger>
         </TabsList>
 
@@ -150,6 +165,14 @@ export default function Revisorskolen() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="library" className="space-y-6">
+          <ContentLibrary />
+        </TabsContent>
+
+        <TabsContent value="paths" className="space-y-6">
+          <PersonalizedLearningPath />
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
@@ -241,6 +264,10 @@ export default function Revisorskolen() {
 
         <TabsContent value="reports" className="space-y-6">
           <TrainingReports />
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-6">
+          <UserPreferences />
         </TabsContent>
       </Tabs>
     </div>
