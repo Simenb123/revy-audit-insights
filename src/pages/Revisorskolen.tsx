@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrainingSessionCard } from '@/components/Revisorskolen/TrainingSessionCard';
 import { DocumentsPanel } from '@/components/Revisorskolen/DocumentsPanel';
+import { CertificationManager } from '@/components/Revisorskolen/CertificationManager';
+import { EnhancedTrainingChat } from '@/components/Revisorskolen/EnhancedTrainingChat';
 import { useTrainingPrograms } from '@/hooks/useTrainingPrograms';
 import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } from '@/hooks/useTrainingSessions';
 import { useState } from 'react';
@@ -74,7 +76,7 @@ export default function Revisorskolen() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Sesjoner
@@ -87,9 +89,13 @@ export default function Revisorskolen() {
             <Users className="h-4 w-4" />
             Aktiv øving
           </TabsTrigger>
+          <TabsTrigger value="chat" className="flex items-center gap-2" disabled={!selectedSessionId}>
+            <Settings className="h-4 w-4" />
+            AI-veileder
+          </TabsTrigger>
           <TabsTrigger value="results" className="flex items-center gap-2">
             <Trophy className="h-4 w-4" />
-            Resultater
+            Sertifisering
           </TabsTrigger>
         </TabsList>
 
@@ -182,20 +188,41 @@ export default function Revisorskolen() {
           )}
         </TabsContent>
 
+        <TabsContent value="chat" className="space-y-6">
+          {selectedSessionId ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI-veileder</CardTitle>
+                <CardDescription>
+                  Interaktiv chat med erfaren revisor-mentor
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EnhancedTrainingChat 
+                  sessionId={selectedSessionId}
+                  onInsightGenerated={(insight) => {
+                    toast({
+                      title: "Ny innsikt",
+                      description: insight,
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Velg en sesjon for å få tilgang til AI-veilederen.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="results" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dine resultater</CardTitle>
-              <CardDescription>
-                Oversikt over gjennomførte sesjoner og prestasjoner
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center p-8">
-                Resultater vil vises her etter gjennomførte sesjoner.
-              </p>
-            </CardContent>
-          </Card>
+          <CertificationManager />
         </TabsContent>
       </Tabs>
     </div>
