@@ -101,21 +101,23 @@ const styles = StyleSheet.create({
   },
   // Content area with line items and totals
   contentArea: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     marginBottom: 30,
   },
   linesSection: {
-    width: '65%',
-    paddingRight: 20,
+    width: '100%',
+    marginBottom: 20,
   },
   totalsSection: {
-    width: '35%',
+    width: '100%',
+    alignItems: 'flex-end',
   },
   // Totals box (Clean original style)
   totalsBox: {
     border: '1 solid #d1d5db',
     padding: 12,
     backgroundColor: '#ffffff',
+    width: 200,
   },
   totalsTitle: {
     fontSize: 12,
