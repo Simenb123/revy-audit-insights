@@ -25,6 +25,7 @@ import CategoryManager from './CategoryManager';
 import ImprovedCategoryManager from './ImprovedCategoryManager';
 import ContentTypeManager from './ContentTypeManager';
 import SearchTestingPanel from './SearchTestingPanel';
+import EnhancedLegalSearchPanel from './EnhancedLegalSearchPanel';
 import KnowledgeMonitor from '../AIRevyAdmin/KnowledgeMonitor';
 import SubjectAreaManager from './SubjectAreaManager';
 import OptimalCategoryStructure from './OptimalCategoryStructure';
