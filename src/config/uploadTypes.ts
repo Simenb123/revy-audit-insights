@@ -349,15 +349,26 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
     ],
     fieldDefinitions: [
       {
-        field_key: 'bilag',
-        field_label: 'Bilag/Voucher',
-        field_description: 'Bilagsnummer eller voucher nummer',
+        field_key: 'type_transaksjon',
+        field_label: 'Type transaksjon',
+        field_description: 'Type transaksjon som bestemmer bilagstype',
         is_required: true,
         data_type: 'text',
         sort_order: 1,
+        category: 'Klassifikasjon',
+        example_values: ['Salgsfaktura', 'Leverandørfaktura', 'Kundebetaling'],
+        aliases: ['Type transaksjon', 'Type_transaksjon', 'Transaksjontype', 'type_transaksjon', 'type transaksjon', 'bilagstype', 'document_type']
+      },
+      {
+        field_key: 'bilag',
+        field_label: 'Bilag/Voucher',
+        field_description: 'Bilagsnummer eller voucher nummer (ikke vist i PDF)',
+        is_required: true,
+        data_type: 'text',
+        sort_order: 2,
         category: 'Identifikasjon',
         example_values: ['1001', 'VB001', 'FB2024001'],
-        aliases: ['bilag', 'voucher', 'bilagsnummer', 'bilagsnr', 'voucher_number', 'dok_nr', 'dokument']
+        aliases: ['Bilag', 'bilag', 'voucher', 'bilagsnummer', 'bilagsnr', 'voucher_number', 'dok_nr', 'dokument']
       },
       {
         field_key: 'fakturanummer',
@@ -365,32 +376,85 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Fakturanummer eller dokumentnummer',
         is_required: false,
         data_type: 'text',
-        sort_order: 2,
+        sort_order: 3,
         category: 'Identifikasjon',
         example_values: ['INV-2024-001', '12345'],
-        aliases: ['fakturanummer', 'fakturanr', 'invoice', 'invoice_number', 'faktura', 'inv_nr']
+        aliases: ['Fakturanummer', 'fakturanummer', 'fakturanr', 'invoice', 'invoice_number', 'faktura', 'inv_nr']
       },
       {
         field_key: 'fakturadato',
-        field_label: 'Fakturadato/Dato',
-        field_description: 'Transaksjonsdato eller fakturadato',
+        field_label: 'Fakturadato',
+        field_description: 'Fakturadato eller transaksjonsdato',
         is_required: true,
         data_type: 'date',
-        sort_order: 3,
+        sort_order: 4,
         category: 'Dato',
         example_values: ['01.01.2024', '2024-01-01'],
-        aliases: ['dato', 'date', 'fakturadato', 'bilagsdato', 'transaksjonsdato', 'regnskapsdato', 'invoice_date']
+        aliases: ['Fakturadato', 'fakturadato', 'dato', 'date', 'bilagsdato', 'transaksjonsdato', 'regnskapsdato', 'invoice_date']
       },
       {
-        field_key: 'konto',
-        field_label: 'Kontonummer',
-        field_description: 'Regnskapskonto',
-        is_required: true,
-        data_type: 'number',
-        sort_order: 4,
-        category: 'Regnskap',
-        example_values: ['1500', '2400', '3000'],
-        aliases: ['konto', 'kontonummer', 'kontonr', 'account', 'account_number', 'acc_no', 'kontokode']
+        field_key: 'forfallsdato',
+        field_label: 'Forfallsdato',
+        field_description: 'Forfallsdato for betaling',
+        is_required: false,
+        data_type: 'date',
+        sort_order: 5,
+        category: 'Dato',
+        example_values: ['01.02.2024', '2024-02-01'],
+        aliases: ['Forfallsdato', 'forfallsdato', 'due_date', 'payment_date', 'betalingsdato']
+      },
+      {
+        field_key: 'leveringsdato',
+        field_label: 'Leveringsdato',
+        field_description: 'Leveringsdato for varer/tjenester',
+        is_required: false,
+        data_type: 'date',
+        sort_order: 6,
+        category: 'Dato',
+        example_values: ['15.01.2024', '2024-01-15'],
+        aliases: ['Leveringsdato', 'leveringsdato', 'delivery_date', 'levering']
+      },
+      {
+        field_key: 'kundenavn',
+        field_label: 'Kundenavn',
+        field_description: 'Navn på kunde',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 7,
+        category: 'Motpart',
+        example_values: ['Acme AS', 'John Doe'],
+        aliases: ['Kundenavn', 'kundenavn', 'kunde', 'customer', 'customer_name']
+      },
+      {
+        field_key: 'leverandornavn',
+        field_label: 'Leverandørnavn',
+        field_description: 'Navn på leverandør',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 8,
+        category: 'Motpart',
+        example_values: ['Supplier AS', 'Vendor AB'],
+        aliases: ['Leverandørnavn', 'leverandørnavn', 'leverandør', 'supplier', 'vendor', 'supplier_name']
+      },
+      {
+        field_key: 'kundeadresse',
+        field_label: 'Kundeadresse',
+        field_description: 'Adresse til kunde',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 9,
+        category: 'Motpart',
+        aliases: ['Kundeadresse', 'kundeadresse', 'customer_address']
+      },
+      {
+        field_key: 'leverandoradresse',
+        field_label: 'Leverandøradresse',
+        field_description: 'Adresse til leverandør',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 10,
+        category: 'Motpart',
+        aliases: ['Leverandøradresse', 'leverandøradresse', 'supplier_address', 'vendor_address']
       },
       {
         field_key: 'beskrivelse',
@@ -398,30 +462,10 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Tekst eller beskrivelse av transaksjon',
         is_required: false,
         data_type: 'text',
-        sort_order: 5,
+        sort_order: 11,
         category: 'Beskrivelse',
         example_values: ['Salg av tjenester', 'Innkjøp av varer'],
-        aliases: ['beskrivelse', 'tekst', 'text', 'description', 'bilagstekst', 'forklaring', 'kommentar']
-      },
-      {
-        field_key: 'debet',
-        field_label: 'Debet',
-        field_description: 'Debetbeløp',
-        is_required: false,
-        data_type: 'number',
-        sort_order: 6,
-        category: 'Beløp',
-        aliases: ['debet', 'debit', 'skal', 'dr', 'debet_amount', 'soll']
-      },
-      {
-        field_key: 'kredit',
-        field_label: 'Kredit',
-        field_description: 'Kreditbeløp',
-        is_required: false,
-        data_type: 'number',
-        sort_order: 7,
-        category: 'Beløp',
-        aliases: ['kredit', 'credit', 'have', 'haver', 'cr', 'credit_amount']
+        aliases: ['Beskrivelse', 'beskrivelse', 'tekst', 'text', 'description', 'bilagstekst', 'forklaring', 'kommentar']
       },
       {
         field_key: 'netto',
@@ -429,9 +473,9 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Nettobeløp uten mva',
         is_required: false,
         data_type: 'number',
-        sort_order: 8,
+        sort_order: 12,
         category: 'Beløp',
-        aliases: ['netto', 'netto_beløp', 'nettobeløp', 'net', 'net_amount', 'beløp_netto']
+        aliases: ['Netto beløp', 'netto beløp', 'netto', 'netto_beløp', 'nettobeløp', 'net', 'net_amount', 'beløp_netto']
       },
       {
         field_key: 'mva_sats',
@@ -439,9 +483,9 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'MVA-prosent (25, 15, 0)',
         is_required: false,
         data_type: 'number',
-        sort_order: 9,
+        sort_order: 13,
         category: 'MVA',
-        aliases: ['mva_sats', 'mvasats', 'mva', 'mvakode', 'vat_rate', 'tax_rate', 'skattesats']
+        aliases: ['MVA-sats', 'mva-sats', 'MVA sats', 'mva sats', 'mva_sats', 'mvasats', 'mva', 'mvakode', 'vat_rate', 'tax_rate', 'skattesats']
       },
       {
         field_key: 'mva_belop',
@@ -449,30 +493,9 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'MVA-beløp i kroner',
         is_required: false,
         data_type: 'number',
-        sort_order: 10,
+        sort_order: 14,
         category: 'MVA',
-        aliases: ['mva_beløp', 'mvabeløp', 'mva_belop', 'vat_amount', 'tax_amount', 'skattebeløp']
-      },
-      {
-        field_key: 'motpart',
-        field_label: 'Kunde/Leverandør navn',
-        field_description: 'Navn på motpart (kunde eller leverandør)',
-        is_required: false,
-        data_type: 'text',
-        sort_order: 11,
-        category: 'Motpart',
-        example_values: ['Acme AS', 'John Doe'],
-        aliases: ['motpart', 'leverandør', 'leverandørnavn', 'kunde', 'kundenavn', 'supplier', 'customer', 'vendor', 'company']
-      },
-      {
-        field_key: 'motpart_adresse',
-        field_label: 'Motpart adresse',
-        field_description: 'Adresse til kunde eller leverandør',
-        is_required: false,
-        data_type: 'text',
-        sort_order: 12,
-        category: 'Motpart',
-        aliases: ['motpart_adresse', 'leverandøradresse', 'kundeadresse', 'adresse', 'address', 'supplier_address', 'vendor_address']
+        aliases: ['MVA-beløp', 'mva-beløp', 'MVA beløp', 'mva beløp', 'mva_beløp', 'mvabeløp', 'mva_belop', 'vat_amount', 'tax_amount', 'skattebeløp']
       },
       {
         field_key: 'antall',
@@ -480,9 +503,9 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Antall enheter',
         is_required: false,
         data_type: 'number',
-        sort_order: 13,
+        sort_order: 15,
         category: 'Linjedetaljer',
-        aliases: ['antall', 'qty', 'quantity', 'mengde', 'stk', 'pieces']
+        aliases: ['Antall', 'antall', 'qty', 'quantity', 'mengde', 'stk', 'pieces']
       },
       {
         field_key: 'enhet',
@@ -490,10 +513,10 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Måleenhet (stk, timer, kg)',
         is_required: false,
         data_type: 'text',
-        sort_order: 14,
+        sort_order: 16,
         category: 'Linjedetaljer',
         example_values: ['stk', 'timer', 'kg'],
-        aliases: ['enhet', 'unit', 'måleenhet', 'stk', 'timer', 'kg', 'pcs', 'hours']
+        aliases: ['Enhet', 'enhet', 'unit', 'måleenhet', 'stk', 'timer', 'kg', 'pcs', 'hours']
       },
       {
         field_key: 'enhetspris',
@@ -501,9 +524,9 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Pris per enhet',
         is_required: false,
         data_type: 'number',
-        sort_order: 15,
+        sort_order: 17,
         category: 'Linjedetaljer',
-        aliases: ['enhetspris', 'unit_price', 'pris', 'price', 'stykksris', 'per_unit', 'unit_cost']
+        aliases: ['Enhetspris', 'enhetspris', 'unit_price', 'pris', 'price', 'stykksris', 'per_unit', 'unit_cost']
       }
     ]
   }
