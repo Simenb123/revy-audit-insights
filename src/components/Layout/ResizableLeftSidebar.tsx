@@ -333,7 +333,7 @@ const ResizableLeftSidebar = () => {
           {!isCollapsed && (
             <span className="text-xs font-medium text-sidebar-foreground">Navigation</span>
           )}
-          {clientId && <SidebarTrigger className="ml-auto h-8 w-8" />}
+          <SidebarTrigger className="ml-auto h-8 w-8" />
         </div>
       </SidebarHeader>
       
