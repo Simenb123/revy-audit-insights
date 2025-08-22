@@ -45,6 +45,33 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
     return 'bg-red-100 text-red-800 border-red-200';
   };
 
+  // Check for duplicate mappings
+  const getDuplicateFields = (): Record<string, string[]> => {
+    const fieldToColumns: Record<string, string[]> = {};
+    
+    Object.entries(mapping).forEach(([column, field]) => {
+      if (field && field !== 'none') {
+        if (!fieldToColumns[field]) {
+          fieldToColumns[field] = [];
+        }
+        fieldToColumns[field].push(column);
+      }
+    });
+
+    // Return only fields that have more than one column mapped
+    const duplicates: Record<string, string[]> = {};
+    Object.entries(fieldToColumns).forEach(([field, columns]) => {
+      if (columns.length > 1) {
+        duplicates[field] = columns;
+      }
+    });
+
+    return duplicates;
+  };
+
+  const duplicateFields = getDuplicateFields();
+  const hasDuplicates = Object.keys(duplicateFields).length > 0;
+
   const { selectedFiscalYear } = useFiscalYear();
   const year = selectedFiscalYear || new Date().getFullYear();
   const hasOpening = Array.isArray(fieldDefinitions) && fieldDefinitions.some((f: any) => f.field_key === 'opening_balance');
@@ -61,6 +88,30 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Duplicate mappings warning */}
+        {hasDuplicates && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <div className="flex items-center gap-2 text-yellow-800 font-medium mb-2">
+              <AlertCircle className="w-4 h-4" />
+              Duplikate mappinger oppdaget
+            </div>
+            <div className="text-sm text-yellow-700">
+              Følgende felt er mappet til flere kolonner:
+              {Object.entries(duplicateFields).map(([field, columns]) => {
+                const fieldDef = fieldDefinitions.find(f => f.field_key === field);
+                return (
+                  <div key={field} className="mt-1">
+                    <strong>{fieldDef?.field_label || field}:</strong> {columns.join(', ')}
+                  </div>
+                );
+              })}
+              <div className="mt-2 text-xs">
+                <strong>Regel:</strong> Hver kolonne kan kun mappes til ett felt, men samme felt kan ha data fra flere kolonner hvis det gir mening (f.eks. "Netto beløp" og "MVA-grunnlag" kan være samme kolonne).
+              </div>
+            </div>
+          </div>
+        )}
+
         {hasOpening && hasClosing && (
           <div className="mb-3 text-xs text-muted-foreground flex items-center gap-2">
             <Tooltip>
@@ -109,21 +160,31 @@ const ColumnMappingTable: React.FC<ColumnMappingTableProps> = ({
                           value={mapping[header] || ''}
                           onValueChange={(value) => onMappingChange(header, value)}
                         >
-                          <SelectTrigger className="w-full text-xs">
+                          <SelectTrigger className={`w-full text-xs ${
+                            Object.values(duplicateFields).some(columns => columns.includes(header)) 
+                              ? 'border-yellow-500 bg-yellow-50' 
+                              : ''
+                          }`}>
                             <SelectValue placeholder="Velg felt..." />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem key="none" value="none">-- Ikke tildelt --</SelectItem>
                             {fieldDefinitions
                               .sort((a, b) => a.sort_order - b.sort_order)
-                              .map((field) => (
-                                <SelectItem key={field.field_key} value={field.field_key}>
-                                  <div className="flex items-center gap-2">
-                                    <span>{field.field_label}</span>
-                                    {field.is_required && <span className="text-red-500">*</span>}
-                                  </div>
-                                </SelectItem>
-                              ))}
+                              .map((field) => {
+                                const isAlreadyMapped = Object.values(mapping).includes(field.field_key) && mapping[header] !== field.field_key;
+                                return (
+                                  <SelectItem key={field.field_key} value={field.field_key}>
+                                    <div className="flex items-center gap-2">
+                                      <span className={isAlreadyMapped ? 'text-yellow-600' : ''}>
+                                        {field.field_label}
+                                        {isAlreadyMapped && ' (duplikat)'}
+                                      </span>
+                                      {field.is_required && <span className="text-red-500">*</span>}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
                           </SelectContent>
                         </Select>
                         

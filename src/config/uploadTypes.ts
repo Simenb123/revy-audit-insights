@@ -470,7 +470,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
       {
         field_key: 'netto_belop',
         field_label: 'Netto beløp',
-        field_description: 'Nettobeløp uten mva',
+        field_description: 'Nettobeløp uten MVA (grunnlag for MVA-beregning)',
         is_required: false,
         data_type: 'number',
         sort_order: 12,
@@ -478,12 +478,22 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         aliases: ['Netto beløp', 'netto beløp', 'NETTO BELØP', 'netto_beløp', 'Netto_beløp', 'NETTO_BELØP', 'nettobeløp', 'Nettobeløp', 'NETTOBELØP', 'netto belop', 'Netto belop', 'NETTO BELOP', 'netto_belop', 'Netto_belop', 'NETTO_BELOP', 'nettobelop', 'Nettobelop', 'NETTOBELOP', 'netto', 'Netto', 'NETTO', 'net_amount', 'Net_amount', 'Net Amount', 'NET_AMOUNT', 'beløp_netto', 'Beløp_netto', 'BELØP_NETTO', 'belop_netto', 'Belop_netto', 'BELOP_NETTO', 'amount_ex_vat', 'Amount_ex_vat', 'Amount Ex VAT', 'AMOUNT_EX_VAT']
       },
       {
+        field_key: 'mva_grunnlag',
+        field_label: 'MVA-grunnlag',
+        field_description: 'Grunnlaget som MVA beregnes fra (ofte samme som netto beløp)',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 13,
+        category: 'MVA',
+        aliases: ['MVA-grunnlag', 'mva-grunnlag', 'MVA grunnlag', 'mva grunnlag', 'MVA_grunnlag', 'mva_grunnlag', 'mvagramnlag', 'momsgrunnlag', 'vat_base', 'tax_base']
+      },
+      {
         field_key: 'mva_sats',
         field_label: 'MVA-sats',
         field_description: 'MVA-prosent (25, 15, 0)',
         is_required: false,
         data_type: 'number',
-        sort_order: 13,
+        sort_order: 14,
         category: 'MVA',
         aliases: ['MVA-sats', 'mva-sats', 'MVA-SATS', 'MvA-sats', 'mVA-sats', 'MVA sats', 'Mva sats', 'mva sats', 'MVA SATS', 'MvA sats', 'mVA sats', 'mva_sats', 'Mva_sats', 'MVA_sats', 'MVA_SATS', 'mvasats', 'Mvasats', 'MVAsats', 'MVASATS', 'mva', 'Mva', 'MVA', 'mvakode', 'Mvakode', 'MVAkode', 'MVAKODE', 'mva_kode', 'Mva_kode', 'MVA_kode', 'MVA_KODE', 'vat_rate', 'Vat_rate', 'VAT_rate', 'VAT Rate', 'VAT_RATE', 'tax_rate', 'Tax_rate', 'TAX_RATE', 'Tax Rate', 'skattesats', 'Skattesats', 'SKATTESATS', 'sats', 'Sats', 'SATS']
       },
@@ -493,9 +503,39 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'MVA-beløp i kroner',
         is_required: false,
         data_type: 'number',
-        sort_order: 14,
+        sort_order: 15,
         category: 'MVA',
         aliases: ['MVA-beløp', 'mva-beløp', 'MVA-BELØP', 'MvA-beløp', 'mVA-beløp', 'MVA beløp', 'Mva beløp', 'mva beløp', 'MVA BELØP', 'MvA beløp', 'mVA beløp', 'mva_beløp', 'Mva_beløp', 'MVA_beløp', 'MVA_BELØP', 'mvabeløp', 'Mvabeløp', 'MVAbeløp', 'MVABELØP', 'mva-belop', 'Mva-belop', 'MVA-belop', 'MVA-BELOP', 'MVA belop', 'Mva belop', 'mva belop', 'MVA BELOP', 'MvA belop', 'mVA belop', 'mva_belop', 'Mva_belop', 'MVA_belop', 'MVA_BELOP', 'mvabelop', 'Mvabelop', 'MVAbelop', 'MVABELOP', 'momsbeløp', 'Momsbeløp', 'MOMSBELØP', 'momsbelop', 'Momsbelop', 'MOMSBELOP', 'vat_amount', 'Vat_amount', 'VAT_amount', 'VAT Amount', 'VAT_AMOUNT', 'tax_amount', 'Tax_amount', 'TAX_AMOUNT', 'Tax Amount', 'skattebeløp', 'Skattebeløp', 'SKATTEBELØP', 'skattebelop', 'Skattebelop', 'SKATTEBELOP']
+      },
+      {
+        field_key: 'total_belop',
+        field_label: 'Total beløp',
+        field_description: 'Totalt beløp inkludert MVA (brutto)',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 16,
+        category: 'Beløp',
+        aliases: ['Total beløp', 'total beløp', 'TOTAL BELØP', 'total_beløp', 'Total_beløp', 'TOTAL_BELØP', 'totalbeløp', 'Totalbeløp', 'TOTALBELØP', 'total belop', 'Total belop', 'TOTAL BELOP', 'total_belop', 'Total_belop', 'TOTAL_BELOP', 'totalbelop', 'Totalbelop', 'TOTALBELOP', 'brutto', 'Brutto', 'BRUTTO', 'brutto_beløp', 'Brutto_beløp', 'BRUTTO_BELØP', 'bruttobeløp', 'Bruttobeløp', 'BRUTTOBELØP', 'beløp', 'Beløp', 'BELØP', 'belop', 'Belop', 'BELOP', 'amount', 'Amount', 'AMOUNT', 'total_amount', 'Total_amount', 'Total Amount', 'TOTAL_AMOUNT', 'gross_amount', 'Gross_amount', 'Gross Amount', 'GROSS_AMOUNT']
+      },
+      {
+        field_key: 'debet',
+        field_label: 'Debet',
+        field_description: 'Debetbeløp for journalposteringer',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 17,
+        category: 'Journal',
+        aliases: ['Debet', 'debet', 'DEBET', 'debit', 'Debit', 'DEBIT', 'debet_beløp', 'Debet_beløp', 'DEBET_BELØP', 'debetbeløp', 'Debetbeløp', 'DEBETBELØP', 'debet_amount', 'Debet_amount', 'DEBET_AMOUNT']
+      },
+      {
+        field_key: 'kredit',
+        field_label: 'Kredit',
+        field_description: 'Kreditbeløp for journalposteringer',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 18,
+        category: 'Journal',
+        aliases: ['Kredit', 'kredit', 'KREDIT', 'credit', 'Credit', 'CREDIT', 'kredit_beløp', 'Kredit_beløp', 'KREDIT_BELØP', 'kreditbeløp', 'Kreditbeløp', 'KREDITBELØP', 'kredit_amount', 'Kredit_amount', 'KREDIT_AMOUNT']
       },
       {
         field_key: 'antall',
@@ -503,7 +543,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Antall enheter',
         is_required: false,
         data_type: 'number',
-        sort_order: 15,
+        sort_order: 19,
         category: 'Linjedetaljer',
         aliases: ['Antall', 'antall', 'qty', 'quantity', 'mengde', 'stk', 'pieces']
       },
@@ -513,7 +553,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Måleenhet (stk, timer, kg)',
         is_required: false,
         data_type: 'text',
-        sort_order: 16,
+        sort_order: 20,
         category: 'Linjedetaljer',
         example_values: ['stk', 'timer', 'kg'],
         aliases: ['Enhet', 'enhet', 'unit', 'måleenhet', 'stk', 'timer', 'kg', 'pcs', 'hours']
@@ -524,7 +564,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         field_description: 'Pris per enhet',
         is_required: false,
         data_type: 'number',
-        sort_order: 17,
+        sort_order: 21,
         category: 'Linjedetaljer',
         aliases: ['Enhetspris', 'enhetspris', 'unit_price', 'pris', 'price', 'stykksris', 'per_unit', 'unit_cost']
       }
