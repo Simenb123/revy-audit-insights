@@ -49,6 +49,7 @@ const resourceNavItems: NavItem[] = [
   { title: 'Valutakurser', url: '/resources/currencies', icon: ArrowRightLeft, badge: null },
   { title: 'Verdipapirkurser', url: '/resources/securities/prices', icon: TrendingUp, badge: null },
   { title: 'Verdipapirer', url: '/resources/securities/catalog', icon: Shield, badge: null },
+  { title: 'PDF Creator', url: '/resources/pdf-creator', icon: FileText, badge: null },
 ];
 
 const aiNavItems: NavItem[] = [

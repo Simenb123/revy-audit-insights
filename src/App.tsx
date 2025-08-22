@@ -129,11 +129,12 @@ function App() {
                    <Route path="clients/:clientId/investments/prices" element={<InvestmentPricesRedirect />} />
                    <Route path="clients/:clientId/investments/currencies" element={<InvestmentCurrenciesRedirect />} />
                    
-                   {/* Global Resources */}
-                   <Route path="resources/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
-                   <Route path="resources/securities/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
-                   <Route path="resources/securities/catalog" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
-                   <Route path="resources/dataredigering" element={<ProtectedRoute><DataredigeringPage /></ProtectedRoute>} />
+                    {/* Global Resources */}
+                    <Route path="resources/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
+                    <Route path="resources/securities/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
+                    <Route path="resources/securities/catalog" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
+                    <Route path="resources/dataredigering" element={<ProtectedRoute><DataredigeringPage /></ProtectedRoute>} />
+                    <Route path="resources/pdf-creator" element={<ProtectedRoute><PdfCreatorPage /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-journal" element={<ProtectedRoute><BookkeepingJournal /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-reports" element={<ProtectedRoute><BookkeepingReports /></ProtectedRoute>} />
                    <Route path="clients/:clientId/assets" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />

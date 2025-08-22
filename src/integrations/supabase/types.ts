@@ -6616,6 +6616,59 @@ export type Database = {
           },
         ]
       }
+      generated_vouchers: {
+        Row: {
+          bilag: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          doknr: string | null
+          dokumenttype: string | null
+          file_size: number | null
+          id: string
+          sha256: string | null
+          storage_key: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          bilag?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          doknr?: string | null
+          dokumenttype?: string | null
+          file_size?: number | null
+          id?: string
+          sha256?: string | null
+          storage_key: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          bilag?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          doknr?: string | null
+          dokumenttype?: string | null
+          file_size?: number | null
+          id?: string
+          sha256?: string | null
+          storage_key?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_vouchers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_a07_mapping_rules: {
         Row: {
           a07_performance_code: string
