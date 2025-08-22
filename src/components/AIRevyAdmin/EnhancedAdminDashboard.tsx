@@ -53,7 +53,7 @@ const EnhancedAdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="subject-areas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="subject-areas" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Emner
@@ -65,10 +65,6 @@ const EnhancedAdminDashboard = () => {
           <TabsTrigger value="tags" className="flex items-center gap-2">
             <Hash className="h-4 w-4" />
             Tags
-          </TabsTrigger>
-          <TabsTrigger value="connections" className="flex items-center gap-2">
-            <Link2 className="h-4 w-4" />
-            Koblinger
           </TabsTrigger>
           <TabsTrigger value="document-types" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -96,7 +92,7 @@ const EnhancedAdminDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="column-mapping" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Kolonne-mapping
+            Mapping
           </TabsTrigger>
         </TabsList>
 
@@ -142,25 +138,6 @@ const EnhancedAdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="connections">
-          <Card>
-            <CardHeader>
-              <CardTitle>Koblingsadministrasjon</CardTitle>
-              <CardDescription>
-                Administrer koblinger mellom emneområder, innholdstyper, tags og andre elementer
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-8">
-                <Link2 className="h-8 w-8 mx-auto mb-2" />
-                <h3 className="font-medium">Koblingsverktøy</h3>
-                <p className="text-sm">
-                  Her vil du administrere alle koblinger mellom de ulike systemkomponentene.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="document-types">
           <DocumentTypeManager />
