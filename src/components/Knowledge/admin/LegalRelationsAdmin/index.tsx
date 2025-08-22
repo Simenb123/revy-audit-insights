@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ArrowLeftRight, Eye, Settings, Database } from 'lucide-react';
+import { ArrowLeftRight, Eye, Settings, Database, List } from 'lucide-react';
 
 import Selectors from './Selectors';
 import ProvisionsPicker from './ProvisionsPicker';
 import DraftList from './DraftList';
 import GraphView from './GraphView';
+import CrossReferencesList from './CrossReferencesList';
 
 import type { LegalDocument, LegalProvision, DraftRelation, DocumentNodeType } from '@/types/legal-knowledge';
 
@@ -121,7 +122,7 @@ const LegalRelationsAdmin: React.FC = () => {
 
       {/* Main workflow */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="select" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Velg Dokumenter
@@ -137,6 +138,10 @@ const LegalRelationsAdmin: React.FC = () => {
           <TabsTrigger value="visualize" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
             Visualiser ({draftRelations.length})
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Administrer
           </TabsTrigger>
         </TabsList>
 
@@ -201,6 +206,11 @@ const LegalRelationsAdmin: React.FC = () => {
               />
             </div>
           </div>
+        </TabsContent>
+
+        {/* Step 4: Manage Existing Cross-References */}
+        <TabsContent value="manage" className="space-y-4">
+          <CrossReferencesList demoMode={demoMode} />
         </TabsContent>
       </Tabs>
     </div>
