@@ -8990,6 +8990,42 @@ export type Database = {
           },
         ]
       }
+      pdf_creator_companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_favorite: boolean | null
+          is_vat_registered: boolean | null
+          name: string
+          org_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          is_vat_registered?: boolean | null
+          name: string
+          org_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          is_vat_registered?: boolean | null
+          name?: string
+          org_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pdf_documents: {
         Row: {
           category: string

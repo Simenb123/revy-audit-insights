@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ValidationPanel } from './ValidationPanel';
+import { CompanySelector } from './CompanySelector';
 import { readTableFile } from '@/utils/pdf-import';
 import { mapRow, groupsToPayloads } from '@/utils/pdf-map';
 import { BilagPayload } from '@/types/bilag';
@@ -197,41 +198,10 @@ export const PdfCreatorPage = () => {
       </div>
 
       {/* Company Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Selskapsinfo</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="navn">Selskapsnavn</Label>
-            <Input
-              id="navn"  
-              value={selskapInfo.navn}
-              onChange={(e) => setSelskapInfo(prev => ({ ...prev, navn: e.target.value }))}
-              placeholder="Navn på selskap"
-            />
-          </div>
-          <div>
-            <Label htmlFor="orgnr">Organisasjonsnummer</Label>
-            <Input
-              id="orgnr"
-              value={selskapInfo.orgnr}
-              onChange={(e) => setSelskapInfo(prev => ({ ...prev, orgnr: e.target.value }))}
-              placeholder="999 999 999"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="adresse">Adresse</Label>
-            <Textarea
-              id="adresse"
-              value={selskapInfo.adresse}
-              onChange={(e) => setSelskapInfo(prev => ({ ...prev, adresse: e.target.value }))}
-              placeholder="Gateadresse, postnummer og sted"
-              rows={2}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <CompanySelector 
+        selskapInfo={selskapInfo}
+        setSelskapInfo={setSelskapInfo}
+      />
 
       {/* File Upload */}
       {showUploader && uploadConfig ? (
