@@ -1,0 +1,11 @@
+bilag;dokumenttype;fakturanummer;fakturadato;forfallsdato;konto;kontonavn;beskrivelse;kundenavn;leverandornavn;netto;mva_sats;mva_belop;debet;kredit;referanse;kid;bankkonto
+1001;faktura;F-2024-001;2024-01-15;2024-02-15;3000;Salgsinntekt;Salg av varer;Kunde AS;;10000;25;2500;12500;0;ORD-001;123456789012345;12345678901
+1001;;F-2024-001;2024-01-15;2024-02-15;2700;Utgående mva;;;;;;;2500;0;;
+1001;;F-2024-001;2024-01-15;2024-02-15;1500;Kundefordring;;;;;;;;;12500;;
+1002;faktura;F-2024-002;2024-01-16;2024-02-16;4000;Varekjøp;;Leverandør AS;8000;25;2000;10000;0;INV-456;;
+1002;;F-2024-002;2024-01-16;2024-02-16;2710;Inngående mva;;;;;;;;2000;0;;
+1002;;F-2024-002;2024-01-16;2024-02-16;2400;Leverandørgjeld;;;;;;;;;;10000;;
+1003;;BET-001;2024-01-20;;1920;Bank;;;;;;;5000;0;Kundebetaling;;12345678901
+1003;;BET-001;2024-01-20;;1500;Kundefordring;;;;;;;;0;5000;;;
+1004;;BET-002;2024-01-22;;1920;Bank;;;;;;;0;8000;Leverandørbetaling;;12345678901
+1004;;BET-002;2024-01-22;;2400;Leverandørgjeld;;;;;;;;8000;0;;;

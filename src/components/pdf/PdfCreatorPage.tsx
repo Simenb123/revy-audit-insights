@@ -10,7 +10,12 @@ import { readTableFile } from '@/utils/pdf-import';
 import { mapRow, groupsToPayloads } from '@/utils/pdf-map';
 import { BilagPayload } from '@/types/bilag';
 import { useToast } from '@/hooks/use-toast';
+import { uploadPdfToStorage, downloadPdf } from '@/services/pdf-storage';
 import { FileText, Upload, Download, Eye } from 'lucide-react';
+import { PDFViewer } from '@react-pdf/renderer';
+import { PdfInvoiceDocument } from './PdfInvoiceDocument';
+import { PdfPaymentDocument } from './PdfPaymentDocument';
+import { PdfJournalDocument } from './PdfJournalDocument';
 
 export const PdfCreatorPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -25,6 +30,8 @@ export const PdfCreatorPage = () => {
     mvaRegistrert: true,
     adresse: ''
   });
+  const [showPreview, setShowPreview] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   const { toast } = useToast();
 
@@ -72,6 +79,85 @@ export const PdfCreatorPage = () => {
   const selectedPayload = payloads.find(p => p.bilag.toString() === selectedBilag);
   const detectedColumns = rows.length > 0 ? Object.keys(rows[0]) : [];
   const mvaSatser = [...new Set(rows.map(r => r.mva_sats).filter(Boolean))];
+
+  const handleDownloadTemplate = () => {
+    const link = document.createElement('a');
+    link.href = '/templates/mal_bilag.csv';
+    link.download = 'mal_bilag.csv';
+    link.click();
+  };
+
+  const handlePreviewPdf = () => {
+    setShowPreview(true);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!selectedPayload) return;
+    
+    try {
+      const blob = await downloadPdf(selectedPayload);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedPayload.doknr || selectedPayload.bilag}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "PDF lastet ned!",
+        description: "PDF-filen er lagret lokalt.",
+      });
+    } catch (error) {
+      toast({
+        title: "Nedlasting feilet",
+        description: error instanceof Error ? error.message : 'Ukjent feil',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUploadToSupabase = async () => {
+    if (!selectedPayload) return;
+    
+    setUploading(true);
+    try {
+      // For demo, using a placeholder client ID
+      // In real use, this would come from context or props
+      const clientId = 'demo-client-id';
+      
+      const voucher = await uploadPdfToStorage(selectedPayload, clientId);
+      
+      toast({
+        title: "PDF lastet opp!",
+        description: `Bilag ${voucher.bilag} er lagret i Supabase.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Opplasting feilet",
+        description: error instanceof Error ? error.message : 'Ukjent feil',
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const renderPdfDocument = () => {
+    if (!selectedPayload) return null;
+
+    switch (selectedPayload.type) {
+      case 'salgsfaktura':
+      case 'leverandorfaktura':
+        return <PdfInvoiceDocument payload={selectedPayload} />;
+      case 'kundebetaling':
+      case 'leverandorbetaling':
+      case 'bankbilag':
+        return <PdfPaymentDocument payload={selectedPayload} />;
+      case 'diversebilag':
+      default:
+        return <PdfJournalDocument payload={selectedPayload} />;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -139,7 +225,7 @@ export const PdfCreatorPage = () => {
                 disabled={loading}
               />
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               Last ned CSV-mal
             </Button>
@@ -210,21 +296,40 @@ export const PdfCreatorPage = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex gap-2">
-              <Button>
+              <Button onClick={handlePreviewPdf}>
                 <Eye className="h-4 w-4 mr-2" />
                 Forhåndsvis PDF
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleDownloadPdf}>
                 <Download className="h-4 w-4 mr-2" />
                 Last ned PDF
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleUploadToSupabase} disabled={uploading}>
                 <Upload className="h-4 w-4 mr-2" />
-                Last opp til Supabase
+                {uploading ? 'Laster opp...' : 'Last opp til Supabase'}
               </Button>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* PDF Preview Modal */}
+      {showPreview && selectedPayload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">PDF Forhåndsvisning</h3>
+              <Button variant="outline" onClick={() => setShowPreview(false)}>
+                Lukk
+              </Button>
+            </div>
+            <div className="border">
+              <PDFViewer width="100%" height="600px">
+                {renderPdfDocument()}
+              </PDFViewer>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

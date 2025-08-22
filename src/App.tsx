@@ -86,6 +86,7 @@ import AuditSampling from "./pages/AuditSampling";
 import { InvestmentSecuritiesRedirect, InvestmentPricesRedirect, InvestmentCurrenciesRedirect } from "./components/InvestmentRedirects";
 import DataredigeringPage from "./pages/Dataredigering";
 import LegalRelationsAdmin from "./components/Knowledge/admin/LegalRelationsAdmin";
+import { PdfCreatorPage } from "./components/pdf/PdfCreatorPage";
 const queryClient = new QueryClient();
 
 function App() {
