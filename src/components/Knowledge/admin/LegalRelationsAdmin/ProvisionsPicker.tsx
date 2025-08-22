@@ -5,11 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Link } from 'lucide-react';
+import { Search, Plus, Link, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useLegalProvisions } from '@/hooks/knowledge/useLegalProvisions';
 
 import { suggestRefType } from './helpers';
 import type { LegalDocument, LegalProvision, DraftRelation, LegalCrossRef, DocumentNodeType } from '@/types/legal-knowledge';
@@ -28,9 +26,9 @@ interface ProvisionsPickerProps {
   canCreateRelation: boolean;
 }
 
-// Mock provisions for demo mode
+// Mock provisions for demo mode (fallback)
 const MOCK_PROVISIONS: Record<string, LegalProvision[]> = {
-  '1': [ // Regnskapsloven
+  'rskl-1998': [ // Regnskapsloven
     {
       id: '1',
       provision_type: 'paragraph',
@@ -59,22 +57,6 @@ const MOCK_PROVISIONS: Record<string, LegalProvision[]> = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
-  ],
-  '3': [ // Forskrift om årsregnskap
-    {
-      id: '3',
-      provision_type: 'paragraph',
-      provision_number: '1-1',
-      title: 'Virkeområde',
-      content: 'Denne forskrift gjelder for...',
-      law_identifier: 'forskrift-årsregnskap',
-      law_full_name: 'Forskrift om årsregnskap m.m.',
-      anchor: 'forskrift-årsregnskap.§1-1',
-      sort_order: 1,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
   ]
 };
 
@@ -86,47 +68,6 @@ const REF_TYPE_LABELS: Record<LegalCrossRef['ref_type'], string> = {
   interprets: 'Tolker',
   applies: 'Anvender',
   mentions: 'Nevner'
-};
-
-// Helper function to fetch provisions with explicit types - avoiding Supabase type inference
-const fetchProvisions = async (documentId: string, searchTerm: string, demoMode: boolean): Promise<LegalProvision[]> => {
-  if (demoMode) {
-    return MOCK_PROVISIONS[documentId] || [];
-  }
-
-  // Use raw query to avoid type inference issues
-  let queryString = `document_id.eq.${documentId},is_active.eq.true`;
-  
-  if (searchTerm.trim()) {
-    queryString += `,or(provision_number.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%)`;
-  }
-
-  try {
-    const response = await (supabase as any)
-      .from('legal_provisions')
-      .select('*')
-      .or(`document_id.eq.${documentId}`)
-      .eq('is_active', true)
-      .limit(200);
-    
-    if (response.error) throw response.error;
-    
-    let data = response.data || [];
-    
-    // Apply search filter in memory if needed
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      data = data.filter((item: any) => 
-        item.provision_number?.toLowerCase().includes(searchLower) ||
-        item.title?.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return data as LegalProvision[];
-  } catch (error) {
-    console.error('Error fetching provisions:', error);
-    return [];
-  }
 };
 
 const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
@@ -148,18 +89,24 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
   const [refText, setRefText] = useState('');
 
   // Fetch provisions for source document
-  const { data: sourceProvisions = [] } = useQuery({
-    queryKey: ['legal-provisions', sourceDocument.id, sourceSearch],
-    queryFn: () => fetchProvisions(sourceDocument.id, sourceSearch, demoMode),
-    enabled: !!sourceDocument.id
+  const { data: sourceProvisions = [], isLoading: sourceLoading, error: sourceError } = useLegalProvisions({
+    documentId: sourceDocument.id,
+    searchTerm: sourceSearch,
+    limit: 200,
+    enabled: !demoMode
   });
 
-  // Fetch provisions for target document
-  const { data: targetProvisions = [] } = useQuery({
-    queryKey: ['legal-provisions', targetDocument.id, targetSearch],
-    queryFn: () => fetchProvisions(targetDocument.id, targetSearch, demoMode),
-    enabled: !!targetDocument.id
+  // Fetch provisions for target document  
+  const { data: targetProvisions = [], isLoading: targetLoading, error: targetError } = useLegalProvisions({
+    documentId: targetDocument.id,
+    searchTerm: targetSearch,
+    limit: 200,
+    enabled: !demoMode
   });
+
+  // Use mock data in demo mode
+  const finalSourceProvisions = demoMode ? (MOCK_PROVISIONS[sourceDocument.id] || []) : sourceProvisions;
+  const finalTargetProvisions = demoMode ? (MOCK_PROVISIONS[targetDocument.id] || []) : targetProvisions;
 
   // Auto-suggest relation type when provisions are selected
   React.useEffect(() => {
@@ -249,8 +196,23 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
             </div>
           </CardHeader>
           <CardContent>
+            {/* Loading state */}
+            {!demoMode && sourceLoading && (
+              <div className="flex items-center gap-2 p-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">Laster bestemmelser...</span>
+              </div>
+            )}
+            
+            {/* Error state */}
+            {!demoMode && sourceError && (
+              <div className="text-sm text-red-600 p-4 border border-red-200 bg-red-50 rounded-md mb-4">
+                Feil ved lasting: {sourceError.message}
+              </div>
+            )}
+            
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {sourceProvisions.map((provision) => (
+              {finalSourceProvisions.map((provision) => (
                 <div
                   key={provision.id}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -274,9 +236,9 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
                 </div>
               ))}
               
-              {sourceProvisions.length === 0 && (
+              {finalSourceProvisions.length === 0 && !sourceLoading && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Ingen bestemmelser funnet
+                  {demoMode ? 'Ingen bestemmelser i demo-modus' : 'Ingen bestemmelser funnet'}
                 </p>
               )}
             </div>
@@ -298,8 +260,23 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
             </div>
           </CardHeader>
           <CardContent>
+            {/* Loading state */}
+            {!demoMode && targetLoading && (
+              <div className="flex items-center gap-2 p-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">Laster bestemmelser...</span>
+              </div>
+            )}
+            
+            {/* Error state */}
+            {!demoMode && targetError && (
+              <div className="text-sm text-red-600 p-4 border border-red-200 bg-red-50 rounded-md mb-4">
+                Feil ved lasting: {targetError.message}
+              </div>
+            )}
+            
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {targetProvisions.map((provision) => (
+              {finalTargetProvisions.map((provision) => (
                 <div
                   key={provision.id}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -323,9 +300,9 @@ const ProvisionsPicker: React.FC<ProvisionsPickerProps> = ({
                 </div>
               ))}
               
-              {targetProvisions.length === 0 && (
+              {finalTargetProvisions.length === 0 && !targetLoading && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Ingen bestemmelser funnet
+                  {demoMode ? 'Ingen bestemmelser i demo-modus' : 'Ingen bestemmelser funnet'}
                 </p>
               )}
             </div>

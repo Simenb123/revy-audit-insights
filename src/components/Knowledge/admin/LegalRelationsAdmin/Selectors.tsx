@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeftRight, FileText, Scale, Book } from 'lucide-react';
+import { ArrowLeftRight, FileText, Scale, Book, Loader2 } from 'lucide-react';
 import type { LegalDocument, DocumentNodeType } from '@/types/legal-knowledge';
+import { useLegalDocuments, useLegalDocumentTypes } from '@/hooks/knowledge/useLegalDocuments';
 
 interface SelectorsProps {
   sourceDocType: DocumentNodeType;
@@ -19,7 +20,7 @@ interface SelectorsProps {
   onSwapDirection: () => void;
 }
 
-// Mock data for demo mode
+// Mock data for demo mode (fallback)
 const MOCK_DOCUMENTS: Record<DocumentNodeType, LegalDocument[]> = {
   lov: [
     {
@@ -33,70 +34,11 @@ const MOCK_DOCUMENTS: Record<DocumentNodeType, LegalDocument[]> = {
       created_at: '2024-01-01',
       updated_at: '2024-01-01',
     },
-    {
-      id: 'revl-1999',
-      title: 'Lov om revisjon og revisorer (revisorloven)',
-      document_type_id: 'lov',
-      document_number: 'LOV-1999-01-15-2',
-      content: 'Revisorlovens innhold...',
-      document_status: 'active',
-      is_primary_source: true,
-      created_at: '2024-01-01',
-      updated_at: '2024-01-01',
-    },
   ],
-  forskrift: [
-    {
-      id: 'rskf-2008',
-      title: 'Forskrift til regnskapsloven',
-      document_type_id: 'forskrift',
-      document_number: 'FOR-2008-12-17-1502',
-      content: 'Regnskapsforskriftens innhold...',
-      document_status: 'active',
-      is_primary_source: true,
-      created_at: '2024-01-01',
-      updated_at: '2024-01-01',
-    },
-  ],
-  dom: [
-    {
-      id: 'hr-2023-1234',
-      title: 'Høyesterett - Regnskapsplikt for små foretak',
-      document_type_id: 'dom',
-      document_number: 'HR-2023-1234-A',
-      content: 'Domstolsavgjørelse...',
-      document_status: 'active',
-      is_primary_source: false,
-      created_at: '2024-01-01',
-      updated_at: '2024-01-01',
-    },
-  ],
-  rundskriv: [
-    {
-      id: 'rsv-g-01-2024',
-      title: 'RSV G-01/2024 - Regnskapsplikt og regnskapsføring',
-      document_type_id: 'rundskriv',
-      document_number: 'RSV-G-01-2024',
-      content: 'Rundskriv om regnskapsplikt...',
-      document_status: 'active',
-      is_primary_source: false,
-      created_at: '2024-01-01',
-      updated_at: '2024-01-01',
-    },
-  ],
-  forarbeid: [
-    {
-      id: 'ot-prp-42-1997-98',
-      title: 'Ot.prp. nr. 42 (1997-98) - Om lov om årsregnskap',
-      document_type_id: 'forarbeid',
-      document_number: 'Ot.prp-42-1997-98',
-      content: 'Proposisjon til regnskapsloven...',
-      document_status: 'active',
-      is_primary_source: false,
-      created_at: '2024-01-01',
-      updated_at: '2024-01-01',
-    },
-  ],
+  forskrift: [],
+  dom: [],
+  rundskriv: [],
+  forarbeid: [],
   ukjent: [],
 };
 
@@ -126,7 +68,15 @@ const DocumentSelector: React.FC<{
   onDocumentSelect: (document: LegalDocument) => void;
 }> = ({ type, docType, selectedDocument, demoMode, onDocTypeChange, onDocumentSelect }) => {
   const docTypeConfig = getDocTypeConfig(docType);
-  const availableDocuments = demoMode ? MOCK_DOCUMENTS[docType] : []; // TODO: Fetch from API
+  
+  // Fetch real documents when not in demo mode
+  const { data: documents = [], isLoading, error } = useLegalDocuments({
+    documentType: docType !== 'ukjent' ? docType : undefined,
+    limit: 100,
+    enabled: !demoMode
+  });
+  
+  const availableDocuments = demoMode ? MOCK_DOCUMENTS[docType] : documents;
 
   return (
     <Card>
@@ -163,9 +113,29 @@ const DocumentSelector: React.FC<{
         {/* Document Selector */}
         <div className="space-y-2">
           <label className="text-sm font-medium">
-            Velg dokument ({availableDocuments.length} tilgjengelig)
+            Velg dokument 
+            {!demoMode && !isLoading && (
+              <span className="text-muted-foreground">({availableDocuments.length} tilgjengelig)</span>
+            )}
           </label>
-          {availableDocuments.length > 0 ? (
+          
+          {/* Loading state */}
+          {!demoMode && isLoading && (
+            <div className="flex items-center gap-2 p-4 border border-dashed rounded-md">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-muted-foreground">Laster dokumenter...</span>
+            </div>
+          )}
+          
+          {/* Error state */}
+          {!demoMode && error && (
+            <div className="text-sm text-red-600 p-4 border border-red-200 bg-red-50 rounded-md">
+              Feil ved lasting av dokumenter: {error.message}
+            </div>
+          )}
+          
+          {/* Document selector */}
+          {!isLoading && !error && availableDocuments.length > 0 ? (
             <Select 
               value={selectedDocument?.id || ''} 
               onValueChange={(documentId) => {
@@ -191,11 +161,11 @@ const DocumentSelector: React.FC<{
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : !isLoading && !error && (
             <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md text-center">
               {demoMode 
                 ? `Ingen ${docTypeConfig.label.toLowerCase()} tilgjengelig i demo-modus`
-                : 'Laster dokumenter...'
+                : `Ingen ${docTypeConfig.label.toLowerCase()} funnet`
               }
             </div>
           )}
