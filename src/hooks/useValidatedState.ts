@@ -35,7 +35,7 @@ export function useValidatedState<T>({
       return true;
     } catch (err) {
       const errorMessage = err instanceof z.ZodError 
-        ? err.errors.map(e => e.message).join(', ')
+        ? err.issues.map((e: any) => e.message).join(', ')
         : 'Validation failed';
       
       setError(errorMessage);

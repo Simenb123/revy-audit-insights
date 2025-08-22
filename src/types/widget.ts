@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 // Base widget configuration schema
 export const BaseWidgetConfigSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().optional(),
   description: z.string().optional(),
   refreshInterval: z.number().min(0).optional(),
-  autoRefresh: z.boolean().default(false),
+  autoRefresh: z.boolean().optional(),
 });
 
 // Widget layout schema
@@ -22,7 +22,7 @@ export const WidgetLayoutSchema = z.object({
   minH: z.number().min(1).optional(),
   maxW: z.number().optional(),
   maxH: z.number().optional(),
-  static: z.boolean().default(false),
+  static: z.boolean().optional(),
 });
 
 // Widget types enum - matching existing types
@@ -62,8 +62,8 @@ export const DataSourceSchema = z.object({
   type: z.enum(['database', 'api', 'file', 'manual']),
   endpoint: z.string().optional(),
   query: z.string().optional(),
-  filters: z.record(z.any()).optional(),
-  lastUpdated: z.string().datetime().optional(),
+  filters: z.record(z.string(), z.any()).optional(),
+  lastUpdated: z.string().optional(),
 });
 
 // Widget schema
@@ -74,26 +74,26 @@ export const WidgetSchema = z.object({
   config: BaseWidgetConfigSchema.extend({
     chartType: z.enum(['bar', 'line', 'pie', 'area', 'scatter']).optional(),
     dataSource: DataSourceSchema.optional(),
-    filters: z.record(z.any()).optional(),
+    filters: z.record(z.string(), z.any()).optional(),
     formatting: z.object({
-      currency: z.boolean().default(false),
-      percentage: z.boolean().default(false),
-      decimals: z.number().min(0).max(10).default(2),
+      currency: z.boolean().optional(),
+      percentage: z.boolean().optional(),
+      decimals: z.number().min(0).max(10).optional(),
     }).optional(),
-  }),
+  }).optional(),
   data: z.any().optional(),
   metadata: z.object({
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
-    createdBy: z.string(),
-    version: z.string().default('1.0.0'),
-    tags: z.array(z.string()).default([]),
-  }),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    createdBy: z.string().optional(),
+    version: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  }).optional(),
   performance: z.object({
     lastLoadTime: z.number().optional(),
     averageLoadTime: z.number().optional(),
-    errorCount: z.number().default(0),
-    successRate: z.number().min(0).max(100).default(100),
+    errorCount: z.number().optional(),
+    successRate: z.number().min(0).max(100).optional(),
   }).optional(),
 });
 
@@ -219,7 +219,7 @@ export const safeValidateWidget = (data: unknown): { success: boolean; data?: Wi
   } catch (error) {
     return { 
       success: false, 
-      error: error instanceof z.ZodError ? error.errors.map(e => e.message).join(', ') : 'Validation failed'
+      error: error instanceof z.ZodError ? error.issues.map((e: any) => e.message).join(', ') : 'Validation failed'
     };
   }
 };
@@ -231,7 +231,7 @@ export const safeValidateDashboardConfig = (data: unknown): { success: boolean; 
   } catch (error) {
     return { 
       success: false, 
-      error: error instanceof z.ZodError ? error.errors.map(e => e.message).join(', ') : 'Validation failed'
+      error: error instanceof z.ZodError ? error.issues.map((e: any) => e.message).join(', ') : 'Validation failed'
     };
   }
 };

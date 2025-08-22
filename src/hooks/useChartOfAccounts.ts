@@ -22,10 +22,10 @@ export interface StandardAccount {
   account_type: 'eiendeler' | 'gjeld' | 'egenkapital' | 'resultat';
   category?: string;
   analysis_group?: string;
-  line_type?: 'detail' | 'subtotal' | 'calculation';
-  display_order?: number;
-  is_total_line?: boolean;
-  sign_multiplier?: number;
+  line_type: 'detail' | 'subtotal' | 'calculation';
+  display_order: number;
+  is_total_line: boolean;
+  sign_multiplier: number;
   calculation_formula?: any; // Changed to any to handle both string and JSON
   parent_line_id?: string;
   created_at?: string;

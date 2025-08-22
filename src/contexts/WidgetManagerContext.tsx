@@ -14,6 +14,7 @@ export interface WidgetLayout {
   widgetId: string;
   dataSourceId?: string;
   sectionId?: string;
+  static?: boolean;
 }
 
 export interface Widget {
@@ -52,6 +53,12 @@ export interface Widget {
   dataSourceId?: string;
   autoRefresh?: boolean;
   refreshInterval?: number;
+  metadata?: {
+    createdAt: string;
+    updatedAt: string;
+    version: string;
+    dependencies: string[];
+  };
 }
 
 interface WidgetManagerContextType {
