@@ -1,13 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeftRight, FileText } from 'lucide-react';
-
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-
+import { ArrowLeftRight, FileText, Scale, Book } from 'lucide-react';
 import type { LegalDocument, DocumentNodeType } from '@/types/legal-knowledge';
 
 interface SelectorsProps {
@@ -27,105 +23,199 @@ interface SelectorsProps {
 const MOCK_DOCUMENTS: Record<DocumentNodeType, LegalDocument[]> = {
   lov: [
     {
-      id: '1',
+      id: 'rskl-1998',
       title: 'Lov om årsregnskap m.v. (regnskapsloven)',
-      document_number: 'LOV-1998-07-17-56',
       document_type_id: 'lov',
-      content: '',
+      document_number: 'LOV-1998-07-17-56',
+      content: 'Regnskapslovens innhold...',
       document_status: 'active',
       is_primary_source: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://lovdata.no/dokument/NL/lov/1998-07-17-56'
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
     },
     {
-      id: '2',
-      title: 'Lov om revisor og revisjon (revisorloven)',
-      document_number: 'LOV-1999-01-15-2',
+      id: 'revl-1999',
+      title: 'Lov om revisjon og revisorer (revisorloven)',
       document_type_id: 'lov',
-      content: '',
+      document_number: 'LOV-1999-01-15-2',
+      content: 'Revisorlovens innhold...',
       document_status: 'active',
       is_primary_source: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://lovdata.no/dokument/NL/lov/1999-01-15-2'
-    }
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
+    },
   ],
   forskrift: [
     {
-      id: '3',
-      title: 'Forskrift om årsregnskap m.m.',
-      document_number: 'FOR-1999-12-11-1319',
+      id: 'rskf-2008',
+      title: 'Forskrift til regnskapsloven',
       document_type_id: 'forskrift',
-      content: '',
+      document_number: 'FOR-2008-12-17-1502',
+      content: 'Regnskapsforskriftens innhold...',
       document_status: 'active',
       is_primary_source: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://lovdata.no/dokument/SF/forskrift/1999-12-11-1319'
-    }
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
+    },
   ],
   dom: [
     {
-      id: '4',
-      title: 'Rt. 2020 s. 1234 - Regnskapslovens anvendelse',
-      document_number: 'HR-2020-1234-A',
+      id: 'hr-2023-1234',
+      title: 'Høyesterett - Regnskapsplikt for små foretak',
       document_type_id: 'dom',
-      content: '',
+      document_number: 'HR-2023-1234-A',
+      content: 'Domstolsavgjørelse...',
       document_status: 'active',
       is_primary_source: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://lovdata.no/dokument/HRSIV/hrsiv-2020-1234'
-    }
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
+    },
   ],
   rundskriv: [
     {
-      id: '5',
-      title: 'Rundskriv om regnskapslovens bestemmelser',
-      document_number: 'RS-2020-001',
+      id: 'rsv-g-01-2024',
+      title: 'RSV G-01/2024 - Regnskapsplikt og regnskapsføring',
       document_type_id: 'rundskriv',
-      content: '',
+      document_number: 'RSV-G-01-2024',
+      content: 'Rundskriv om regnskapsplikt...',
       document_status: 'active',
       is_primary_source: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://regjeringen.no/rs-2020-001'
-    }
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
+    },
   ],
   forarbeid: [
     {
-      id: '6',
-      title: 'Ot.prp. nr. 42 (1997-98) Om lov om årsregnskap m.v.',
-      document_number: 'OTPRP-1997-98-42',
+      id: 'ot-prp-42-1997-98',
+      title: 'Ot.prp. nr. 42 (1997-98) - Om lov om årsregnskap',
       document_type_id: 'forarbeid',
-      content: '',
+      document_number: 'Ot.prp-42-1997-98',
+      content: 'Proposisjon til regnskapsloven...',
       document_status: 'active',
       is_primary_source: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      source_url: 'https://stortinget.no/otprp-1997-98-42'
-    }
+      created_at: '2024-01-01',
+      updated_at: '2024-01-01',
+    },
   ],
-  ukjent: []
+  ukjent: [],
 };
 
-const DOCTYPE_LABELS: Record<DocumentNodeType, string> = {
-  lov: 'Lov',
-  forskrift: 'Forskrift',
-  dom: 'Dom',
-  rundskriv: 'Rundskriv',
-  forarbeid: 'Forarbeid',
-  ukjent: 'Ukjent'
+const DOC_TYPE_OPTIONS: Array<{ 
+  value: DocumentNodeType; 
+  label: string; 
+  icon: React.ReactNode;
+  color: string;
+}> = [
+  { value: 'lov', label: 'Lov', icon: <Scale className="h-4 w-4" />, color: 'bg-blue-100 text-blue-800' },
+  { value: 'forskrift', label: 'Forskrift', icon: <FileText className="h-4 w-4" />, color: 'bg-green-100 text-green-800' },
+  { value: 'dom', label: 'Dom', icon: <Book className="h-4 w-4" />, color: 'bg-purple-100 text-purple-800' },
+  { value: 'rundskriv', label: 'Rundskriv', icon: <FileText className="h-4 w-4" />, color: 'bg-orange-100 text-orange-800' },
+  { value: 'forarbeid', label: 'Forarbeid', icon: <FileText className="h-4 w-4" />, color: 'bg-gray-100 text-gray-800' },
+];
+
+const getDocTypeConfig = (docType: DocumentNodeType) => {
+  return DOC_TYPE_OPTIONS.find(opt => opt.value === docType) || DOC_TYPE_OPTIONS[0];
 };
 
-const DOCTYPE_COLORS: Record<DocumentNodeType, string> = {
-  lov: 'bg-blue-100 text-blue-800',
-  forskrift: 'bg-green-100 text-green-800',
-  dom: 'bg-purple-100 text-purple-800',
-  rundskriv: 'bg-yellow-100 text-yellow-800',
-  forarbeid: 'bg-gray-100 text-gray-800',
-  ukjent: 'bg-gray-100 text-gray-600'
+const DocumentSelector: React.FC<{
+  type: 'source' | 'target';
+  docType: DocumentNodeType;
+  selectedDocument?: LegalDocument;
+  demoMode: boolean;
+  onDocTypeChange: (docType: DocumentNodeType) => void;
+  onDocumentSelect: (document: LegalDocument) => void;
+}> = ({ type, docType, selectedDocument, demoMode, onDocTypeChange, onDocumentSelect }) => {
+  const docTypeConfig = getDocTypeConfig(docType);
+  const availableDocuments = demoMode ? MOCK_DOCUMENTS[docType] : []; // TODO: Fetch from API
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          {docTypeConfig.icon}
+          {type === 'source' ? 'Kildedokument' : 'Måldokument'}
+          <Badge variant="secondary" className={docTypeConfig.color}>
+            {docTypeConfig.label}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Document Type Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Dokumenttype</label>
+          <Select value={docType} onValueChange={onDocTypeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Velg dokumenttype" />
+            </SelectTrigger>
+            <SelectContent>
+              {DOC_TYPE_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  <div className="flex items-center gap-2">
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Document Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            Velg dokument ({availableDocuments.length} tilgjengelig)
+          </label>
+          {availableDocuments.length > 0 ? (
+            <Select 
+              value={selectedDocument?.id || ''} 
+              onValueChange={(documentId) => {
+                const document = availableDocuments.find(doc => doc.id === documentId);
+                if (document) onDocumentSelect(document);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Velg dokument" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDocuments.map(document => (
+                  <SelectItem key={document.id} value={document.id}>
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="font-medium">{document.title}</span>
+                      {document.document_number && (
+                        <span className="text-xs text-muted-foreground">
+                          {document.document_number}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="text-sm text-muted-foreground p-4 border border-dashed rounded-md text-center">
+              {demoMode 
+                ? `Ingen ${docTypeConfig.label.toLowerCase()} tilgjengelig i demo-modus`
+                : 'Laster dokumenter...'
+              }
+            </div>
+          )}
+        </div>
+
+        {/* Selected Document Info */}
+        {selectedDocument && (
+          <div className="p-3 bg-muted/50 rounded-md space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Valgt:</span>
+              <Badge variant="outline">{selectedDocument.document_number}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {selectedDocument.title}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 const Selectors: React.FC<SelectorsProps> = ({
@@ -135,202 +225,69 @@ const Selectors: React.FC<SelectorsProps> = ({
   demoMode,
   onDocTypeChange,
   onDocumentSelect,
-  onSwapDirection
+  onSwapDirection,
 }) => {
-  // Fetch documents from Supabase (only when not in demo mode)
-  const { data: sourceDocuments = [] } = useQuery({
-    queryKey: ['legal-documents', sourceDocType],
-    queryFn: async () => {
-      if (demoMode) return MOCK_DOCUMENTS[sourceDocType];
-      
-      const { data, error } = await supabase
-        .from('legal_documents')
-        .select('*')
-        .eq('document_type_id', sourceDocType)
-        .eq('document_status', 'active')
-        .limit(200);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!sourceDocType
-  });
-
-  const { data: targetDocuments = [] } = useQuery({
-    queryKey: ['legal-documents', targetDocType],
-    queryFn: async () => {
-      if (demoMode) return MOCK_DOCUMENTS[targetDocType];
-      
-      const { data, error } = await supabase
-        .from('legal_documents')
-        .select('*')
-        .eq('document_type_id', targetDocType)
-        .eq('document_status', 'active')
-        .limit(200);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!targetDocType
-  });
+  const bothSelected = selectedDocuments.source && selectedDocuments.target;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Source Document */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Kilde
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Document Type Selector */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Dokumenttype</label>
-            <Select
-              value={sourceDocType}
-              onValueChange={(value: DocumentNodeType) => onDocTypeChange('source', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(DOCTYPE_LABELS).map(([type, label]) => (
-                  <SelectItem key={type} value={type}>
-                    <div className="flex items-center gap-2">
-                      <Badge className={DOCTYPE_COLORS[type as DocumentNodeType]}>
-                        {label}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-6">
+      {/* Demo Mode Notice */}
+      {demoMode && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+          <p className="text-sm text-amber-800">
+            <strong>Demo-modus:</strong> Bruker mock-data for testing av funksjonalitet
+          </p>
+        </div>
+      )}
 
-          {/* Document Selector */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Dokument</label>
-            <Select
-              value={selectedDocuments.source?.id || ''}
-              onValueChange={(value) => {
-                const doc = sourceDocuments.find(d => d.id === value);
-                if (doc) onDocumentSelect('source', doc);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Velg dokument..." />
-              </SelectTrigger>
-              <SelectContent>
-                {sourceDocuments.map((doc) => (
-                  <SelectItem key={doc.id} value={doc.id}>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">{doc.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {doc.document_number}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Document Selectors */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <DocumentSelector
+          type="source"
+          docType={sourceDocType}
+          selectedDocument={selectedDocuments.source}
+          demoMode={demoMode}
+          onDocTypeChange={(docType) => onDocTypeChange('source', docType)}
+          onDocumentSelect={(document) => onDocumentSelect('source', document)}
+        />
 
-          {selectedDocuments.source && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="font-medium text-sm">{selectedDocuments.source.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {selectedDocuments.source.document_number}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Swap Direction Button */}
+        <div className="flex items-center justify-center">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onSwapDirection}
+            className="h-12 w-12 rounded-full"
+            disabled={!bothSelected}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </Button>
+        </div>
 
-      {/* Swap Direction Button */}
-      <div className="flex items-center justify-center">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={onSwapDirection}
-          className="h-12 w-12 rounded-full"
-        >
-          <ArrowLeftRight className="h-5 w-5" />
-        </Button>
+        <DocumentSelector
+          type="target"
+          docType={targetDocType}
+          selectedDocument={selectedDocuments.target}
+          demoMode={demoMode}
+          onDocTypeChange={(docType) => onDocTypeChange('target', docType)}
+          onDocumentSelect={(document) => onDocumentSelect('target', document)}
+        />
       </div>
 
-      {/* Target Document */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Mål
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Document Type Selector */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Dokumenttype</label>
-            <Select
-              value={targetDocType}
-              onValueChange={(value: DocumentNodeType) => onDocTypeChange('target', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(DOCTYPE_LABELS).map(([type, label]) => (
-                  <SelectItem key={type} value={type}>
-                    <div className="flex items-center gap-2">
-                      <Badge className={DOCTYPE_COLORS[type as DocumentNodeType]}>
-                        {label}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Document Selector */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Dokument</label>
-            <Select
-              value={selectedDocuments.target?.id || ''}
-              onValueChange={(value) => {
-                const doc = targetDocuments.find(d => d.id === value);
-                if (doc) onDocumentSelect('target', doc);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Velg dokument..." />
-              </SelectTrigger>
-              <SelectContent>
-                {targetDocuments.map((doc) => (
-                  <SelectItem key={doc.id} value={doc.id}>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">{doc.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {doc.document_number}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedDocuments.target && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="font-medium text-sm">{selectedDocuments.target.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {selectedDocuments.target.document_number}
-              </p>
+      {/* Selection Summary */}
+      {bothSelected && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+          <h4 className="font-medium text-green-800 mb-2">Valgte dokumenter:</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Kilde:</span> {selectedDocuments.source.title}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <span className="font-medium">Mål:</span> {selectedDocuments.target.title}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
