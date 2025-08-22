@@ -205,13 +205,42 @@ export const useActiveTrialBalanceVersion = (clientId: string) => {
         return null;
       }
       
+      // First try to get active version from accounting_data_versions
+      const { data: activeVersionData, error: activeVersionError } = await supabase
+        .from('accounting_data_versions')
+        .select('id, version_number, file_name, created_at')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (activeVersionError) {
+        console.error('[Active TB Version] Error fetching active version:', activeVersionError);
+      }
+
+      if (activeVersionData) {
+        // Get corresponding trial balance data
+        const { data: tbData, error: tbError } = await supabase
+          .from('trial_balances')
+          .select('version, period_year, created_at')
+          .eq('client_id', clientId)
+          .eq('version', activeVersionData.file_name || `Version ${activeVersionData.version_number}`)
+          .limit(1)
+          .maybeSingle();
+
+        if (!tbError && tbData) {
+          return tbData;
+        }
+      }
+
+      // Fallback to most recent trial balance if no active version found
       const { data, error } = await supabase
         .from('trial_balances')
         .select('version, period_year, created_at')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       

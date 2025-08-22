@@ -351,6 +351,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
       const payload = {
         clientId,
         ...params,
+        versionId: activeTrialBalanceVersion?.version, // Add version for consistency
         planName: autoName, // Add automatic naming
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
@@ -406,6 +407,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
       const payload = {
         clientId,
         ...params,
+        versionId: activeTrialBalanceVersion?.version, // Add version for consistency
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
           undefined,

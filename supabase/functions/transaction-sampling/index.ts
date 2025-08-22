@@ -44,6 +44,39 @@ serve(async (req) => {
 
     console.log('Transaction sampling request:', { clientId, versionId, method, params, accountFilter });
 
+    // If no versionId provided, try to get the active version
+    let finalVersionId = versionId;
+    if (!finalVersionId) {
+      console.log('No versionId provided, fetching active version...');
+      const { data: activeVersion, error: versionError } = await supabase
+        .from('accounting_data_versions')
+        .select('id, file_name, version_number')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!versionError && activeVersion) {
+        finalVersionId = activeVersion.id;
+        console.log('Using active version:', finalVersionId);
+      } else {
+        console.log('No active version found, using latest version...');
+        // Fallback to most recent version
+        const { data: latestVersion, error: latestError } = await supabase
+          .from('accounting_data_versions')
+          .select('id')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!latestError && latestVersion) {
+          finalVersionId = latestVersion.id;
+          console.log('Using latest version:', finalVersionId);
+        }
+      }
+    }
+
     // Get transaction data
     let query = supabase
       .from('general_ledger_transactions')
@@ -61,8 +94,12 @@ serve(async (req) => {
       `)
       .eq('client_id', clientId);
 
-    if (versionId) {
-      query = query.eq('version_id', versionId);
+    // Always filter by version to ensure data consistency
+    if (finalVersionId) {
+      query = query.eq('version_id', finalVersionId);
+      console.log('Filtering transactions by version:', finalVersionId);
+    } else {
+      console.warn('No version found - this may include all transaction data');
     }
 
     if (accountFilter) {

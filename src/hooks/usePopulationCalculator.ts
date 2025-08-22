@@ -40,12 +40,19 @@ export function usePopulationCalculator(
       }
 
       // Simplified query to avoid type recursion issues
-      const { data: trialBalanceData, error } = await supabase
+      let query = supabase
         .from('trial_balances')
-        .select('closing_balance, client_account_id')
+        .select('closing_balance, client_account_id, version')
         .eq('client_id', clientId)
         .eq('period_year', fiscalYear)
         .neq('closing_balance', 0);
+
+      // Filter by version if provided
+      if (versionId) {
+        query = query.eq('version', versionId);
+      }
+
+      const { data: trialBalanceData, error } = await query;
 
       if (error) throw error;
 
