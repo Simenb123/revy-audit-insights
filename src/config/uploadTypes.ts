@@ -434,7 +434,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         sort_order: 8,
         category: 'Motpart',
         example_values: ['Supplier AS', 'Vendor AB'],
-        aliases: ['Leverandørnavn', 'leverandørnavn', 'leverandør', 'supplier', 'vendor', 'supplier_name']
+        aliases: ['Leverandørnavn', 'leverandørnavn', 'LEVERANDØRNAVN', 'Leverandornavn', 'leverandornavn', 'LEVERANDORNAVN', 'leverandør', 'Leverandør', 'LEVERANDØR', 'leverandor', 'Leverandor', 'LEVERANDOR', 'supplier', 'Supplier', 'SUPPLIER', 'vendor', 'Vendor', 'VENDOR', 'supplier_name', 'Supplier_name', 'Supplier Name', 'SUPPLIER_NAME', 'vendor_name', 'Vendor_name', 'Vendor Name', 'VENDOR_NAME']
       },
       {
         field_key: 'kundeadresse',
@@ -468,14 +468,14 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         aliases: ['Beskrivelse', 'beskrivelse', 'tekst', 'text', 'description', 'bilagstekst', 'forklaring', 'kommentar']
       },
       {
-        field_key: 'netto',
+        field_key: 'netto_belop',
         field_label: 'Netto beløp',
         field_description: 'Nettobeløp uten mva',
         is_required: false,
         data_type: 'number',
         sort_order: 12,
         category: 'Beløp',
-        aliases: ['Netto beløp', 'netto beløp', 'netto', 'netto_beløp', 'nettobeløp', 'net', 'net_amount', 'beløp_netto']
+        aliases: ['Netto beløp', 'netto beløp', 'NETTO BELØP', 'netto_beløp', 'Netto_beløp', 'NETTO_BELØP', 'nettobeløp', 'Nettobeløp', 'NETTOBELØP', 'netto belop', 'Netto belop', 'NETTO BELOP', 'netto_belop', 'Netto_belop', 'NETTO_BELOP', 'nettobelop', 'Nettobelop', 'NETTOBELOP', 'netto', 'Netto', 'NETTO', 'net_amount', 'Net_amount', 'Net Amount', 'NET_AMOUNT', 'beløp_netto', 'Beløp_netto', 'BELØP_NETTO', 'belop_netto', 'Belop_netto', 'BELOP_NETTO', 'amount_ex_vat', 'Amount_ex_vat', 'Amount Ex VAT', 'AMOUNT_EX_VAT']
       },
       {
         field_key: 'mva_sats',
@@ -485,7 +485,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'number',
         sort_order: 13,
         category: 'MVA',
-        aliases: ['MVA-sats', 'mva-sats', 'MVA sats', 'mva sats', 'mva_sats', 'mvasats', 'mva', 'mvakode', 'vat_rate', 'tax_rate', 'skattesats']
+        aliases: ['MVA-sats', 'mva-sats', 'MVA-SATS', 'MvA-sats', 'mVA-sats', 'MVA sats', 'Mva sats', 'mva sats', 'MVA SATS', 'MvA sats', 'mVA sats', 'mva_sats', 'Mva_sats', 'MVA_sats', 'MVA_SATS', 'mvasats', 'Mvasats', 'MVAsats', 'MVASATS', 'mva', 'Mva', 'MVA', 'mvakode', 'Mvakode', 'MVAkode', 'MVAKODE', 'mva_kode', 'Mva_kode', 'MVA_kode', 'MVA_KODE', 'vat_rate', 'Vat_rate', 'VAT_rate', 'VAT Rate', 'VAT_RATE', 'tax_rate', 'Tax_rate', 'TAX_RATE', 'Tax Rate', 'skattesats', 'Skattesats', 'SKATTESATS', 'sats', 'Sats', 'SATS']
       },
       {
         field_key: 'mva_belop',
@@ -495,7 +495,7 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'number',
         sort_order: 14,
         category: 'MVA',
-        aliases: ['MVA-beløp', 'mva-beløp', 'MVA beløp', 'mva beløp', 'mva_beløp', 'mvabeløp', 'mva_belop', 'vat_amount', 'tax_amount', 'skattebeløp']
+        aliases: ['MVA-beløp', 'mva-beløp', 'MVA-BELØP', 'MvA-beløp', 'mVA-beløp', 'MVA beløp', 'Mva beløp', 'mva beløp', 'MVA BELØP', 'MvA beløp', 'mVA beløp', 'mva_beløp', 'Mva_beløp', 'MVA_beløp', 'MVA_BELØP', 'mvabeløp', 'Mvabeløp', 'MVAbeløp', 'MVABELØP', 'mva-belop', 'Mva-belop', 'MVA-belop', 'MVA-BELOP', 'MVA belop', 'Mva belop', 'mva belop', 'MVA BELOP', 'MvA belop', 'mVA belop', 'mva_belop', 'Mva_belop', 'MVA_belop', 'MVA_BELOP', 'mvabelop', 'Mvabelop', 'MVAbelop', 'MVABELOP', 'momsbeløp', 'Momsbeløp', 'MOMSBELØP', 'momsbelop', 'Momsbelop', 'MOMSBELOP', 'vat_amount', 'Vat_amount', 'VAT_amount', 'VAT Amount', 'VAT_AMOUNT', 'tax_amount', 'Tax_amount', 'TAX_AMOUNT', 'Tax Amount', 'skattebeløp', 'Skattebeløp', 'SKATTEBELØP', 'skattebelop', 'Skattebelop', 'SKATTEBELOP']
       },
       {
         field_key: 'antall',
