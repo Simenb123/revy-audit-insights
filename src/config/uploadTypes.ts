@@ -324,6 +324,173 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         example_values: ['2025-12-31', '2030-06-30']
       }
     ]
+  },
+
+  'pdf-creator': {
+    id: 'pdf-creator',
+    name: 'PDF Creator',
+    description: 'Generer PDF-bilag fra regnskapsdata',
+    icon: 'FileText',
+    acceptedFileTypes: {
+      '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+      '.xls': ['application/vnd.ms-excel'],
+      '.csv': ['text/csv']
+    },
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxFiles: 1,
+    enableAISuggestions: true,
+    enablePreview: true,
+    processingSteps: [
+      { id: 'upload', title: 'Last opp fil' },
+      { id: 'parse', title: 'Les filinnhold' },
+      { id: 'map', title: 'Koble kolonner' },
+      { id: 'validate', title: 'Valider data' },
+      { id: 'generate', title: 'Generer PDF-bilag' }
+    ],
+    fieldDefinitions: [
+      {
+        field_key: 'bilag',
+        field_label: 'Bilag/Voucher',
+        field_description: 'Bilagsnummer eller voucher nummer',
+        is_required: true,
+        data_type: 'text',
+        sort_order: 1,
+        category: 'Identifikasjon',
+        example_values: ['1001', 'VB001', 'FB2024001']
+      },
+      {
+        field_key: 'fakturanummer',
+        field_label: 'Fakturanummer',
+        field_description: 'Fakturanummer eller dokumentnummer',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 2,
+        category: 'Identifikasjon',
+        example_values: ['INV-2024-001', '12345']
+      },
+      {
+        field_key: 'fakturadato',
+        field_label: 'Fakturadato/Dato',
+        field_description: 'Transaksjonsdato eller fakturadato',
+        is_required: true,
+        data_type: 'date',
+        sort_order: 3,
+        category: 'Dato',
+        example_values: ['01.01.2024', '2024-01-01']
+      },
+      {
+        field_key: 'konto',
+        field_label: 'Kontonummer',
+        field_description: 'Regnskapskonto',
+        is_required: true,
+        data_type: 'number',
+        sort_order: 4,
+        category: 'Regnskap',
+        example_values: ['1500', '2400', '3000']
+      },
+      {
+        field_key: 'beskrivelse',
+        field_label: 'Beskrivelse',
+        field_description: 'Tekst eller beskrivelse av transaksjon',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 5,
+        category: 'Beskrivelse',
+        example_values: ['Salg av tjenester', 'Innkjøp av varer']
+      },
+      {
+        field_key: 'debet',
+        field_label: 'Debet',
+        field_description: 'Debetbeløp',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 6,
+        category: 'Beløp'
+      },
+      {
+        field_key: 'kredit',
+        field_label: 'Kredit',
+        field_description: 'Kreditbeløp',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 7,
+        category: 'Beløp'
+      },
+      {
+        field_key: 'netto',
+        field_label: 'Netto beløp',
+        field_description: 'Nettobeløp uten mva',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 8,
+        category: 'Beløp'
+      },
+      {
+        field_key: 'mva_sats',
+        field_label: 'MVA-sats',
+        field_description: 'MVA-prosent (25, 15, 0)',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 9,
+        category: 'MVA'
+      },
+      {
+        field_key: 'mva_belop',
+        field_label: 'MVA-beløp',
+        field_description: 'MVA-beløp i kroner',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 10,
+        category: 'MVA'
+      },
+      {
+        field_key: 'motpart',
+        field_label: 'Kunde/Leverandør navn',
+        field_description: 'Navn på motpart (kunde eller leverandør)',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 11,
+        category: 'Motpart',
+        example_values: ['Acme AS', 'John Doe']
+      },
+      {
+        field_key: 'motpart_adresse',
+        field_label: 'Motpart adresse',
+        field_description: 'Adresse til kunde eller leverandør',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 12,
+        category: 'Motpart'
+      },
+      {
+        field_key: 'antall',
+        field_label: 'Antall',
+        field_description: 'Antall enheter',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 13,
+        category: 'Linjedetaljer'
+      },
+      {
+        field_key: 'enhet',
+        field_label: 'Enhet',
+        field_description: 'Måleenhet (stk, timer, kg)',
+        is_required: false,
+        data_type: 'text',
+        sort_order: 14,
+        category: 'Linjedetaljer',
+        example_values: ['stk', 'timer', 'kg']
+      },
+      {
+        field_key: 'enhetspris',
+        field_label: 'Enhetspris',
+        field_description: 'Pris per enhet',
+        is_required: false,
+        data_type: 'number',
+        sort_order: 15,
+        category: 'Linjedetaljer'
+      }
+    ]
   }
 };
 

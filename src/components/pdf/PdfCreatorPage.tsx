@@ -16,10 +16,11 @@ import { PDFViewer } from '@react-pdf/renderer';
 import { PdfInvoiceDocument } from './PdfInvoiceDocument';
 import { PdfPaymentDocument } from './PdfPaymentDocument';
 import { PdfJournalDocument } from './PdfJournalDocument';
+import { UniversalUploader } from '@/components/Upload';
+import { getUploadConfig } from '@/config/uploadTypes';
+import { ProcessingResult } from '@/types/upload';
 
 export const PdfCreatorPage = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [bilagGroups, setBilagGroups] = useState<Record<string, any[]>>({});
   const [payloads, setPayloads] = useState<BilagPayload[]>([]);
@@ -32,23 +33,43 @@ export const PdfCreatorPage = () => {
   });
   const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showUploader, setShowUploader] = useState(true);
   
   const { toast } = useToast();
+  
+  // Get PDF Creator upload configuration
+  const uploadConfig = getUploadConfig('pdf-creator');
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFile = event.target.files?.[0];
-    if (!uploadedFile) return;
+  // Handle upload completion from UniversalUploader
+  const handleUploadComplete = async (result: ProcessingResult) => {
+    toast({
+      title: "Data behandlet!",
+      description: `${result.processedRows} rader behandlet, ${Object.keys(bilagGroups).length} bilag generert.`,
+    });
+    setShowUploader(false);
+  };
 
-    setFile(uploadedFile);
-    setLoading(true);
-
+  // Process uploaded data (called from UniversalUploader)
+  const processUploadedData = async (file: File, mapping: Record<string, string>) => {
     try {
-      const data = await readTableFile(uploadedFile);
-      setRows(data);
+      const data = await readTableFile(file);
+      
+      // Map the columns according to user mapping
+      const mappedData = data.map(row => {
+        const mappedRow: any = {};
+        Object.entries(mapping).forEach(([sourceCol, targetField]) => {
+          if (targetField && row[sourceCol] !== undefined) {
+            mappedRow[targetField] = row[sourceCol];
+          }
+        });
+        return mappedRow;
+      });
+      
+      setRows(mappedData);
 
       // Group by bilag
       const groups: Record<string, any[]> = {};
-      data.forEach(row => {
+      mappedData.forEach(row => {
         const mapped = mapRow(row);
         const key = mapped.bilag?.toString() || mapped.fakturanummer || 'ukjent';
         if (!groups[key]) groups[key] = [];
@@ -61,18 +82,22 @@ export const PdfCreatorPage = () => {
       const generated = groupsToPayloads(groups, selskapInfo);
       setPayloads(generated);
 
-      toast({
-        title: "Fil lastet opp!",
-        description: `${data.length} rader og ${Object.keys(groups).length} bilag funnet.`,
-      });
+      return {
+        success: true,
+        processedRows: mappedData.length,
+        validRows: mappedData.length,
+        invalidRows: 0,
+        skippedRows: 0,
+        validationResults: [
+          {
+            type: 'success' as const,
+            message: `${mappedData.length} rader behandlet og ${Object.keys(groups).length} bilag generert`,
+            count: mappedData.length
+          }
+        ]
+      };
     } catch (error) {
-      toast({
-        title: "Feil ved opplasting",
-        description: error instanceof Error ? error.message : 'Ukjent feil',
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
@@ -209,42 +234,47 @@ export const PdfCreatorPage = () => {
       </Card>
 
       {/* File Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Last opp data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="file-upload">Excel/CSV fil</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={handleFileUpload}
-                disabled={loading}
-              />
+      {showUploader && uploadConfig ? (
+        <UniversalUploader 
+          config={{
+            ...uploadConfig,
+            customProcessor: processUploadedData
+          }}
+          onComplete={handleUploadComplete}
+          onCancel={() => setShowUploader(false)}
+        />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Regnskapsdata lastet opp</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowUploader(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Last opp ny fil
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Last ned CSV-mal
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
-              Last ned CSV-mal
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Validation Panel */}
-      {rows.length > 0 && (
+      {!showUploader && rows.length > 0 && (
         <ValidationPanel
           rows={rows}
           bilagGroups={bilagGroups}
-          detectedColumns={detectedColumns}
-          mvaSatser={mvaSatser}
+          detectedColumns={Object.keys(rows[0] || {})}
+          mvaSatser={[...new Set(rows.map(r => r.mva_sats).filter(Boolean))]}
         />
       )}
 
       {/* Bilag Selection */}
-      {payloads.length > 0 && (
+      {!showUploader && payloads.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Velg bilag for forhåndsvisning</CardTitle>
@@ -267,7 +297,7 @@ export const PdfCreatorPage = () => {
       )}
 
       {/* Selected Bilag Details */}
-      {selectedPayload && (
+      {!showUploader && selectedPayload && (
         <Card>
           <CardHeader>
             <CardTitle>Bilagsdetaljer</CardTitle>
@@ -292,7 +322,7 @@ export const PdfCreatorPage = () => {
       )}
 
       {/* Actions */}
-      {selectedPayload && (
+      {!showUploader && selectedPayload && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex gap-2">
