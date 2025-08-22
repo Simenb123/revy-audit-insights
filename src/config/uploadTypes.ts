@@ -384,13 +384,24 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
       {
         field_key: 'fakturadato',
         field_label: 'Fakturadato',
-        field_description: 'Fakturadato eller transaksjonsdato',
+        field_description: 'Dato faktura ble utstedt',
         is_required: true,
         data_type: 'date',
         sort_order: 4,
         category: 'Dato',
         example_values: ['01.01.2024', '2024-01-01'],
-        aliases: ['Fakturadato', 'fakturadato', 'dato', 'date', 'bilagsdato', 'transaksjonsdato', 'regnskapsdato', 'invoice_date']
+        aliases: ['Fakturadato', 'fakturadato', 'invoice_date']
+      },
+      {
+        field_key: 'bilagsdato',
+        field_label: 'Bilagsdato',
+        field_description: 'Dato for regnskapsføring eller bilagsregistrering',
+        is_required: false,
+        data_type: 'date',
+        sort_order: 4.5,
+        category: 'Dato',
+        example_values: ['01.01.2024', '2024-01-01'],
+        aliases: ['Bilagsdato', 'bilagsdato', 'dato', 'date', 'transaksjonsdato', 'regnskapsdato', 'voucher_date']
       },
       {
         field_key: 'forfallsdato',
