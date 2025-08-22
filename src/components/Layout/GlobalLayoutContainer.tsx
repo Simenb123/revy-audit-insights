@@ -26,10 +26,14 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
       className={cn(
         'min-h-0',
         'w-full mx-auto px-4 lg:pr-6 min-w-0 overflow-x-hidden overflow-y-auto',
+        'pb-8', // Add bottom padding for scroll buffer
         maxWidthClasses[maxWidth],
         className
       )}
-      style={{ height: '100%' }}
+      style={{ 
+        height: '100%',
+        scrollBehavior: 'smooth' // Improve scroll behavior
+      }}
     >
       {children}
     </main>

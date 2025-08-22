@@ -17,7 +17,8 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
   const { state: leftSidebarState } = useSidebar();
   const isMobile = useIsMobile();
   const { globalHeaderHeight, subHeaderHeight } = useLayout();
-  const computedHeight = `calc(100dvh - ${globalHeaderHeight + subHeaderHeight}px)`;
+  // Use more robust viewport height calculation
+  const computedHeight = `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`;
   
   const leftCollapsed = leftSidebarState === 'collapsed';
 
