@@ -356,7 +356,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'text',
         sort_order: 1,
         category: 'Identifikasjon',
-        example_values: ['1001', 'VB001', 'FB2024001']
+        example_values: ['1001', 'VB001', 'FB2024001'],
+        aliases: ['bilag', 'voucher', 'bilagsnummer', 'bilagsnr', 'voucher_number', 'dok_nr', 'dokument']
       },
       {
         field_key: 'fakturanummer',
@@ -366,7 +367,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'text',
         sort_order: 2,
         category: 'Identifikasjon',
-        example_values: ['INV-2024-001', '12345']
+        example_values: ['INV-2024-001', '12345'],
+        aliases: ['fakturanummer', 'fakturanr', 'invoice', 'invoice_number', 'faktura', 'inv_nr']
       },
       {
         field_key: 'fakturadato',
@@ -376,7 +378,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'date',
         sort_order: 3,
         category: 'Dato',
-        example_values: ['01.01.2024', '2024-01-01']
+        example_values: ['01.01.2024', '2024-01-01'],
+        aliases: ['dato', 'date', 'fakturadato', 'bilagsdato', 'transaksjonsdato', 'regnskapsdato', 'invoice_date']
       },
       {
         field_key: 'konto',
@@ -386,7 +389,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'number',
         sort_order: 4,
         category: 'Regnskap',
-        example_values: ['1500', '2400', '3000']
+        example_values: ['1500', '2400', '3000'],
+        aliases: ['konto', 'kontonummer', 'kontonr', 'account', 'account_number', 'acc_no', 'kontokode']
       },
       {
         field_key: 'beskrivelse',
@@ -396,7 +400,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'text',
         sort_order: 5,
         category: 'Beskrivelse',
-        example_values: ['Salg av tjenester', 'Innkjøp av varer']
+        example_values: ['Salg av tjenester', 'Innkjøp av varer'],
+        aliases: ['beskrivelse', 'tekst', 'text', 'description', 'bilagstekst', 'forklaring', 'kommentar']
       },
       {
         field_key: 'debet',
@@ -405,7 +410,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 6,
-        category: 'Beløp'
+        category: 'Beløp',
+        aliases: ['debet', 'debit', 'skal', 'dr', 'debet_amount', 'soll']
       },
       {
         field_key: 'kredit',
@@ -414,7 +420,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 7,
-        category: 'Beløp'
+        category: 'Beløp',
+        aliases: ['kredit', 'credit', 'have', 'haver', 'cr', 'credit_amount']
       },
       {
         field_key: 'netto',
@@ -423,7 +430,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 8,
-        category: 'Beløp'
+        category: 'Beløp',
+        aliases: ['netto', 'netto_beløp', 'nettobeløp', 'net', 'net_amount', 'beløp_netto']
       },
       {
         field_key: 'mva_sats',
@@ -432,7 +440,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 9,
-        category: 'MVA'
+        category: 'MVA',
+        aliases: ['mva_sats', 'mvasats', 'mva', 'mvakode', 'vat_rate', 'tax_rate', 'skattesats']
       },
       {
         field_key: 'mva_belop',
@@ -441,7 +450,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 10,
-        category: 'MVA'
+        category: 'MVA',
+        aliases: ['mva_beløp', 'mvabeløp', 'mva_belop', 'vat_amount', 'tax_amount', 'skattebeløp']
       },
       {
         field_key: 'motpart',
@@ -451,7 +461,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'text',
         sort_order: 11,
         category: 'Motpart',
-        example_values: ['Acme AS', 'John Doe']
+        example_values: ['Acme AS', 'John Doe'],
+        aliases: ['motpart', 'leverandør', 'leverandørnavn', 'kunde', 'kundenavn', 'supplier', 'customer', 'vendor', 'company']
       },
       {
         field_key: 'motpart_adresse',
@@ -460,7 +471,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'text',
         sort_order: 12,
-        category: 'Motpart'
+        category: 'Motpart',
+        aliases: ['motpart_adresse', 'leverandøradresse', 'kundeadresse', 'adresse', 'address', 'supplier_address', 'vendor_address']
       },
       {
         field_key: 'antall',
@@ -469,7 +481,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 13,
-        category: 'Linjedetaljer'
+        category: 'Linjedetaljer',
+        aliases: ['antall', 'qty', 'quantity', 'mengde', 'stk', 'pieces']
       },
       {
         field_key: 'enhet',
@@ -479,7 +492,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         data_type: 'text',
         sort_order: 14,
         category: 'Linjedetaljer',
-        example_values: ['stk', 'timer', 'kg']
+        example_values: ['stk', 'timer', 'kg'],
+        aliases: ['enhet', 'unit', 'måleenhet', 'stk', 'timer', 'kg', 'pcs', 'hours']
       },
       {
         field_key: 'enhetspris',
@@ -488,7 +502,8 @@ export const UPLOAD_CONFIGS: Record<string, UploadTypeConfig> = {
         is_required: false,
         data_type: 'number',
         sort_order: 15,
-        category: 'Linjedetaljer'
+        category: 'Linjedetaljer',
+        aliases: ['enhetspris', 'unit_price', 'pris', 'price', 'stykksris', 'per_unit', 'unit_cost']
       }
     ]
   }

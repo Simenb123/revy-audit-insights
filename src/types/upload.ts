@@ -14,6 +14,7 @@ export interface FieldDefinition {
   sort_order: number;
   category?: string;
   example_values?: string[];
+  aliases?: string[];
 }
 
 export interface UploadTypeConfig {
