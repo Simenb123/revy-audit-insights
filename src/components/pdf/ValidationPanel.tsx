@@ -81,7 +81,14 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({
           <div className="space-y-1">
             {Object.entries(typeDistribution).map(([type, count]) => (
               <div key={type} className="flex justify-between text-xs">
-                <span>{type}</span>
+                <span className="capitalize">
+                  {type === 'salgsfaktura' ? 'Salgsfaktura' :
+                   type === 'leverandorfaktura' ? 'Innkjøpsfaktura' :
+                   type === 'kundebetaling' ? 'Kundebetaling' :
+                   type === 'leverandorbetaling' ? 'Leverandørbetaling' :
+                   type === 'bankbilag' ? 'Bankbilag' :
+                   'Diversebilag'}
+                </span>
                 <Badge variant="outline" className="text-xs">{count}</Badge>
               </div>
             ))}

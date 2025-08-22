@@ -10,113 +10,177 @@ interface PdfInvoiceDocumentProps {
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
-    fontSize: 11,
+    fontSize: 10,
     paddingTop: 35,
     paddingLeft: 35,
     paddingRight: 35,
     paddingBottom: 65,
   },
+  // Header section with two columns
   header: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 30,
   },
-  companyInfo: {
+  issuerSection: {
     width: '50%',
+    paddingRight: 20,
   },
-  documentInfo: {
+  metaSection: {
     width: '50%',
-    alignItems: 'flex-end',
+    paddingLeft: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2563eb',
-  },
-  creditNoteTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#dc2626',
-  },
-  companyName: {
+  issuerName: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  text: {
-    fontSize: 11,
-    marginBottom: 3,
+  issuerDetails: {
+    fontSize: 10,
+    marginBottom: 2,
   },
-  metaInfo: {
-    backgroundColor: '#f8f9fa',
-    padding: 10,
-    marginBottom: 20,
+  documentTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'right',
+  },
+  salesInvoiceTitle: {
+    color: '#059669',
+  },
+  purchaseInvoiceTitle: {
+    color: '#2563eb',
+  },
+  creditNoteTitle: {
+    color: '#dc2626',
+  },
+  // Meta information box
+  metaBox: {
+    border: '1 solid #e5e5e5',
+    padding: 15,
+    backgroundColor: '#fafafa',
+    marginBottom: 10,
   },
   metaRow: {
     flexDirection: 'row',
-    marginBottom: 3,
+    marginBottom: 5,
   },
   metaLabel: {
     width: '40%',
     fontWeight: 'bold',
+    fontSize: 9,
   },
   metaValue: {
     width: '60%',
+    fontSize: 9,
   },
-  customerBox: {
-    border: '1 solid #ccc',
-    padding: 15,
-    marginBottom: 20,
+  // Customer/Supplier section
+  partySection: {
+    marginBottom: 30,
   },
-  customerTitle: {
+  partyTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
+    color: '#374151',
   },
+  partyBox: {
+    border: '1 solid #d1d5db',
+    padding: 12,
+    backgroundColor: '#f9fafb',
+  },
+  partyName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 3,
+  },
+  partyDetails: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  // Content area with line items and totals
+  contentArea: {
+    flexDirection: 'row',
+    marginBottom: 30,
+  },
+  linesSection: {
+    width: '65%',
+    paddingRight: 20,
+  },
+  totalsSection: {
+    width: '35%',
+  },
+  // Totals box (Tripletex style)
   totalsBox: {
-    width: '40%',
-    marginLeft: 'auto',
-    marginTop: 20,
-    border: '1 solid #ccc',
+    border: '2 solid #059669',
     padding: 15,
+    backgroundColor: '#f0fdf4',
+  },
+  totalsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#059669',
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 8,
+    paddingBottom: 5,
   },
-  totalLabel: {
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    textAlign: 'right',
-  },
-  grandTotalRow: {
+  totalRowFinal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTop: '1 solid #000',
-    paddingTop: 5,
-    marginTop: 5,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTop: '2 solid #059669',
   },
-  grandTotalLabel: {
+  totalLabel: {
+    fontSize: 11,
+    fontWeight: 'normal',
+  },
+  totalLabelFinal: {
     fontSize: 12,
     fontWeight: 'bold',
+    color: '#059669',
   },
-  grandTotalValue: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  totalAmount: {
+    fontSize: 11,
     textAlign: 'right',
   },
+  totalAmountFinal: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#059669',
+    textAlign: 'right',
+  },
+  // Payment information box
+  paymentSection: {
+    marginTop: 30,
+  },
   paymentBox: {
-    border: '1 solid #ccc',
+    border: '1 solid #f59e0b',
     padding: 15,
-    marginTop: 20,
+    backgroundColor: '#fffbeb',
   },
   paymentTitle: {
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#92400e',
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    marginBottom: 5,
+  },
+  paymentLabel: {
+    width: '40%',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  paymentValue: {
+    width: '60%',
+    fontSize: 10,
   },
 });
 
@@ -135,136 +199,227 @@ export const PdfInvoiceDocument: React.FC<PdfInvoiceDocumentProps> = ({ payload 
     return date.toLocaleDateString('nb-NO');
   };
 
-  const isKreditnota = payload.dokumenttype === 'kreditnota';
-  const totalNetto = payload.linjer?.reduce((sum, line) => sum + line.netto, 0) || 0;
-  const totalMva = payload.linjer?.reduce((sum, line) => sum + (line.mva || 0), 0) || 0;
+  // Determine document properties
+  const isVendorInvoice = payload.type === 'leverandorfaktura';
+  const isCreditNote = payload.dokumenttype === 'kreditnota';
+  
+  // Calculate totals
+  const lines = payload.linjer || [];
+  const totalNetto = lines.reduce((sum, line) => sum + line.netto, 0);
+  const totalMva = lines.reduce((sum, line) => sum + (line.mva || 0), 0);
   const totalBrutto = totalNetto + totalMva;
+
+  // Determine issuer and counterparty
+  let issuer, issuerOrgnr, issuerAddress, counterparty, counterpartyTitle;
+  
+  if (isVendorInvoice) {
+    // For vendor invoices, supplier is the issuer
+    issuer = payload.motpart || 'Leverandør';
+    issuerOrgnr = payload.motpartOrgnr;
+    issuerAddress = payload.motpartAdresse;
+    counterparty = payload.selskap.navn;
+    counterpartyTitle = 'Kjøper';
+  } else {
+    // For sales invoices, our company is the issuer
+    issuer = payload.selskap.navn;
+    issuerOrgnr = payload.selskap.orgnr;
+    issuerAddress = payload.selskap.adresse;
+    counterparty = payload.motpart || 'Kunde';
+    counterpartyTitle = 'Kunde';
+  }
+
+  // Document title based on type and credit note status
+  const getDocumentTitle = () => {
+    if (isCreditNote) {
+      return { text: 'KREDITNOTA', style: styles.creditNoteTitle };
+    }
+    if (isVendorInvoice) {
+      return { text: 'INNKJØPSFAKTURA', style: styles.purchaseInvoiceTitle };
+    }
+    return { text: 'FAKTURA', style: styles.salesInvoiceTitle };
+  };
+
+  const docTitle = getDocumentTitle();
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
+        {/* Header Section */}
         <View style={styles.header}>
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>{payload.selskap.navn}</Text>
-            {payload.selskap.orgnr && (
-              <Text style={styles.text}>Org.nr: {payload.selskap.orgnr}</Text>
+          {/* Issuer Information */}
+          <View style={styles.issuerSection}>
+            <Text style={styles.issuerName}>{issuer}</Text>
+            {issuerOrgnr && (
+              <Text style={styles.issuerDetails}>Org.nr: {issuerOrgnr}</Text>
             )}
-            {payload.selskap.adresse && (
-              <Text style={styles.text}>{payload.selskap.adresse}</Text>
+            {issuerAddress && (
+              <Text style={styles.issuerDetails}>{issuerAddress}</Text>
             )}
             {payload.selskap.mvaRegistrert && (
-              <Text style={styles.text}>MVA-registrert</Text>
+              <Text style={styles.issuerDetails}>MVA registrert</Text>
             )}
           </View>
-          
-          <View style={styles.documentInfo}>
-            <Text style={isKreditnota ? styles.creditNoteTitle : styles.title}>
-              {isKreditnota ? 'KREDITNOTA' : 
-               payload.type === 'salgsfaktura' ? 'FAKTURA' : 'INNKJØPSFAKTURA'}
+
+          {/* Document Title and Meta Information */}
+          <View style={styles.metaSection}>
+            <Text style={[styles.documentTitle, docTitle.style]}>
+              {docTitle.text}
             </Text>
+            
+            <View style={styles.metaBox}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Dok.nr:</Text>
+                <Text style={styles.metaValue}>{payload.doknr}</Text>
+              </View>
+              
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Dato:</Text>
+                <Text style={styles.metaValue}>{formatDate(payload.dato)}</Text>
+              </View>
+              
+              {payload.forfall && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Forfall:</Text>
+                  <Text style={styles.metaValue}>{formatDate(payload.forfall)}</Text>
+                </View>
+              )}
+              
+              {payload.levering && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Levering:</Text>
+                  <Text style={styles.metaValue}>{formatDate(payload.levering)}</Text>
+                </View>
+              )}
+              
+              {payload.ordrenr && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Ordrenr:</Text>
+                  <Text style={styles.metaValue}>{payload.ordrenr}</Text>
+                </View>
+              )}
+              
+              {payload.prosjektnr && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Prosjektnr:</Text>
+                  <Text style={styles.metaValue}>{payload.prosjektnr}</Text>
+                </View>
+              )}
+              
+              {payload.referanse && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Referanse:</Text>
+                  <Text style={styles.metaValue}>{payload.referanse}</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* Document metadata */}
-        <View style={styles.metaInfo}>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Dokumentnr:</Text>
-            <Text style={styles.metaValue}>{payload.doknr}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Bilag:</Text>
-            <Text style={styles.metaValue}>{payload.bilag}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Dato:</Text>
-            <Text style={styles.metaValue}>{formatDate(payload.dato)}</Text>
-          </View>
-          {payload.forfall && (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Forfallsdato:</Text>
-              <Text style={styles.metaValue}>{formatDate(payload.forfall)}</Text>
-            </View>
-          )}
-          {payload.levering && (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Leveringsdato:</Text>
-              <Text style={styles.metaValue}>{formatDate(payload.levering)}</Text>
-            </View>
-          )}
-          {payload.ordrenr && (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Ordrenr:</Text>
-              <Text style={styles.metaValue}>{payload.ordrenr}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Customer/Supplier info */}
-        {payload.motpart && (
-          <View style={styles.customerBox}>
-            <Text style={styles.customerTitle}>
-              {payload.type === 'salgsfaktura' ? 'Kunde:' : 'Leverandør:'}
-            </Text>
-            <Text style={styles.text}>{payload.motpart}</Text>
-            {payload.motpartAdresse && (
-              <Text style={styles.text}>{payload.motpartAdresse}</Text>
+        {/* Counterparty Section */}
+        <View style={styles.partySection}>
+          <Text style={styles.partyTitle}>{counterpartyTitle}</Text>
+          <View style={styles.partyBox}>
+            <Text style={styles.partyName}>{counterparty}</Text>
+            {(isVendorInvoice ? payload.selskap.orgnr : payload.motpartOrgnr) && (
+              <Text style={styles.partyDetails}>
+                Org.nr: {isVendorInvoice ? payload.selskap.orgnr : payload.motpartOrgnr}
+              </Text>
             )}
-            {payload.motpartOrgnr && (
-              <Text style={styles.text}>Org.nr: {payload.motpartOrgnr}</Text>
+            {(isVendorInvoice ? payload.selskap.adresse : payload.motpartAdresse) && (
+              <Text style={styles.partyDetails}>
+                {isVendorInvoice ? payload.selskap.adresse : payload.motpartAdresse}
+              </Text>
             )}
-          </View>
-        )}
-
-        {/* Lines table */}
-        {payload.linjer && payload.linjer.length > 0 && (
-          <LinesTable lines={payload.linjer} />
-        )}
-
-        {/* Totals box */}
-        <View style={styles.totalsBox}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Sum eks mva:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(totalNetto)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>MVA:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(totalMva)}</Text>
-          </View>
-          <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>
-              {isKreditnota ? 'Å kreditere:' : 'Å betale:'}
-            </Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(totalBrutto)}</Text>
           </View>
         </View>
 
-        {/* Payment info */}
-        {(payload.kid || payload.bankkonto || payload.iban) && (
-          <View style={styles.paymentBox}>
-            <Text style={styles.paymentTitle}>Betalingsinformasjon</Text>
-            {payload.forfall && (
-              <Text style={styles.text}>Betalingsfrist: {formatDate(payload.forfall)}</Text>
-            )}
-            {payload.kid && (
-              <Text style={styles.text}>KID: {payload.kid}</Text>
-            )}
-            {payload.bankkonto && (
-              <Text style={styles.text}>Bankkonto: {payload.bankkonto}</Text>
-            )}
-            {payload.iban && (
-              <Text style={styles.text}>IBAN: {payload.iban}</Text>
-            )}
-            {payload.bic && (
-              <Text style={styles.text}>BIC: {payload.bic}</Text>
-            )}
+        {/* Content Area: Line Items and Totals */}
+        <View style={styles.contentArea}>
+          {/* Line Items Table */}
+          <View style={styles.linesSection}>
+            <LinesTable lines={lines} />
+          </View>
+
+          {/* Totals Box (Tripletex Style) */}
+          <View style={styles.totalsSection}>
+            <View style={styles.totalsBox}>
+              <Text style={styles.totalsTitle}>Totaler</Text>
+              
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Sum eks mva</Text>
+                <Text style={styles.totalAmount}>{formatCurrency(totalNetto)}</Text>
+              </View>
+              
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>MVA</Text>
+                <Text style={styles.totalAmount}>{formatCurrency(totalMva)}</Text>
+              </View>
+              
+              <View style={styles.totalRowFinal}>
+                <Text style={styles.totalLabelFinal}>Å betale</Text>
+                <Text style={styles.totalAmountFinal}>{formatCurrency(totalBrutto)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Payment Information */}
+        {(payload.forfall || payload.kid || payload.bankkonto || payload.iban) && (
+          <View style={styles.paymentSection}>
+            <View style={styles.paymentBox}>
+              <Text style={styles.paymentTitle}>Betalingsinformasjon</Text>
+              
+              {payload.forfall && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Betalingsfrist:</Text>
+                  <Text style={styles.paymentValue}>{formatDate(payload.forfall)}</Text>
+                </View>
+              )}
+              
+              {payload.kid && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>KID:</Text>
+                  <Text style={styles.paymentValue}>{payload.kid}</Text>
+                </View>
+              )}
+              
+              {payload.referanse && !payload.kid && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Referanse:</Text>
+                  <Text style={styles.paymentValue}>{payload.referanse}</Text>
+                </View>
+              )}
+              
+              {payload.bankkonto && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Bankkonto:</Text>
+                  <Text style={styles.paymentValue}>{payload.bankkonto}</Text>
+                </View>
+              )}
+              
+              {payload.iban && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>IBAN:</Text>
+                  <Text style={styles.paymentValue}>{payload.iban}</Text>
+                </View>
+              )}
+              
+              {payload.bic && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>BIC:</Text>
+                  <Text style={styles.paymentValue}>{payload.bic}</Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
-        {/* VAT note */}
+        {/* MVA Note */}
         {payload.mvaMerknad && (
-          <View style={{ marginTop: 20, fontSize: 9, fontStyle: 'italic' }}>
-            <Text>{payload.mvaMerknad}</Text>
+          <View style={{ marginTop: 20, padding: 10, backgroundColor: '#f3f4f6' }}>
+            <Text style={{ fontSize: 9, fontStyle: 'italic' }}>
+              MVA-merknad: {payload.mvaMerknad}
+            </Text>
           </View>
         )}
       </Page>

@@ -16,6 +16,8 @@ interface MappedRow {
   kundeadresse?: string;
   leverandornavn?: string;
   leverandøradresse?: string;
+  leverandororgnr?: string;
+  kundeorgnr?: string;
   antall?: number;
   enhet?: string;
   enhetspris?: number;
@@ -55,8 +57,10 @@ export function mapRow(row: any): MappedRow {
     type_transaksjon: ['type_transaksjon', 'transaction_type', 'type'],
     kundenavn: ['kundenavn', 'customer_name', 'kunde'],
     kundeadresse: ['kundeadresse', 'customer_address'],
-    leverandornavn: ['leverandornavn', 'supplier_name', 'leverandr'],
-    leverandøradresse: ['leverandøradresse', 'supplier_address'],
+  leverandornavn: ['leverandornavn', 'supplier_name', 'leverandr'],
+  leverandøradresse: ['leverandøradresse', 'supplier_address'],
+  leverandororgnr: ['leverandororgnr', 'supplier_orgnr', 'leverandor_orgnr'],
+  kundeorgnr: ['kundeorgnr', 'customer_orgnr', 'kunde_orgnr'],
     antall: ['antall', 'quantity', 'qty'],
     enhet: ['enhet', 'unit'],
     enhetspris: ['enhetspris', 'unit_price', 'pris'],
@@ -167,9 +171,9 @@ export function groupsToPayloads(
       type,
       doknr: first.fakturanummer || key,
       bilag: first.bilag || key,
-      dato: first.fakturadato || new Date().toISOString().split('T')[0],
+      dato: first.fakturadato || first.leveringsdato || new Date().toISOString().split('T')[0],
       forfall: first.forfallsdato,
-      levering: first.leveringsdato,
+      levering: first.leveringsdato || first.fakturadato,
       valuta: first.valuta || 'NOK',
       selskap: selskapInfo
     };
@@ -242,9 +246,11 @@ export function groupsToPayloads(
       if (type === 'salgsfaktura') {
         payload.motpart = first.kundenavn;
         payload.motpartAdresse = first.kundeadresse;
+        payload.motpartNr = first.kundeorgnr;
       } else {
         payload.motpart = first.leverandornavn;
-        payload.motpartAdresse = first.leverandøradresse;
+        payload.motpartAdresse = first.leverandøradresse; 
+        payload.motpartOrgnr = first.leverandororgnr;
       }
       
       // Check for credit note

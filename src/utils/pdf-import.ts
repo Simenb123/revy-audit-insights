@@ -13,6 +13,39 @@ export function normalizeHeader(header: string): string {
 }
 
 /**
+ * Parse a date from various formats including Excel serials
+ */
+function parseDate(value: any): string | null {
+  if (!value) return null;
+  
+  // Handle Excel serial numbers
+  if (typeof value === 'number' && isFinite(value) && value > 1000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const ms = Math.round(value * 86400 * 1000);
+    const date = new Date(excelEpoch.getTime() + ms);
+    return date.toISOString().slice(0, 10);
+  }
+  
+  // Handle string dates
+  if (typeof value === 'string') {
+    // Handle d.m.yyyy format (with or without leading zeros)
+    const ddmmyyyy = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (ddmmyyyy) {
+      const [, day, month, year] = ddmmyyyy;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Try standard ISO date parsing
+    const date = new Date(value);
+    if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Parse Norwegian number format (handles spaces and commas)
  */
 export function parseNumber(value: any): number {
@@ -58,9 +91,15 @@ function parseCSV(content: string): any[] {
       const normalizedHeader = normalizeHeader(header);
       const value = values[index] || '';
       
-      // Try to parse as number if it looks like one
-      const numValue = parseNumber(value);
-      row[normalizedHeader] = numValue !== 0 || value === '0' ? numValue : value;
+      // Parse dates for date fields
+      if (['fakturadato', 'forfallsdato', 'leveringsdato', 'dato'].includes(normalizedHeader)) {
+        const parsedDate = parseDate(value);
+        row[normalizedHeader] = parsedDate || value;
+      } else {
+        // Try to parse as number if it looks like one
+        const numValue = parseNumber(value);
+        row[normalizedHeader] = numValue !== 0 || value === '0' ? numValue : value;
+      }
     });
     
     rows.push(row);
@@ -88,8 +127,15 @@ export async function readTableFile(file: File): Promise<any[]> {
         const normalizedRow: any = {};
         Object.entries(row).forEach(([key, value]) => {
           const normalizedKey = normalizeHeader(String(key));
-          const numValue = parseNumber(value);
-          normalizedRow[normalizedKey] = numValue !== 0 || value === '0' ? numValue : value;
+          // Attempt to parse dates for date fields
+          if (['fakturadato', 'forfallsdato', 'leveringsdato', 'dato'].includes(normalizedKey)) {
+            const parsedDate = parseDate(value);
+            normalizedRow[normalizedKey] = parsedDate || value;
+          } else {
+            // Try to parse as number for numeric fields
+            const numValue = parseNumber(value);
+            normalizedRow[normalizedKey] = numValue !== 0 || value === '0' ? numValue : value;
+          }
         });
         return normalizedRow;
       });
