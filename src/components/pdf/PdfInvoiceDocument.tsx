@@ -2,6 +2,8 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { BilagPayload } from '@/types/bilag';
 import { LinesTable } from './LinesTable';
+import { formatDateForDisplay } from '@/utils/pdf-import';
+import { round2 } from '@/utils/money';
 
 interface PdfInvoiceDocumentProps {
   payload: BilagPayload;
@@ -195,8 +197,7 @@ export const PdfInvoiceDocument: React.FC<PdfInvoiceDocumentProps> = ({ payload 
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('nb-NO');
+    return formatDateForDisplay(dateStr);
   };
 
   // Determine document properties

@@ -24,14 +24,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 4,
   },
-  col1: { width: '35%' }, // Beskrivelse
-  col2: { width: '10%', textAlign: 'center' }, // Antall
+  col1: { width: '30%' }, // Beskrivelse
+  col2: { width: '8%', textAlign: 'right' }, // Antall
   col3: { width: '10%', textAlign: 'center' }, // Enhet
-  col4: { width: '15%', textAlign: 'right' }, // Pris
-  col5: { width: '15%', textAlign: 'right' }, // Netto
+  col4: { width: '12%', textAlign: 'right' }, // Pris
+  col5: { width: '12%', textAlign: 'right' }, // Netto
   col6: { width: '8%', textAlign: 'center' }, // MVA%
-  col7: { width: '12%', textAlign: 'right' }, // MVA
-  col8: { width: '15%', textAlign: 'right' }, // Sum
+  col7: { width: '10%', textAlign: 'right' }, // MVA
+  col8: { width: '10%', textAlign: 'right' }, // Sum
   headerText: {
     fontSize: 9,
     fontWeight: 'bold',
@@ -82,30 +82,35 @@ export const LinesTable: React.FC<LinesTableProps> = ({ lines }) => {
       </View>
       
       {/* Rows */}
-      {lines.map((line, index) => (
-        <View key={index} style={styles.tableRow}>
-          <Text style={[styles.cellText, styles.col1]}>{line.beskrivelse}</Text>
-          <Text style={[styles.cellText, styles.col2]}>{line.antall || ''}</Text>
-          <Text style={[styles.cellText, styles.col3]}>{line.enhet || ''}</Text>
-          <Text style={[styles.cellText, styles.col4]}>
-            {line.antall && line.netto ? formatCurrency(line.netto / line.antall) : ''}
-          </Text>
-          <Text style={[styles.cellText, styles.col5]}>{formatCurrency(line.netto)}</Text>
-          <Text style={[styles.cellText, styles.col6]}>
-            {line.mvaSats ? `${line.mvaSats}%` : ''}
-          </Text>
-          <Text style={[styles.cellText, styles.col7]}>
-            {line.mva ? formatCurrency(line.mva) : ''}
-          </Text>
-          <Text style={[styles.cellText, styles.col8]}>
-            {formatCurrency(line.brutto || (line.netto + (line.mva || 0)))}
-          </Text>
-        </View>
-      ))}
+      {lines.map((line, index) => {
+        // Calculate price per unit
+        const pris = line.antall && line.antall > 0 ? line.netto / line.antall : undefined;
+        
+        return (
+          <View key={index} style={styles.tableRow}>
+            <Text style={[styles.cellText, styles.col1]}>{line.beskrivelse}</Text>
+            <Text style={[styles.cellText, styles.col2]}>{line.antall || ''}</Text>
+            <Text style={[styles.cellText, styles.col3]}>{line.enhet || ''}</Text>
+            <Text style={[styles.cellText, styles.col4]}>
+              {pris ? formatCurrency(pris) : ''}
+            </Text>
+            <Text style={[styles.cellText, styles.col5]}>{formatCurrency(line.netto)}</Text>
+            <Text style={[styles.cellText, styles.col6]}>
+              {line.mvaSats ? `${line.mvaSats}%` : ''}
+            </Text>
+            <Text style={[styles.cellText, styles.col7]}>
+              {line.mva ? formatCurrency(line.mva) : formatCurrency(0)}
+            </Text>
+            <Text style={[styles.cellText, styles.col8]}>
+              {formatCurrency(line.brutto || (line.netto + (line.mva || 0)))}
+            </Text>
+          </View>
+        );
+      })}
       
       {/* Totals */}
       <View style={styles.totalRow}>
-        <Text style={[styles.totalText, styles.col1, styles.col2, styles.col3, styles.col4, { width: '70%' }]}>
+        <Text style={[styles.totalText, { width: '60%' }]}>
           Totaler:
         </Text>
         <Text style={[styles.totalText, styles.col5]}>{formatCurrency(totalNetto)}</Text>

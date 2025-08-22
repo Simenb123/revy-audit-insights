@@ -18,9 +18,9 @@ export function normalizeHeader(header: string): string {
 function parseDate(value: any): string | null {
   if (!value) return null;
   
-  // Handle Excel serial numbers
+  // Handle Excel serial numbers (Excel epoch starts at 1900-01-01)
   if (typeof value === 'number' && isFinite(value) && value > 1000) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1900 epoch
     const ms = Math.round(value * 86400 * 1000);
     const date = new Date(excelEpoch.getTime() + ms);
     return date.toISOString().slice(0, 10);
@@ -28,21 +28,35 @@ function parseDate(value: any): string | null {
   
   // Handle string dates
   if (typeof value === 'string') {
+    const str = value.trim();
+    
     // Handle d.m.yyyy format (with or without leading zeros)
-    const ddmmyyyy = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    const ddmmyyyy = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      const date = new Date(Number(year), Number(month) - 1, Number(day));
+      if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+        return date.toISOString().slice(0, 10);
+      }
     }
     
     // Try standard ISO date parsing
-    const date = new Date(value);
+    const date = new Date(str);
     if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
       return date.toISOString().slice(0, 10);
     }
   }
   
   return null;
+}
+
+/**
+ * Format ISO date as dd.mm.yyyy for display
+ */
+export function formatDateForDisplay(isoDate?: string): string {
+  if (!isoDate) return '';
+  const date = new Date(isoDate);
+  return isNaN(date.getTime()) ? '' : date.toLocaleDateString('nb-NO');
 }
 
 /**
