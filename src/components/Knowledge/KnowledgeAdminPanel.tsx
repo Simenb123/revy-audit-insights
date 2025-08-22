@@ -83,7 +83,7 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Oversikt</span>
@@ -95,6 +95,10 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <FolderTree className="w-4 h-4" />
             <span className="hidden sm:inline">Kategorier</span>
+          </TabsTrigger>
+          <TabsTrigger value="legal-search" className="flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            <span className="hidden sm:inline">Juridisk søk</span>
           </TabsTrigger>
           <TabsTrigger value="testing" className="flex items-center gap-2">
             <TestTube className="w-4 h-4" />
@@ -227,6 +231,10 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
 
         <TabsContent value="categories">
           {showAdvanced ? <ImprovedCategoryManager /> : <CategoryManager />}
+        </TabsContent>
+
+        <TabsContent value="legal-search">
+          <EnhancedLegalSearchPanel />
         </TabsContent>
 
         <TabsContent value="testing">
