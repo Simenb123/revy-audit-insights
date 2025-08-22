@@ -7730,6 +7730,7 @@ export type Database = {
           is_primary_source: boolean | null
           issuing_authority: string | null
           publication_date: string | null
+          search_vector: unknown | null
           source_url: string | null
           summary: string | null
           title: string
@@ -7748,6 +7749,7 @@ export type Database = {
           is_primary_source?: boolean | null
           issuing_authority?: string | null
           publication_date?: string | null
+          search_vector?: unknown | null
           source_url?: string | null
           summary?: string | null
           title: string
@@ -7766,6 +7768,7 @@ export type Database = {
           is_primary_source?: boolean | null
           issuing_authority?: string | null
           publication_date?: string | null
+          search_vector?: unknown | null
           source_url?: string | null
           summary?: string | null
           title?: string
@@ -7786,6 +7789,7 @@ export type Database = {
           anchor: string | null
           content: string | null
           created_at: string
+          embedding: string | null
           hierarchy_path: string | null
           id: string
           is_active: boolean | null
@@ -7795,6 +7799,7 @@ export type Database = {
           provision_id: string | null
           provision_number: string
           provision_type: string
+          search_vector: unknown | null
           sort_order: number | null
           title: string
           updated_at: string
@@ -7805,6 +7810,7 @@ export type Database = {
           anchor?: string | null
           content?: string | null
           created_at?: string
+          embedding?: string | null
           hierarchy_path?: string | null
           id?: string
           is_active?: boolean | null
@@ -7814,6 +7820,7 @@ export type Database = {
           provision_id?: string | null
           provision_number: string
           provision_type: string
+          search_vector?: unknown | null
           sort_order?: number | null
           title: string
           updated_at?: string
@@ -7824,6 +7831,7 @@ export type Database = {
           anchor?: string | null
           content?: string | null
           created_at?: string
+          embedding?: string | null
           hierarchy_path?: string | null
           id?: string
           is_active?: boolean | null
@@ -7833,6 +7841,7 @@ export type Database = {
           provision_id?: string | null
           provision_number?: string
           provision_type?: string
+          search_vector?: unknown | null
           sort_order?: number | null
           title?: string
           updated_at?: string
@@ -12366,6 +12375,26 @@ export type Database = {
           team_id: string
         }[]
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       increment_cache_hit: {
         Args: { hash_to_update: string }
         Returns: undefined
@@ -12409,6 +12438,43 @@ export type Database = {
           view_count: number
         }[]
       }
+      match_legal_documents: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          created_date: string
+          document_number: string
+          document_type: Json
+          document_type_id: string
+          id: string
+          is_active: boolean
+          last_updated: string
+          similarity: number
+          summary: string
+          title: string
+        }[]
+      }
+      match_legal_provisions: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          is_active: boolean
+          law_identifier: string
+          parent_provision_id: string
+          provision_number: string
+          similarity: number
+          title: string
+        }[]
+      }
       process_existing_completed_documents: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -12450,6 +12516,18 @@ export type Database = {
       set_active_version: {
         Args: { p_version_id: string }
         Returns: undefined
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       sync_budget_actuals: {
         Args: { p_budget_id: string; p_month: number; p_year: number }

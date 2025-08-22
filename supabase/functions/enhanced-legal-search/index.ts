@@ -44,8 +44,9 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
-    // 1. Search legal documents with semantic search
-    const { data: semanticDocuments, error: semanticError } = await supabase.rpc(
+    // 1. Search legal documents with semantic search (with fallback)
+    let semanticDocuments = [];
+    const { data: semanticResults, error: semanticError } = await supabase.rpc(
       'match_legal_documents', 
       {
         query_embedding: queryEmbedding,
@@ -55,7 +56,24 @@ serve(async (req) => {
     );
 
     if (semanticError) {
-      console.error('Semantic search error:', semanticError);
+      console.error('Semantic search error, falling back to text search:', semanticError);
+      
+      // Fallback to full-text search
+      const { data: textSearchResults, error: textError } = await supabase
+        .from('legal_documents')
+        .select(`
+          *,
+          document_type:legal_document_types(*)
+        `)
+        .or(`title.ilike.%${query}%,content.ilike.%${query}%,document_number.ilike.%${query}%`)
+        .eq('is_active', true)
+        .limit(max_results);
+        
+      if (!textError) {
+        semanticDocuments = textSearchResults || [];
+      }
+    } else {
+      semanticDocuments = semanticResults || [];
     }
 
     // 2. Search legal provisions

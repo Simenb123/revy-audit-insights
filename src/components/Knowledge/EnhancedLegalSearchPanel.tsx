@@ -16,10 +16,12 @@ import {
   BookOpen,
   AlertCircle,
   TrendingUp,
-  Zap
+  Zap,
+  Database
 } from 'lucide-react';
 import { useEnhancedLegalSearch, EnhancedSearchParams } from '@/hooks/knowledge/useEnhancedLegalSearch';
 import { toast } from 'sonner';
+import { generateLegalEmbeddingsForExistingContent } from '@/services/knowledge/legalEmbeddingsService';
 
 interface EnhancedLegalSearchPanelProps {
   className?: string;
@@ -33,6 +35,7 @@ const EnhancedLegalSearchPanel: React.FC<EnhancedLegalSearchPanelProps> = ({
   const [query, setQuery] = useState(initialQuery);
   const [includeAISummary, setIncludeAISummary] = useState(false);
   const [maxResults, setMaxResults] = useState(20);
+  const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
 
   const {
     searchResponse,
@@ -45,6 +48,23 @@ const EnhancedLegalSearchPanel: React.FC<EnhancedLegalSearchPanelProps> = ({
     performSearch,
     clearSearch
   } = useEnhancedLegalSearch();
+
+  // Generate embeddings for existing content
+  const handleGenerateEmbeddings = async () => {
+    setIsGeneratingEmbeddings(true);
+    try {
+      const result = await generateLegalEmbeddingsForExistingContent();
+      if (result.success) {
+        toast.success(`✅ Embeddings generert: ${result.processed} prosessert, ${result.errors} feil`);
+      } else {
+        toast.error(`❌ Feil ved generering av embeddings: ${result.message}`);
+      }
+    } catch (error) {
+      toast.error('❌ En uventet feil oppstod ved generering av embeddings');
+    } finally {
+      setIsGeneratingEmbeddings(false);
+    }
+  };
 
   // Handle search submission
   const handleSearch = () => {
@@ -181,6 +201,26 @@ const EnhancedLegalSearchPanel: React.FC<EnhancedLegalSearchPanelProps> = ({
                 Tøm søk
               </Button>
             )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGenerateEmbeddings}
+              disabled={isGeneratingEmbeddings}
+              className="flex items-center gap-2"
+            >
+              {isGeneratingEmbeddings ? (
+                <>
+                  <Clock className="w-3 h-3 animate-spin" />
+                  Genererer...
+                </>
+              ) : (
+                <>
+                  <Database className="w-3 h-3" />
+                  Generer embeddings
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
