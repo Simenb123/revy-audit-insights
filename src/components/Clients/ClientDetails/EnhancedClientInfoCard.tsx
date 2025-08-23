@@ -63,6 +63,36 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
               </div>
             </div>
 
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Del av konsern
+              </label>
+              <EditableClientField
+                clientId={client.id}
+                field="is_part_of_group"
+                value={(client as any).is_part_of_group}
+                type="boolean"
+                className="w-full"
+              />
+            </div>
+
+            {(client as any).is_part_of_group && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Konsernnavn
+                </label>
+                <EditableClientField
+                  clientId={client.id}
+                  field="group_name"
+                  value={(client as any).group_name}
+                  type="text"
+                  placeholder="Angi konsernnavn"
+                  isEmpty={isEmpty((client as any).group_name)}
+                  className="w-full"
+                />
+              </div>
+            )}
+
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -84,36 +114,6 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
                   </p>
                 )}
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Del av konsern
-                </label>
-                <EditableClientField
-                  clientId={client.id}
-                  field="is_part_of_group"
-                  value={(client as any).is_part_of_group}
-                  type="boolean"
-                  className="w-full"
-                />
-              </div>
-
-              {(client as any).is_part_of_group && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Konsernnavn
-                  </label>
-                  <EditableClientField
-                    clientId={client.id}
-                    field="group_name"
-                    value={(client as any).group_name}
-                    type="text"
-                    placeholder="Angi konsernnavn"
-                    isEmpty={isEmpty((client as any).group_name)}
-                    className="w-full"
-                  />
-                </div>
-              )}
             </div>
           </div>
 
