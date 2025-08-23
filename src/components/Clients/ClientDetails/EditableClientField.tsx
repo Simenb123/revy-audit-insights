@@ -9,8 +9,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Edit2, Check, X } from 'lucide-react';
+import { Edit2, Check, X, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClientFieldUpdate, FINANCIAL_FRAMEWORK_OPTIONS, getFinancialFrameworkDisplayText } from '@/hooks/useClientFieldUpdate';
 import { FinancialFrameworkType } from '@/types/client-extended';
 
@@ -19,10 +20,13 @@ interface EditableClientFieldProps {
   field: string;
   value: any;
   displayValue?: string;
-  type: 'text' | 'select' | 'boolean';
+  type: 'text' | 'select' | 'boolean' | 'number';
   options?: Array<{ value: string; label: string; }>;
   placeholder?: string;
   className?: string;
+  hasWarning?: boolean;
+  warningMessage?: string;
+  isEmpty?: boolean;
 }
 
 const EditableClientField = ({
@@ -34,6 +38,9 @@ const EditableClientField = ({
   options = [],
   placeholder,
   className = "",
+  hasWarning = false,
+  warningMessage,
+  isEmpty = false,
 }: EditableClientFieldProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || '');
@@ -85,11 +92,24 @@ const EditableClientField = ({
     return value || 'Ikke angitt';
   };
 
+  const getStatusColor = () => {
+    if (isEmpty) return 'text-destructive';
+    if (hasWarning) return 'text-warning';
+    return 'text-foreground';
+  };
+
+  const getBackgroundColor = () => {
+    if (isEmpty) return 'bg-destructive/5 border-destructive/20';
+    if (hasWarning) return 'bg-warning/5 border-warning/20';
+    return 'bg-background border-border';
+  };
+
   if (isEditing) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        {type === 'text' && (
+        {(type === 'text' || type === 'number') && (
           <Input
+            type={type === 'number' ? 'number' : 'text'}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             placeholder={placeholder}
@@ -149,22 +169,57 @@ const EditableClientField = ({
   }
 
   return (
-    <div className={`flex items-center justify-between group ${className}`}>
-      <div className="flex-1">
-        {getDisplayValue()}
+    <TooltipProvider>
+      <div className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${getBackgroundColor()} ${className}`}>
+        <div className="flex items-center gap-2 flex-1">
+          <div className={`transition-colors ${getStatusColor()}`}>
+            {getDisplayValue()}
+          </div>
+          {hasWarning && warningMessage && (
+            <Tooltip>
+              <TooltipTrigger>
+                <AlertTriangle className="h-4 w-4 text-warning" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">{warningMessage}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        
+        {type === 'select' ? (
+          <Select 
+            value={value || ''} 
+            onValueChange={(newValue) => {
+              updateField.mutate({ clientId, field, value: newValue });
+            }}
+          >
+            <SelectTrigger className="w-auto min-w-[120px] bg-transparent border-0 shadow-none">
+              <ChevronDown className="h-4 w-4" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-md z-50">
+              {fieldOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setEditValue(value || '');
+              setIsEditing(true);
+            }}
+            className="text-muted-foreground hover:text-foreground px-2"
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => {
-          setEditValue(value || '');
-          setIsEditing(true);
-        }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity px-2"
-      >
-        <Edit2 className="h-3 w-3" />
-      </Button>
-    </div>
+    </TooltipProvider>
   );
 };
 

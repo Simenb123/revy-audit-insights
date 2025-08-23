@@ -3090,6 +3090,47 @@ export type Database = {
         }
         Relationships: []
       }
+      client_annual_data: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          employee_count: number | null
+          fiscal_year: number
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number | null
+          fiscal_year: number
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number | null
+          fiscal_year?: number
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_annual_data_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_audit_actions: {
         Row: {
           action_type: Database["public"]["Enums"]["action_type"]
