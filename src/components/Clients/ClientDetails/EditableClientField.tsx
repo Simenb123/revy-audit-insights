@@ -49,12 +49,10 @@ const EditableClientField = ({
   // Use appropriate options based on field type
   const fieldOptions = field === 'financial_framework' ? FINANCIAL_FRAMEWORK_OPTIONS : options;
 
-  const handleSave = (newValue?: any) => {
-    const valueToSave = newValue !== undefined ? newValue : editValue;
-    
-    if (type === 'boolean' || newValue !== undefined) {
+  const handleSave = () => {
+    if (type === 'boolean') {
       updateField.mutate(
-        { clientId, field, value: valueToSave },
+        { clientId, field, value: editValue },
         {
           onSuccess: () => setIsEditing(false),
         }
@@ -78,6 +76,14 @@ const EditableClientField = ({
 
   const getDisplayValue = () => {
     if (displayValue) return displayValue;
+    
+    if (type === 'boolean') {
+      return (
+        <Badge variant={value ? "default" : "secondary"}>
+          {value ? 'JA' : 'NEI'}
+        </Badge>
+      );
+    }
     
     if (field === 'financial_framework') {
       return getFinancialFrameworkDisplayText(value as FinancialFrameworkType);
@@ -166,25 +172,9 @@ const EditableClientField = ({
     <TooltipProvider>
       <div className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${getBackgroundColor()} ${className}`}>
         <div className="flex items-center gap-2 flex-1">
-          {type === 'boolean' ? (
-            <Button
-              onClick={() => handleSave(!value)}
-              variant={value === true ? "default" : "outline"}
-              size="sm"
-              className={`h-8 px-3 text-xs font-medium transition-all duration-200 ${
-                value === true 
-                  ? "bg-success hover:bg-success/80 text-success-foreground" 
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              disabled={updateField.isPending}
-            >
-              {value === true ? 'JA' : 'NEI'}
-            </Button>
-          ) : (
-            <div className={`transition-colors ${getStatusColor()}`}>
-              {getDisplayValue()}
-            </div>
-          )}
+          <div className={`transition-colors ${getStatusColor()}`}>
+            {getDisplayValue()}
+          </div>
           {hasWarning && warningMessage && (
             <Tooltip>
               <TooltipTrigger>
@@ -215,7 +205,7 @@ const EditableClientField = ({
               ))}
             </SelectContent>
           </Select>
-        ) : type === 'boolean' ? null : (
+        ) : (
           <Button
             size="sm"
             variant="ghost"
