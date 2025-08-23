@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Card,
   CardContent, 
@@ -11,31 +11,111 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronRight, ArrowLeft, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-
-const mockAccountData = [
-  { accountId: '3000', name: 'Salg, høy sats', balance: 3800000, prevBalance: 3500000 },
-  { accountId: '3100', name: 'Salg, middels sats', balance: 1200000, prevBalance: 1150000 },
-  { accountId: '3200', name: 'Salg, lav sats', balance: 800000, prevBalance: 750000 },
-  { accountId: '3300', name: 'Salg, avg. fri', balance: 600000, prevBalance: 550000 },
-  { accountId: '3400', name: 'Salg, eksport', balance: 800000, prevBalance: 700000 },
-  { accountId: '3600', name: 'Provisjonsinntekter', balance: 300000, prevBalance: 250000 },
-];
-
-const mockTransactionData = [
-  { id: '1001', accountId: '3000', date: '2024-01-15', description: 'Faktura #12345', amount: 45000, voucher: 'FB-2024-0123' },
-  { id: '1002', accountId: '3000', date: '2024-01-22', description: 'Faktura #12346', amount: 68000, voucher: 'FB-2024-0145' },
-  { id: '1003', accountId: '3000', date: '2024-02-05', description: 'Faktura #12350', amount: 52000, voucher: 'FB-2024-0189' },
-  { id: '1004', accountId: '3000', date: '2024-02-18', description: 'Faktura #12356', amount: 78000, voucher: 'FB-2024-0213' },
-  { id: '1005', accountId: '3000', date: '2024-03-10', description: 'Faktura #12370', amount: 61000, voucher: 'FB-2024-0267' },
-  { id: '1006', accountId: '3000', date: '2024-03-25', description: 'Faktura #12385', amount: 54000, voucher: 'FB-2024-0301' },
-];
+import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
+import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useActiveVersion } from '@/hooks/useAccountingVersions';
+import { Skeleton } from "@/components/ui/skeleton";
 
 type DrillDownLevel = 'accountGroup' | 'account' | 'transaction';
 
-const DrillDownTable = () => {
+interface DrillDownTableProps {
+  clientId: string;
+}
+
+const DrillDownTable: React.FC<DrillDownTableProps> = ({ clientId }) => {
   const [level, setLevel] = useState<DrillDownLevel>('accountGroup');
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Get global context
+  const { selectedFiscalYear } = useFiscalYear();
+  const { data: activeVersion } = useActiveVersion(clientId);
+  
+  // Fetch real data
+  const { data: trialBalanceData = [], isLoading: isTBLoading } = useTrialBalanceData(
+    clientId, 
+    undefined, 
+    selectedFiscalYear
+  );
+  
+  const { data: generalLedgerData = [], isLoading: isGLLoading } = useGeneralLedgerData(
+    clientId,
+    activeVersion?.id,
+    { page: 1, pageSize: 10000 },
+    { forceLoadAll: true }
+  );
+  
+  // Process data for account groups
+  const accountGroupData = useMemo(() => {
+    if (!trialBalanceData.length) return [];
+    
+    // Group accounts by major categories based on account numbers
+    const groups: { [key: string]: { name: string; accounts: any[]; totalBalance: number } } = {};
+    
+    trialBalanceData.forEach(account => {
+      const accountNumber = account.account_number;
+      let groupKey = '';
+      let groupName = '';
+      
+      // Norwegian chart of accounts classification
+      if (accountNumber.startsWith('3')) {
+        groupKey = 'sales';
+        groupName = 'Salgsinntekter';
+      } else if (accountNumber.startsWith('4')) {
+        groupKey = 'cogs';
+        groupName = 'Varekostnader';
+      } else if (accountNumber.startsWith('5')) {
+        groupKey = 'salary';
+        groupName = 'Lønnskostnader';
+      } else if (accountNumber.startsWith('6')) {
+        groupKey = 'other_costs';
+        groupName = 'Andre driftskostnader';
+      } else if (accountNumber.startsWith('7')) {
+        groupKey = 'financial';
+        groupName = 'Finansposter';
+      } else if (accountNumber.startsWith('1')) {
+        groupKey = 'assets';
+        groupName = 'Eiendeler';
+      } else if (accountNumber.startsWith('2')) {
+        groupKey = 'liabilities';
+        groupName = 'Gjeld og egenkapital';
+      } else {
+        groupKey = 'other';
+        groupName = 'Andre kontoer';
+      }
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = { name: groupName, accounts: [], totalBalance: 0 };
+      }
+      
+      groups[groupKey].accounts.push(account);
+      groups[groupKey].totalBalance += (account.closing_balance || 0);
+    });
+    
+    return Object.entries(groups).map(([key, data]) => ({
+      id: key,
+      name: data.name,
+      balance: data.totalBalance,
+      accountCount: data.accounts.length,
+      accounts: data.accounts
+    }));
+  }, [trialBalanceData]);
+  
+  // Get accounts for selected group
+  const selectedGroupAccounts = useMemo(() => {
+    if (level !== 'account') return [];
+    
+    const salesGroup = accountGroupData.find(g => g.id === 'sales');
+    return salesGroup?.accounts || [];
+  }, [accountGroupData, level]);
+  
+  // Get transactions for selected account
+  const selectedAccountTransactions = useMemo(() => {
+    if (level !== 'transaction' || !selectedAccount) return [];
+    
+    return generalLedgerData.filter(tx => tx.account_number === selectedAccount);
+  }, [generalLedgerData, level, selectedAccount]);
   
   const handleGroupClick = () => {
     setLevel('account');
@@ -80,52 +160,34 @@ const DrillDownTable = () => {
           <TableRow>
             <TableHead>Regnskapslinje</TableHead>
             <TableHead className="text-right">Beløp</TableHead>
-            <TableHead className="text-right">Forrige år</TableHead>
-            <TableHead className="text-right">Endring %</TableHead>
+            <TableHead className="text-right">Antall kontoer</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow className="cursor-pointer hover:bg-muted/50" onClick={handleGroupClick}>
-            <TableCell className="font-medium">Salgsinntekter</TableCell>
-            <TableCell className="text-right">{formatCurrency(7500000)}</TableCell>
-            <TableCell className="text-right">{formatCurrency(6900000)}</TableCell>
-            <TableCell className="text-right text-green-600">+8.7%</TableCell>
-            <TableCell>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronRight size={18} />
-              </Button>
-            </TableCell>
-          </TableRow>
-          <TableRow className="cursor-pointer hover:bg-muted/50">
-            <TableCell className="font-medium">Varekostnader</TableCell>
-            <TableCell className="text-right">{formatCurrency(2800000)}</TableCell>
-            <TableCell className="text-right">{formatCurrency(2700000)}</TableCell>
-            <TableCell className="text-right text-green-600">+3.7%</TableCell>
-            <TableCell>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronRight size={18} />
-              </Button>
-            </TableCell>
-          </TableRow>
-          <TableRow className="cursor-pointer hover:bg-muted/50">
-            <TableCell className="font-medium">Lønnskostnader</TableCell>
-            <TableCell className="text-right">{formatCurrency(2100000)}</TableCell>
-            <TableCell className="text-right">{formatCurrency(1950000)}</TableCell>
-            <TableCell className="text-right text-green-600">+7.7%</TableCell>
-            <TableCell>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronRight size={18} />
-              </Button>
-            </TableCell>
-          </TableRow>
+          {accountGroupData.map((group) => (
+            <TableRow 
+              key={group.id} 
+              className="cursor-pointer hover:bg-muted/50" 
+              onClick={() => group.id === 'sales' ? handleGroupClick() : undefined}
+            >
+              <TableCell className="font-medium">{group.name}</TableCell>
+              <TableCell className="text-right">{formatCurrency(group.balance)}</TableCell>
+              <TableCell className="text-right">{group.accountCount} kontoer</TableCell>
+              <TableCell>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <ChevronRight size={18} />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
   );
   
   const renderAccountTable = () => {
-    const filteredData = filterData(mockAccountData, searchTerm);
+    const filteredData = filterData(selectedGroupAccounts, searchTerm);
     
     return (
       <div>
@@ -156,39 +218,29 @@ const DrillDownTable = () => {
             <TableRow>
               <TableHead>Kontonr.</TableHead>
               <TableHead>Kontonavn</TableHead>
-              <TableHead className="text-right">Beløp</TableHead>
-              <TableHead className="text-right">Forrige år</TableHead>
-              <TableHead className="text-right">Endring %</TableHead>
+              <TableHead className="text-right">Sluttsaldo</TableHead>
+              <TableHead className="text-right">Åpningssaldo</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData.map((account) => {
-              const growth = ((account.balance - account.prevBalance) / account.prevBalance) * 100;
-              const formattedGrowth = growth.toFixed(1);
-              const isPositive = growth >= 0;
-              
-              return (
-                <TableRow 
-                  key={account.accountId} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleAccountClick(account.accountId)}
-                >
-                  <TableCell>{account.accountId}</TableCell>
-                  <TableCell>{account.name}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(account.balance)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(account.prevBalance)}</TableCell>
-                  <TableCell className={`text-right ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {isPositive ? '+' : ''}{formattedGrowth}%
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <ChevronRight size={18} />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {filteredData.map((account) => (
+              <TableRow 
+                key={account.account_number} 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleAccountClick(account.account_number)}
+              >
+                <TableCell>{account.account_number}</TableCell>
+                <TableCell>{account.account_name}</TableCell>
+                <TableCell className="text-right">{formatCurrency(account.closing_balance || 0)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(account.opening_balance || 0)}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <ChevronRight size={18} />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -196,8 +248,8 @@ const DrillDownTable = () => {
   };
   
   const renderTransactionTable = () => {
-    const account = mockAccountData.find(a => a.accountId === selectedAccount);
-    const filteredData = filterData(mockTransactionData, searchTerm);
+    const account = selectedGroupAccounts.find(a => a.account_number === selectedAccount);
+    const filteredData = filterData(selectedAccountTransactions, searchTerm);
     
     return (
       <div>
@@ -207,10 +259,10 @@ const DrillDownTable = () => {
           </Button>
           <div>
             <h3 className="text-lg font-medium">
-              {account?.accountId} - {account?.name}
+              {selectedAccount} - {account?.account_name}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Transaksjoner for valgt konto
+              Transaksjoner for valgt konto ({filteredData.length} transaksjoner)
             </p>
           </div>
         </div>
@@ -236,7 +288,8 @@ const DrillDownTable = () => {
               <TableHead>Dato</TableHead>
               <TableHead>Bilagsnr.</TableHead>
               <TableHead>Beskrivelse</TableHead>
-              <TableHead className="text-right">Beløp</TableHead>
+              <TableHead className="text-right">Debet</TableHead>
+              <TableHead className="text-right">Kredit</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -245,10 +298,15 @@ const DrillDownTable = () => {
                 key={transaction.id} 
                 className="cursor-pointer hover:bg-muted/50"
               >
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.voucher}</TableCell>
+                <TableCell>{new Date(transaction.transaction_date).toLocaleDateString('nb-NO')}</TableCell>
+                <TableCell>{transaction.voucher_number}</TableCell>
                 <TableCell>{transaction.description}</TableCell>
-                <TableCell className="text-right">{formatCurrency(transaction.amount)}</TableCell>
+                <TableCell className="text-right">
+                  {transaction.debit_amount ? formatCurrency(transaction.debit_amount) : ''}
+                </TableCell>
+                <TableCell className="text-right">
+                  {transaction.credit_amount ? formatCurrency(transaction.credit_amount) : ''}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -270,12 +328,32 @@ const DrillDownTable = () => {
     }
   };
   
+  if (isTBLoading || isGLLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Drill-down analyse</CardTitle>
+          <CardDescription>
+            Laster regnskapsdata...
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Drill-down analyse</CardTitle>
         <CardDescription>
-          Utforsk regnskapstall fra oversiktsnivå til transaksjonsnivå
+          Utforsk regnskapstall fra oversiktsnivå til transaksjonsnivå ({selectedFiscalYear})
         </CardDescription>
       </CardHeader>
       <CardContent>

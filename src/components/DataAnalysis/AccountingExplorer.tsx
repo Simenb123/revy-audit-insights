@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useGLVersionOptions } from '@/hooks/useAccountingVersions';
+import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -28,84 +28,27 @@ interface AccountingExplorerProps {
 const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => {
   const [activeTab, setActiveTab] = useState('overview');
   
-  // Get fiscal year context first
+  // Get global context
   const { selectedFiscalYear } = useFiscalYear();
-  
-  // Fetch data using new specialized hooks
-  const { data: glVersionOptions = [], isLoading: isLoadingGL } = useGLVersionOptions(clientId);
+  const { data: activeGLVersion, isLoading: isLoadingGL } = useActiveVersion(clientId);
   const { data: tbVersionOptions = [], isLoading: isLoadingTB } = useTBVersionOptions(clientId, selectedFiscalYear);
   const { data: accountingData, isLoading: isLoadingAccounting } = useAccountingData(clientId);
 
-  console.log('[AccountingExplorer] GL Version Options:', glVersionOptions);
+  console.log('[AccountingExplorer] Active GL Version:', activeGLVersion);
   console.log('[AccountingExplorer] TB Version Options:', tbVersionOptions);
 
-  // Get default selected versions with proper fallbacks
-  const defaultGLVersion = useMemo(() => {
-    // First, find the version with highest version_number that has data (total_transactions > 0)
-    const versionsWithData = glVersionOptions
-      .filter(v => v.total_transactions > 0)
-      .sort((a, b) => b.version_number - a.version_number);
-    
-    const latestWithData = versionsWithData[0];
-    
-    // Fallback to active version if no versions have data, then to first version
-    const activeVersion = glVersionOptions.find(v => v.is_active);
-    const result = latestWithData || activeVersion || glVersionOptions[0] || null;
-    
-    console.log('[AccountingExplorer] Default GL Version:', result);
-    console.log('[AccountingExplorer] Versions with data:', versionsWithData);
-    return result;
-  }, [glVersionOptions]);
-
-  const defaultTBVersion = useMemo(() => {
-    const result = tbVersionOptions[0] || null;
-    console.log('[AccountingExplorer] Default TB Version:', result);
-    return result;
+  // Use first TB version as selected (since TB doesn't have active versions)
+  const selectedTBVersion = useMemo(() => {
+    return tbVersionOptions[0] || null;
   }, [tbVersionOptions]);
 
-  // State for selected versions with safe initialization
-  const [selectedGLVersion, setSelectedGLVersion] = useState<GLVersionOption | null>(null);
-  const [selectedTBVersion, setSelectedTBVersion] = useState<TBVersionOption | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Update state when defaults change - always set to latest active/default version
-  React.useEffect(() => {
-    if (defaultGLVersion && (!selectedGLVersion || defaultGLVersion.id !== selectedGLVersion.id)) {
-      console.log('[AccountingExplorer] Setting GL version to:', defaultGLVersion);
-      setSelectedGLVersion(defaultGLVersion);
-    }
-  }, [defaultGLVersion, selectedGLVersion]);
-
-  React.useEffect(() => {
-    if (defaultTBVersion) {
-      console.log('[AccountingExplorer] Setting TB version to:', defaultTBVersion);
-      setSelectedTBVersion(defaultTBVersion);
-    }
-  }, [defaultTBVersion]);
-
-  // Reset TB version when fiscal year changes and no versions available
-  React.useEffect(() => {
-    if (tbVersionOptions.length === 0 && selectedTBVersion) {
-      console.log('[AccountingExplorer] Resetting TB version - no versions for fiscal year:', selectedFiscalYear);
-      setSelectedTBVersion(null);
-    }
-  }, [tbVersionOptions.length, selectedTBVersion, selectedFiscalYear]);
-
-  console.log('[AccountingExplorer] Current Selected GL:', selectedGLVersion);
+  console.log('[AccountingExplorer] Current Active GL:', activeGLVersion);
   console.log('[AccountingExplorer] Current Selected TB:', selectedTBVersion);
 
-  // Additional debugging for version states
-  console.log('[AccountingExplorer] Version states:', {
-    hasGLOptions: glVersionOptions.length > 0,
-    hasTBOptions: tbVersionOptions.length > 0,
-    selectedGLVersionId: selectedGLVersion?.id,
-    selectedTBVersionId: selectedTBVersion?.version,
-    isLoadingGL,
-    isLoadingTB
-  });
-
   // Check if data exists
-  const hasGLData = glVersionOptions.length > 0;
+  const hasGLData = !!activeGLVersion;
   const hasTBData = tbVersionOptions.length > 0;
 
   const tabItems = [
@@ -130,10 +73,8 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     setSearchParams(p);
   }, [searchParams, setSearchParams]);
 
-  // Determine which version selector to show based on active tab
-  const showGLVersions = activeTab === 'ledger' || activeTab === 'journal';
-  const showTBVersions = activeTab === 'balances' || activeTab === 'statement';
-  const showBothVersions = activeTab === 'overview';
+  // Show version info but don't allow changing (using global active version)
+  const showVersionInfo = activeTab === 'overview';
 
   if (isLoadingGL || isLoadingTB || isLoadingAccounting) {
     return (
@@ -166,56 +107,42 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
     <div className="space-y-6">
       
       
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-        {showBothVersions && (
-          <div className="flex flex-col sm:flex-row gap-4">
-            {hasGLData && selectedGLVersion && (
-              <div className="flex-1">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
-                  <LineChart className="h-4 w-4" />
-                  General Ledger Versjon
-                </label>
-                <GLVersionSelector 
-                  versions={glVersionOptions}
-                  selectedVersion={selectedGLVersion}
-                  onSelectVersion={setSelectedGLVersion}
-                />
+      {showVersionInfo && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          {hasGLData && activeGLVersion && (
+            <div className="flex-1">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
+                <LineChart className="h-4 w-4" />
+                Aktiv Hovedbok Versjon
+              </label>
+              <div className="px-3 py-2 border rounded-md bg-muted/50">
+                <div className="text-sm font-medium">
+                  Versjon {activeGLVersion.version_number} - {activeGLVersion.file_name}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {activeGLVersion.total_transactions} transaksjoner
+                </div>
               </div>
-            )}
-            {hasTBData && selectedTBVersion && (
-              <div className="flex-1">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  Trial Balance Versjon
-                </label>
-                <TBVersionSelector 
-                  versions={tbVersionOptions}
-                  selectedVersion={selectedTBVersion}
-                  onSelectVersion={setSelectedTBVersion}
-                  clientId={clientId}
-                />
+            </div>
+          )}
+          {hasTBData && selectedTBVersion && (
+            <div className="flex-1">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block flex items-center gap-2">
+                <Layers className="h-4 w-4" />
+                Trial Balance ({selectedFiscalYear})
+              </label>
+              <div className="px-3 py-2 border rounded-md bg-muted/50">
+                <div className="text-sm font-medium">
+                  {selectedTBVersion.label}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {selectedTBVersion.account_count} kontoer
+                </div>
               </div>
-            )}
-          </div>
-        )}
-        
-        {showGLVersions && hasGLData && selectedGLVersion && (
-          <GLVersionSelector 
-            versions={glVersionOptions}
-            selectedVersion={selectedGLVersion}
-            onSelectVersion={setSelectedGLVersion}
-          />
-        )}
-        
-        {showTBVersions && hasTBData && selectedTBVersion && (
-          <TBVersionSelector 
-            versions={tbVersionOptions}
-            selectedVersion={selectedTBVersion}
-            onSelectVersion={setSelectedTBVersion}
-            clientId={clientId}
-          />
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
       
       <ResponsiveTabs
         items={tabItems}
@@ -228,7 +155,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
         <div className="w-full">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {hasGLData && selectedGLVersion && (
+              {hasGLData && activeGLVersion && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -236,11 +163,11 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                       Hovedbok oversikt
                     </CardTitle>
                     <CardDescription>
-                      {selectedGLVersion.label} • {selectedGLVersion.total_transactions} transaksjoner
+                      Versjon {activeGLVersion.version_number} • {activeGLVersion.total_transactions} transaksjoner
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <DrillDownTable />
+                    <DrillDownTable clientId={clientId} />
                   </CardContent>
                 </Card>
               )}
@@ -262,10 +189,10 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
 
-              {hasGLData && hasTBData && selectedGLVersion && selectedTBVersion && (
+              {hasGLData && hasTBData && activeGLVersion && selectedTBVersion && (
                 <ValidationPanel 
                   clientId={clientId} 
-                  selectedGLVersion={selectedGLVersion.id} 
+                  selectedGLVersion={activeGLVersion.id} 
                   selectedTBVersion={selectedTBVersion.version} 
                 />
               )}
@@ -274,8 +201,8 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
           
           {activeTab === 'ledger' && (
             <div className="space-y-4">
-              {hasGLData && selectedGLVersion ? (
-                <GeneralLedgerTable clientId={clientId} versionId={selectedGLVersion.id} />
+              {hasGLData && activeGLVersion ? (
+                <GeneralLedgerTable clientId={clientId} versionId={activeGLVersion.id} />
               ) : (
                 <Card>
                   <CardHeader>
@@ -333,12 +260,12 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
           
           {activeTab === 'journal' && (
             <div className="space-y-4">
-              {hasGLData && selectedGLVersion ? (
+              {hasGLData && activeGLVersion ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>Bilagsjournal</CardTitle>
                     <CardDescription>
-                      {selectedGLVersion.label}
+                      Versjon {activeGLVersion.version_number} - {activeGLVersion.file_name}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
