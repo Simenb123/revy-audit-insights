@@ -97,11 +97,49 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
 
       if (accountsError) throw accountsError;
 
-      // Get all general ledger transactions for the client
-      const { data: transactions, error: transactionsError } = await supabase
+      // Get general ledger transactions for the client with version filtering
+      let transactionsQuery = supabase
         .from('general_ledger_transactions')
         .select('*')
         .eq('client_id', clientId);
+
+      // Apply version filtering - use same logic as useGeneralLedgerData
+      let targetVersionId = effectiveVersion;
+      if (!targetVersionId) {
+        console.log('🔍 No trial balance version, finding active accounting version...');
+        const { data: activeVersion, error: versionError } = await supabase
+          .from('accounting_data_versions')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (versionError) {
+          console.error('❌ Error finding active version:', versionError);
+          // Try to get the latest version instead
+          const { data: latestVersion } = await supabase
+            .from('accounting_data_versions')
+            .select('id')
+            .eq('client_id', clientId)
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          targetVersionId = latestVersion?.id;
+          console.log('🔄 Using latest version for TB calculation:', targetVersionId);
+        } else {
+          targetVersionId = activeVersion?.id;
+          console.log('✅ Using active version for TB calculation:', targetVersionId);
+        }
+      }
+
+      // Apply version filter if we have a version
+      if (targetVersionId) {
+        transactionsQuery = transactionsQuery.eq('version_id', targetVersionId);
+        console.log('🔍 Filtering GL transactions by version:', targetVersionId);
+      }
+
+      const { data: transactions, error: transactionsError } = await transactionsQuery;
 
       if (transactionsError) throw transactionsError;
       
@@ -172,6 +210,6 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
       
       return calculatedTrialBalance;
     },
-    enabled: !!clientId && (!!effectiveVersion || !!version), // Only run if we have a version to use
+    enabled: !!clientId, // Only require clientId - version resolution happens in queryFn
   });
 };
