@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClientFieldUpdate, FINANCIAL_FRAMEWORK_OPTIONS, getFinancialFrameworkDisplayText } from '@/hooks/useClientFieldUpdate';
 import { FinancialFrameworkType } from '@/types/client-extended';
-import { cn } from '@/lib/utils';
 
 interface EditableClientFieldProps {
   clientId: string;
@@ -172,12 +171,11 @@ const EditableClientField = ({
               onClick={() => handleSave(!value)}
               variant={value === true ? "default" : "outline"}
               size="sm"
-              className={cn(
-                "h-8 px-3 text-xs font-medium transition-all duration-200",
+              className={`h-8 px-3 text-xs font-medium transition-all duration-200 ${
                 value === true 
                   ? "bg-success hover:bg-success/80 text-success-foreground" 
                   : "text-muted-foreground hover:text-foreground"
-              )}
+              }`}
               disabled={updateField.isPending}
             >
               {value === true ? 'JA' : 'NEI'}
