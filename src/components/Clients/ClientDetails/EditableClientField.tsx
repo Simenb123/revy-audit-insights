@@ -187,7 +187,17 @@ const EditableClientField = ({
           )}
         </div>
         
-        {type === 'select' ? (
+        {type === 'boolean' ? (
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={value}
+              onCheckedChange={(newValue) => {
+                updateField.mutate({ clientId, field, value: newValue });
+              }}
+            />
+            <span className="text-sm font-medium">{value ? 'JA' : 'NEI'}</span>
+          </div>
+        ) : type === 'select' ? (
           <Select 
             value={value || ''} 
             onValueChange={(newValue) => {
