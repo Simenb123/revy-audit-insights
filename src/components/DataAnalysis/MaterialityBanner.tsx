@@ -20,7 +20,12 @@ const MaterialityBanner = ({ thresholds = {
   clearlyTrivial: 150000 
 } }: MaterialityBannerProps) => {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(amount);
+    return new Intl.NumberFormat('nb-NO', { 
+      style: 'currency', 
+      currency: 'NOK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   return (
@@ -35,7 +40,7 @@ const MaterialityBanner = ({ thresholds = {
               </Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="bottom">
             <p>Vesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
@@ -49,7 +54,7 @@ const MaterialityBanner = ({ thresholds = {
               </Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="bottom">
             <p>Arbeidsvesentlighetsgrense</p>
           </TooltipContent>
         </Tooltip>
@@ -63,7 +68,7 @@ const MaterialityBanner = ({ thresholds = {
               </Badge>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="bottom">
             <p>Ubetydelig feil</p>
           </TooltipContent>
         </Tooltip>
