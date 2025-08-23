@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FinancialFrameworkType } from '@/types/client-extended';
 import { useFormulaCalculation } from '@/hooks/useEnhancedFormulaCalculation';
+import { useActiveVersion } from '@/hooks/useAccountingVersions';
 
 interface ThresholdCriteria {
   totalAssets: number | null; // Balance sum (line 665) in million NOK
@@ -193,23 +194,30 @@ export const useFinancialFrameworkValidation = (
   selectedFramework: FinancialFrameworkType,
   employeeCount: number | null
 ) => {
+  // Get active version for consistent data access
+  const { data: activeVersion } = useActiveVersion(clientId);
+  
   // Get sum of assets (standard line 665) using the existing formula calculation system
   const totalAssetsResult = useFormulaCalculation({
     clientId,
     fiscalYear,
-    formulaId: '665' // Standard line for Sum eiendeler
+    formulaId: '665', // Standard line for Sum eiendeler
+    selectedVersion: activeVersion?.id,
+    enabled: !!activeVersion
   });
 
   // Get operating revenue (standard line 19) using the existing formula calculation system  
   const revenueResult = useFormulaCalculation({
     clientId,
     fiscalYear,
-    formulaId: '19' // Standard line for Sum driftsinntekter
+    formulaId: '19', // Standard line for Sum driftsinntekter
+    selectedVersion: activeVersion?.id,
+    enabled: !!activeVersion
   });
 
   return useQuery({
     queryKey: ['financial-framework-validation', clientId, fiscalYear, selectedFramework, employeeCount, 
-               totalAssetsResult.data?.value, revenueResult.data?.value],
+               activeVersion?.id, totalAssetsResult.data?.value, revenueResult.data?.value],
     queryFn: async () => {
       const criteria: ThresholdCriteria = {
         totalAssets: totalAssetsResult.data?.value ? Math.abs(totalAssetsResult.data.value) / 1000000 : null, // Convert to millions
@@ -219,7 +227,7 @@ export const useFinancialFrameworkValidation = (
 
       return validateFramework(selectedFramework, criteria);
     },
-    enabled: !!clientId && !!fiscalYear && !!selectedFramework && 
+    enabled: !!clientId && !!fiscalYear && !!selectedFramework && !!activeVersion &&
              !totalAssetsResult.isLoading && !revenueResult.isLoading,
   });
 };

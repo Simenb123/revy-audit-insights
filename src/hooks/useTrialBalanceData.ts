@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 
 export interface TrialBalanceEntry {
   id: string;
@@ -16,8 +17,15 @@ export interface TrialBalanceEntry {
 }
 
 export const useTrialBalanceData = (clientId: string, version?: string, year?: number) => {
+  // Get active version if no version is specified
+  const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId, year);
+  
+  // Use provided version or fallback to active version
+  const effectiveVersion = version || activeTrialBalanceVersion?.version;
+  const effectiveYear = year || activeTrialBalanceVersion?.year;
+
   return useQuery({
-    queryKey: ['trial-balance', clientId, version, year],
+    queryKey: ['trial-balance', clientId, effectiveVersion, effectiveYear],
     queryFn: async () => {
       // First try to get data from trial_balances table with account details
       let query = supabase
@@ -38,12 +46,12 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
         `)
         .eq('client_id', clientId);
 
-      // Add filters for version and year if provided
-      if (version) {
-        query = query.eq('version', version);
+      // Add filters for version and year if available
+      if (effectiveVersion) {
+        query = query.eq('version', effectiveVersion);
       }
-      if (year) {
-        query = query.eq('period_year', year);
+      if (effectiveYear) {
+        query = query.eq('period_year', effectiveYear);
       }
 
       const { data: directTrialBalance, error: trialBalanceError } = await query;
@@ -164,6 +172,6 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
       
       return calculatedTrialBalance;
     },
-    enabled: !!clientId,
+    enabled: !!clientId && (!!effectiveVersion || !!version), // Only run if we have a version to use
   });
 };
