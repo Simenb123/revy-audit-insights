@@ -23,7 +23,7 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
   };
 
   return (
-    <div className="bg-white border border-border rounded-lg p-4">
+    <div className="bg-white border border-border rounded-lg p-3">
       <div className="flex items-center justify-between gap-2">
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
@@ -35,7 +35,7 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
             <React.Fragment key={phase}>
               <div
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 cursor-pointer hover:scale-105 min-w-0 flex-1",
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md transition-all duration-200 cursor-pointer hover:scale-105 min-w-0 flex-1",
                   status === 'current' 
                     ? 'bg-primary text-primary-foreground shadow-md' 
                     : status === 'completed'
@@ -45,7 +45,7 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
                 onClick={() => isClickable && onPhaseClick(phase)}
               >
                 <div className={cn(
-                  "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs",
+                  "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs",
                   status === 'current' 
                     ? 'bg-primary-foreground text-primary' 
                     : status === 'completed'

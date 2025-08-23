@@ -32,17 +32,7 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
         onPhaseClick={handlePhaseClick}
       />
       
-      {/* 2. Revision Workflow (Moved below, will be made smaller) */}
-      <div className="scale-90 origin-top -my-4">
-        <RevisionWorkflow
-          currentPhase={client.phase}
-          progress={client.progress || 0}
-          onPhaseClick={handlePhaseClick}
-          clientId={client.id}
-        />
-      </div>
-
-      {/* 3. Status Cards Row */}
+      {/* 2. Status Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <NextTaskCard client={client} />
         <CompactAccountingStatus client={client} />
