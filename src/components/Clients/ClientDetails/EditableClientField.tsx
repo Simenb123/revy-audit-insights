@@ -78,11 +78,7 @@ const EditableClientField = ({
     if (displayValue) return displayValue;
     
     if (type === 'boolean') {
-      return (
-        <Badge variant={value ? "default" : "secondary"}>
-          {value ? 'JA' : 'NEI'}
-        </Badge>
-      );
+      return null; // Don't show anything for boolean fields - only the switch on the right
     }
     
     if (field === 'financial_framework') {
