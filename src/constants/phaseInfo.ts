@@ -11,19 +11,19 @@ export interface PhaseInfo {
 export const phaseInfo: Record<AuditPhase, PhaseInfo> = {
   overview: {
     label: 'Oversikt',
-    description: '',
+    description: 'Klientinformasjon',
     icon: Info,
     color: 'bg-blue-100 text-blue-800'
   },
   engagement: {
     label: 'Oppdragsvurdering',
-    description: 'Klientaksept, uavhengighetsvurdering og engasjementsbrev',
+    description: 'Fortsettelses- og akseptvurdering',
     icon: Users,
     color: 'bg-purple-100 text-purple-800'
   },
   planning: {
     label: 'Planlegging',
-    description: 'Vesentlighetsgrense, revisjonsstrategi og risikovurdering',
+    description: 'revisjonsstrategi',
     icon: BookOpen,
     color: 'bg-orange-100 text-orange-800'
   },
@@ -35,7 +35,7 @@ export const phaseInfo: Record<AuditPhase, PhaseInfo> = {
   },
   execution: {
     label: 'Utførelse',
-    description: 'Revisjonshandlinger, testing og dokumentasjon',
+    description: 'Revisjonshandlinger, TK/Substans',
     icon: Target,
     color: 'bg-green-100 text-green-800'
   },
