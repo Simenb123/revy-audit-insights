@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
-
+import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import { AuditPhase } from '@/types/revio';
 
@@ -160,6 +160,14 @@ const ClientDetail = () => {
       pageTitle="Oversikt"
     >
       <div className="space-y-6 p-6">
+        {/* Revision Workflow Progress */}
+        <RevisionWorkflow
+          currentPhase={client.phase}
+          progress={client.progress || 0}
+          onPhaseClick={handlePhaseClick}
+          clientId={client.id}
+        />
+        
         {/* Phase-specific content */}
         <PhaseContent 
           phase={selectedPhase} 

@@ -23,7 +23,7 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
   };
 
   return (
-    <div className="bg-white border border-border rounded-lg p-2">
+    <div className="bg-white border border-border rounded-lg p-3">
       <div className="flex items-center justify-between gap-2">
         {phases.map((phase, index) => {
           const status = getPhaseStatus(index);
@@ -35,7 +35,7 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
             <React.Fragment key={phase}>
               <div
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-200 cursor-pointer hover:scale-105 min-w-0 flex-1",
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md transition-all duration-200 cursor-pointer hover:scale-105 min-w-0 flex-1",
                   status === 'current' 
                     ? 'bg-primary text-primary-foreground shadow-md' 
                     : status === 'completed'
@@ -45,14 +45,14 @@ const CompactPhaseNavigation = ({ currentPhase, onPhaseClick }: CompactPhaseNavi
                 onClick={() => isClickable && onPhaseClick(phase)}
               >
                 <div className={cn(
-                  "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs",
+                  "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs",
                   status === 'current' 
                     ? 'bg-primary-foreground text-primary' 
                     : status === 'completed'
                     ? 'bg-green-600 text-white'
                     : 'bg-background text-muted-foreground'
                 )}>
-                  <IconComponent className="w-2.5 h-2.5" />
+                  <IconComponent className="w-3 h-3" />
                 </div>
                 <span className="font-medium text-sm truncate">{info.label}</span>
               </div>

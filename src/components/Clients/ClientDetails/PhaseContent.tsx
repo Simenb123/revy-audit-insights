@@ -10,14 +10,13 @@ import CompletionPhase from './Phases/CompletionPhase';
 import ReportingPhase from './Phases/ReportingPhase';
 
 interface PhaseContentProps {
-  phase: AuditPhase | string;
+  phase: AuditPhase;
   client: Client;
 }
 
 const PhaseContent = ({ phase, client }: PhaseContentProps) => {
   switch (phase) {
     case 'overview':
-    case 'dashboard':
       return <OverviewPhase client={client} />;
     case 'engagement':
       return <EngagementPhase client={client} />;
