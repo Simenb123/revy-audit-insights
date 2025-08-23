@@ -4128,11 +4128,17 @@ export type Database = {
           email: string | null
           engagement_type: Database["public"]["Enums"]["engagement_type"] | null
           equity_capital: number | null
+          financial_framework:
+            | Database["public"]["Enums"]["financial_framework_type"]
+            | null
+          financial_framework_override: boolean | null
+          group_name: string | null
           homepage: string | null
           id: string
           industry: string | null
           internal_controls: string | null
           is_active: boolean
+          is_part_of_group: boolean | null
           is_test_data: boolean | null
           last_brreg_sync_at: string | null
           municipality_code: string | null
@@ -4190,11 +4196,17 @@ export type Database = {
             | Database["public"]["Enums"]["engagement_type"]
             | null
           equity_capital?: number | null
+          financial_framework?:
+            | Database["public"]["Enums"]["financial_framework_type"]
+            | null
+          financial_framework_override?: boolean | null
+          group_name?: string | null
           homepage?: string | null
           id?: string
           industry?: string | null
           internal_controls?: string | null
           is_active?: boolean
+          is_part_of_group?: boolean | null
           is_test_data?: boolean | null
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
@@ -4252,11 +4264,17 @@ export type Database = {
             | Database["public"]["Enums"]["engagement_type"]
             | null
           equity_capital?: number | null
+          financial_framework?:
+            | Database["public"]["Enums"]["financial_framework_type"]
+            | null
+          financial_framework_override?: boolean | null
+          group_name?: string | null
           homepage?: string | null
           id?: string
           industry?: string | null
           internal_controls?: string | null
           is_active?: boolean
+          is_part_of_group?: boolean | null
           is_test_data?: boolean | null
           last_brreg_sync_at?: string | null
           municipality_code?: string | null
@@ -12605,6 +12623,13 @@ export type Database = {
         | "student"
         | "test"
       engagement_type: "revisjon" | "regnskap" | "annet"
+      financial_framework_type:
+        | "ngaap_small"
+        | "ngaap_medium"
+        | "ngaap_large"
+        | "ifrs"
+        | "simplified"
+        | "other"
       payroll_aga_type: "loenn" | "pensjon" | "fradragSone"
       planning_module_key:
         | "ANALYTICAL_REVIEW"
@@ -12807,6 +12832,14 @@ export const Constants = {
         "test",
       ],
       engagement_type: ["revisjon", "regnskap", "annet"],
+      financial_framework_type: [
+        "ngaap_small",
+        "ngaap_medium",
+        "ngaap_large",
+        "ifrs",
+        "simplified",
+        "other",
+      ],
       payroll_aga_type: ["loenn", "pensjon", "fradragSone"],
       planning_module_key: [
         "ANALYTICAL_REVIEW",

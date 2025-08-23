@@ -17,24 +17,40 @@ import {
 } from 'lucide-react';
 import { Client } from '@/types/revio';
 import { ClientRole } from '@/types/revio';
+import { FinancialFrameworkType } from '@/types/client-extended';
+import EditableClientField from './EditableClientField';
+import { useClientTeamMembers } from '@/hooks/useClientTeamMembers';
+import { getFinancialFrameworkDisplayText } from '@/hooks/useClientFieldUpdate';
+
+// Extend Client type with new database fields for this component
+interface ExtendedClientProps extends Client {
+  financial_framework?: FinancialFrameworkType;
+  is_part_of_group?: boolean;
+  group_name?: string;
+  financial_framework_override?: boolean;
+}
 
 interface EnhancedClientInfoCardProps {
-  client: Client;
+  client: ExtendedClientProps;
   roles: ClientRole[];
 }
 
 const EnhancedClientInfoCard = ({ client, roles }: EnhancedClientInfoCardProps) => {
   const ceoRole = roles.find(role => role.role_type === 'CEO');
   const chairRole = roles.find(role => role.role_type === 'CHAIR');
+  const { data: teamMembers = [], isLoading: teamLoading } = useClientTeamMembers(client.id);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('nb-NO');
   };
 
-  // Mock data for new fields - these would come from database
+  // Use database values or fallback to calculated/mock values
   const getFinancialFramework = () => {
-    // Logic to determine framework based on client size/type
+    if (client.financial_framework) {
+      return getFinancialFrameworkDisplayText(client.financial_framework);
+    }
+    // Fallback logic for clients without stored framework
     if (client.share_capital && client.share_capital > 23000000) {
       return 'NGAAP store foretak';
     } else if (client.share_capital && client.share_capital > 70000) {
@@ -44,11 +60,8 @@ const EnhancedClientInfoCard = ({ client, roles }: EnhancedClientInfoCardProps) 
   };
 
   const mockData = {
-    teamMembers: ['Anna Hansen', 'Erik Johansen'],
     registeredAccountant: 'RegnskapsPartner AS',
     accountantContact: 'lisa.regnskapsforer@regnskapspartner.no',
-    isPartOfGroup: false,
-    financialFramework: getFinancialFramework(),
     businessDescription: client.nace_description || 'Generell forretningsvirksomhet'
   };
 
@@ -81,14 +94,37 @@ const EnhancedClientInfoCard = ({ client, roles }: EnhancedClientInfoCardProps) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Finansielt rammeverk</h4>
-            <p className="text-sm font-medium">{mockData.financialFramework}</p>
+            <EditableClientField
+              clientId={client.id}
+              field="financial_framework"
+              value={client.financial_framework}
+              displayValue={getFinancialFramework()}
+              type="select"
+              className="text-sm font-medium"
+            />
           </div>
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Selskap i konsern</h4>
-            <Badge variant={mockData.isPartOfGroup ? "default" : "secondary"}>
-              {mockData.isPartOfGroup ? 'JA' : 'NEI'}
-            </Badge>
+            <EditableClientField
+              clientId={client.id}
+              field="is_part_of_group"
+              value={client.is_part_of_group || false}
+              type="boolean"
+            />
           </div>
+          {client.is_part_of_group && (
+            <div className="md:col-span-2">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Konsernnavn</h4>
+              <EditableClientField
+                clientId={client.id}
+                field="group_name"
+                value={client.group_name}
+                type="text"
+                placeholder="Skriv inn konsernnavn..."
+                className="text-sm"
+              />
+            </div>
+          )}
           {client.share_capital && (
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-2">Aksjekapital</h4>
@@ -145,9 +181,25 @@ const EnhancedClientInfoCard = ({ client, roles }: EnhancedClientInfoCardProps) 
             <div className="p-3 bg-muted/30 rounded-lg">
               <p className="text-xs font-medium text-muted-foreground">Teammedlemmer</p>
               <div className="space-y-1 mt-1">
-                {mockData.teamMembers.map((member, index) => (
-                  <p key={index} className="text-sm">{member}</p>
-                ))}
+                {teamLoading ? (
+                  <p className="text-sm text-muted-foreground">Laster...</p>
+                ) : teamMembers.length > 0 ? (
+                  teamMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between">
+                      <p className="text-sm">
+                        {member.profile?.firstName && member.profile?.lastName 
+                          ? `${member.profile.firstName} ${member.profile.lastName}`
+                          : member.profile?.email || 'Ukjent bruker'
+                        }
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        {member.role}
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Ingen teammedlemmer</p>
+                )}
               </div>
             </div>
             

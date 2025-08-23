@@ -1,3 +1,12 @@
+// Financial framework types
+export type FinancialFrameworkType = 
+  | 'ngaap_small'
+  | 'ngaap_medium' 
+  | 'ngaap_large'
+  | 'ifrs'
+  | 'simplified'
+  | 'other';
+
 // Basic client types without circular dependencies
 export interface SimpleClient {
   id: string;
@@ -24,6 +33,11 @@ export interface SimpleClient {
   created_at: string;
   updated_at: string;
   user_id?: string;
+  // New database fields
+  financial_framework?: FinancialFrameworkType;
+  is_part_of_group?: boolean;
+  group_name?: string;
+  financial_framework_override?: boolean;
 }
 
 // Extended client with additional data
