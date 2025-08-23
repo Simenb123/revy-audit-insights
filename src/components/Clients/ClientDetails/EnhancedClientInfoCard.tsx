@@ -8,6 +8,7 @@ import EmployeeCountField from './EmployeeCountField';
 import { useClientTeamMembers } from '@/hooks/useClientTeamMembers';
 import { useFinancialFrameworkValidation } from '@/hooks/useFinancialFrameworkValidation';
 import { useClientAnnualData } from '@/hooks/useClientAnnualData';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { FinancialFrameworkType } from '@/types/client-extended';
 import { Client } from '@/types/revio';
 
@@ -20,13 +21,13 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
   client, 
   roles 
 }) => {
-  const fiscalYear = new Date().getFullYear(); // Default to current year
+  const { selectedFiscalYear } = useFiscalYear();
   const { data: teamMembers, isLoading: isLoadingTeam } = useClientTeamMembers(client.id);
-  const { data: annualData } = useClientAnnualData(client.id, fiscalYear);
+  const { data: annualData } = useClientAnnualData(client.id, selectedFiscalYear);
   
   const { data: frameworkValidation, isLoading: isValidating } = useFinancialFrameworkValidation(
     client.id,
-    fiscalYear,
+    selectedFiscalYear,
     (client as any).financial_framework as FinancialFrameworkType,
     annualData?.employee_count || null
   );
@@ -121,7 +122,7 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
           <div className="space-y-4">
             <EmployeeCountField
               clientId={client.id}
-              fiscalYear={fiscalYear}
+              fiscalYear={selectedFiscalYear}
               className="w-full"
             />
 

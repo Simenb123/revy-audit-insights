@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FinancialFrameworkType } from '@/types/client-extended';
+import { useFormulaCalculation } from '@/hooks/useEnhancedFormulaCalculation';
 
 interface ThresholdCriteria {
   totalAssets: number | null; // Balance sum (line 665) in million NOK
@@ -192,38 +193,33 @@ export const useFinancialFrameworkValidation = (
   selectedFramework: FinancialFrameworkType,
   employeeCount: number | null
 ) => {
+  // Get sum of assets (standard line 665) using the existing formula calculation system
+  const totalAssetsResult = useFormulaCalculation({
+    clientId,
+    fiscalYear,
+    formulaId: '665' // Standard line for Sum eiendeler
+  });
+
+  // Get operating revenue (standard line 19) using the existing formula calculation system  
+  const revenueResult = useFormulaCalculation({
+    clientId,
+    fiscalYear,
+    formulaId: '19' // Standard line for Sum driftsinntekter
+  });
+
   return useQuery({
-    queryKey: ['financial-framework-validation', clientId, fiscalYear, selectedFramework, employeeCount],
+    queryKey: ['financial-framework-validation', clientId, fiscalYear, selectedFramework, employeeCount, 
+               totalAssetsResult.data?.value, revenueResult.data?.value],
     queryFn: async () => {
-      // Fetch trial balance data for balance sum (line 665) and revenue (line 19)
-      // Join with client_chart_of_accounts to get account numbers
-      const { data: trialBalanceData, error } = await supabase
-        .from('trial_balances')
-        .select(`
-          closing_balance,
-          client_chart_of_accounts!inner(account_number)
-        `)
-        .eq('client_id', clientId)
-        .eq('period_year', fiscalYear)
-        .in('client_chart_of_accounts.account_number', ['665', '19']);
-
-      if (error) throw error;
-
-      const totalAssetsLine = trialBalanceData?.find(item => 
-        item.client_chart_of_accounts?.account_number === '665'
-      );
-      const revenueLine = trialBalanceData?.find(item => 
-        item.client_chart_of_accounts?.account_number === '19'
-      );
-
       const criteria: ThresholdCriteria = {
-        totalAssets: totalAssetsLine ? Math.abs(totalAssetsLine.closing_balance) / 1000000 : null, // Convert to millions
-        revenue: revenueLine ? Math.abs(revenueLine.closing_balance) / 1000000 : null, // Convert to millions
+        totalAssets: totalAssetsResult.data?.value ? Math.abs(totalAssetsResult.data.value) / 1000000 : null, // Convert to millions
+        revenue: revenueResult.data?.value ? Math.abs(revenueResult.data.value) / 1000000 : null, // Convert to millions
         employees: employeeCount,
       };
 
       return validateFramework(selectedFramework, criteria);
     },
-    enabled: !!clientId && !!fiscalYear && !!selectedFramework,
+    enabled: !!clientId && !!fiscalYear && !!selectedFramework && 
+             !totalAssetsResult.isLoading && !revenueResult.isLoading,
   });
 };
