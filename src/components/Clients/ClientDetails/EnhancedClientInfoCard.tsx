@@ -177,18 +177,53 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
                 <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
               )}
               <div className="flex-1">
-                <h4 className="font-medium text-sm mb-1">
+                <h4 className="font-medium text-sm mb-3">
                   {frameworkValidation.isValid ? 'Rammeverk validert' : 'Rammeverk krever gjennomgang'}
                 </h4>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm mb-4">
                   {frameworkValidation.message}
                 </p>
-                {frameworkValidation.failedCriteria.length > 0 && (
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    {frameworkValidation.failedCriteria.map((criteria, index) => (
-                      <li key={index}>• {criteria}</li>
-                    ))}
-                  </ul>
+                
+                {/* Detailed Criteria Analysis */}
+                {frameworkValidation.detailedCriteria && (
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Regnskapstall viser at:</h5>
+                      <div className="space-y-2">
+                        {frameworkValidation.detailedCriteria.small.map((criteria, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                criteria.exceedsThreshold ? 'bg-warning' : 'bg-success'
+                              }`} />
+                              <span>{criteria.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-mono">
+                                {criteria.formattedActual} {criteria.exceedsThreshold ? '>' : '<'} {criteria.formattedThreshold}
+                              </span>
+                              <span className={`ml-2 text-xs ${
+                                criteria.exceedsThreshold ? 'text-warning' : 'text-success'
+                              }`}>
+                                {criteria.exceedsThreshold ? 'overstiger terskel' : 'under terskel'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-sm font-medium">
+                        {frameworkValidation.conclusion}
+                      </p>
+                      {!frameworkValidation.isValid && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Vurder om finansielt rammeverk bør endres.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

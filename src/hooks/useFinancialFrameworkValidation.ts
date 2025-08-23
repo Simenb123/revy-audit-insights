@@ -8,12 +8,29 @@ interface ThresholdCriteria {
   employees: number | null; // Employee count
 }
 
+interface CriteriaDetail {
+  name: string;
+  actualValue: number;
+  threshold: number;
+  exceedsThreshold: boolean;
+  formattedActual: string;
+  formattedThreshold: string;
+  unit: string;
+}
+
 interface ValidationResult {
   framework: FinancialFrameworkType;
   isValid: boolean;
   recommendedFramework: FinancialFrameworkType | null;
   failedCriteria: string[];
   message: string;
+  detailedCriteria: {
+    small: CriteriaDetail[];
+    medium: CriteriaDetail[];
+  };
+  exceedsSmallCount: number;
+  exceedsMediumCount: number;
+  conclusion: string;
 }
 
 // Threshold definitions in million NOK
@@ -55,6 +72,30 @@ const getRecommendedFramework = (criteria: ThresholdCriteria): FinancialFramewor
   }
 };
 
+const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('no-NO').format(value);
+};
+
+const formatCurrency = (value: number): string => {
+  return `kr ${formatNumber(Math.round(value * 1000000))}`;
+};
+
+const createCriteriaDetail = (
+  name: string,
+  actualValue: number,
+  threshold: number,
+  unit: string,
+  isCurrency: boolean = false
+): CriteriaDetail => ({
+  name,
+  actualValue,
+  threshold,
+  exceedsThreshold: actualValue >= threshold,
+  formattedActual: isCurrency ? formatCurrency(actualValue) : formatNumber(actualValue),
+  formattedThreshold: isCurrency ? formatCurrency(threshold) : formatNumber(threshold),
+  unit,
+});
+
 const validateFramework = (
   selectedFramework: FinancialFrameworkType,
   criteria: ThresholdCriteria
@@ -65,24 +106,71 @@ const validateFramework = (
   const failedCriteria: string[] = [];
   const { totalAssets = 0, revenue = 0, employees = 0 } = criteria;
   
-  // Check which specific criteria might be causing issues
+  // Count how many criteria exceed thresholds
+  let exceedsSmallCount = 0;
+  if (totalAssets >= THRESHOLDS.small.totalAssets) exceedsSmallCount++;
+  if (revenue >= THRESHOLDS.small.revenue) exceedsSmallCount++;
+  if (employees >= THRESHOLDS.small.employees) exceedsSmallCount++;
+  
+  let exceedsMediumCount = 0;
+  if (totalAssets >= THRESHOLDS.medium.totalAssets) exceedsMediumCount++;
+  if (revenue >= THRESHOLDS.medium.revenue) exceedsMediumCount++;
+  if (employees >= THRESHOLDS.medium.employees) exceedsMediumCount++;
+  
+  // Create detailed criteria for both thresholds
+  const detailedCriteria = {
+    small: [
+      createCriteriaDetail('Sum eiendeler', totalAssets, THRESHOLDS.small.totalAssets, 'mill kr', true),
+      createCriteriaDetail('Driftsinntekter', revenue, THRESHOLDS.small.revenue, 'mill kr', true),
+      createCriteriaDetail('Antall ansatte', employees, THRESHOLDS.small.employees, 'stk'),
+    ],
+    medium: [
+      createCriteriaDetail('Sum eiendeler', totalAssets, THRESHOLDS.medium.totalAssets, 'mill kr', true),
+      createCriteriaDetail('Driftsinntekter', revenue, THRESHOLDS.medium.revenue, 'mill kr', true),
+      createCriteriaDetail('Antall ansatte', employees, THRESHOLDS.medium.employees, 'stk'),
+    ],
+  };
+  
+  // Generate conclusion based on framework selection and criteria
+  let conclusion = '';
+  const frameworkName = selectedFramework.replace('ngaap_', '').replace('_', ' ');
+  
   if (selectedFramework === 'ngaap_small') {
-    if (totalAssets >= THRESHOLDS.small.totalAssets) {
-      failedCriteria.push(`Balansesum (${totalAssets.toFixed(1)} mill) overskrider grensen på ${THRESHOLDS.small.totalAssets} mill`);
+    if (exceedsSmallCount >= 2) {
+      conclusion = `${exceedsSmallCount} av 3 vilkår overstiger terskelverdiene for små foretak. Selskapet bør klassifiseres som ${exceedsMediumCount >= 2 ? 'stort' : 'mellomstort'} foretak.`;
+    } else {
+      conclusion = `Kun ${exceedsSmallCount} av 3 vilkår overstiger terskelverdiene. Selskapet kan klassifiseres som små foretak.`;
     }
-    if (revenue >= THRESHOLDS.small.revenue) {
-      failedCriteria.push(`Driftsinntekter (${revenue.toFixed(1)} mill) overskrider grensen på ${THRESHOLDS.small.revenue} mill`);
+  } else if (selectedFramework === 'ngaap_medium') {
+    if (exceedsMediumCount >= 2) {
+      conclusion = `${exceedsMediumCount} av 3 vilkår overstiger terskelverdiene for mellomstore foretak. Selskapet bør klassifiseres som stort foretak.`;
+    } else if (exceedsSmallCount < 2) {
+      conclusion = `Kun ${exceedsSmallCount} av 3 vilkår overstiger terskelverdiene for små foretak. Selskapet kan klassifiseres som små foretak.`;
+    } else {
+      conclusion = `${exceedsSmallCount} av 3 vilkår overstiger terskelverdiene for små foretak, men kun ${exceedsMediumCount} for mellomstore. Klassifisering som mellomstort foretak er korrekt.`;
     }
-    if (employees >= THRESHOLDS.small.employees) {
-      failedCriteria.push(`Antall ansatte (${employees}) overskrider grensen på ${THRESHOLDS.small.employees}`);
+  } else if (selectedFramework === 'ngaap_large') {
+    if (exceedsMediumCount < 2) {
+      conclusion = `Kun ${exceedsMediumCount} av 3 vilkår overstiger terskelverdiene for mellomstore foretak. Selskapet bør klassifiseres som ${exceedsSmallCount >= 2 ? 'mellomstort' : 'småt'} foretak.`;
+    } else {
+      conclusion = `${exceedsMediumCount} av 3 vilkår overstiger terskelverdiene for mellomstore foretak. Klassifisering som stort foretak er korrekt.`;
     }
+  }
+  
+  // Generate failed criteria messages for backward compatibility
+  if (selectedFramework === 'ngaap_small' && exceedsSmallCount >= 2) {
+    detailedCriteria.small.forEach(criteria => {
+      if (criteria.exceedsThreshold) {
+        failedCriteria.push(`${criteria.name} ${criteria.formattedActual} > ${criteria.formattedThreshold} - overstiger terskel`);
+      }
+    });
   }
   
   let message = '';
   if (!isValid) {
-    message = `Basert på regnskapstallene anbefales ${recommendedFramework.replace('ngaap_', '').replace('_', ' ')} rammeverk`;
+    message = `Du har valgt kategorien NGAAP - ${frameworkName}. Regnskapstallene tilsier ${recommendedFramework.replace('ngaap_', '').replace('_', ' ')} foretak.`;
   } else {
-    message = 'Valgt rammeverk samsvarer med regnskapstallene';
+    message = `Valgt rammeverk NGAAP - ${frameworkName} samsvarer med regnskapstallene.`;
   }
   
   return {
@@ -91,6 +179,10 @@ const validateFramework = (
     recommendedFramework: isValid ? null : recommendedFramework,
     failedCriteria,
     message,
+    detailedCriteria,
+    exceedsSmallCount,
+    exceedsMediumCount,
+    conclusion,
   };
 };
 
