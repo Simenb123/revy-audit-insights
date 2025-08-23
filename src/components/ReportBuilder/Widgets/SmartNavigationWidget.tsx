@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Widget } from '@/contexts/WidgetManagerContext';
 import { getBalanceCategory, getBalanceCategoryLabel } from '@/utils/standardAccountCategory';
 
@@ -49,13 +50,14 @@ interface AccountSuggestion {
 }
 
 export function SmartNavigationWidget({ widget, onNavigate }: SmartNavigationWidgetProps) {
+  const { selectedFiscalYear } = useFiscalYear();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'search' | 'quick' | 'recent'>('search');
 
   const clientId = widget.config?.clientId || '';
   
-  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId);
-  const { data: transactionData = [] } = useGeneralLedgerData(clientId);
+  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId, undefined, selectedFiscalYear);
+  const { data: transactionData = [] } = useGeneralLedgerData(clientId, undefined, { page: 1, pageSize: 10000 });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { 

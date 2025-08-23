@@ -51,10 +51,13 @@ export function AccountHierarchyWidget({ widget }: AccountHierarchyWidgetProps) 
 
   const clientId = widget.config?.clientId || '';
   
-  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId);
-  const { data: transactionData = [] } = useGeneralLedgerData(clientId, undefined, undefined, {
-    accountNumber: selectedAccount
-  });
+  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId, undefined, selectedFiscalYear);
+  const { data: transactionData = [] } = useGeneralLedgerData(
+    clientId, 
+    undefined, 
+    { page: 1, pageSize: 10000 },
+    { accountNumber: selectedAccount }
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { 

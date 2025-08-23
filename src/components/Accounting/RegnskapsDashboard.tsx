@@ -7,6 +7,9 @@ import { TrendingUp, AlertTriangle, Database, CheckCircle, Calculator, FileText 
 import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { useGeneralLedgerValidation } from '@/hooks/useGeneralLedgerValidation';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useActiveVersion } from '@/hooks/useAccountingVersions';
+import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 
 interface RegnskapsDashboardProps {
@@ -38,16 +41,23 @@ interface CrossCheckResult {
 }
 
 export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
-  // Hent hovedboksdata
+  const { selectedFiscalYear } = useFiscalYear();
+  const { data: activeGLVersion } = useActiveVersion(clientId);
+  const { data: activeTBVersion } = useActiveTrialBalanceVersion(clientId, selectedFiscalYear);
+
+  // Hent hovedboksdata med aktiv versjon
   const { data: ledgerData, isLoading: ledgerLoading, error: ledgerError } = useGeneralLedgerData(
     clientId,
-    undefined,
-    undefined,
-    undefined
+    activeGLVersion?.id,
+    { page: 1, pageSize: 10000 }
   );
 
-  // Hent saldobalanse
-  const { data: trialBalanceData, isLoading: trialLoading, error: trialError } = useTrialBalanceData(clientId);
+  // Hent saldobalanse med aktiv versjon
+  const { data: trialBalanceData, isLoading: trialLoading, error: trialError } = useTrialBalanceData(
+    clientId,
+    activeTBVersion?.version,
+    activeTBVersion?.year
+  );
 
   // Valider hovedboksdata
   const validationResults = useGeneralLedgerValidation(ledgerData || []);

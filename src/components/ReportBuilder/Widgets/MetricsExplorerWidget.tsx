@@ -41,8 +41,8 @@ export function MetricsExplorerWidget({ widget }: MetricsExplorerWidgetProps) {
 
   const clientId = widget.config?.clientId || '';
   
-  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId);
-  const { data: transactionData = [] } = useGeneralLedgerData(clientId);
+  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId, undefined, selectedFiscalYear);
+  const { data: transactionData = [] } = useGeneralLedgerData(clientId, undefined, { page: 1, pageSize: 10000 });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { 
