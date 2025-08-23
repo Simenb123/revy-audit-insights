@@ -11,7 +11,7 @@ export interface PhaseInfo {
 export const phaseInfo: Record<AuditPhase, PhaseInfo> = {
   overview: {
     label: 'Oversikt',
-    description: 'Klientinformasjon, grunndata og innledende vurderinger',
+    description: '',
     icon: Info,
     color: 'bg-blue-100 text-blue-800'
   },
