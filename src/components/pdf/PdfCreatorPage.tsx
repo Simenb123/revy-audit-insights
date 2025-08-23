@@ -12,7 +12,9 @@ import { mapRow, groupsToPayloads } from '@/utils/pdf-map';
 import { BilagPayload } from '@/types/bilag';
 import { useToast } from '@/hooks/use-toast';
 import { uploadPdfToStorage, downloadPdf } from '@/services/pdf-storage';
-import { FileText, Upload, Download, Eye } from 'lucide-react';
+import { FileText, Upload, Download, Eye, Archive } from 'lucide-react';
+import { useBulkPDFExport } from '@/hooks/useBulkPDFExport';
+import { BulkExportDialog } from './BulkExportDialog';
 import { PDFViewer } from '@react-pdf/renderer';
 import { PdfInvoiceDocument } from './PdfInvoiceDocument';
 import { PdfPaymentDocument } from './PdfPaymentDocument';
@@ -35,8 +37,10 @@ export const PdfCreatorPage = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showUploader, setShowUploader] = useState(true);
+  const [showBulkExportDialog, setShowBulkExportDialog] = useState(false);
   
   const { toast } = useToast();
+  const { progress, exportAllToPDF, resetProgress } = useBulkPDFExport();
   
   // Get PDF Creator upload configuration
   const uploadConfig = getUploadConfig('pdf-creator');
@@ -166,6 +170,21 @@ export const PdfCreatorPage = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleBulkExport = async () => {
+    if (payloads.length === 0) {
+      toast({
+        title: "Ingen bilag å eksportere",
+        description: "Last opp regnskapsdata først for å generere bilag.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowBulkExportDialog(true);
+    resetProgress();
+    await exportAllToPDF(payloads);
   };
 
   const renderPdfDocument = () => {
@@ -312,6 +331,42 @@ export const PdfCreatorPage = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Bulk Actions */}
+      {!showUploader && payloads.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Masse-handlinger</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleBulkExport}
+                disabled={progress.isRunning}
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                Last ned alle som ZIP ({payloads.length} bilag)
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Eksporterer alle {payloads.length} bilag til en organisert ZIP-fil sortert etter bilagstype.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Export Progress Dialog */}
+      <BulkExportDialog
+        open={showBulkExportDialog}
+        onOpenChange={setShowBulkExportDialog}
+        progress={progress}
+        onCancel={() => {
+          // Note: Cancellation logic could be added to useBulkPDFExport if needed
+          setShowBulkExportDialog(false);
+          resetProgress();
+        }}
+      />
 
       {/* PDF Preview Modal */}
       {showPreview && selectedPayload && (
