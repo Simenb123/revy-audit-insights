@@ -8,24 +8,26 @@ import EmployeeCountField from './EmployeeCountField';
 import { useClientTeamMembers } from '@/hooks/useClientTeamMembers';
 import { useFinancialFrameworkValidation } from '@/hooks/useFinancialFrameworkValidation';
 import { useClientAnnualData } from '@/hooks/useClientAnnualData';
-import { ExtendedClient, FinancialFrameworkType } from '@/types/client-extended';
+import { FinancialFrameworkType } from '@/types/client-extended';
+import { Client } from '@/types/revio';
 
 interface EnhancedClientInfoCardProps {
-  client: ExtendedClient;
-  fiscalYear: number;
+  client: Client;
+  roles: any[];
 }
 
 const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({ 
   client, 
-  fiscalYear 
+  roles 
 }) => {
+  const fiscalYear = new Date().getFullYear(); // Default to current year
   const { data: teamMembers, isLoading: isLoadingTeam } = useClientTeamMembers(client.id);
   const { data: annualData } = useClientAnnualData(client.id, fiscalYear);
   
   const { data: frameworkValidation, isLoading: isValidating } = useFinancialFrameworkValidation(
     client.id,
     fiscalYear,
-    client.financial_framework as FinancialFrameworkType,
+    (client as any).financial_framework as FinancialFrameworkType,
     annualData?.employee_count || null
   );
 
@@ -69,9 +71,9 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
                 <EditableClientField
                   clientId={client.id}
                   field="financial_framework"
-                  value={client.financial_framework}
+                  value={(client as any).financial_framework}
                   type="select"
-                  isEmpty={isEmpty(client.financial_framework)}
+                  isEmpty={isEmpty((client as any).financial_framework)}
                   hasWarning={hasFinancialFrameworkWarning}
                   warningMessage={frameworkValidation?.message}
                   className="w-full"
@@ -90,13 +92,13 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
                 <EditableClientField
                   clientId={client.id}
                   field="is_part_of_group"
-                  value={client.is_part_of_group}
+                  value={(client as any).is_part_of_group}
                   type="boolean"
                   className="w-full"
                 />
               </div>
 
-              {client.is_part_of_group && (
+              {(client as any).is_part_of_group && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     Konsernnavn
@@ -104,10 +106,10 @@ const EnhancedClientInfoCard: React.FC<EnhancedClientInfoCardProps> = ({
                   <EditableClientField
                     clientId={client.id}
                     field="group_name"
-                    value={client.group_name}
+                    value={(client as any).group_name}
                     type="text"
                     placeholder="Angi konsernnavn"
-                    isEmpty={isEmpty(client.group_name)}
+                    isEmpty={isEmpty((client as any).group_name)}
                     className="w-full"
                   />
                 </div>
