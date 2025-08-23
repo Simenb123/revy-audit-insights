@@ -138,11 +138,13 @@ function roundToNiceNumber(value: number): number {
 }
 
 /**
- * Validate sampling parameters
+ * Validate sampling parameters with enhanced business rules
  */
 export function validateSamplingParams(params: SamplingParams): string[] {
   const errors: string[] = [];
+  const warnings: string[] = [];
   
+  // Basic validation
   if (params.populationSize <= 0) {
     errors.push('Population size must be greater than 0');
   }
@@ -151,12 +153,34 @@ export function validateSamplingParams(params: SamplingParams): string[] {
     errors.push('Population sum must be greater than 0');
   }
   
+  // Test type specific validation
   if (params.testType === 'SUBSTANTIVE') {
     if (!params.materiality || params.materiality <= 0) {
       errors.push('Materiality is required for substantive tests');
     }
-    if (params.expectedMisstatement && params.expectedMisstatement >= (params.materiality || 0)) {
-      errors.push('Expected misstatement must be less than materiality');
+    
+    if (params.expectedMisstatement && params.materiality) {
+      if (params.expectedMisstatement >= params.materiality) {
+        errors.push('Expected misstatement must be less than materiality');
+      }
+      
+      // Warning for high expected misstatement ratios
+      const ratio = params.expectedMisstatement / params.materiality;
+      if (ratio > 0.5) {
+        warnings.push('Expected misstatement is more than 50% of materiality - consider reviewing assumptions');
+      }
+    }
+    
+    // Performance materiality validation
+    if (params.performanceMateriality && params.materiality) {
+      if (params.performanceMateriality > params.materiality) {
+        errors.push('Performance materiality cannot exceed total materiality');
+      }
+      
+      const pmRatio = params.performanceMateriality / params.materiality;
+      if (pmRatio < 0.5 || pmRatio > 0.9) {
+        warnings.push('Performance materiality should typically be 50-90% of total materiality');
+      }
     }
   }
   
@@ -164,20 +188,182 @@ export function validateSamplingParams(params: SamplingParams): string[] {
     if (!params.tolerableDeviationRate || params.tolerableDeviationRate <= 0) {
       errors.push('Tolerable deviation rate is required for control tests');
     }
-    if (params.expectedDeviationRate && params.expectedDeviationRate >= (params.tolerableDeviationRate || 0)) {
-      errors.push('Expected deviation rate must be less than tolerable deviation rate');
+    
+    if (params.tolerableDeviationRate && params.tolerableDeviationRate > 20) {
+      warnings.push('Tolerable deviation rate above 20% may indicate weak control design');
+    }
+    
+    if (params.expectedDeviationRate && params.tolerableDeviationRate) {
+      if (params.expectedDeviationRate >= params.tolerableDeviationRate) {
+        errors.push('Expected deviation rate must be less than tolerable deviation rate');
+      }
+      
+      const deviationRatio = params.expectedDeviationRate / params.tolerableDeviationRate;
+      if (deviationRatio > 0.7) {
+        warnings.push('Expected deviation rate is close to tolerable rate - sample size may be very large');
+      }
     }
   }
   
+  // Confidence level validation
   if (![90, 95, 99].includes(params.confidenceLevel)) {
     errors.push('Confidence level must be 90%, 95%, or 99%');
   }
   
+  // Risk level validation
+  if (!['lav', 'moderat', 'hoy'].includes(params.riskLevel)) {
+    errors.push('Risk level must be "lav", "moderat", or "hoy"');
+  }
+  
+  // Seed validation
   if (params.seed <= 0) {
     errors.push('Seed must be greater than 0');
   }
   
+  // Method-specific validation
+  if (params.method === 'STRATIFIED') {
+    if (!params.strataBounds || params.strataBounds.length === 0) {
+      warnings.push('Stratified sampling requires strata bounds to be effective');
+    }
+    
+    if (params.minPerStratum < 1) {
+      warnings.push('Minimum per stratum should be at least 1 for meaningful stratification');
+    }
+  }
+  
+  // Threshold validation
+  if (params.thresholdMode !== 'DISABLED') {
+    let threshold = 0;
+    
+    switch (params.thresholdMode) {
+      case 'PM':
+        if (!params.performanceMateriality) {
+          errors.push('Performance materiality required for PM threshold mode');
+        }
+        threshold = params.performanceMateriality || 0;
+        break;
+      case 'TM':
+        if (!params.materiality) {
+          errors.push('Total materiality required for TM threshold mode');
+        }
+        threshold = params.materiality || 0;
+        break;
+      case 'CUSTOM':
+        if (!params.thresholdAmount || params.thresholdAmount <= 0) {
+          errors.push('Threshold amount required for custom threshold mode');
+        }
+        threshold = params.thresholdAmount || 0;
+        break;
+    }
+    
+    // Check if threshold is reasonable relative to population
+    if (threshold > 0 && params.populationSum > 0) {
+      const thresholdRatio = threshold / params.populationSum;
+      if (thresholdRatio > 0.5) {
+        warnings.push('High threshold may capture too many transactions as targeted items');
+      }
+    }
+  }
+  
+  // Cross-validation checks
+  if (params.populationSize > 0 && params.populationSum > 0) {
+    const avgAmount = params.populationSum / params.populationSize;
+    
+    if (params.materiality && avgAmount > params.materiality * 2) {
+      warnings.push('Average transaction amount is significantly higher than materiality');
+    }
+  }
+  
+  // Log warnings to console for development
+  if (warnings.length > 0) {
+    console.warn('Sampling parameter warnings:', warnings);
+  }
+  
+  // Return only errors for now, but warnings are available for UI components
   return errors;
+}
+
+/**
+ * Get validation warnings separately for UI display
+ */
+export function getSamplingValidationWarnings(params: SamplingParams): string[] {
+  const warnings: string[] = [];
+  
+  // Test type specific warnings
+  if (params.testType === 'SUBSTANTIVE') {
+    if (params.expectedMisstatement && params.materiality) {
+      const ratio = params.expectedMisstatement / params.materiality;
+      if (ratio > 0.5) {
+        warnings.push('Expected misstatement is more than 50% of materiality - consider reviewing assumptions');
+      }
+    }
+    
+    if (params.performanceMateriality && params.materiality) {
+      const pmRatio = params.performanceMateriality / params.materiality;
+      if (pmRatio < 0.5 || pmRatio > 0.9) {
+        warnings.push('Performance materiality should typically be 50-90% of total materiality');
+      }
+    }
+  }
+  
+  if (params.testType === 'CONTROL') {
+    if (params.tolerableDeviationRate && params.tolerableDeviationRate > 20) {
+      warnings.push('Tolerable deviation rate above 20% may indicate weak control design');
+    }
+    
+    if (params.expectedDeviationRate && params.tolerableDeviationRate) {
+      const deviationRatio = params.expectedDeviationRate / params.tolerableDeviationRate;
+      if (deviationRatio > 0.7) {
+        warnings.push('Expected deviation rate is close to tolerable rate - sample size may be very large');
+      }
+    }
+  }
+  
+  // Method-specific warnings
+  if (params.method === 'STRATIFIED') {
+    if (!params.strataBounds || params.strataBounds.length === 0) {
+      warnings.push('Stratified sampling requires strata bounds to be effective');
+    }
+    
+    if (params.minPerStratum < 1) {
+      warnings.push('Minimum per stratum should be at least 1 for meaningful stratification');
+    }
+  }
+  
+  // Threshold warnings
+  if (params.thresholdMode !== 'DISABLED') {
+    let threshold = 0;
+    
+    switch (params.thresholdMode) {
+      case 'PM':
+        threshold = params.performanceMateriality || 0;
+        break;
+      case 'TM':
+        threshold = params.materiality || 0;
+        break;
+      case 'CUSTOM':
+        threshold = params.thresholdAmount || 0;
+        break;
+    }
+    
+    if (threshold > 0 && params.populationSum > 0) {
+      const thresholdRatio = threshold / params.populationSum;
+      if (thresholdRatio > 0.5) {
+        warnings.push('High threshold may capture too many transactions as targeted items');
+      }
+    }
+  }
+  
+  // Cross-validation warnings
+  if (params.populationSize > 0 && params.populationSum > 0) {
+    const avgAmount = params.populationSum / params.populationSize;
+    
+    if (params.materiality && avgAmount > params.materiality * 2) {
+      warnings.push('Average transaction amount is significantly higher than materiality');
+    }
+  }
+  
+  return warnings;
 }
 
 /**

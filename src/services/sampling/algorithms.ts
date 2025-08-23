@@ -16,6 +16,7 @@ import {
   generateParamHash,
   calculateSuggestedThreshold
 } from './utils';
+import { calculateTransactionRiskScore } from './riskAssessment';
 
 /**
  * Main function to generate audit sample
@@ -253,9 +254,11 @@ function musSelect(
   let cumSum = 0;
   
   for (const tx of nonZeroTxs) {
+    // Calculate risk score if not provided
+    const riskScore = tx.risk_score || calculateTransactionRiskScore(tx, params);
     const weightedAmount = getRiskWeightedAmount(
       tx.amount,
-      tx.risk_score || 0,
+      riskScore,
       params.riskWeighting
     );
     cumSum += weightedAmount;

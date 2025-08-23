@@ -224,7 +224,7 @@ async function fetchTransactionData(supabase: any, payload: SamplingRequest): Pr
     account_name: tx.client_chart_of_accounts.account_name,
     description: tx.description || '',
     amount: tx.debit_amount || -(tx.credit_amount || 0),
-    risk_score: Math.random() * 0.4 + 0.1 // Placeholder risk score
+    risk_score: calculateRiskScore(tx, payload)
   }));
 }
 
@@ -241,17 +241,13 @@ function calculateMUSSampleSize(payload: SamplingRequest): number {
     return Math.min(100, Math.max(30, Math.ceil(payload.populationSize * 0.05)));
   }
 
-  // Poisson-based MUS calculation
-  const riskMultiplier = getRiskMultiplier(payload.riskLevel);
-  const confidenceMultiplier = getConfidenceMultiplier(payload.confidenceLevel);
-  
-  const basicPoissonFactor = -Math.log(1 - (payload.confidenceLevel / 100));
+  // Synchronized MUS calculation with frontend
+  const poissonFactor = -Math.log(1 - (payload.confidenceLevel / 100));
   const expectedErrorFactor = payload.expectedMisstatement / payload.materiality;
   
   const sampleSize = Math.ceil(
     (payload.populationSum / payload.materiality) * 
-    (basicPoissonFactor + expectedErrorFactor) * 
-    riskMultiplier * confidenceMultiplier
+    (poissonFactor + expectedErrorFactor)
   );
   
   return Math.min(payload.populationSize, Math.max(30, sampleSize));
@@ -411,7 +407,41 @@ function createSeededRNG(seed: number): () => number {
   };
 }
 
+// Calculate actual risk score based on transaction characteristics
+function calculateRiskScore(tx: any, payload: SamplingRequest): number {
+  let riskScore = 0.1; // Base risk score
+  
+  const amount = Math.abs(tx.debit_amount || tx.credit_amount || 0);
+  const accountNumber = tx.client_chart_of_accounts?.account_number || '';
+  
+  // Amount-based risk factors
+  if (payload.materiality && amount > payload.materiality * 0.5) {
+    riskScore += 0.3; // High amount risk
+  }
+  
+  // Account-based risk factors (simplified risk assessment)
+  if (accountNumber.startsWith('1')) { // Assets
+    riskScore += 0.1;
+  } else if (accountNumber.startsWith('2')) { // Liabilities  
+    riskScore += 0.2;
+  } else if (accountNumber.startsWith('3')) { // Revenue
+    riskScore += 0.25;
+  } else if (accountNumber.startsWith('4') || accountNumber.startsWith('5')) { // Expenses
+    riskScore += 0.15;
+  }
+  
+  // Description-based risk (simple keyword matching)
+  const description = (tx.description || '').toLowerCase();
+  const highRiskKeywords = ['mva', 'lån', 'rente', 'avskrivning', 'nedskrivning'];
+  if (highRiskKeywords.some(keyword => description.includes(keyword))) {
+    riskScore += 0.2;
+  }
+  
+  return Math.min(1.0, riskScore); // Cap at 1.0
+}
+
 function getRiskMultiplier(riskLevel: string): number {
+  // Use consistent risk factors with frontend
   switch (riskLevel) {
     case 'lav': return 0.8;
     case 'moderat': return 1.0;
@@ -420,11 +450,7 @@ function getRiskMultiplier(riskLevel: string): number {
   }
 }
 
-function getConfidenceMultiplier(confidence: number): number {
-  if (confidence >= 95) return 1.2;
-  if (confidence >= 90) return 1.1;
-  return 1.0;
-}
+// Removed getConfidenceMultiplier to sync with frontend - risk adjustment applied later
 
 function getZScore(confidence: number): number {
   if (confidence >= 99) return 2.58;
