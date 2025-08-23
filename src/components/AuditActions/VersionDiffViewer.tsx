@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer';
+import { sanitizeHtml } from '@/utils/sanitize';
 
 interface VersionDiffViewerProps {
   oldContent: string;
@@ -8,9 +9,12 @@ interface VersionDiffViewerProps {
 }
 
 const getTextFromHtml = (html: string): string => {
+  // First sanitize the HTML to prevent XSS attacks
+  const sanitizedHtml = sanitizeHtml(html);
+  
   // This function is intended to run on the client side only.
   const div = document.createElement('div');
-  div.innerHTML = html;
+  div.innerHTML = sanitizedHtml;
   return div.textContent || div.innerText || '';
 };
 
