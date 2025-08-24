@@ -15,27 +15,36 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const readAndSetGlobalHeaderHeight = () => {
+      // First set fallback from CSS before DOM query
+      const rootStyle = getComputedStyle(document.documentElement);
+      const cssHeight = parseInt(rootStyle.getPropertyValue('--global-header-height'), 10);
+      const fallbackHeight = isNaN(cssHeight) ? 45 : cssHeight; // 45px as ultimate fallback
+      
       const globalHeader = document.querySelector('[data-global-header]');
       if (globalHeader instanceof HTMLElement) {
-        const height = globalHeader.offsetHeight || 0;
+        const height = globalHeader.offsetHeight || fallbackHeight;
+        console.log('Global header height measured:', height);
         setGlobalHeaderHeight(height);
         document.documentElement.style.setProperty('--global-header-current-height', `${height}px`);
       } else {
-        // Fallback to CSS var if element not found
-        const rootStyle = getComputedStyle(document.documentElement);
-        const globalHeight = parseInt(rootStyle.getPropertyValue('--global-header-height'), 10);
-        const fallback = isNaN(globalHeight) ? 0 : globalHeight;
-        setGlobalHeaderHeight(fallback);
-        document.documentElement.style.setProperty('--global-header-current-height', `${fallback}px`);
+        console.log('Global header element not found, using fallback:', fallbackHeight);
+        setGlobalHeaderHeight(fallbackHeight);
+        document.documentElement.style.setProperty('--global-header-current-height', `${fallbackHeight}px`);
       }
     };
 
     const readAndSetSubHeaderHeight = () => {
       const subHeader = document.querySelector('[data-sub-header]');
-      const height = subHeader instanceof HTMLElement ? subHeader.offsetHeight : 0;
-      setSubHeaderHeight(height);
-      // Expose current subheader height as CSS var for any sticky elements
-      document.documentElement.style.setProperty('--sub-header-current-height', `${height}px`);
+      if (subHeader instanceof HTMLElement) {
+        const height = subHeader.offsetHeight || 0;
+        console.log('Sub header height measured:', height);
+        setSubHeaderHeight(height);
+        document.documentElement.style.setProperty('--sub-header-current-height', `${height}px`);
+      } else {
+        console.log('Sub header element not found, setting height to 0');
+        setSubHeaderHeight(0);
+        document.documentElement.style.setProperty('--sub-header-current-height', '0px');
+      }
     };
 
     // Initial read
@@ -82,12 +91,18 @@ export const useLayout = () => {
   if (!context) {
     // Fallback: derive heights from CSS variables to avoid crashes when provider is missing
     const rootStyle = getComputedStyle(document.documentElement);
-    const globalCurrent = parseInt(rootStyle.getPropertyValue('--global-header-current-height') || '0', 10);
-    const globalFallback = parseInt(rootStyle.getPropertyValue('--global-header-height') || '0', 10);
+    const globalCurrent = parseInt(rootStyle.getPropertyValue('--global-header-current-height') || '45', 10);
+    const globalFallback = parseInt(rootStyle.getPropertyValue('--global-header-height') || '45', 10);
     const subCurrent = parseInt(rootStyle.getPropertyValue('--sub-header-current-height') || '0', 10);
+    
+    const finalGlobalHeight = isNaN(globalCurrent) ? (isNaN(globalFallback) ? 45 : globalFallback) : globalCurrent;
+    const finalSubHeight = isNaN(subCurrent) ? 0 : subCurrent;
+    
+    console.log('Layout context fallback - Global:', finalGlobalHeight, 'Sub:', finalSubHeight);
+    
     return {
-      globalHeaderHeight: isNaN(globalCurrent) ? (isNaN(globalFallback) ? 0 : globalFallback) : globalCurrent,
-      subHeaderHeight: isNaN(subCurrent) ? 0 : subCurrent,
+      globalHeaderHeight: finalGlobalHeight,
+      subHeaderHeight: finalSubHeight,
     };
   }
   return context;

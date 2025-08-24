@@ -17,8 +17,16 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
   const { state: leftSidebarState } = useSidebar();
   const isMobile = useIsMobile();
   const { globalHeaderHeight, subHeaderHeight } = useLayout();
-  // Use more robust viewport height calculation
-  const computedHeight = `calc(100vh - ${globalHeaderHeight + subHeaderHeight}px)`;
+  
+  // Use CSS variables as primary source with JS values as enhancement
+  const totalHeaderHeight = globalHeaderHeight + subHeaderHeight;
+  console.log('GridLayoutContainer heights - Global:', globalHeaderHeight, 'Sub:', subHeaderHeight, 'Total:', totalHeaderHeight);
+  
+  // Ensure minimum reasonable height even if measurements fail
+  const minHeight = Math.max(totalHeaderHeight, 45); // At least 45px for global header
+  const computedHeight = `calc(100vh - ${minHeight}px)`;
+  
+  console.log('GridLayoutContainer computed height:', computedHeight);
   
   const leftCollapsed = leftSidebarState === 'collapsed';
 

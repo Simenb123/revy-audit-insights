@@ -95,7 +95,8 @@
   /* CSS Grid Layout System */
   .app-grid {
     display: grid;
-    min-height: calc(100vh - var(--global-header-current-height));
+    min-height: calc(100vh - var(--global-header-height, 45px) - var(--sub-header-current-height, 0px));
+    /* Use CSS fallbacks to ensure consistent height calculation */
     /* grid-template-columns will be set dynamically by GridLayoutContainer */
   }
 
