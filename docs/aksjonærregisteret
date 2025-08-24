@@ -1,0 +1,1091 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import Papa from "papaparse";
+import ReactFlow, { Background, Controls, MiniMap } from "reactflow";
+import "reactflow/dist/style.css";
+import { Search, Upload, Network, RefreshCw, Info, ExternalLink, Crosshair, ChevronDown, ChevronRight, Download } from "lucide-react";
+
+/**
+ * Revio – Aksjonærregister (Canvas GUI Preview)
+ * -------------------------------------------------
+ * Denne én-filskomponenten gir en kjørbar GUI-demo i Canvas:
+ *  1) Importér CSV fra Skatteetaten (lokal fil) – CP1252/UTF-8, semikolon/komma
+ *  2) Søk i importert data (selskaper/aksjonærer)
+ *  3) Vis eierstruktur-graf (opp/ned/begge) med enkel BFS
+ *
+ * Merk:
+ *  - Denne demoen kjører alt i nettleseren (ingen Supabase). I repoet kan
+ *    du bytte ut de lokale state-"service"-ene med Supabase Edge Functions.
+ *  - UI bruker Tailwind-klasser og Radix/shadcn-inspirert stil, men uten
+ *    prosjektspesifikke imports for å fungere i Canvas.
+ */
+
+// --------------------------------------
+// Typer
+// --------------------------------------
+
+type EntityType = "person" | "company";
+
+interface Company {
+  orgnr: string;
+  name: string;
+  totalShares: number | null;
+  year: number;
+  // Ekstra metadata (valgfritt)
+  industryCode?: string | null; // NACE/bransjekode
+  industry?: string | null;
+  boardChair?: string | null; // Styrets leder
+  ceo?: string | null; // Daglig leder
+  city?: string | null; // Poststed
+  employees?: number | null;
+  revenue?: number | null; // f.eks. siste år
+}
+
+interface Entity {
+  id: string; // key
+  name: string;
+  entityType: EntityType;
+  countryCode: string | null;
+  birthYear: number | null;
+  orgnr: string | null; // hvis selskap
+}
+
+interface Holding {
+  companyOrgnr: string;
+  holderId: string; // Entity.id (ekey)
+  shareClass: string | null;
+  shares: number;
+  year: number;
+}
+
+// --------------------------------------
+// Hjelpere
+// --------------------------------------
+
+// Demo-vern mot kjempestore filer i nettleser
+const FILE_STREAM_THRESHOLD_MB = 8; // over dette stopper vi import i Canvas-demoen
+
+const normalizeHeader = (h: string) =>
+  h
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+
+const numOrNull = (v: any) => {
+  if (v == null || v === "") return null;
+  const s = String(v).replace(/[\s.,]/g, (m) => (m === "," ? "." : ""));
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
+
+const onlyDigits = (s: any) => String(s || "").replace(/\D/g, "");
+const onlyDigits9 = (s: any) => onlyDigits(s).slice(0, 9);
+
+// Normaliser aksjeklasse-navn til konsise etiketter (A, B, C, ORDINÆR, PREF, ISIN/annet)
+function normalizeClassName(input: string): string {
+  const raw = (input || "").toString().trim();
+  if (!raw) return "";
+  // Uppercase + fjern diakritikk for robust matching
+  const U = raw
+    .toUpperCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  // Vanlige mønstre: "A-aksjer", "B aksjer", "AKSJEKLASSE C", "CLASS D"
+  const letter = U.match(/\b([ABCDEF])\b(?:\s*[- ]?\s*(AKSJER|SHARES|AKSJEKLASSE|CLASS|CL))?/);
+  if (letter) return letter[1];
+
+  // Ordinær / stam / common
+  if (/\bORDIN[AER]|\bSTAM|\bCOMMON/.test(U)) return "ORDINÆR";
+
+  // Preferanse
+  if (/\bPREF(ERANSE)?|\bPREFERRED/.test(U)) return "PREF";
+
+  // Hvis det ser ut som ISIN (NO00…): behold som er
+  if (/\bNO\d{9}\d?\b/.test(U) || /ISIN/.test(U)) return raw.trim();
+
+  // Fjern generiske ord og returner det som står igjen som label
+  let cleaned = U.replace(/AKSJER|AKSJE|AKSJEKLASSE|CLASS|CL|SHARES/g, "").trim();
+  cleaned = cleaned.replace(/[-_/]/g, " ").trim();
+  if (!cleaned) return "ORDINÆR"; // fall-back
+  return cleaned;
+}
+
+const fmt = (n: number | null | undefined) => (n == null ? "—" : new Intl.NumberFormat("no-NO").format(n));
+
+// --------------------------------------
+// Demo seed (vis noe før import)
+// --------------------------------------
+
+const seedRows = [
+  // Orgnr;Selskap;Aksjeklasse;Navn aksjonær;Fødselsår/orgnr;Postnr/sted;Landkode;Antall aksjer;Antall aksjer selskap
+  {
+    orgnr: "999999999",
+    selskap: "Acme AS",
+    aksjeklasse: "A-aksjer",
+    navn_aksjonaer: "Holding AS",
+    fodselsar_orgnr: "888888888",
+    landkode: "NOR",
+    antall_aksjer: 600,
+    antall_aksjer_selskap: 1000,
+  },
+  {
+    orgnr: "999999999",
+    selskap: "Acme AS",
+    aksjeklasse: "A-aksjer",
+    navn_aksjonaer: "Ola Nordmann",
+    fodselsar_orgnr: "1980",
+    landkode: "NOR",
+    antall_aksjer: 400,
+    antall_aksjer_selskap: 1000,
+  },
+  {
+    orgnr: "777777777",
+    selskap: "Sub AS",
+    aksjeklasse: "A-aksjer",
+    navn_aksjonaer: "Holding AS",
+    fodselsar_orgnr: "888888888",
+    landkode: "NOR",
+    antall_aksjer: 800,
+    antall_aksjer_selskap: 1000,
+  },
+  {
+    orgnr: "888888888",
+    selskap: "Holding AS",
+    aksjeklasse: "A-aksjer",
+    navn_aksjonaer: "Storstiftelsen",
+    fodselsar_orgnr: "1990",
+    landkode: "NOR",
+    antall_aksjer: 1000,
+    antall_aksjer_selskap: 1000,
+  },
+];
+
+// Valgfri demo-metadata for selskaper
+const seedMetaRows = [
+  { orgnr: "999999999", bransjekode: "62.01", bransje: "Programmering", styreleder: "Randi R. Styreleder", daglig_leder: "Ola Nordmann", poststed: "Oslo", ansatte: 10, omsetning: 93096 },
+  { orgnr: "888888888", bransjekode: "64.20", bransje: "Holdingselskaper", styreleder: "Per P. Styre", daglig_leder: "Kari Daglig", poststed: "Bergen", ansatte: 2, omsetning: 1200 },
+  { orgnr: "777777777", bransjekode: "62.09", bransje: "Annen IT-virksomhet", styreleder: "N.N.", daglig_leder: "N.N.", poststed: "Stavanger", ansatte: 4, omsetning: 2200 },
+];
+
+// --------------------------------------
+// Hovedkomponent
+// --------------------------------------
+
+export default function AksjonaerregisterGUI() {
+  // "Database" i minnet
+  const [companies, setCompanies] = useState<Map<string, Company>>(new Map());
+  const [entities, setEntities] = useState<Map<string, Entity>>(new Map());
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+
+  // UI state
+  const [encoding, setEncoding] = useState<"AUTO" | "UTF-8" | "CP1252">("AUTO");
+  const [year, setYear] = useState<number>(2024); // Regnskapsår (statisk per datasett)
+  const [delimiter, setDelimiter] = useState<string>(";");
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Søk
+  const [q, setQ] = useState("");
+
+  // Graf / UI
+  const [graphOrgnr, setGraphOrgnr] = useState("999999999");
+  const [direction, setDirection] = useState<"up" | "down" | "both">("both");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showAllOwners, setShowAllOwners] = useState<Set<string>>(new Set());
+  const TOP_OWNERS_DEFAULT = 50;
+  const [depth, setDepth] = useState<number>(3);
+
+  // Hover/klikk info (for tooltip + detaljpanel)
+  const graphBoxRef = useRef<HTMLDivElement | null>(null);
+  const [hoverNode, setHoverNode] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [panelNodeId, setPanelNodeId] = useState<string | null>(null);
+
+  // Init med seed
+  useEffect(() => {
+    if (companies.size === 0 && entities.size === 0 && holdings.length === 0) {
+      importRows(seedRows, year);
+      importMetaRows(seedMetaRows);
+      runSelfTests();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Importlogikk: normaliser rader og fyll datastrukturene
+  function importRows(rows: any[], importYear: number) {
+    const nextCompanies = new Map(companies);
+    const nextEntities = new Map(entities);
+    const nextHoldings: Holding[] = [...holdings];
+
+    const getEntityKey = (org: string | null, name: string, birthYear: number | null) =>
+      org ? `org:${org}` : `p:${name.toUpperCase()}:${birthYear ?? ""}`;
+
+    for (const raw of rows) {
+      const org = onlyDigits(raw.orgnr);
+      if (!org) continue;
+
+      const companyName = (raw.selskap ?? org).toString().trim();
+      const totalShares = numOrNull(raw.antall_aksjer_selskap);
+
+      if (!nextCompanies.has(org)) {
+        nextCompanies.set(org, {
+          orgnr: org,
+          name: companyName,
+          totalShares: totalShares,
+          year: importYear,
+        });
+      } else if (totalShares && !nextCompanies.get(org)!.totalShares) {
+        nextCompanies.set(org, { ...nextCompanies.get(org)!, totalShares });
+      }
+
+      const holderName = (raw.navn_aksjonaer ?? raw.navn_aksjonar ?? raw.navn_aksjonaer_ ?? "Ukjent").toString().trim();
+      const holderIdVal = onlyDigits(raw.fodselsar_orgnr);
+      const land = (raw.landkode ?? "").toString().trim().toUpperCase() || null;
+
+      let entityType: EntityType = "person";
+      let holderOrgnr: string | null = null;
+      let birthYear: number | null = null;
+      if (/^\d{9}$/.test(holderIdVal)) {
+        entityType = "company";
+        holderOrgnr = holderIdVal;
+      } else if (/^\d{4}$/.test(holderIdVal)) {
+        birthYear = Number(holderIdVal);
+      }
+
+      const eKey = getEntityKey(holderOrgnr, holderName, birthYear);
+      if (!nextEntities.has(eKey)) {
+        nextEntities.set(eKey, {
+          id: eKey,
+          name: holderName || holderOrgnr || "Ukjent",
+          entityType,
+          orgnr: holderOrgnr,
+          birthYear,
+          countryCode: land,
+        });
+      }
+
+      const shares = Number(numOrNull(raw.antall_aksjer) ?? 0);
+      const shareClassRaw = (raw.aksjeklasse ?? "").toString();
+      const shareClass = normalizeClassName(shareClassRaw) || null;
+      if (shares > 0) {
+        // sjekk om holding finnes – hvis samme nøkkel, oppdater
+        const exists = nextHoldings.find(
+          (h) => h.companyOrgnr === org && h.holderId === eKey && h.shareClass === shareClass && h.year === importYear
+        );
+        if (!exists) {
+          nextHoldings.push({
+            companyOrgnr: org,
+            holderId: eKey,
+            shareClass,
+            shares,
+            year: importYear,
+          });
+        }
+      }
+    }
+
+    setCompanies(nextCompanies);
+    setEntities(nextEntities);
+    setHoldings(nextHoldings);
+    setToast(`Importert ${rows.length} rader for ${importYear}.`);
+  }
+
+  // Import – metadata per selskap (bransjekode, styreleder, daglig leder m.m.)
+  function importMetaRows(rows: any[]) {
+    const next = new Map(companies);
+    for (const raw of rows) {
+      const org = onlyDigits(raw.orgnr);
+      if (!org || !next.has(org)) continue;
+      const c = { ...next.get(org)! } as Company;
+      const pick = (obj: any, keys: string[]) => keys.find((k) => obj[k] != null && obj[k] !== "")?.toString();
+      c.industryCode = pick(raw, ["bransjekode", "nace", "naeringskode"]) ?? c.industryCode ?? null;
+      c.industry = pick(raw, ["bransje", "naeringskode_beskrivelse"]) ?? c.industry ?? null;
+      c.boardChair = pick(raw, ["styreleder", "styrets_leder"]) ?? c.boardChair ?? null;
+      c.ceo = pick(raw, ["daglig_leder", "ceo"]) ?? c.ceo ?? null;
+      c.city = pick(raw, ["poststed", "postnr_sted", "by"]) ?? c.city ?? null;
+      c.employees = (numOrNull(pick(raw, ["ansatte", "antall_ansatte"])) as number | null) ?? c.employees ?? null;
+      c.revenue = (numOrNull(pick(raw, ["omsetning", "omsetning_2024", "revenue"])) as number | null) ?? c.revenue ?? null;
+      next.set(org, c);
+    }
+    setCompanies(next);
+    setToast(`Metadata oppdatert for ${rows.length} rader.`);
+  }
+
+  async function handleMetaFile(file: File | null) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const { text } = await readFileSmart(file, encoding);
+      const parsed = Papa.parse(text, { header: true, delimiter, skipEmptyLines: true, transformHeader: normalizeHeader });
+      importMetaRows(parsed.data as any[]);
+    } catch (e: any) {
+      setToast(`Metadata-import feilet: ${e?.message ?? e}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleFile(file: File | null) {
+    if (!file) return;
+    setBusy(true);
+    setToast(null);
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > FILE_STREAM_THRESHOLD_MB) {
+      setToast(`Filstørrelse ${sizeMB.toFixed(1)} MB er for stor for Canvas-demo (grense ${FILE_STREAM_THRESHOLD_MB} MB).\nBruk serverimporten (Supabase Storage + Edge Function) for full import.`);
+      setBusy(false);
+      return;
+    }
+    try {
+      const { text, detected } = await readFileSmart(file, encoding);
+      const parsed = Papa.parse(text, {
+        header: true,
+        delimiter,
+        skipEmptyLines: true,
+        transformHeader: normalizeHeader,
+      });
+
+      // map fleksible headere til vårt schema (robust mot mis-dekoding)
+      const mapped = (parsed.data as any[]).map((r) => {
+        const pick = (obj: any, keys: string[]) => keys.find((k) => obj[k] != null && obj[k] !== "")?.toString();
+        return {
+          orgnr: pick(r, ["orgnr", "orgnummer"]) ?? r.orgnr,
+          selskap: r.selskap ?? r.selskap_navn,
+          aksjeklasse: pick(r, ["aksjeklasse", "isin", "aksje_klasse"]) ?? r.aksjeklasse,
+          navn_aksjonaer: pick(r, ["navn_aksjonaer", "navn_aksjonaer_", "navn_aksjonar", "navn_aksjonaer__", "navn_aksjonær", "navn_aksjonÃ¦r", "navn_aksjon_r", "navn_aksjon__r"]) ?? r.navn_aksjonaer,
+          fodselsar_orgnr: pick(r, ["fodselsar_orgnr", "fodselsaar_orgnr", "foedselsaar_orgnr", "foedselsnr_orgnr", "fødselsår_orgnr", "f_dsels_r_orgnr", "f_dsels_r"]) ?? r.fodselsar_orgnr,
+          landkode: pick(r, ["landkode", "land_kode", "country"]) ?? r.landkode,
+          antall_aksjer: pick(r, ["antall_aksjer", "antall_aksjer_", "antall_aksjer_jsa"]) ?? r.antall_aksjer,
+          antall_aksjer_selskap: pick(r, ["antall_aksjer_selskap", "antall_aksjer_totalt"]) ?? r.antall_aksjer_selskap,
+          // Mulig embedded metadata i samme fil
+          bransjekode: pick(r, ["bransjekode", "nace", "naeringskode"]) ?? undefined,
+          bransje: pick(r, ["bransje", "naeringskode_beskrivelse"]) ?? undefined,
+          styreleder: pick(r, ["styreleder", "styrets_leder"]) ?? undefined,
+          daglig_leder: pick(r, ["daglig_leder", "ceo"]) ?? undefined,
+          poststed: pick(r, ["poststed", "postnr_sted"]) ?? undefined,
+          ansatte: pick(r, ["ansatte", "antall_ansatte"]) ?? undefined,
+          omsetning: pick(r, ["omsetning", "omsetning_2024"]) ?? undefined,
+        };
+      });
+
+      importRows(mapped, year);
+      const metaCandidates = mapped.filter((m: any) => m.bransjekode || m.bransje || m.styreleder || m.daglig_leder);
+      if (metaCandidates.length) importMetaRows(metaCandidates);
+      if (detected) setToast(`Import OK (${mapped.length} rader) – oppdaget ${detected}.`);
+    } catch (e: any) {
+      setToast(`Import feilet: ${e?.message ?? e}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Les fil som tekst – med autodeteksjon av encoding
+  async function readFileSmart(file: File, enc: "AUTO"|"UTF-8"|"CP1252"): Promise<{ text: string; detected: "UTF-8"|"CP1252" }> {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    const decode = (e: string) => {
+      try { return new TextDecoder(e as any).decode(bytes); } catch { try { return new TextDecoder('iso-8859-1').decode(bytes);} catch { return ''; } }
+    };
+    let detected: "UTF-8"|"CP1252" = "UTF-8";
+    let text = '';
+    if (enc === 'AUTO') {
+      // BOM?
+      if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        detected = 'UTF-8'; text = decode('utf-8');
+      } else {
+        const utf = decode('utf-8');
+        const cp = decode('windows-1252');
+        const bad = (s: string) => (s.match(/[Ã�]/g) || []).length; // typiske mojibake-tegn
+        if (bad(utf) > bad(cp)) { detected = 'CP1252'; text = cp; } else { detected = 'UTF-8'; text = utf; }
+      }
+    } else if (enc === 'UTF-8') { detected = 'UTF-8'; text = decode('utf-8'); }
+    else { detected = 'CP1252'; text = decode('windows-1252'); }
+    return { text, detected };
+  }
+
+  // --------------------------------------
+  // Søk
+  // --------------------------------------
+
+  const searchResults = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    if (!ql) return { companies: [], entities: [] } as { companies: Company[]; entities: Entity[] };
+    const qDigits = onlyDigits(q);
+    const comp = Array.from(companies.values()).filter(
+      (c) => (qDigits && c.orgnr === qDigits) || c.name.toLowerCase().includes(ql)
+    );
+    const ents = Array.from(entities.values()).filter((e) =>
+      (e.orgnr && qDigits && e.orgnr === qDigits) || e.name.toLowerCase().includes(ql)
+    );
+    return { companies: comp.slice(0, 20), entities: ents.slice(0, 20) };
+  }, [q, companies, entities]);
+
+  // Dynamiske kolonner for aksjeklasser (basert på aktive treff eller hele datasettet)
+  const activeClassCols = useMemo(() => {
+    const targetOrgs = (searchResults.companies.length > 0 ? searchResults.companies.map(c => c.orgnr) : Array.from(companies.keys()));
+    const set = new Set<string>();
+    holdings.forEach(h => {
+      if (targetOrgs.includes(h.companyOrgnr) && h.year === year) {
+        const cls = (h.shareClass || 'ORDINÆR').toUpperCase();
+        set.add(cls);
+      }
+    });
+    const arr = Array.from(set);
+    arr.sort((a,b) => {
+      if (a === 'ORDINÆR' && b !== 'ORDINÆR') return -1; if (b === 'ORDINÆR' && a !== 'ORDINÆR') return 1; return a.localeCompare(b, 'no');
+    });
+    return arr;
+  }, [searchResults.companies, companies, holdings, year]);
+
+  // Tilleggsdata for UI (selskap-liste og validering)
+  const companyList = useMemo(() => {
+    return Array.from(companies.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [companies]);
+
+  const invalidRoot = useMemo(() => {
+    if (graphOrgnr.length !== 9) return true; // enkel 9-siffer sjekk
+    return !companies.has(graphOrgnr);
+  }, [graphOrgnr, companies]);
+
+  // --------------------------------------
+  // Eiergraf (BFS)
+  // --------------------------------------
+
+  type RFNode = { id: string; data: { label: string }; position: { x: number; y: number }; style?: any };
+  type RFEdge = { id: string; source: string; target: string; label?: string };
+
+  const graph = useMemo(() => {
+    const nodes = new Map<string, { id: string; data: { label: string; kind: 'company'|'person'; orgnr?: string|null }; position: { x: number; y: number }; style?: any }>();
+    const edges: { id: string; source: string; target: string; label?: string; style?: any }[] = [];
+
+    const addNode = (id: string, label: string, kind: 'company'|'person', orgnr?: string|null) => {
+      if (!nodes.has(id)) nodes.set(id, { id, data: { label, kind, orgnr }, position: { x: 0, y: 0 }, style: { borderRadius: 12, padding: 8, background: kind === 'person' ? 'var(--muted)' : undefined } });
+    };
+    const addEdge = (source: string, target: string, label?: string, weight = 1) => {
+      const id = `${source}->${target}`;
+      if (!edges.find(e => e.id === id)) edges.push({ id, source, target, label, style: { strokeWidth: Math.min(8, 1 + weight * 4) } });
+    };
+
+    const root = companies.get(graphOrgnr);
+    if (!root) return { nodes: [], edges: [] } as any;
+    addNode(`org:${root.orgnr}`, `${root.name} (${root.orgnr})`, 'company', root.orgnr);
+
+    const seenUp = new Set<string>();
+    const seenDown = new Set<string>();
+
+    const ownersOf = (org: string) => holdings.filter(h => h.companyOrgnr === org && h.year === year).map(h => ({ h, holder: entities.get(h.holderId)! }));
+    const companiesOwnedBy = (org: string) => {
+      const e = Array.from(entities.values()).find(x => x.orgnr === org);
+      if (!e) return [] as { h: Holding; comp: Company }[];
+      return holdings
+        .filter(h => h.holderId === e.id && h.year === year)
+        .map(h => ({ h, comp: companies.get(h.companyOrgnr)! }))
+        .filter(x => !!x.comp);
+    };
+
+    const total = (org: string) => companies.get(org)?.totalShares ?? null;
+
+    const layers = new Map<number, string[]>();
+    const pushToLayer = (depthIdx: number, id: string) => {
+      const arr = layers.get(depthIdx) ?? [];
+      if (!arr.includes(id)) arr.push(id);
+      layers.set(depthIdx, arr);
+    };
+    pushToLayer(0, `org:${root.orgnr}`);
+
+    if (direction === 'up' || direction === 'both') {
+      let frontier = [graphOrgnr];
+      for (let d = 1; d <= depth; d++) {
+        const next: string[] = [];
+        for (const org of frontier) {
+          for (const { h, holder } of ownersOf(org)) {
+            const nid = holder.orgnr ? `org:${holder.orgnr}` : holder.id;
+            addNode(nid, holder.orgnr ? `${holder.name} (${holder.orgnr})` : holder.name, holder.orgnr ? 'company' : 'person', holder.orgnr);
+            addNode(`org:${org}`, `${companies.get(org)?.name ?? org} (${org})`, 'company', org);
+            const t = total(org);
+            const w = t ? h.shares / t : 0.1;
+            addEdge(nid, `org:${org}`, t ? `${((h.shares/t)*100).toFixed(2)}%` : `${h.shares}`, w);
+            if (holder.orgnr) next.push(holder.orgnr);
+            pushToLayer(-d, nid);
+          }
+        }
+        frontier = Array.from(new Set(next.filter(x => !seenUp.has(x))));
+        frontier.forEach(x => seenUp.add(x));
+      }
+    }
+
+    if (direction === 'down' || direction === 'both') {
+      let frontier = [graphOrgnr];
+      for (let d = 1; d <= depth; d++) {
+        const next: string[] = [];
+        for (const org of frontier) {
+          for (const { h, comp: child } of companiesOwnedBy(org)) {
+            addNode(`org:${child.orgnr}`, `${child.name} (${child.orgnr})`, 'company', child.orgnr);
+            addNode(`org:${org}`, `${companies.get(org)?.name ?? org} (${org})`, 'company', org);
+            const t = child.totalShares;
+            const w = t ? h.shares / t : 0.1;
+            addEdge(`org:${org}`, `org:${child.orgnr}`, t ? `${((h.shares/t)*100).toFixed(2)}%` : `${h.shares}`, w);
+            next.push(child.orgnr);
+            pushToLayer(d, `org:${child.orgnr}`);
+          }
+        }
+        frontier = Array.from(new Set(next.filter(x => !seenDown.has(x))));
+        frontier.forEach(x => seenDown.add(x));
+      }
+    }
+
+    const ns = Array.from(nodes.values());
+    const layerKeys = Array.from(new Set<number>(Array.from(layers.keys()).sort((a,b)=>a-b)));
+    const xStep = 260; const yStep = 120;
+    layerKeys.forEach((layerIdx, col) => {
+      const nodeIds = layers.get(layerIdx)!;
+      nodeIds.forEach((id, row) => { const n = nodes.get(id); if (n) n.position = { x: (col + depth) * xStep, y: row * yStep }; });
+    });
+
+    return { nodes: ns, edges };
+  }, [companies, entities, holdings, graphOrgnr, direction, depth, year]);
+
+  // --------------------------------------
+  // Hjelpere (node → selskap + tellinger)
+  const getCompanyByNodeId = (id: string) => {
+    if (!id.startsWith('org:')) return null;
+    const org = id.split(':')[1];
+    return companies.get(org) ?? null;
+  };
+  const ownersCount = (org: string) => holdings.filter((h) => h.companyOrgnr === org && h.year === year).length;
+  const childrenCount = (org: string) => {
+    const e = Array.from(entities.values()).find((x) => x.orgnr === org);
+    if (!e) return 0;
+    return holdings.filter((h) => h.holderId === e.id && h.year === year).length;
+  };
+  const classStats = (org: string) => {
+    const stats: Record<string, { owners: number; shares: number }> = {};
+    holdings
+      .filter((h) => h.companyOrgnr === org && h.year === year)
+      .forEach((h) => {
+        const key = (h.shareClass || 'ORDINÆR').toUpperCase();
+        if (!stats[key]) stats[key] = { owners: 0, shares: 0 };
+        stats[key].owners += 1;
+        stats[key].shares += h.shares;
+      });
+    return stats;
+  };
+
+  // Pivot: eiere pr. selskap (én rad per eier, kolonner pr. aksjeklasse)
+  const holdersPivot = (org: string) => {
+    const byHolder = new Map<string, { name: string; type: 'person'|'company'; orgnr: string|null; birthYear: number|null; country: string|null; total: number; perClass: Record<string, number> }>();
+    const totalShares = companies.get(org)?.totalShares ?? null;
+    holdings.filter(h => h.companyOrgnr === org && h.year === year).forEach(h => {
+      const ent = entities.get(h.holderId);
+      if (!ent) return;
+      const key = h.holderId;
+      if (!byHolder.has(key)) {
+        byHolder.set(key, { name: ent.name, type: ent.entityType, orgnr: ent.orgnr, birthYear: ent.birthYear, country: ent.countryCode, total: 0, perClass: {} });
+      }
+      const row = byHolder.get(key)!;
+      const cls = (h.shareClass || 'ORDINÆR').toUpperCase();
+      row.perClass[cls] = (row.perClass[cls] || 0) + h.shares;
+      row.total += h.shares;
+    });
+    const rows = Array.from(byHolder.values()).sort((a,b) => b.total - a.total).map(r => ({ ...r, pct: totalShares ? (r.total/totalShares)*100 : null }));
+    return rows;
+  };
+
+  function downloadCsv(filename: string, csv: string) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function ownersToCsv(companyOrgnr: string, classCols: string[], rows: ReturnType<typeof holdersPivot>) {
+    const header = ['Navn','Org/Født','Type','Land','Sum', ...classCols, 'Andel %'];
+    const lines = [header.join(';')];
+    rows.forEach(r => {
+      const cols = [
+        r.name,
+        r.orgnr ?? (r.birthYear ?? ''),
+        r.type === 'company' ? 'Selskap' : 'Person',
+        r.country ?? '',
+        String(r.total),
+        ...classCols.map(k => String(r.perClass[k] || 0)),
+        r.pct != null ? r.pct.toFixed(4) : ''
+      ];
+      lines.push(cols.map(c => (typeof c === 'string' && c.includes(';')) ? '"' + String(c).replace(/"/g,'""') + '"' : String(c)).join(';'));
+    });
+    const filename = 'aksjonaerer_' + companyOrgnr + '.csv';
+    return { filename, csv: lines.join('\n') };
+  }
+
+  // Synkroniser rot med valgbar liste
+  useEffect(() => {
+    const list = companyList;
+    if (list.length > 0 && invalidRoot) {
+      setGraphOrgnr(list[0].orgnr);
+    }
+  }, [companyList, invalidRoot]);
+
+  // Små "test cases" for demoen (console.assert)
+  function runSelfTests() {
+    // 1) companies map bør eksistere
+    console.assert(typeof companies === 'object', 'SelfTest: companies map exists');
+    // 2) Etter demodata bør vi kunne finne minst ett selskap ved navnesøk (acme)
+    const acme = Array.from(companies.values()).find(c => c.name.toLowerCase().includes('acme'));
+    if (!acme) console.warn('SelfTest: Fant ikke Acme i demodata (ok hvis du ikke lastet demodata).');
+    // 3) Sjekk at sum av klasser ~ totalShares for Acme
+    if (acme) {
+      const cs = classStats(acme.orgnr);
+      const sum = Object.values(cs).reduce((acc, v) => acc + (v?.shares || 0), 0);
+      if (acme.totalShares != null) console.assert(sum === acme.totalShares, `SelfTest: Sum av klasser (${sum}) != totalShares (${acme.totalShares}) for ${acme.name}`);
+    }
+  }
+
+  // --------------------------------------
+  // UI – Cards
+  // --------------------------------------
+
+  return (
+    <div className="mx-auto max-w-7xl p-6 space-y-6">
+      <Header />
+
+      {/* Import */}
+      <Card title="Aksjonærregister: Import" icon={<Upload className="w-4 h-4" /> }>
+        <div className="grid gap-4 md:grid-cols-6 items-end">
+          <div className="space-y-1">
+            <Label>Regnskapsår</Label>
+            <Select value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
+              {[2023, 2024, 2025].map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Skilletegn</Label>
+            <Select value={delimiter} onChange={(e) => setDelimiter(e.target.value)}>
+              <option value="," >Komma (,)</option>
+              <option value=";">Semikolon (;)</option>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Tegnkoding</Label>
+            <Select value={encoding} onChange={(e) => setEncoding(e.target.value as any)}>
+              <option value="AUTO">Auto (anbefalt)</option>
+              <option value="CP1252">Windows-1252</option>
+              <option value="UTF-8">UTF-8</option>
+            </Select>
+          </div>
+          <div className="space-y-1 md:col-span-3">
+            <Label>CSV – aksjonærlinjer</Label>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground hover:file:opacity-90"
+            />
+            <p className="text-xs text-muted-foreground">Begrensning i denne demoen: maks {FILE_STREAM_THRESHOLD_MB} MB per fil. Bruk serverimport for store CSV-er.</p>
+          </div>
+          <div className="space-y-1 md:col-span-3">
+            <Label>Metadata-CSV (valgfri)</Label>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => handleMetaFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:bg-secondary file:text-secondary-foreground hover:file:opacity-90"
+            />
+            <p className="text-xs text-muted-foreground">Tips: liten fil med bransjekode, styreleder, daglig leder osv. Knyttes på orgnr.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 pt-3">
+          <Button disabled={busy} onClick={() => { const y = year; setCompanies(new Map()); setEntities(new Map()); setHoldings([]); importRows(seedRows, y); importMetaRows(seedMetaRows); setGraphOrgnr('999999999'); runSelfTests(); }}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Last demo-data
+          </Button>
+          {toast && <div className="text-sm text-muted-foreground">{toast}</div>}
+        </div>
+      </Card>
+
+      {/* Søk */}
+      <Card title="Søk i Aksjonærregister" icon={<Search className="w-4 h-4" /> }>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <Input placeholder="Søk på firmanavn eller orgnr…" value={q} onChange={(e) => setQ(e.target.value)} className="flex-1" />
+          <Button onClick={() => setQ(q.trim())}>Søk</Button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <div className="font-semibold mb-2">Selskaper</div>
+            {(() => {
+              const headers = ["", "Navn", "Orgnr", "Tot. aksjer", "Sum", ...activeClassCols, "Bransje", "År"] as (string|React.ReactNode)[];
+              const rows = searchResults.companies.map((c) => {
+                const cs = classStats(c.orgnr);
+                const sum = Object.values(cs).reduce((acc, v) => acc + (v?.shares || 0), 0);
+                const classCells = activeClassCols.map((k) => fmt(cs[k]?.shares || 0));
+                const isExp = expanded.has(c.orgnr);
+                const chevron = isExp ? <ChevronDown className="w-4 h-4 text-muted-foreground"/> : <ChevronRight className="w-4 h-4 text-muted-foreground"/>;
+                return [chevron, c.name, c.orgnr, fmt(c.totalShares ?? null), fmt(sum), ...classCells, c.industry ?? c.industryCode ?? "—", c.year];
+              });
+              return (
+                <Table
+                  headers={headers}
+                  rows={rows}
+                  rowKeys={searchResults.companies.map(c => c.orgnr)}
+                  expandedKeys={expanded}
+                  renderExpandedRow={(key) => {
+                    const c = companies.get(key)!;
+                    const all = holdersPivot(key);
+                    const isAll = showAllOwners.has(key);
+                    const shown = isAll ? all : all.slice(0, TOP_OWNERS_DEFAULT);
+                    return (
+                      <div className="p-2 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium">Aksjonærer i {c?.name}</div>
+                          <div className="ml-auto flex items-center gap-2">
+                            {!isAll && all.length > TOP_OWNERS_DEFAULT && (
+                              <Button className="h-8 px-2" onClick={() => { const next = new Set(showAllOwners); next.add(key); setShowAllOwners(next); }}>Vis alle ({all.length})</Button>
+                            )}
+                            {isAll && (
+                              <Button className="h-8 px-2" onClick={() => { const next = new Set(showAllOwners); next.delete(key); setShowAllOwners(next); }}>Vis færre</Button>
+                            )}
+                            <Button className="h-8 px-2" onClick={() => { const { filename, csv } = ownersToCsv(key, activeClassCols, all); downloadCsv(filename, csv); }}>
+                              <Download className="w-4 h-4 mr-1"/> Eksporter CSV
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="overflow-auto rounded border">
+                          <table className="min-w-full text-xs">
+                            <thead>
+                              <tr className="bg-muted/40">
+                                <th className="p-2 text-left">Navn</th>
+                                <th className="p-2 text-left">Org/Født</th>
+                                <th className="p-2 text-left">Type</th>
+                                <th className="p-2 text-left">Land</th>
+                                <th className="p-2 text-right">Sum</th>
+                                {activeClassCols.map((k) => <th key={k} className="p-2 text-right">{k}</th>)}
+                                <th className="p-2 text-right">Andel %</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {shown.map((r, idx) => (
+                                <tr key={idx} className="border-t">
+                                  <td className="p-2">{r.name}</td>
+                                  <td className="p-2">{r.orgnr ?? r.birthYear ?? '—'}</td>
+                                  <td className="p-2">{r.type === 'company' ? 'Selskap' : 'Person'}</td>
+                                  <td className="p-2">{r.country ?? '—'}</td>
+                                  <td className="p-2 text-right">{fmt(r.total)}</td>
+                                  {activeClassCols.map(k => <td key={k} className="p-2 text-right">{fmt(r.perClass[k] || 0)}</td>)}
+                                  <td className="p-2 text-right">{r.pct != null ? r.pct.toFixed(2) + '%' : '—'}</td>
+                                </tr>
+                              ))}
+                              {shown.length === 0 && (
+                                <tr><td className="p-2 text-muted-foreground" colSpan={5 + activeClassCols.length + 1}>Ingen eiere funnet.</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  }}
+                  onRowClick={(_, i) => { const key = searchResults.companies[i].orgnr; setGraphOrgnr(key); const next = new Set(expanded); if (next.has(key)) next.delete(key); else next.add(key); setExpanded(next); document.getElementById('ownership-graph')?.scrollIntoView({ behavior: 'smooth' }); }}
+                />
+              );
+            })()}
+          </div>
+          <div>
+            <div className="font-semibold mb-2">Aksjonærer</div>
+            <Table
+              headers={["Navn", "Org/Født", "Type", "Land"]}
+              rows={searchResults.entities.map((e) => [e.name, e.orgnr ?? e.birthYear ?? "—", e.entityType === "company" ? "Selskap" : "Person", e.countryCode ?? "—"])}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Graf */}
+      <div id="ownership-graph" />
+      <Card title="Eierstruktur" icon={<Network className="w-4 h-4" /> }>
+        <div className="flex flex-wrap gap-3 items-end mb-3">
+          <div className="space-y-1">
+            <Label>Orgnr (rot)</Label>
+            <Input value={graphOrgnr} placeholder="9 siffer, f.eks. 999999999" onChange={(e) => setGraphOrgnr(onlyDigits9(e.target.value))} className="w-48" />
+            {invalidRoot && (<p className="text-xs text-destructive">Ugyldig/ukjent orgnr – velg fra listen ved siden av.</p>)}
+          </div>
+          <div className="space-y-1">
+            <Label>Velg selskap</Label>
+            <Select value={graphOrgnr} onChange={(e) => setGraphOrgnr(e.target.value)}>
+              {companyList.length === 0 && <option value="" disabled>Ingen selskaper tilgjengelig – trykk «Last demo-data»</option>}
+              {companyList.map((c) => (
+                <option key={c.orgnr} value={c.orgnr}>{c.name} ({c.orgnr})</option>
+              ))}
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Retning</Label>
+            <Select value={direction} onChange={(e) => setDirection(e.target.value as any)}>
+              <option value="up">Oppstrøms (eiere)</option>
+              <option value="down">Nedstrøms (eide selskaper)</option>
+              <option value="both">Begge</option>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Dybde</Label>
+            <Select value={String(depth)} onChange={(e) => setDepth(Number(e.target.value))}>
+              {[1,2,3,4,5,6].map((d) => (
+                <option key={d} value={d}>{d} nivå</option>
+              ))}
+            </Select>
+          </div>
+          <Button onClick={() => setGraphOrgnr(graphOrgnr)}><Crosshair className="w-4 h-4 mr-2"/>Oppdater</Button>
+          <div className="flex flex-wrap gap-2">
+            {companyList.slice(0,6).map((c) => (
+              <button key={c.orgnr} onClick={() => setGraphOrgnr(c.orgnr)} className="px-2 py-1 rounded border text-xs hover:bg-muted" title={`Sett ${c.name} som rot`}>
+                {c.name} ({c.orgnr})
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded bg-muted"/> Person</div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded bg-background border"/> Selskap</div>
+          </div>
+        </div>
+        <div ref={graphBoxRef} className="relative h-[560px] border rounded bg-background">
+          <ReactFlow
+            nodes={graph.nodes}
+            edges={graph.edges}
+            fitView
+            onNodeMouseEnter={(e, node) => {
+              const box = graphBoxRef.current?.getBoundingClientRect();
+              if (!box) return;
+              setHoverNode({ id: node.id, x: e.clientX - box.left, y: e.clientY - box.top });
+            }}
+            onNodeMouseMove={(e, node) => {
+              const box = graphBoxRef.current?.getBoundingClientRect();
+              if (!box) return;
+              setHoverNode({ id: node.id, x: e.clientX - box.left, y: e.clientY - box.top });
+            }}
+            onNodeMouseLeave={() => setHoverNode(null)}
+            onNodeClick={(e, node) => { setPanelNodeId(node.id); }}
+          >
+            <MiniMap />
+            <Controls />
+            <Background />
+          </ReactFlow>
+
+          {graph.nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+              Ingen graf å vise. Velg et selskap i nedtrekkslisten, skriv et 9-sifret orgnr (f.eks. 999999999),
+              eller trykk «Last demo-data» øverst.
+            </div>
+          )}
+
+          {hoverNode && getCompanyByNodeId(hoverNode.id) && (
+            <div
+              className="absolute z-10 w-[320px] rounded-lg border bg-popover text-popover-foreground shadow"
+              style={{ left: Math.min(hoverNode.x + 12, (graphBoxRef.current?.clientWidth || 0) - 340), top: Math.min(hoverNode.y + 12, (graphBoxRef.current?.clientHeight || 0) - 160) }}
+            >
+              {(() => {
+                const c = getCompanyByNodeId(hoverNode.id)!;
+                return (
+                  <div className="p-3 text-sm">
+                    <div className="font-semibold mb-1">{c.name}</div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                      <span className="text-muted-foreground">Orgnr</span><span className="tabular-nums">{c.orgnr}</span>
+                      <span className="text-muted-foreground">Bransje</span><span>{c.industry ?? c.industryCode ?? '—'}</span>
+                      <span className="text-muted-foreground">Styrets leder</span><span>{c.boardChair ?? '—'}</span>
+                      <span className="text-muted-foreground">Daglig leder</span><span>{c.ceo ?? '—'}</span>
+                      <span className="text-muted-foreground">Ansatte</span><span>{c.employees ?? '—'}</span>
+                      <span className="text-muted-foreground">Omsetning</span><span>{c.revenue != null ? `${c.revenue} kNOK` : '—'}</span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-3">
+                      <span>{ownersCount(c.orgnr)} eiere</span>
+                      <span>•</span>
+                      <span>{childrenCount(c.orgnr)} eide selskaper</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
+                      {Object.entries(classStats(c.orgnr)).slice(0,3).map(([k,v]) => (
+                        <span key={k} className="px-1.5 py-0.5 rounded border">{k}: {v.owners}/{v.shares}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {panelNodeId && getCompanyByNodeId(panelNodeId) && (
+            <aside className="absolute right-0 top-0 h-full w-[360px] border-l bg-card p-4 shadow-xl">
+              {(() => {
+                const c = getCompanyByNodeId(panelNodeId)!;
+                return (
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-lg font-semibold leading-tight">{c.name}</div>
+                        <div className="text-sm text-muted-foreground">{c.orgnr}{c.city ? ` • ${c.city}` : ''}</div>
+                      </div>
+                      <button className="text-sm underline" onClick={() => setPanelNodeId(null)}>Lukk</button>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+                      <Row label="Bransje" value={c.industry ?? c.industryCode ?? '—'} />
+                      <Row label="Styrets leder" value={c.boardChair ?? '—'} />
+                      <Row label="Daglig leder" value={c.ceo ?? '—'} />
+                      <Row label="Ansatte" value={c.employees ?? '—'} />
+                      <Row label="Omsetning" value={c.revenue != null ? `${c.revenue} kNOK` : '—'} />
+                      <Row label="Totalt antall aksjer" value={c.totalShares ?? '—'} />
+                      <Row label="Antall eiere (direkte)" value={ownersCount(c.orgnr)} />
+                      <Row label="Antall selskaper eid" value={childrenCount(c.orgnr)} />
+                    </div>
+                    <div className="mt-3">
+                      <div className="text-sm font-medium mb-1">Aksjeklasser</div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(classStats(c.orgnr)).map(([k,v]) => (
+                          <span key={k} className="px-2 py-1 rounded border text-xs">{k}: {v.owners} eiere / {v.shares} aksjer</span>
+                        ))}
+                        {Object.keys(classStats(c.orgnr)).length === 0 && <span className="text-xs text-muted-foreground">Ingen klasser</span>}
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-4 flex items-center gap-2">
+                      <Button onClick={() => setGraphOrgnr(c.orgnr)} title="Sett valgt selskap som rot">Sett som rot</Button>
+                      <a className="ml-auto inline-flex items-center gap-1 text-sm underline" href={`https://www.proff.no/selskap/${c.orgnr}`} target="_blank" rel="noreferrer">
+                        Åpne i Proff <ExternalLink className="w-3 h-3"/>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })()}
+            </aside>
+          )}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground flex items-center gap-2"><Info className="w-3 h-3"/>Tips: Hold musepekeren over et selskap for kjapp nøkkelinfo. Klikk for detaljpanel og «Sett som rot».</p>
+      </Card>
+    </div>
+  );
+}
+
+// --------------------------------------
+// Små UI-byggesteiner (shadcn-inspirert)
+// --------------------------------------
+
+function Header() {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold">Aksjonærregister – demo</h1>
+        <p className="text-sm text-muted-foreground">Importer CSV, søk og visualiser eierstrukturer. All data ligger i minnet i denne demoen.</p>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border bg-card text-card-foreground shadow p-5">
+      <div className="flex items-center gap-2 mb-4">
+        {icon}
+        <h2 className="text-lg font-semibold">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="block text-sm text-muted-foreground">{children}</label>;
+}
+
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={
+        "h-9 w-full rounded-md border bg-background px-3 text-sm outline-none ring-0 focus-visible:ring-2 focus-visible:ring-primary/40 " +
+        (props.className ?? "")
+      }
+    />
+  );
+}
+
+function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className={
+        "h-9 w-full rounded-md border bg-background px-3 text-sm outline-none ring-0 focus-visible:ring-2 focus-visible:ring-primary/40 " +
+        (props.className ?? "")
+      }
+    >
+      {props.children}
+    </select>
+  );
+}
+
+function Button({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...rest}
+      className={
+        "inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 " +
+        (rest.className ?? "")
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function Table({ headers, rows, rowKeys, expandedKeys, renderExpandedRow, onRowClick }: { headers: (string | React.ReactNode)[]; rows: (React.ReactNode | string | number)[][]; rowKeys?: string[]; expandedKeys?: Set<string>; renderExpandedRow?: (key: string, index: number) => React.ReactNode; onRowClick?: (row: (React.ReactNode | string | number)[], index: number) => void }) {
+  return (
+    <div className="overflow-auto rounded-md border">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="bg-muted/40">
+            {headers.map((h, i) => (
+              <th key={i} className="text-left font-medium p-2 whitespace-nowrap">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={headers.length} className="p-3 text-muted-foreground">
+                Ingen treff.
+              </td>
+            </tr>
+          )}
+          {rows.map((r, i) => {
+            const key = rowKeys?.[i] ?? String(i);
+            const expanded = expandedKeys?.has(key);
+            return (
+              <React.Fragment key={key}>
+                <tr className={"border-t" + (onRowClick ? " hover:bg-muted cursor-pointer" : "")} onClick={() => onRowClick?.(r, i)}>
+                  {r.map((c, j) => (
+                    <td key={j} className="p-2 whitespace-nowrap">{c}</td>
+                  ))}
+                </tr>
+                {expanded && (
+                  <tr>
+                    <td className="p-0" colSpan={headers.length}>
+                      {renderExpandedRow?.(key, i)}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
