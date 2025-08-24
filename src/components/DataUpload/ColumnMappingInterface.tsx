@@ -180,28 +180,43 @@ const ColumnMappingInterface = ({
         autoMapping[column] = "customer_supplier_name";
       } else if (
         lowerColumn.includes("kontonummer") ||
-        lowerColumn.includes("accountno")
+        lowerColumn.includes("kontonr") ||
+        lowerColumn.includes("konto_nr") ||
+        lowerColumn.includes("account_number") ||
+        lowerColumn.includes("accountno") ||
+        lowerColumn.includes("account_no")
       ) {
         autoMapping[column] = "account_number";
       } else if (
         lowerColumn.includes("kontonavn") ||
-        lowerColumn.includes("accountname")
+        lowerColumn.includes("konto_navn") ||
+        lowerColumn.includes("account_name") ||
+        lowerColumn.includes("accountname") ||
+        lowerColumn.includes("account name")
       ) {
         autoMapping[column] = "account_name";
       } else if (
         lowerColumn.includes("mvakode") ||
+        lowerColumn.includes("mva_kode") ||
+        lowerColumn.includes("vat_code") ||
         (lowerColumn.includes("vat") && lowerColumn.includes("code"))
       ) {
         autoMapping[column] = "vat_code";
       } else if (
         lowerColumn.includes("mvabeløp") ||
+        lowerColumn.includes("mva_beløp") ||
+        lowerColumn.includes("mva_belop") ||
+        lowerColumn.includes("vat_amount") ||
         (lowerColumn.includes("vat") && lowerColumn.includes("amount"))
       ) {
         autoMapping[column] = "vat_amount";
       } else if (
         lowerColumn.includes("mvakodenavn") ||
         lowerColumn.includes("mva_kode_navn") ||
-        (lowerColumn.includes("vat") && lowerColumn.includes("code") && lowerColumn.includes("name"))
+        lowerColumn.includes("mvakode_navn") ||
+        lowerColumn.includes("vat_code_name") ||
+        (lowerColumn.includes("vat") && lowerColumn.includes("code") && lowerColumn.includes("name")) ||
+        (lowerColumn.includes("mva") && lowerColumn.includes("navn"))
       ) {
         autoMapping[column] = "vat_code_name";
       } else if (
