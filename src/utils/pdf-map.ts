@@ -24,6 +24,7 @@ interface MappedRow {
   netto?: number;
   mva_sats?: number;
   mva_belop?: number;
+  mva_kode_navn?: string;
   debet?: number;
   kredit?: number;
   valuta?: string;
@@ -67,6 +68,7 @@ export function mapRow(row: any): MappedRow {
     netto: ['netto', 'net', 'net_amount'],
     mva_sats: ['mva_sats', 'vat_rate', 'mva_prosent'],
     mva_belop: ['mva_belop', 'vat_amount', 'mva'],
+    mva_kode_navn: ['mva_kode_navn', 'vat_code_name', 'mvakodenavn'],
     debet: ['debet', 'debit'],
     kredit: ['kredit', 'credit'],
     valuta: ['valuta', 'currency'],

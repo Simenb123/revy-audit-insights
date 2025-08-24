@@ -100,6 +100,12 @@ const defaultFields: StandardField[] = [
     description: "Beløp på mva-linjene (0 på andre linjer)",
   },
   {
+    key: "vat_code_name",
+    label: "MVA-kodenavn",
+    required: false,
+    description: "Navn på MVA-koden (f.eks. 'Utgående høy sats 25%')",
+  },
+  {
     key: "amount",
     label: "Beløp",
     required: true,
@@ -192,6 +198,12 @@ const ColumnMappingInterface = ({
         (lowerColumn.includes("vat") && lowerColumn.includes("amount"))
       ) {
         autoMapping[column] = "vat_amount";
+      } else if (
+        lowerColumn.includes("mvakodenavn") ||
+        lowerColumn.includes("mva_kode_navn") ||
+        (lowerColumn.includes("vat") && lowerColumn.includes("code") && lowerColumn.includes("name"))
+      ) {
+        autoMapping[column] = "vat_code_name";
       } else if (
         lowerColumn.includes("beløp") ||
         lowerColumn.includes("amount")

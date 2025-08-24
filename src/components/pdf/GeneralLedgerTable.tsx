@@ -27,6 +27,7 @@ interface GeneralLedgerRow {
   netto?: number;
   mva_sats?: number;
   mva_belop?: number;
+  mva_kode_navn?: string;
   debet?: number;
   kredit?: number;
   valuta?: string;
@@ -216,6 +217,13 @@ export const GeneralLedgerTable: React.FC<GeneralLedgerTableProps> = ({
       sortable: true,
       align: 'right',
       format: (value) => value ? `${formatNumber(value, 0)}%` : '',
+    },
+    {
+      key: 'mva_kode_navn',
+      header: 'MVA-kodenavn',
+      accessor: 'mva_kode_navn',
+      sortable: true,
+      searchable: true,
     },
     {
       key: 'ordrenr',
