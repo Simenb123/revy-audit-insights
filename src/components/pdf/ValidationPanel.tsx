@@ -1,20 +1,27 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { BilagType } from '@/types/bilag';
+import { generateDebugFile } from '@/utils/debug-export';
 
 interface ValidationPanelProps {
   rows: any[];
   bilagGroups: Record<string, any[]>;
   detectedColumns: string[];
   mvaSatser: number[];
+  originalData?: any[];
+  columnMapping?: Record<string, string>;
 }
 
 export const ValidationPanel: React.FC<ValidationPanelProps> = ({
   rows,
   bilagGroups,
   detectedColumns,
-  mvaSatser
+  mvaSatser,
+  originalData,
+  columnMapping
 }) => {
   const typeDistribution = Object.values(bilagGroups).reduce((acc, group) => {
     // Simplified type detection for display
@@ -31,8 +38,51 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({
     return acc;
   }, {} as Record<BilagType, number>);
 
+  const handleDownloadDebugFile = async () => {
+    try {
+      await generateDebugFile({
+        originalData: originalData || [],
+        mappedData: rows,
+        columnMapping: columnMapping || {},
+        bilagGroups,
+        detectedColumns,
+        typeDistribution
+      });
+    } catch (error) {
+      console.error('Failed to generate debug file:', error);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-4">
+      {/* Debug Export Button */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            Debug & Feilsøking
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownloadDebugFile}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Last ned mappet hovedboksfil
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Laster ned Excel-fil med mappede kolonner for enkel feilsøking av bilagsgenerering
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Validation Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Rader</CardTitle>
@@ -95,6 +145,7 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 };

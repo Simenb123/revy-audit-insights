@@ -54,10 +54,18 @@ export const PdfCreatorPage = () => {
     setShowUploader(false);
   };
 
+  // Store original data and mapping for debug export
+  const [originalData, setOriginalData] = useState<any[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+
   // Process uploaded data (called from UniversalUploader)
   const processUploadedData = async (file: File, mapping: Record<string, string>) => {
     try {
       const data = await readTableFile(file);
+      
+      // Store for debugging
+      setOriginalData(data);
+      setColumnMapping(mapping);
       
       // Map the columns according to user mapping
       const mappedData = data.map(row => {
@@ -259,6 +267,8 @@ export const PdfCreatorPage = () => {
           bilagGroups={bilagGroups}
           detectedColumns={Object.keys(rows[0] || {})}
           mvaSatser={[...new Set(rows.map(r => r.mva_sats).filter(Boolean))]}
+          originalData={originalData}
+          columnMapping={columnMapping}
         />
       )}
 
