@@ -2,9 +2,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, FileSpreadsheet } from 'lucide-react';
-import { BilagType } from '@/types/bilag';
+import { Download, FileSpreadsheet, Table } from 'lucide-react';
+import { BilagType, BilagPayload } from '@/types/bilag';
 import { generateDebugFile } from '@/utils/debug-export';
+import { GeneralLedgerTable } from './GeneralLedgerTable';
 
 interface ValidationPanelProps {
   rows: any[];
@@ -13,6 +14,9 @@ interface ValidationPanelProps {
   mvaSatser: number[];
   originalData?: any[];
   columnMapping?: Record<string, string>;
+  payloads?: BilagPayload[];
+  onViewReceipt?: (payload: BilagPayload) => void;
+  onDownloadPdf?: (payload: BilagPayload) => void;
 }
 
 export const ValidationPanel: React.FC<ValidationPanelProps> = ({
@@ -21,7 +25,10 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({
   detectedColumns,
   mvaSatser,
   originalData,
-  columnMapping
+  columnMapping,
+  payloads = [],
+  onViewReceipt,
+  onDownloadPdf
 }) => {
   const typeDistribution = Object.values(bilagGroups).reduce((acc, group) => {
     // Simplified type detection for display
@@ -146,6 +153,27 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({
         </CardContent>
       </Card>
     </div>
+
+      {/* General Ledger Table */}
+      {rows.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Table className="h-4 w-4" />
+              Hovedboksvisning
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GeneralLedgerTable
+              rows={rows}
+              bilagGroups={bilagGroups}
+              payloads={payloads}
+              onViewReceipt={onViewReceipt}
+              onDownloadPdf={onDownloadPdf}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

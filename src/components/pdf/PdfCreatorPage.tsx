@@ -158,6 +158,29 @@ export const PdfCreatorPage = () => {
     }
   };
 
+  const handleDownloadTablePdf = async (payload: BilagPayload) => {
+    try {
+      const blob = await downloadPdf(payload);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${payload.doknr || payload.bilag}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "PDF lastet ned!",
+        description: "PDF-filen er lagret lokalt.",
+      });
+    } catch (error) {
+      toast({
+        title: "Nedlasting feilet",
+        description: error instanceof Error ? error.message : 'Ukjent feil',
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleUploadToSupabase = async () => {
     if (!selectedPayload) return;
     
@@ -273,6 +296,12 @@ export const PdfCreatorPage = () => {
           mvaSatser={mvaSatser}
           originalData={originalData}
           columnMapping={columnMapping}
+          payloads={payloads}
+          onViewReceipt={(payload) => {
+            setSelectedBilag(payload.bilag?.toString() || payload.doknr || '');
+            setShowPreview(true);
+          }}
+          onDownloadPdf={handleDownloadTablePdf}
         />
       )}
 
