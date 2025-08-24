@@ -36,7 +36,10 @@ export const generateDebugFile = async (data: DebugExportData) => {
     ['Detaljert info:', '', ''],
     ['Totale rader:', mappedData.length, ''],
     ['Totale bilag:', Object.keys(bilagGroups).length, ''],
-    ['Detekterte kolonner:', detectedColumns.length, ''],
+    ['Mappede kolonner:', detectedColumns.length, ''],
+    ['Kolonner med data:', Object.keys(mappedData[0] || {}).filter(key => 
+      mappedData.some(row => row[key] && row[key].toString().trim() !== '')
+    ).length, ''],
     ['', '', ''],
     ['Bilagtype fordeling:', '', ''],
     ...Object.entries(typeDistribution).map(([type, count]) => [

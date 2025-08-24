@@ -71,8 +71,9 @@ export const PdfCreatorPage = () => {
       const mappedData = data.map(row => {
         const mappedRow: any = {};
         Object.entries(mapping).forEach(([sourceCol, targetField]) => {
-          if (targetField && row[sourceCol] !== undefined) {
-            mappedRow[targetField] = row[sourceCol];
+          if (targetField) {
+            // Include all mapped columns, even if source data is undefined
+            mappedRow[targetField] = row[sourceCol] !== undefined ? row[sourceCol] : '';
           }
         });
         return mappedRow;
@@ -115,7 +116,8 @@ export const PdfCreatorPage = () => {
   };
 
   const selectedPayload = payloads.find(p => p.bilag.toString() === selectedBilag);
-  const detectedColumns = rows.length > 0 ? Object.keys(rows[0]) : [];
+  // Use mapped columns from user mapping instead of data-derived columns
+  const detectedColumns = Object.values(columnMapping).filter(Boolean);
   const mvaSatser = [...new Set(rows.map(r => r.mva_sats).filter(Boolean))];
 
   const handleDownloadTemplate = () => {
@@ -265,8 +267,8 @@ export const PdfCreatorPage = () => {
         <ValidationPanel
           rows={rows}
           bilagGroups={bilagGroups}
-          detectedColumns={Object.keys(rows[0] || {})}
-          mvaSatser={[...new Set(rows.map(r => r.mva_sats).filter(Boolean))]}
+          detectedColumns={detectedColumns}
+          mvaSatser={mvaSatser}
           originalData={originalData}
           columnMapping={columnMapping}
         />
