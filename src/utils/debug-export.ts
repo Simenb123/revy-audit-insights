@@ -41,6 +41,14 @@ export const generateDebugFile = async (data: DebugExportData) => {
       mappedData.some(row => row[key] && row[key].toString().trim() !== '')
     ).length, ''],
     ['', '', ''],
+    ['Kolonne-mapping detaljer:', '', ''],
+    ['Original → Normalisert → Målkolonne:', '', ''],
+    ...Object.entries(data.columnMapping).map(([original, target]) => [
+      original, 
+      `${original.toLowerCase().replace(/\s+/g, '_').replace(/[æå]/g, 'aa').replace(/ø/g, 'oe').replace(/[^\w_]/g, '')}`, 
+      target || 'IKKE MAPPET'
+    ]),
+    ['', '', ''],
     ['Bilagtype fordeling:', '', ''],
     ...Object.entries(typeDistribution).map(([type, count]) => [
       getTypeName(type as BilagType),

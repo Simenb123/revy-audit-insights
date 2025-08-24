@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ValidationPanel } from './ValidationPanel';
 import { CompanySelector } from './CompanySelector';
-import { readTableFile } from '@/utils/pdf-import';
+import { readTableFile, normalizeHeader } from '@/utils/pdf-import';
 import { mapRow, groupsToPayloads } from '@/utils/pdf-map';
 import { BilagPayload } from '@/types/bilag';
 import { useToast } from '@/hooks/use-toast';
@@ -72,8 +72,10 @@ export const PdfCreatorPage = () => {
         const mappedRow: any = {};
         Object.entries(mapping).forEach(([sourceCol, targetField]) => {
           if (targetField) {
+            // Normalize source column name to match normalized row keys
+            const normalizedSourceCol = normalizeHeader(sourceCol);
             // Include all mapped columns, even if source data is undefined
-            mappedRow[targetField] = row[sourceCol] !== undefined ? row[sourceCol] : '';
+            mappedRow[targetField] = row[normalizedSourceCol] !== undefined ? row[normalizedSourceCol] : '';
           }
         });
         return mappedRow;
