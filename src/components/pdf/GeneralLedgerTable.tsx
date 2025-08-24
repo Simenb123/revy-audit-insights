@@ -8,13 +8,34 @@ import { formatNOK, formatNumber } from '@/utils/money';
 
 interface GeneralLedgerRow {
   bilag?: string | number;
+  dokumenttype?: string;
   fakturanummer?: string;
   fakturadato?: string;
+  forfallsdato?: string;
+  leveringsdato?: string;
   konto?: number;
   kontonavn?: string;
   beskrivelse?: string;
+  type_transaksjon?: string;
+  kundenavn?: string;
+  leverandornavn?: string;
+  kundeorgnr?: string;
+  leverandororgnr?: string;
+  antall?: number;
+  enhet?: string;
+  enhetspris?: number;
+  netto?: number;
+  mva_sats?: number;
+  mva_belop?: number;
   debet?: number;
   kredit?: number;
+  valuta?: string;
+  ordrenr?: string;
+  prosjektnr?: string;
+  referanse?: string;
+  kid?: string;
+  bankkonto?: string;
+  mvaMerknad?: string;
   [key: string]: any;
 }
 
@@ -88,6 +109,22 @@ export const GeneralLedgerTable: React.FC<GeneralLedgerTableProps> = ({
     }
   };
 
+  // Helper function to get motpart (customer or supplier name)
+  const getMotpart = (row: GeneralLedgerRow): string => {
+    return row.kundenavn || row.leverandornavn || '';
+  };
+
+  // Helper function to get motpart orgnr
+  const getMotpartOrgnr = (row: GeneralLedgerRow): string => {
+    return row.kundeorgnr || row.leverandororgnr || '';
+  };
+
+  // Helper function to calculate total amount (prioritize netto, then debet-kredit)
+  const getTotalAmount = (row: GeneralLedgerRow): number => {
+    if (row.netto !== undefined && row.netto !== 0) return row.netto;
+    return (row.debet || 0) - (row.kredit || 0);
+  };
+
   const columns: StandardDataTableColumn<GeneralLedgerRow>[] = [
     {
       key: 'bilag',
@@ -127,6 +164,14 @@ export const GeneralLedgerTable: React.FC<GeneralLedgerTableProps> = ({
       searchable: true,
     },
     {
+      key: 'totalAmount',
+      header: 'Beløp',
+      accessor: (row) => getTotalAmount(row),
+      sortable: true,
+      align: 'right',
+      format: (value) => value ? formatNOK(value) : '',
+    },
+    {
       key: 'debet',
       header: 'Debet',
       accessor: 'debet',
@@ -141,6 +186,89 @@ export const GeneralLedgerTable: React.FC<GeneralLedgerTableProps> = ({
       sortable: true,
       align: 'right',
       format: (value) => value ? formatNOK(value) : '',
+    },
+    {
+      key: 'motpart',
+      header: 'Motpart',
+      accessor: (row) => getMotpart(row),
+      sortable: true,
+      searchable: true,
+    },
+    {
+      key: 'motpartOrgnr',
+      header: 'Orgnr',
+      accessor: (row) => getMotpartOrgnr(row),
+      sortable: true,
+      searchable: true,
+    },
+    {
+      key: 'mva_belop',
+      header: 'MVA',
+      accessor: 'mva_belop',
+      sortable: true,
+      align: 'right',
+      format: (value) => value ? formatNOK(value) : '',
+    },
+    {
+      key: 'mva_sats',
+      header: 'MVA %',
+      accessor: 'mva_sats',
+      sortable: true,
+      align: 'right',
+      format: (value) => value ? `${formatNumber(value, 0)}%` : '',
+    },
+    {
+      key: 'ordrenr',
+      header: 'Ordrenr',
+      accessor: 'ordrenr',
+      sortable: true,
+      searchable: true,
+    },
+    {
+      key: 'forfallsdato',
+      header: 'Forfall',
+      accessor: 'forfallsdato',
+      sortable: true,
+      searchable: true,
+      format: (value) => value ? new Date(value).toLocaleDateString('no-NO') : '',
+    },
+    {
+      key: 'dokumenttype',
+      header: 'Dokumenttype',
+      accessor: 'dokumenttype',
+      sortable: true,
+      searchable: true,
+      format: (value) => value ? (
+        <Badge variant="outline" className="text-xs">
+          {value}
+        </Badge>
+      ) : '',
+    },
+    {
+      key: 'valuta',
+      header: 'Valuta',
+      accessor: 'valuta',
+      sortable: true,
+      searchable: true,
+      format: (value) => value && value !== 'NOK' ? (
+        <Badge variant="secondary" className="text-xs">
+          {value}
+        </Badge>
+      ) : '',
+    },
+    {
+      key: 'referanse',
+      header: 'Referanse',
+      accessor: 'referanse',
+      sortable: true,
+      searchable: true,
+    },
+    {
+      key: 'kid',
+      header: 'KID',
+      accessor: 'kid',
+      sortable: true,
+      searchable: true,
     },
     {
       key: 'type',
