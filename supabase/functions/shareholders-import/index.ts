@@ -118,25 +118,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Starting import: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB), year: ${year}, mode: ${mode}, global: ${isGlobal}`)
+    console.log(`Starting streaming import: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB), year: ${year}, mode: ${mode}, global: ${isGlobal}`)
 
-    // Les fil direkte
-    const buffer = new Uint8Array(await file.arrayBuffer())
+    // Stream processing setup
+    const stream = file.stream()
+    const reader = stream.getReader()
+    let buffer = ''
+    let header: string[] = []
+    let headerParsed = false
+    let detectedEncoding = 'utf-8'
+    let firstChunk = true
     
-    // Detektér encoding
-    const detectedEncoding = encoding === 'AUTO' ? detectEncoding(buffer) : encoding.toLowerCase()
-    
-    // Dekod CSV
-    const csvText = decodeCSV(buffer, detectedEncoding)
-    const lines = csvText.split('\n').filter(line => line.trim())
-    
-    if (lines.length < 2) {
-      throw new Error('CSV file must have at least header and one data row')
+    // Read first chunk to detect encoding and parse header
+    const { value: firstValue } = await reader.read()
+    if (firstValue) {
+      const firstBuffer = new Uint8Array(firstValue)
+      detectedEncoding = encoding === 'AUTO' ? detectEncoding(firstBuffer) : encoding.toLowerCase()
+      buffer = decodeCSV(firstBuffer, detectedEncoding)
+      
+      // Parse header from first chunk
+      const firstNewline = buffer.indexOf('\n')
+      if (firstNewline !== -1) {
+        const headerLine = buffer.substring(0, firstNewline).trim()
+        header = headerLine.split(delimiter).map(h => h.trim().replace(/['"]/g, ''))
+        buffer = buffer.substring(firstNewline + 1)
+        headerParsed = true
+        console.log('CSV Header:', header)
+      }
     }
-
-    // Parse header
-    const header = lines[0].split(delimiter).map(h => h.trim().replace(/['"]/g, ''))
-    console.log('CSV Header:', header)
+    
+    if (!headerParsed || header.length === 0) {
+      throw new Error('Could not parse CSV header')
+    }
 
     // Hent klienters org-numre hvis mode er 'clients-only'
     let clientOrgNumbers: Set<string> = new Set()
@@ -157,103 +170,30 @@ Deno.serve(async (req) => {
     let processedRows = 0
     let skippedRows = 0
     let errorRows = 0
+    let totalEstimatedRows = Math.floor(file.size / 150) // Estimate ~150 bytes per row
+    let currentRowIndex = 0
 
-    // Behandle i batcher med bulk operasjoner for bedre ytelse
-    const batchSize = 500 // Optimalisert batch størrelse
-    const totalDataRows = lines.length - 1
+    // Streaming batch processing
+    const batchSize = 250 // Reduced for memory efficiency
+    const companiesToUpsert: any[] = []
+    const entitiesToUpsert: any[] = []
+    const holdingsToProcess: any[] = []
     
-    for (let i = 1; i < lines.length; i += batchSize) {
-      const batchEndIndex = Math.min(i + batchSize, lines.length)
-      const batch = lines.slice(i, batchEndIndex)
+    // Process remaining chunks and buffer
+    let done = false
+    let streamDone = false
+    
+    // Helper function to process batches
+    async function processBatch() {
+      if (companiesToUpsert.length === 0) return
       
-      // Samle opp data for bulk insert
-      const companiesToUpsert: any[] = []
-      const entitiesToUpsert: any[] = []
-      const holdingsToProcess: any[] = []
+      console.log(`Processing batch: ${companiesToUpsert.length} rows | Total processed: ${processedRows}, skipped: ${skippedRows}, errors: ${errorRows}`)
       
-      for (let j = 0; j < batch.length; j++) {
-        const line = batch[j]
-        const currentRow = i + j
-        
-        try {
-          const columns = line.split(delimiter).map(col => col.trim().replace(/['"]/g, ''))
-          
-          if (columns.length !== header.length) {
-            console.warn(`Row ${currentRow}: Column count mismatch`)
-            errorRows++
-            continue
-          }
-
-          // Opprett rad-objekt
-          const row: Record<string, string> = {}
-          header.forEach((col, idx) => {
-            row[col] = columns[idx] || ''
-          })
-
-          // Hent selskapsinfo
-          const companyName = row['Navn'] || row['Selskapsnavn'] || row['Company Name'] || ''
-          const companyOrgnr = row['Orgnr'] || row['Organisasjonsnummer'] || row['OrgNr'] || ''
-          
-          if (!companyName || !companyOrgnr) {
-            skippedRows++
-            continue
-          }
-
-          // Filtrer på klienter hvis nødvendig
-          if (mode === 'clients-only' && !clientOrgNumbers.has(companyOrgnr)) {
-            skippedRows++
-            continue
-          }
-
-          // Hent aksjonærinfo
-          const holderName = row['Aksjonær'] || row['Eier'] || row['Holder'] || ''
-          const holderOrgnr = row['EierOrgnr'] || row['HolderOrgnr'] || ''
-          const shareClass = normalizeClassName(row['Aksjeklasse'] || row['ShareClass'] || '')
-          const shares = parseInt(row['Aksjer'] || row['Shares'] || '0') || 0
-          const holderType = holderOrgnr ? 'company' : 'person'
-
-          if (!holderName || shares <= 0) {
-            skippedRows++
-            continue
-          }
-
-          // Samle data for bulk operasjoner
-          companiesToUpsert.push({
-            orgnr: companyOrgnr,
-            name: companyName,
-            year,
-            user_id: isGlobal ? null : user.id,
-            total_shares: 0
-          })
-
-          entitiesToUpsert.push({
-            entity_type: holderType,
-            name: holderName,
-            orgnr: holderOrgnr || null,
-            user_id: isGlobal ? null : user.id
-          })
-
-          holdingsToProcess.push({
-            company_orgnr: companyOrgnr,
-            holder_name: holderName,
-            holder_orgnr: holderOrgnr,
-            share_class: shareClass,
-            shares,
-            year,
-            user_id: isGlobal ? null : user.id
-          })
-
-        } catch (err) {
-          console.error(`Error processing row ${currentRow}:`, err)
-          errorRows++
-        }
-      }
-
-      // Bulk upsert selskaper
+      // Bulk upsert companies
       if (companiesToUpsert.length > 0) {
         const { error: companiesError } = await supabase
           .from('share_companies')
-          .upsert(companiesToUpsert, { onConflict: 'orgnr,year,user_id', ignoreDuplicates: false })
+          .upsert([...companiesToUpsert], { onConflict: 'orgnr,year,user_id', ignoreDuplicates: false })
 
         if (companiesError) {
           console.error('Bulk companies upsert error:', companiesError)
@@ -261,11 +201,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Bulk upsert entiteter
+      // Bulk upsert entities
       if (entitiesToUpsert.length > 0) {
         const { error: entitiesError } = await supabase
           .from('share_entities')
-          .upsert(entitiesToUpsert, { onConflict: 'entity_type,name,orgnr,user_id', ignoreDuplicates: false })
+          .upsert([...entitiesToUpsert], { onConflict: 'entity_type,name,orgnr,user_id', ignoreDuplicates: false })
 
         if (entitiesError) {
           console.error('Bulk entities upsert error:', entitiesError)
@@ -273,10 +213,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Prosesser holdings (trenger entity IDs)
+      // Process holdings (needs entity IDs)
       for (const holding of holdingsToProcess) {
         try {
-          // Hent entity ID
+          // Get entity ID
           const { data: entityData, error: entityError } = await supabase
             .from('share_entities')
             .select('id')
@@ -317,11 +257,183 @@ Deno.serve(async (req) => {
           errorRows++
         }
       }
-
-      // Detaljert progress logging
-      const progress = Math.round(((batchEndIndex - 1) / totalDataRows) * 100)
-      console.log(`Batch ${Math.ceil(i / batchSize)} completed: Rows ${i}-${batchEndIndex - 1} | Progress: ${progress}% | Processed: ${processedRows}, Skipped: ${skippedRows}, Errors: ${errorRows}`)
+      
+      // Clear batch arrays
+      companiesToUpsert.length = 0
+      entitiesToUpsert.length = 0
+      holdingsToProcess.length = 0
     }
+    
+    while (!streamDone) {
+      const { value, done: readerDone } = await reader.read()
+      streamDone = readerDone
+      
+      if (value) {
+        // Decode and append to buffer
+        const chunk = decodeCSV(new Uint8Array(value), detectedEncoding)
+        buffer += chunk
+      }
+      
+      // Process complete lines from buffer
+      let newlineIndex
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.substring(0, newlineIndex).trim()
+        buffer = buffer.substring(newlineIndex + 1)
+        
+        if (!line) continue
+        
+        currentRowIndex++
+        
+        try {
+          const columns = line.split(delimiter).map(col => col.trim().replace(/['"]/g, ''))
+          
+          if (columns.length !== header.length) {
+            console.warn(`Row ${currentRowIndex}: Column count mismatch`)
+            errorRows++
+            continue
+          }
+
+          // Create row object
+          const row: Record<string, string> = {}
+          header.forEach((col, idx) => {
+            row[col] = columns[idx] || ''
+          })
+
+          // Extract company info
+          const companyName = row['Navn'] || row['Selskapsnavn'] || row['Company Name'] || ''
+          const companyOrgnr = row['Orgnr'] || row['Organisasjonsnummer'] || row['OrgNr'] || ''
+          
+          if (!companyName || !companyOrgnr) {
+            skippedRows++
+            continue
+          }
+
+          // Filter by clients if necessary
+          if (mode === 'clients-only' && !clientOrgNumbers.has(companyOrgnr)) {
+            skippedRows++
+            continue
+          }
+
+          // Extract shareholder info
+          const holderName = row['Aksjonær'] || row['Eier'] || row['Holder'] || ''
+          const holderOrgnr = row['EierOrgnr'] || row['HolderOrgnr'] || ''
+          const shareClass = normalizeClassName(row['Aksjeklasse'] || row['ShareClass'] || '')
+          const shares = parseInt(row['Aksjer'] || row['Shares'] || '0') || 0
+          const holderType = holderOrgnr ? 'company' : 'person'
+
+          if (!holderName || shares <= 0) {
+            skippedRows++
+            continue
+          }
+
+          // Collect data for batch operations
+          companiesToUpsert.push({
+            orgnr: companyOrgnr,
+            name: companyName,
+            year,
+            user_id: isGlobal ? null : user.id,
+            total_shares: 0
+          })
+
+          entitiesToUpsert.push({
+            entity_type: holderType,
+            name: holderName,
+            orgnr: holderOrgnr || null,
+            user_id: isGlobal ? null : user.id
+          })
+
+          holdingsToProcess.push({
+            company_orgnr: companyOrgnr,
+            holder_name: holderName,
+            holder_orgnr: holderOrgnr,
+            share_class: shareClass,
+            shares,
+            year,
+            user_id: isGlobal ? null : user.id
+          })
+
+        } catch (err) {
+          console.error(`Error processing row ${currentRowIndex}:`, err)
+          errorRows++
+        }
+        
+        // Process batch when full
+        if (companiesToUpsert.length >= batchSize) {
+          await processBatch()
+        }
+      }
+    }
+    
+    // Process any remaining buffer data (last line without newline)
+    if (buffer.trim()) {
+      const line = buffer.trim()
+      currentRowIndex++
+      
+      try {
+        const columns = line.split(delimiter).map(col => col.trim().replace(/['"]/g, ''))
+        
+        if (columns.length === header.length) {
+          const row: Record<string, string> = {}
+          header.forEach((col, idx) => {
+            row[col] = columns[idx] || ''
+          })
+
+          const companyName = row['Navn'] || row['Selskapsnavn'] || row['Company Name'] || ''
+          const companyOrgnr = row['Orgnr'] || row['Organisasjonsnummer'] || row['OrgNr'] || ''
+          
+          if (companyName && companyOrgnr) {
+            if (mode !== 'clients-only' || clientOrgNumbers.has(companyOrgnr)) {
+              const holderName = row['Aksjonær'] || row['Eier'] || row['Holder'] || ''
+              const holderOrgnr = row['EierOrgnr'] || row['HolderOrgnr'] || ''
+              const shareClass = normalizeClassName(row['Aksjeklasse'] || row['ShareClass'] || '')
+              const shares = parseInt(row['Aksjer'] || row['Shares'] || '0') || 0
+              const holderType = holderOrgnr ? 'company' : 'person'
+
+              if (holderName && shares > 0) {
+                companiesToUpsert.push({
+                  orgnr: companyOrgnr,
+                  name: companyName,
+                  year,
+                  user_id: isGlobal ? null : user.id,
+                  total_shares: 0
+                })
+
+                entitiesToUpsert.push({
+                  entity_type: holderType,
+                  name: holderName,
+                  orgnr: holderOrgnr || null,
+                  user_id: isGlobal ? null : user.id
+                })
+
+                holdingsToProcess.push({
+                  company_orgnr: companyOrgnr,
+                  holder_name: holderName,
+                  holder_orgnr: holderOrgnr,
+                  share_class: shareClass,
+                  shares,
+                  year,
+                  user_id: isGlobal ? null : user.id
+                })
+              } else {
+                skippedRows++
+              }
+            } else {
+              skippedRows++
+            }
+          } else {
+            skippedRows++
+          }
+        } else {
+          errorRows++
+        }
+      } catch (err) {
+        console.error(`Error processing final row ${currentRowIndex}:`, err)
+        errorRows++
+      }
+    }
+    
+    // Process any remaining data in final batch
+    await processBatch()
 
     // Oppdater total_shares for alle selskaper
     const { error: updateError } = await supabase.rpc('update_total_shares_for_year', {
@@ -340,7 +452,7 @@ Deno.serve(async (req) => {
       processedRows,
       skippedRows,
       errorRows,
-      totalRows: lines.length - 1
+      totalRows: currentRowIndex
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
