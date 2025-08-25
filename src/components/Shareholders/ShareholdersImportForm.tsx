@@ -15,8 +15,7 @@ import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
 
-import { importShareholders, uploadFileToStorage } from '@/services/shareholders'
-import type { ImportRequest } from '@/types/shareholders'
+import { importShareholders } from '@/services/shareholders'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 
 const importSchema = z.object({
@@ -51,25 +50,19 @@ export const ShareholdersImportForm: React.FC = () => {
     mutationFn: async (data: ImportFormData) => {
       if (!file) throw new Error('Ingen fil valgt')
 
-      // Last opp fil til storage først
-      setUploadProgress(20)
-      const fileName = `${Date.now()}_${file.name}`
-      const storagePath = await uploadFileToStorage(file, fileName, data.isGlobal)
+      // Send fil direkte til Edge Function
+      setUploadProgress(10)
       
-      setUploadProgress(40)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('year', data.year.toString())
+      formData.append('delimiter', data.delimiter)
+      formData.append('encoding', data.encoding)
+      formData.append('mode', data.mode)
+      formData.append('isGlobal', data.isGlobal?.toString() || 'false')
 
-      // Start import
-      const importRequest: ImportRequest = {
-        storagePath,
-        year: data.year,
-        delimiter: data.delimiter,
-        encoding: data.encoding,
-        mode: data.mode,
-        isGlobal: data.isGlobal
-      }
-
-      setUploadProgress(60)
-      return await importShareholders(importRequest)
+      setUploadProgress(20)
+      return await importShareholders(formData)
     },
     onSuccess: (result) => {
       setUploadProgress(100)

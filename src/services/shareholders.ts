@@ -9,11 +9,11 @@ import type {
 } from '@/types/shareholders'
 
 /**
- * Importerer aksjonærdata fra CSV fil i storage
+ * Importerer aksjonærdata fra CSV fil direkte
  */
-export async function importShareholders(request: ImportRequest): Promise<ImportResult> {
+export async function importShareholders(formData: FormData): Promise<ImportResult> {
   const { data, error } = await supabase.functions.invoke('shareholders-import', {
-    body: request
+    body: formData
   })
   
   if (error) {

@@ -60,7 +60,6 @@ function decodeCSV(buffer: Uint8Array, encoding: string): string {
 }
 
 interface ImportRequest {
-  storagePath: string
   year: number
   delimiter?: ';' | ','
   encoding?: 'AUTO' | 'UTF-8' | 'CP1252'
@@ -95,8 +94,18 @@ Deno.serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    const body: ImportRequest = await req.json()
-    const { storagePath, year, delimiter = ';', encoding = 'AUTO', mode = 'full', isGlobal = false } = body
+    // Parse FormData
+    const formData = await req.formData()
+    const file = formData.get('file') as File
+    const year = parseInt(formData.get('year') as string)
+    const delimiter = (formData.get('delimiter') as ';' | ',') || ';'
+    const encoding = (formData.get('encoding') as 'AUTO' | 'UTF-8' | 'CP1252') || 'AUTO'
+    const mode = (formData.get('mode') as 'full' | 'clients-only') || 'full'
+    const isGlobal = formData.get('isGlobal') === 'true'
+
+    if (!file || !year) {
+      throw new Error('Missing required fields: file and year')
+    }
 
     // Verify superadmin for global imports
     if (isGlobal) {
@@ -109,19 +118,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Starting import: ${storagePath}, year: ${year}, mode: ${mode}, global: ${isGlobal}`)
+    console.log(`Starting import: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB), year: ${year}, mode: ${mode}, global: ${isGlobal}`)
 
-    // Last ned fil fra storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('shareholders')
-      .download(storagePath)
-
-    if (downloadError) {
-      throw new Error(`Failed to download file: ${downloadError.message}`)
-    }
-
-    // Konverter til buffer
-    const buffer = new Uint8Array(await fileData.arrayBuffer())
+    // Les fil direkte
+    const buffer = new Uint8Array(await file.arrayBuffer())
     
     // Detektér encoding
     const detectedEncoding = encoding === 'AUTO' ? detectEncoding(buffer) : encoding.toLowerCase()
@@ -158,17 +158,21 @@ Deno.serve(async (req) => {
     let skippedRows = 0
     let errorRows = 0
 
-    // Behandle i batcher
-    const batchSize = 2000
+    // Behandle i batcher med progress rapportering
+    const batchSize = 1000 // Redusert batch størrelse for bedre progress
+    const totalDataRows = lines.length - 1
+    
     for (let i = 1; i < lines.length; i += batchSize) {
       const batch = lines.slice(i, i + batchSize)
+      const batchStartRow = i
       
       for (const line of batch) {
+        const currentRow = i + (batch.indexOf(line))
         try {
           const columns = line.split(delimiter).map(col => col.trim().replace(/['"]/g, ''))
           
           if (columns.length !== header.length) {
-            console.warn(`Row ${i}: Column count mismatch`)
+            console.warn(`Row ${currentRow}: Column count mismatch`)
             errorRows++
             continue
           }
@@ -262,13 +266,14 @@ Deno.serve(async (req) => {
           processedRows++
 
         } catch (err) {
-          console.error(`Error processing row ${i}:`, err)
+          console.error(`Error processing row ${currentRow}:`, err)
           errorRows++
         }
       }
 
-      // Vis fremgang
-      console.log(`Processed batch ending at row ${Math.min(i + batchSize, lines.length)}`)
+      // Vis fremgang - mer detaljert logging
+      const progress = Math.round((i / totalDataRows) * 100)
+      console.log(`Batch completed: Rows ${batchStartRow}-${Math.min(i + batchSize - 1, lines.length - 1)} | Progress: ${progress}% | Processed: ${processedRows}, Skipped: ${skippedRows}, Errors: ${errorRows}`)
     }
 
     // Oppdater total_shares for alle selskaper
