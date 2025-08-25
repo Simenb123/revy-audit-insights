@@ -114,7 +114,6 @@ export const ShareholdersImportForm: React.FC = () => {
           worker: true,
           header: true,
           skipEmptyLines: true,
-          transformHeader: normalizeHeader,
           step: async (results, parser) => {
             if (isPaused) {
               parser.pause()
