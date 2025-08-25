@@ -142,6 +142,11 @@ const resourceItems = [
     url: '/resources/dataredigering',
     icon: FileSpreadsheet,
   },
+  {
+    title: 'Aksjonærregister',
+    url: '/resources/aksjonaerregister',
+    icon: Users,
+  },
 ]
 
 const ResizableLeftSidebar = () => {

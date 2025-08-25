@@ -27,9 +27,16 @@ export async function importShareholders(request: ImportRequest): Promise<Import
  * Søker i aksjonærregisteret
  */
 export async function searchShareholders(query: string): Promise<ShareholderSearchResult> {
+  if (!query || query.length < 2) {
+    return { companies: [], entities: [] }
+  }
+
+  // Kall edge function med query parameter
   const { data, error } = await supabase.functions.invoke('shareholders-search', {
-    body: null,
-    method: 'GET'
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
   
   if (error) {
@@ -48,16 +55,12 @@ export async function fetchOwnershipGraph(params: {
   direction?: 'up' | 'down' | 'both'
   depth?: number
 }): Promise<OwnershipGraph> {
-  const searchParams = new URLSearchParams({
-    orgnr: params.orgnr,
-    year: (params.year || new Date().getFullYear()).toString(),
-    direction: params.direction || 'both',
-    depth: (params.depth || 2).toString()
-  })
-  
+  // Kall edge function med parametere via query string
   const { data, error } = await supabase.functions.invoke('ownership-graph', {
-    body: null,
-    method: 'GET'
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
   
   if (error) {
@@ -88,7 +91,8 @@ export async function getCompanyShareholders(
     throw new Error(`Failed to fetch shareholders: ${error.message}`)
   }
   
-  return data || []
+  // Type assertion siden Supabase returnerer entity_type som string
+  return (data || []) as Array<ShareHolding & { share_entities: ShareEntity }>
 }
 
 /**
