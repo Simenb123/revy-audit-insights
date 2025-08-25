@@ -111,7 +111,7 @@ export const ShareholdersImportForm: React.FC = () => {
         }
 
         Papa.parse(file, {
-          worker: true,
+          worker: false,
           header: true,
           skipEmptyLines: true,
           step: async (results, parser) => {
