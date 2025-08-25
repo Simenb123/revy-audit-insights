@@ -10310,6 +10310,113 @@ export type Database = {
         }
         Relationships: []
       }
+      share_companies: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          orgnr: string
+          total_shares: number | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          orgnr: string
+          total_shares?: number | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          orgnr?: string
+          total_shares?: number | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      share_entities: {
+        Row: {
+          birth_year: number | null
+          country_code: string | null
+          created_at: string | null
+          entity_key: string | null
+          entity_type: string
+          id: string
+          name: string
+          orgnr: string | null
+          user_id: string
+        }
+        Insert: {
+          birth_year?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          entity_key?: string | null
+          entity_type: string
+          id?: string
+          name: string
+          orgnr?: string | null
+          user_id: string
+        }
+        Update: {
+          birth_year?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          entity_key?: string | null
+          entity_type?: string
+          id?: string
+          name?: string
+          orgnr?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      share_holdings: {
+        Row: {
+          company_orgnr: string
+          created_at: string | null
+          holder_id: string
+          id: string
+          share_class: string
+          shares: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          company_orgnr: string
+          created_at?: string | null
+          holder_id: string
+          id?: string
+          share_class: string
+          shares?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          company_orgnr?: string
+          created_at?: string | null
+          holder_id?: string
+          id?: string
+          share_class?: string
+          shares?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_holdings_holder_id_fkey"
+            columns: ["holder_id"]
+            isOneToOne: false
+            referencedRelation: "share_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       standard_account_audit_area_mappings: {
         Row: {
           audit_area_id: string | null

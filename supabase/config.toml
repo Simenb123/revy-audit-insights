@@ -34,3 +34,9 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.calculate-population-from-accounts]
     verify_jwt = true
+  [functions.shareholders-import]
+    verify_jwt = true
+  [functions.shareholders-search]
+    verify_jwt = true
+  [functions.ownership-graph]
+    verify_jwt = true
