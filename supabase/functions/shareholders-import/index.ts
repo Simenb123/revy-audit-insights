@@ -158,16 +158,23 @@ Deno.serve(async (req) => {
     let skippedRows = 0
     let errorRows = 0
 
-    // Behandle i batcher med progress rapportering
-    const batchSize = 1000 // Redusert batch størrelse for bedre progress
+    // Behandle i batcher med bulk operasjoner for bedre ytelse
+    const batchSize = 500 // Optimalisert batch størrelse
     const totalDataRows = lines.length - 1
     
     for (let i = 1; i < lines.length; i += batchSize) {
-      const batch = lines.slice(i, i + batchSize)
-      const batchStartRow = i
+      const batchEndIndex = Math.min(i + batchSize, lines.length)
+      const batch = lines.slice(i, batchEndIndex)
       
-      for (const line of batch) {
-        const currentRow = i + (batch.indexOf(line))
+      // Samle opp data for bulk insert
+      const companiesToUpsert: any[] = []
+      const entitiesToUpsert: any[] = []
+      const holdingsToProcess: any[] = []
+      
+      for (let j = 0; j < batch.length; j++) {
+        const line = batch[j]
+        const currentRow = i + j
+        
         try {
           const columns = line.split(delimiter).map(col => col.trim().replace(/['"]/g, ''))
           
@@ -183,7 +190,7 @@ Deno.serve(async (req) => {
             row[col] = columns[idx] || ''
           })
 
-          // Hent selskapsinfo (forutsetter kolonner som navn, orgnr, etc.)
+          // Hent selskapsinfo
           const companyName = row['Navn'] || row['Selskapsnavn'] || row['Company Name'] || ''
           const companyOrgnr = row['Orgnr'] || row['Organisasjonsnummer'] || row['OrgNr'] || ''
           
@@ -210,51 +217,91 @@ Deno.serve(async (req) => {
             continue
           }
 
-          // Upsert selskap
-          const { error: companyError } = await supabase
-            .from('share_companies')
-            .upsert({
-              orgnr: companyOrgnr,
-              name: companyName,
-              year,
-              user_id: isGlobal ? null : user.id,
-              total_shares: 0 // Oppdateres senere
-            })
+          // Samle data for bulk operasjoner
+          companiesToUpsert.push({
+            orgnr: companyOrgnr,
+            name: companyName,
+            year,
+            user_id: isGlobal ? null : user.id,
+            total_shares: 0
+          })
 
-          if (companyError) {
-            console.error('Company upsert error:', companyError)
-            errorRows++
-            continue
-          }
+          entitiesToUpsert.push({
+            entity_type: holderType,
+            name: holderName,
+            orgnr: holderOrgnr || null,
+            user_id: isGlobal ? null : user.id
+          })
 
-          // Upsert aksjonær/enhet
+          holdingsToProcess.push({
+            company_orgnr: companyOrgnr,
+            holder_name: holderName,
+            holder_orgnr: holderOrgnr,
+            share_class: shareClass,
+            shares,
+            year,
+            user_id: isGlobal ? null : user.id
+          })
+
+        } catch (err) {
+          console.error(`Error processing row ${currentRow}:`, err)
+          errorRows++
+        }
+      }
+
+      // Bulk upsert selskaper
+      if (companiesToUpsert.length > 0) {
+        const { error: companiesError } = await supabase
+          .from('share_companies')
+          .upsert(companiesToUpsert, { onConflict: 'orgnr,year,user_id', ignoreDuplicates: false })
+
+        if (companiesError) {
+          console.error('Bulk companies upsert error:', companiesError)
+          errorRows += companiesToUpsert.length
+        }
+      }
+
+      // Bulk upsert entiteter
+      if (entitiesToUpsert.length > 0) {
+        const { error: entitiesError } = await supabase
+          .from('share_entities')
+          .upsert(entitiesToUpsert, { onConflict: 'entity_type,name,orgnr,user_id', ignoreDuplicates: false })
+
+        if (entitiesError) {
+          console.error('Bulk entities upsert error:', entitiesError)
+          errorRows += entitiesToUpsert.length
+        }
+      }
+
+      // Prosesser holdings (trenger entity IDs)
+      for (const holding of holdingsToProcess) {
+        try {
+          // Hent entity ID
           const { data: entityData, error: entityError } = await supabase
             .from('share_entities')
-            .upsert({
-              entity_type: holderType,
-              name: holderName,
-              orgnr: holderOrgnr || null,
-              user_id: isGlobal ? null : user.id
-            })
             .select('id')
+            .eq('entity_type', holding.holder_orgnr ? 'company' : 'person')
+            .eq('name', holding.holder_name)
+            .eq('orgnr', holding.holder_orgnr)
+            .eq('user_id', holding.user_id)
             .single()
 
-          if (entityError) {
-            console.error('Entity upsert error:', entityError)
+          if (entityError || !entityData) {
+            console.error('Entity lookup error:', entityError)
             errorRows++
             continue
           }
 
-          // Upsert aksjeinnehav
+          // Upsert holding
           const { error: holdingError } = await supabase
             .from('share_holdings')
             .upsert({
-              company_orgnr: companyOrgnr,
+              company_orgnr: holding.company_orgnr,
               holder_id: entityData.id,
-              share_class: shareClass,
-              shares,
-              year,
-              user_id: isGlobal ? null : user.id
+              share_class: holding.share_class,
+              shares: holding.shares,
+              year: holding.year,
+              user_id: holding.user_id
             })
 
           if (holdingError) {
@@ -266,14 +313,14 @@ Deno.serve(async (req) => {
           processedRows++
 
         } catch (err) {
-          console.error(`Error processing row ${currentRow}:`, err)
+          console.error('Error processing holding:', err)
           errorRows++
         }
       }
 
-      // Vis fremgang - mer detaljert logging
-      const progress = Math.round((i / totalDataRows) * 100)
-      console.log(`Batch completed: Rows ${batchStartRow}-${Math.min(i + batchSize - 1, lines.length - 1)} | Progress: ${progress}% | Processed: ${processedRows}, Skipped: ${skippedRows}, Errors: ${errorRows}`)
+      // Detaljert progress logging
+      const progress = Math.round(((batchEndIndex - 1) / totalDataRows) * 100)
+      console.log(`Batch ${Math.ceil(i / batchSize)} completed: Rows ${i}-${batchEndIndex - 1} | Progress: ${progress}% | Processed: ${processedRows}, Skipped: ${skippedRows}, Errors: ${errorRows}`)
     }
 
     // Oppdater total_shares for alle selskaper

@@ -50,8 +50,8 @@ export const ShareholdersImportForm: React.FC = () => {
     mutationFn: async (data: ImportFormData) => {
       if (!file) throw new Error('Ingen fil valgt')
 
-      // Send fil direkte til Edge Function
-      setUploadProgress(10)
+      // Send fil direkte til Edge Function med progress tracking
+      setUploadProgress(5)
       
       const formData = new FormData()
       formData.append('file', file)
@@ -61,8 +61,27 @@ export const ShareholdersImportForm: React.FC = () => {
       formData.append('mode', data.mode)
       formData.append('isGlobal', data.isGlobal?.toString() || 'false')
 
-      setUploadProgress(20)
-      return await importShareholders(formData)
+      setUploadProgress(15)
+      
+      // Estimér prosesseringstid basert på filstørrelse
+      const estimatedSeconds = Math.max(10, Math.floor(file.size / (1024 * 1024)) * 2)
+      
+      // Simuler progress basert på estimert tid
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) return prev
+          return prev + Math.random() * 10
+        })
+      }, estimatedSeconds * 100)
+
+      try {
+        const result = await importShareholders(formData)
+        clearInterval(progressInterval)
+        return result
+      } catch (error) {
+        clearInterval(progressInterval)
+        throw error
+      }
     },
     onSuccess: (result) => {
       setUploadProgress(100)
