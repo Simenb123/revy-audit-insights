@@ -215,8 +215,6 @@ Deno.serve(async (req) => {
               year,
               user_id: isGlobal ? null : user.id,
               total_shares: 0 // Oppdateres senere
-            }, {
-              onConflict: isGlobal ? 'orgnr,year' : 'orgnr,year,user_id'
             })
 
           if (companyError) {
@@ -233,8 +231,6 @@ Deno.serve(async (req) => {
               name: holderName,
               orgnr: holderOrgnr || null,
               user_id: isGlobal ? null : user.id
-            }, {
-              onConflict: isGlobal ? 'name,entity_type' : 'name,entity_type,user_id'
             })
             .select('id')
             .single()
@@ -255,8 +251,6 @@ Deno.serve(async (req) => {
               shares,
               year,
               user_id: isGlobal ? null : user.id
-            }, {
-              onConflict: isGlobal ? 'company_orgnr,holder_id,share_class,year' : 'company_orgnr,holder_id,share_class,year,user_id'
             })
 
           if (holdingError) {
@@ -279,8 +273,9 @@ Deno.serve(async (req) => {
 
     // Oppdater total_shares for alle selskaper
     const { error: updateError } = await supabase.rpc('update_total_shares_for_year', {
-      target_year: year,
-      target_user_id: isGlobal ? null : user.id
+      p_orgnr: null, // null betyr alle selskaper
+      p_year: year,
+      p_user_id: isGlobal ? null : user.id
     })
 
     if (updateError) {

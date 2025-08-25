@@ -12711,6 +12711,10 @@ export type Database = {
         Args: { p_checklist_id: string }
         Returns: undefined
       }
+      update_total_shares_for_year: {
+        Args: { p_orgnr: string; p_user_id?: string; p_year: number }
+        Returns: undefined
+      }
       user_owns_client: {
         Args: { client_uuid: string }
         Returns: boolean
