@@ -10382,7 +10382,7 @@ export type Database = {
           created_at: string | null
           holder_id: string
           id: string
-          share_class: string
+          share_class: string | null
           shares: number
           user_id: string | null
           year: number
@@ -10392,7 +10392,7 @@ export type Database = {
           created_at?: string | null
           holder_id: string
           id?: string
-          share_class: string
+          share_class?: string | null
           shares?: number
           user_id?: string | null
           year: number
@@ -10402,7 +10402,7 @@ export type Database = {
           created_at?: string | null
           holder_id?: string
           id?: string
-          share_class?: string
+          share_class?: string | null
           shares?: number
           user_id?: string | null
           year?: number

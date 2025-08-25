@@ -88,9 +88,8 @@ export const ShareholdersImportForm: React.FC = () => {
       let currentRowNumber = 0
       let totalProcessed = 0
 
-      // Estimate total rows from file size (rough estimate: ~200 bytes per row)
-      const estimatedTotal = Math.floor(file.size / 200)
-      setTotalRows(estimatedTotal)
+      // We'll get the actual total rows from Papa Parse
+      let actualTotalRows = 0
 
       return new Promise<any>((resolve, reject) => {
         const processBatch = async () => {
@@ -101,7 +100,9 @@ export const ShareholdersImportForm: React.FC = () => {
             const result = await ingestBatch(session.session_id, data.year, buffer, data.isGlobal)
             totalProcessed += buffer.length
             setProcessedRows(totalProcessed)
-            setUploadProgress((totalProcessed / estimatedTotal) * 90) // Leave 10% for finish
+            // Update progress based on actual row counts
+            const progressPercent = actualTotalRows > 0 ? (totalProcessed / actualTotalRows) * 90 : 0
+            setUploadProgress(progressPercent)
             
             addLog(`Batch fullført: ${result.companies} selskaper, ${result.entities} eiere, ${result.holdings} eierandeler`)
             buffer = []
@@ -122,18 +123,31 @@ export const ShareholdersImportForm: React.FC = () => {
             }
 
             currentRowNumber++
+            actualTotalRows = currentRowNumber
+            setTotalRows(currentRowNumber)
+            
             const row = results.data as any
+
+            // Debug logging for first few rows
+            if (currentRowNumber <= 5) {
+              addLog(`Rad ${currentRowNumber}: ${JSON.stringify(Object.keys(row)).slice(0, 200)}`)
+            }
 
             // Map common header variations to standard fields
             const normalizedRow = {
-              orgnr: row.orgnr || row.organisasjonsnummer || row.org_nr || '',
-              selskap: row.navn || row.selskapsnavn || row.company_name || '',
-              aksjeklasse: row.aksjeklasse || row.share_class || '',
-              navn_aksjonaer: row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || '',
-              fodselsar_orgnr: row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || '',
-              landkode: row.landkode || row.country_code || '',
-              antall_aksjer: row.aksjer || row.shares || row.antall_aksjer || '0',
-              antall_aksjer_selskap: row.antall_aksjer_selskap || row.total_shares || ''
+              orgnr: String(row.orgnr || row.organisasjonsnummer || row.org_nr || '').trim(),
+              selskap: String(row.navn || row.selskapsnavn || row.company_name || '').trim(),
+              aksjeklasse: String(row.aksjeklasse || row.share_class || '').trim() || null,
+              navn_aksjonaer: String(row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || '').trim(),
+              fodselsar_orgnr: String(row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || '').trim() || null,
+              landkode: String(row.landkode || row.country_code || '').trim() || null,
+              antall_aksjer: String(row.aksjer || row.shares || row.antall_aksjer || '0').trim(),
+              antall_aksjer_selskap: String(row.antall_aksjer_selskap || row.total_shares || '').trim() || null
+            }
+
+            // Debug logging for data mapping
+            if (currentRowNumber <= 3) {
+              addLog(`Normalisert rad ${currentRowNumber}: orgnr=${normalizedRow.orgnr}, selskap=${normalizedRow.selskap}, aksjer=${normalizedRow.antall_aksjer}`)
             }
 
             // Filter for clients-only mode

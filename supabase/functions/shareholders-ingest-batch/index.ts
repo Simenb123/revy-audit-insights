@@ -87,6 +87,11 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Processing batch: ${rows.length} rows for session ${session_id}`)
+    
+    // Debug first few rows to see data structure
+    if (rows.length > 0) {
+      console.log(`Sample row data:`, JSON.stringify(rows[0], null, 2))
+    }
 
     // Build unique companies, entities and holdings maps
     const companiesMap = new Map<string, { orgnr: string; name: string; total_shares: number | null }>()
@@ -94,8 +99,11 @@ Deno.serve(async (req) => {
     const holdings: Array<{ company_orgnr: string; share_class: string | null; shares: number; holder_key: string }> = []
 
     for (const row of rows) {
-      const orgnr = (row.orgnr || '').replace(/\D/g, '')
-      if (!orgnr) continue
+      const orgnr = String(row.orgnr || '').replace(/\D/g, '')
+      if (!orgnr || orgnr.length !== 9) {
+        console.log(`Skipping row - invalid orgnr: "${row.orgnr}" -> "${orgnr}"`)
+        continue
+      }
 
       const totalShares = parseNumber(row.antall_aksjer_selskap)
       if (!companiesMap.has(orgnr)) {
@@ -107,8 +115,13 @@ Deno.serve(async (req) => {
       }
 
       // Process holder/entity
-      const holderRaw = (row.fodselsar_orgnr || '').toString().replace(/\D/g, '')
-      const holderName = (row.navn_aksjonaer || '').toString().trim()
+      const holderRaw = String(row.fodselsar_orgnr || '').replace(/\D/g, '')
+      const holderName = String(row.navn_aksjonaer || '').trim()
+      
+      if (!holderName) {
+        console.log(`Skipping row - missing holder name for orgnr: ${orgnr}`)
+        continue
+      }
       
       let holderKey = ''
       let entity: any = {
@@ -139,7 +152,9 @@ Deno.serve(async (req) => {
 
       // Add holding
       const shares = parseNumber(row.antall_aksjer) ?? 0
-      const shareClass = normalizeClassName(row.aksjeklasse) || null
+      const shareClass = normalizeClassName(row.aksjeklasse)
+      
+      console.log(`Processing holding: orgnr=${orgnr}, holder=${holderName}, shares=${shares}, class=${shareClass}`)
       
       if (shares > 0) {
         holdings.push({
@@ -148,6 +163,8 @@ Deno.serve(async (req) => {
           shares,
           holder_key: holderKey
         })
+      } else {
+        console.log(`Skipping holding with 0 shares: orgnr=${orgnr}, holder=${holderName}`)
       }
     }
 
@@ -238,6 +255,7 @@ Deno.serve(async (req) => {
     const duration = Math.round(performance.now() - startTime)
     
     console.log(`Batch processed: ${companies.length} companies, ${entities.length} entities, ${holdingsData.length} holdings in ${duration}ms`)
+    console.log(`Processed ${rows.length} input rows -> ${companiesMap.size} unique companies, ${entitiesMap.size} unique entities, ${holdings.length} total holdings`)
 
     return new Response(JSON.stringify({
       success: true,
