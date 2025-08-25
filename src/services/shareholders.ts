@@ -9,7 +9,61 @@ import type {
 } from '@/types/shareholders'
 
 /**
- * Importerer aksjonærdata fra CSV fil direkte
+ * Starter en ny aksjonær import session
+ */
+export async function startImportSession(year: number): Promise<{ session_id: string; user_id: string; year: number }> {
+  const { data, error } = await supabase.functions.invoke('shareholders-import-start', {
+    body: { year }
+  })
+  
+  if (error) {
+    throw new Error(`Failed to start import session: ${error.message}`)
+  }
+  
+  return data
+}
+
+/**
+ * Prosesserer en batch med aksjonærdata
+ */
+export async function ingestBatch(
+  sessionId: string, 
+  year: number, 
+  rows: any[], 
+  isGlobal = false
+): Promise<{ companies: number; entities: number; holdings: number; duration_ms: number }> {
+  const { data, error } = await supabase.functions.invoke('shareholders-ingest-batch', {
+    body: { session_id: sessionId, year, rows, isGlobal }
+  })
+  
+  if (error) {
+    throw new Error(`Batch processing failed: ${error.message}`)
+  }
+  
+  return data
+}
+
+/**
+ * Avslutter en import session og oppdaterer totaler
+ */
+export async function finishImport(
+  sessionId: string, 
+  year: number, 
+  isGlobal = false
+): Promise<{ success: boolean; summary: any }> {
+  const { data, error } = await supabase.functions.invoke('shareholders-import-finish', {
+    body: { session_id: sessionId, year, isGlobal }
+  })
+  
+  if (error) {
+    throw new Error(`Failed to finish import: ${error.message}`)
+  }
+  
+  return data
+}
+
+/**
+ * Legacy function - kept for compatibility
  */
 export async function importShareholders(formData: FormData): Promise<ImportResult> {
   const { data, error } = await supabase.functions.invoke('shareholders-import', {

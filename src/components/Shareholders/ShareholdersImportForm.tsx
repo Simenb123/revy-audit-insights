@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
-import { Upload, FileText, AlertCircle } from 'lucide-react'
+import { Upload, FileText, AlertCircle, Pause, Play, X } from 'lucide-react'
+import Papa from 'papaparse'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,7 @@ import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
 
-import { importShareholders } from '@/services/shareholders'
+import { startImportSession, ingestBatch, finishImport } from '@/services/shareholders'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 
 const importSchema = z.object({
@@ -34,6 +35,13 @@ export const ShareholdersImportForm: React.FC = () => {
   const { data: isSuperAdmin } = useIsSuperAdmin()
   const [uploadProgress, setUploadProgress] = useState(0)
   const [file, setFile] = useState<File | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [processedRows, setProcessedRows] = useState(0)
+  const [totalRows, setTotalRows] = useState(0)
+  const [processingLog, setProcessingLog] = useState<string[]>([])
+  const [showLog, setShowLog] = useState(false)
+  const parserRef = useRef<Papa.Parser | null>(null)
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importSchema),
@@ -46,57 +54,152 @@ export const ShareholdersImportForm: React.FC = () => {
     }
   })
 
+  // Header mapping for different CSV formats
+  const normalizeHeader = (header: string): string => {
+    return header.toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+  }
+
+  // Add log entry
+  const addLog = (message: string) => {
+    setProcessingLog(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
+  }
+
   const importMutation = useMutation({
     mutationFn: async (data: ImportFormData) => {
       if (!file) throw new Error('Ingen fil valgt')
 
-      // Send fil direkte til Edge Function med progress tracking
-      setUploadProgress(5)
-      
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('year', data.year.toString())
-      formData.append('delimiter', data.delimiter)
-      formData.append('encoding', data.encoding)
-      formData.append('mode', data.mode)
-      formData.append('isGlobal', data.isGlobal?.toString() || 'false')
+      setIsProcessing(true)
+      setProcessedRows(0)
+      setTotalRows(0)
+      setProcessingLog([])
+      setUploadProgress(0)
 
-      setUploadProgress(15)
+      addLog('Starter import session...')
       
-      // Estimér prosesseringstid basert på filstørrelse
-      const estimatedSeconds = Math.max(10, Math.floor(file.size / (1024 * 1024)) * 2)
-      
-      // Simuler progress basert på estimert tid
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) return prev
-          return prev + Math.random() * 10
+      // Start import session
+      const session = await startImportSession(data.year)
+      addLog(`Session startet: ${session.session_id}`)
+
+      const BATCH_SIZE = 2000
+      let buffer: any[] = []
+      let currentRowNumber = 0
+      let totalProcessed = 0
+
+      // Estimate total rows from file size (rough estimate: ~200 bytes per row)
+      const estimatedTotal = Math.floor(file.size / 200)
+      setTotalRows(estimatedTotal)
+
+      return new Promise<any>((resolve, reject) => {
+        const processBatch = async () => {
+          if (buffer.length === 0) return
+
+          try {
+            addLog(`Prosesserer batch: ${buffer.length} rader`)
+            const result = await ingestBatch(session.session_id, data.year, buffer, data.isGlobal)
+            totalProcessed += buffer.length
+            setProcessedRows(totalProcessed)
+            setUploadProgress((totalProcessed / estimatedTotal) * 90) // Leave 10% for finish
+            
+            addLog(`Batch fullført: ${result.companies} selskaper, ${result.entities} eiere, ${result.holdings} eierandeler`)
+            buffer = []
+          } catch (error) {
+            reject(error)
+          }
+        }
+
+        Papa.parse(file, {
+          worker: true,
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: normalizeHeader,
+          step: async (results, parser) => {
+            if (isPaused) {
+              parser.pause()
+              parserRef.current = parser
+              return
+            }
+
+            currentRowNumber++
+            const row = results.data as any
+
+            // Map common header variations to standard fields
+            const normalizedRow = {
+              orgnr: row.orgnr || row.organisasjonsnummer || row.org_nr || '',
+              selskap: row.navn || row.selskapsnavn || row.company_name || '',
+              aksjeklasse: row.aksjeklasse || row.share_class || '',
+              navn_aksjonaer: row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || '',
+              fodselsar_orgnr: row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || '',
+              landkode: row.landkode || row.country_code || '',
+              antall_aksjer: row.aksjer || row.shares || row.antall_aksjer || '0',
+              antall_aksjer_selskap: row.antall_aksjer_selskap || row.total_shares || ''
+            }
+
+            // Filter for clients-only mode
+            if (data.mode === 'clients-only') {
+              // This would need client org numbers - simplified for now
+              // In practice, you'd need to fetch client org numbers first
+            }
+
+            buffer.push(normalizedRow)
+
+            // Process batch when full
+            if (buffer.length >= BATCH_SIZE) {
+              parser.pause()
+              await processBatch()
+              if (!isPaused) {
+                parser.resume()
+              }
+            }
+          },
+          complete: async () => {
+            try {
+              // Process remaining buffer
+              await processBatch()
+              
+              addLog('Avslutter import...')
+              const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
+              
+              setUploadProgress(100)
+              addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
+              
+              resolve({
+                processedRows: totalProcessed,
+                skippedRows: 0,
+                errorRows: 0,
+                totalRows: currentRowNumber
+              })
+            } catch (error) {
+              reject(error)
+            }
+          },
+          error: (error) => {
+            addLog(`Parsing feil: ${error.message}`)
+            reject(error)
+          }
         })
-      }, estimatedSeconds * 100)
-
-      try {
-        const result = await importShareholders(formData)
-        clearInterval(progressInterval)
-        return result
-      } catch (error) {
-        clearInterval(progressInterval)
-        throw error
-      }
+      })
     },
     onSuccess: (result) => {
-      setUploadProgress(100)
+      setIsProcessing(false)
       toast({
         title: 'Import fullført',
-        description: `${result.processedRows} rader importert, ${result.skippedRows} hoppet over, ${result.errorRows} feil`,
+        description: `${result.processedRows} rader importert`,
       })
       
       // Reset form
       form.reset()
       setFile(null)
       setUploadProgress(0)
+      setProcessedRows(0)
+      setTotalRows(0)
     },
     onError: (error) => {
+      setIsProcessing(false)
       setUploadProgress(0)
+      addLog(`FEIL: ${error.message}`)
       toast({
         title: 'Import feilet',
         description: error.message,
@@ -104,6 +207,32 @@ export const ShareholdersImportForm: React.FC = () => {
       })
     }
   })
+
+  const handlePause = () => {
+    setIsPaused(true)
+    if (parserRef.current) {
+      parserRef.current.pause()
+    }
+  }
+
+  const handleResume = () => {
+    setIsPaused(false)
+    if (parserRef.current) {
+      parserRef.current.resume()
+    }
+  }
+
+  const handleCancel = () => {
+    if (parserRef.current) {
+      parserRef.current.abort()
+    }
+    setIsProcessing(false)
+    setIsPaused(false)
+    setUploadProgress(0)
+    setProcessedRows(0)
+    setTotalRows(0)
+    addLog('Import avbrutt')
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -116,8 +245,6 @@ export const ShareholdersImportForm: React.FC = () => {
   const onSubmit = (data: ImportFormData) => {
     importMutation.mutate(data)
   }
-
-  const isProcessing = importMutation.isPending
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -241,14 +368,69 @@ export const ShareholdersImportForm: React.FC = () => {
         </Alert>
       )}
 
-      {/* Progress bar */}
+      {/* Progress bar and controls */}
       {isProcessing && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Importerer...</span>
-            <span>{uploadProgress}%</span>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Prosesserer: {processedRows.toLocaleString()} / {totalRows.toLocaleString()} rader</span>
+              <span>{Math.round(uploadProgress)}%</span>
+            </div>
+            <Progress value={uploadProgress} />
           </div>
-          <Progress value={uploadProgress} />
+          
+          {/* Control buttons */}
+          <div className="flex gap-2">
+            {!isPaused ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePause}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                Pause
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline" 
+                size="sm"
+                onClick={handleResume}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Fortsett
+              </Button>
+            )}
+            
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleCancel}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Avbryt
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLog(!showLog)}
+            >
+              {showLog ? 'Skjul' : 'Vis'} logg
+            </Button>
+          </div>
+
+          {/* Processing log */}
+          {showLog && (
+            <div className="max-h-40 overflow-y-auto bg-muted p-3 rounded text-xs font-mono">
+              {processingLog.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
