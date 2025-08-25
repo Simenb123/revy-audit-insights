@@ -12712,7 +12712,9 @@ export type Database = {
         Returns: undefined
       }
       update_total_shares_for_year: {
-        Args: { p_orgnr: string; p_user_id?: string; p_year: number }
+        Args:
+          | { p_orgnr: string; p_user_id?: string; p_year: number }
+          | { p_orgnr?: string; p_user_id?: string; p_year: number }
         Returns: undefined
       }
       user_owns_client: {

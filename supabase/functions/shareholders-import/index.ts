@@ -273,7 +273,6 @@ Deno.serve(async (req) => {
 
     // Oppdater total_shares for alle selskaper
     const { error: updateError } = await supabase.rpc('update_total_shares_for_year', {
-      p_orgnr: null, // null betyr alle selskaper
       p_year: year,
       p_user_id: isGlobal ? null : user.id
     })
