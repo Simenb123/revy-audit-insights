@@ -40,3 +40,9 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.ownership-graph]
     verify_jwt = true
+  [functions.shareholders-import-start]
+    verify_jwt = true
+  [functions.shareholders-ingest-batch]
+    verify_jwt = true
+  [functions.shareholders-import-finish]
+    verify_jwt = true
