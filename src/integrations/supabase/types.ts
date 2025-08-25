@@ -10317,7 +10317,7 @@ export type Database = {
           name: string
           orgnr: string
           total_shares: number | null
-          user_id: string
+          user_id: string | null
           year: number
         }
         Insert: {
@@ -10326,7 +10326,7 @@ export type Database = {
           name: string
           orgnr: string
           total_shares?: number | null
-          user_id: string
+          user_id?: string | null
           year: number
         }
         Update: {
@@ -10335,7 +10335,7 @@ export type Database = {
           name?: string
           orgnr?: string
           total_shares?: number | null
-          user_id?: string
+          user_id?: string | null
           year?: number
         }
         Relationships: []
@@ -10350,7 +10350,7 @@ export type Database = {
           id: string
           name: string
           orgnr: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           birth_year?: number | null
@@ -10361,7 +10361,7 @@ export type Database = {
           id?: string
           name: string
           orgnr?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           birth_year?: number | null
@@ -10372,7 +10372,7 @@ export type Database = {
           id?: string
           name?: string
           orgnr?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -10384,7 +10384,7 @@ export type Database = {
           id: string
           share_class: string
           shares: number
-          user_id: string
+          user_id: string | null
           year: number
         }
         Insert: {
@@ -10394,7 +10394,7 @@ export type Database = {
           id?: string
           share_class: string
           shares?: number
-          user_id: string
+          user_id?: string | null
           year: number
         }
         Update: {
@@ -10404,7 +10404,7 @@ export type Database = {
           id?: string
           share_class?: string
           shares?: number
-          user_id?: string
+          user_id?: string | null
           year?: number
         }
         Relationships: [

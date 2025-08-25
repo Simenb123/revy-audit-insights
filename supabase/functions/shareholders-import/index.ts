@@ -65,6 +65,7 @@ interface ImportRequest {
   delimiter?: ';' | ','
   encoding?: 'AUTO' | 'UTF-8' | 'CP1252'
   mode?: 'full' | 'clients-only'
+  isGlobal?: boolean
 }
 
 Deno.serve(async (req) => {
@@ -95,9 +96,20 @@ Deno.serve(async (req) => {
     }
 
     const body: ImportRequest = await req.json()
-    const { storagePath, year, delimiter = ';', encoding = 'AUTO', mode = 'full' } = body
+    const { storagePath, year, delimiter = ';', encoding = 'AUTO', mode = 'full', isGlobal = false } = body
 
-    console.log(`Starting import: ${storagePath}, year: ${year}, mode: ${mode}`)
+    // Verify superadmin for global imports
+    if (isGlobal) {
+      const { data: isSuperAdmin, error: superAdminError } = await supabase.rpc('is_super_admin', {
+        user_uuid: user.id
+      })
+      
+      if (superAdminError || !isSuperAdmin) {
+        throw new Error('Only superadmins can perform global imports')
+      }
+    }
+
+    console.log(`Starting import: ${storagePath}, year: ${year}, mode: ${mode}, global: ${isGlobal}`)
 
     // Last ned fil fra storage
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -201,10 +213,10 @@ Deno.serve(async (req) => {
               orgnr: companyOrgnr,
               name: companyName,
               year,
-              user_id: user.id,
+              user_id: isGlobal ? null : user.id,
               total_shares: 0 // Oppdateres senere
             }, {
-              onConflict: 'orgnr,year,user_id'
+              onConflict: isGlobal ? 'orgnr,year' : 'orgnr,year,user_id'
             })
 
           if (companyError) {
@@ -220,9 +232,9 @@ Deno.serve(async (req) => {
               entity_type: holderType,
               name: holderName,
               orgnr: holderOrgnr || null,
-              user_id: user.id
+              user_id: isGlobal ? null : user.id
             }, {
-              onConflict: 'entity_key,user_id'
+              onConflict: isGlobal ? 'name,entity_type' : 'name,entity_type,user_id'
             })
             .select('id')
             .single()
@@ -242,9 +254,9 @@ Deno.serve(async (req) => {
               share_class: shareClass,
               shares,
               year,
-              user_id: user.id
+              user_id: isGlobal ? null : user.id
             }, {
-              onConflict: 'company_orgnr,holder_id,share_class,year,user_id'
+              onConflict: isGlobal ? 'company_orgnr,holder_id,share_class,year' : 'company_orgnr,holder_id,share_class,year,user_id'
             })
 
           if (holdingError) {
@@ -268,7 +280,7 @@ Deno.serve(async (req) => {
     // Oppdater total_shares for alle selskaper
     const { error: updateError } = await supabase.rpc('update_total_shares_for_year', {
       target_year: year,
-      target_user_id: user.id
+      target_user_id: isGlobal ? null : user.id
     })
 
     if (updateError) {

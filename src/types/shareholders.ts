@@ -79,6 +79,7 @@ export interface ImportRequest {
   delimiter?: ';' | ','
   encoding?: 'AUTO' | 'UTF-8' | 'CP1252'
   mode?: 'full' | 'clients-only'
+  isGlobal?: boolean
 }
 
 export interface ImportResult {

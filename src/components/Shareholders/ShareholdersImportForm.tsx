@@ -17,19 +17,22 @@ import { useToast } from '@/components/ui/use-toast'
 
 import { importShareholders, uploadFileToStorage } from '@/services/shareholders'
 import type { ImportRequest } from '@/types/shareholders'
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 
 const importSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, 'Fil er påkrevd'),
   year: z.number().min(2000).max(new Date().getFullYear()),
   delimiter: z.enum([';', ',']),
   encoding: z.enum(['AUTO', 'UTF-8', 'CP1252']),
-  mode: z.enum(['full', 'clients-only'])
+  mode: z.enum(['full', 'clients-only']),
+  isGlobal: z.boolean().optional()
 })
 
 type ImportFormData = z.infer<typeof importSchema>
 
 export const ShareholdersImportForm: React.FC = () => {
   const { toast } = useToast()
+  const { data: isSuperAdmin } = useIsSuperAdmin()
   const [uploadProgress, setUploadProgress] = useState(0)
   const [file, setFile] = useState<File | null>(null)
 
@@ -39,7 +42,8 @@ export const ShareholdersImportForm: React.FC = () => {
       year: new Date().getFullYear() - 1, // Forrige år som standard
       delimiter: ';',
       encoding: 'AUTO',
-      mode: 'full'
+      mode: 'full',
+      isGlobal: false
     }
   })
 
@@ -50,7 +54,7 @@ export const ShareholdersImportForm: React.FC = () => {
       // Last opp fil til storage først
       setUploadProgress(20)
       const fileName = `${Date.now()}_${file.name}`
-      const storagePath = await uploadFileToStorage(file, fileName)
+      const storagePath = await uploadFileToStorage(file, fileName, data.isGlobal)
       
       setUploadProgress(40)
 
@@ -60,7 +64,8 @@ export const ShareholdersImportForm: React.FC = () => {
         year: data.year,
         delimiter: data.delimiter,
         encoding: data.encoding,
-        mode: data.mode
+        mode: data.mode,
+        isGlobal: data.isGlobal
       }
 
       setUploadProgress(60)
@@ -126,6 +131,26 @@ export const ShareholdersImportForm: React.FC = () => {
           <p className="text-sm text-destructive">{form.formState.errors.file.message}</p>
         )}
       </div>
+
+      {/* Global import toggle (kun for superadmin) */}
+      {isSuperAdmin && (
+        <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/50">
+          <Switch
+            id="isGlobal"
+            checked={form.watch('isGlobal') || false}
+            onCheckedChange={(checked) => form.setValue('isGlobal', checked)}
+            disabled={isProcessing}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="isGlobal" className="text-sm font-medium">
+              Global import
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Import som globale data tilgjengelig for alle brukere (kun superadmin)
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Parametere */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

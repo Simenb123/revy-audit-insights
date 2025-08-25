@@ -98,19 +98,27 @@ export async function getCompanyShareholders(
 /**
  * Laster opp fil til storage bucket
  */
-export async function uploadFileToStorage(file: File, fileName: string): Promise<string> {
+export async function uploadFileToStorage(file: File, fileName: string, isGlobal = false): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const uploadPath = isGlobal ? `global/raw/${fileName}` : `${user.id}/raw/${fileName}`;
+
   const { data, error } = await supabase.storage
     .from('shareholders')
-    .upload(`raw/${fileName}`, file, {
+    .upload(uploadPath, file, {
       cacheControl: '3600',
       upsert: false
-    })
-  
+    });
+
   if (error) {
-    throw new Error(`Upload failed: ${error.message}`)
+    throw new Error(`Upload failed: ${error.message}`);
   }
-  
-  return data.path
+
+  return data.path;
 }
 
 /**
