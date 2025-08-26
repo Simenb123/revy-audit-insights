@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/use-toast'
 
 import { startImportSession, ingestBatch, finishImport } from '@/services/shareholders'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
+import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx'
 
 const importSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, 'Fil er påkrevd'),
@@ -111,88 +112,225 @@ export const ShareholdersImportForm: React.FC = () => {
           }
         }
 
-        Papa.parse(file, {
-          worker: false,
-          header: true,
-          skipEmptyLines: true,
-          step: async (results, parser) => {
-            if (isPaused) {
-              parser.pause()
-              parserRef.current = parser
-              return
-            }
+        // Check if file is Excel or CSV
+        const fileExtension = file.name.toLowerCase().split('.').pop()
+        const isExcel = fileExtension === 'xlsx' || fileExtension === 'xls'
 
-            currentRowNumber++
-            actualTotalRows = currentRowNumber
-            setTotalRows(currentRowNumber)
-            
-            const row = results.data as any
+        if (isExcel) {
+          // Handle Excel files
+          addLog('Prosesserer Excel-fil...')
+          
+          parseXlsxSafely(file)
+            .then(workbook => {
+              const worksheetData = getWorksheetDataSafely(workbook)
+              addLog(`Excel-fil inneholder ${worksheetData.length} rader`)
+              
+              actualTotalRows = worksheetData.length
+              setTotalRows(actualTotalRows)
 
-            // Debug logging for first few rows
-            if (currentRowNumber <= 5) {
-              addLog(`Rad ${currentRowNumber}: ${JSON.stringify(Object.keys(row)).slice(0, 200)}`)
-            }
+              // Process each row
+              const processExcelRows = async () => {
+                for (let i = 0; i < worksheetData.length; i++) {
+                  if (isPaused) {
+                    await new Promise(resolve => {
+                      const checkPause = () => {
+                        if (!isPaused) resolve(undefined)
+                        else setTimeout(checkPause, 100)
+                      }
+                      checkPause()
+                    })
+                  }
 
-            // Map common header variations to standard fields
-            const normalizedRow = {
-              orgnr: String(row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || '').trim(),
-              selskap: String(row.navn || row.selskapsnavn || row.company_name || '').trim(),
-              aksjeklasse: String(row.aksjeklasse || row.share_class || '').trim() || null,
-              navn_aksjonaer: String(row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || '').trim(),
-              fodselsar_orgnr: String(row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || '').trim() || null,
-              landkode: String(row.landkode || row.country_code || '').trim() || null,
-              antall_aksjer: String(row.aksjer || row.shares || row.antall_aksjer || '0').trim(),
-              antall_aksjer_selskap: String(row.antall_aksjer_selskap || row.total_shares || '').trim() || null
-            }
+                  currentRowNumber = i + 1
+                  const row = worksheetData[i]
 
-            // Debug logging for data mapping
-            if (currentRowNumber <= 3) {
-              addLog(`Normalisert rad ${currentRowNumber}: orgnr=${normalizedRow.orgnr}, selskap=${normalizedRow.selskap}, aksjer=${normalizedRow.antall_aksjer}`)
-            }
+                  // Debug logging for first few rows
+                  if (currentRowNumber <= 5) {
+                    addLog(`Rad ${currentRowNumber}: ${JSON.stringify(Object.keys(row)).slice(0, 200)}`)
+                  }
 
-            // Filter for clients-only mode
-            if (data.mode === 'clients-only') {
-              // This would need client org numbers - simplified for now
-              // In practice, you'd need to fetch client org numbers first
-            }
+                  // Map common header variations to standard fields, including encoding variants
+                  const normalizedRow = {
+                    orgnr: String(
+                      row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || 
+                      row.A || ''
+                    ).trim(),
+                    selskap: String(
+                      row.navn || row.selskapsnavn || row.company_name || row.Selskap || 
+                      row.B || ''
+                    ).trim(),
+                    aksjeklasse: String(
+                      row.aksjeklasse || row.Aksjeklasse || row.share_class || 
+                      row.C || ''
+                    ).trim() || null,
+                    navn_aksjonaer: String(
+                      row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || 
+                      row['Navn aksjonÃ¦r'] || row['Navn aksjonær'] || 
+                      row.D || ''
+                    ).trim(),
+                    fodselsar_orgnr: String(
+                      row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || 
+                      row['FÃ¸dselsÃ¥r/orgnr'] || row['Fødselsår/orgnr'] || 
+                      row.E || ''
+                    ).trim() || null,
+                    landkode: String(
+                      row.landkode || row.Landkode || row.country_code || 
+                      row.G || ''
+                    ).trim() || null,
+                    antall_aksjer: String(
+                      row.aksjer || row.shares || row.antall_aksjer || 
+                      row['Antall aksjer'] || 
+                      row.H || '0'
+                    ).trim(),
+                    antall_aksjer_selskap: String(
+                      row.antall_aksjer_selskap || row.total_shares || 
+                      row['Antall aksjer selskap'] || 
+                      row.I || ''
+                    ).trim() || null
+                  }
 
-            buffer.push(normalizedRow)
+                  // Debug logging for data mapping
+                  if (currentRowNumber <= 3) {
+                    addLog(`Normalisert rad ${currentRowNumber}: orgnr=${normalizedRow.orgnr}, selskap=${normalizedRow.selskap}, aksjer=${normalizedRow.antall_aksjer}`)
+                  }
 
-            // Process batch when full
-            if (buffer.length >= BATCH_SIZE) {
-              parser.pause()
-              await processBatch()
-              if (!isPaused) {
-                parser.resume()
+                  buffer.push(normalizedRow)
+
+                  // Process batch when full
+                  if (buffer.length >= BATCH_SIZE) {
+                    await processBatch()
+                  }
+                }
+
+                // Process remaining buffer
+                await processBatch()
+                
+                addLog('Avslutter import...')
+                const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
+                
+                setUploadProgress(100)
+                addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
+                
+                resolve({
+                  processedRows: totalProcessed,
+                  skippedRows: 0,
+                  errorRows: 0,
+                  totalRows: currentRowNumber
+                })
               }
-            }
-          },
-          complete: async () => {
-            try {
-              // Process remaining buffer
-              await processBatch()
+
+              processExcelRows().catch(reject)
+            })
+            .catch(error => {
+              addLog(`Excel parsing feil: ${error.message}`)
+              reject(error)
+            })
+        } else {
+          // Handle CSV files with Papa Parse
+
+          Papa.parse(file, {
+            worker: false,
+            header: true,
+            skipEmptyLines: true,
+            step: async (results, parser) => {
+              if (isPaused) {
+                parser.pause()
+                parserRef.current = parser
+                return
+              }
+
+              currentRowNumber++
+              actualTotalRows = currentRowNumber
+              setTotalRows(currentRowNumber)
               
-              addLog('Avslutter import...')
-              const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
-              
-              setUploadProgress(100)
-              addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
-              
-              resolve({
-                processedRows: totalProcessed,
-                skippedRows: 0,
-                errorRows: 0,
-                totalRows: currentRowNumber
-              })
-            } catch (error) {
+              const row = results.data as any
+
+              // Debug logging for first few rows
+              if (currentRowNumber <= 5) {
+                addLog(`Rad ${currentRowNumber}: ${JSON.stringify(Object.keys(row)).slice(0, 200)}`)
+              }
+
+              // Map common header variations to standard fields, including encoding variants
+              const normalizedRow = {
+                orgnr: String(
+                  row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || ''
+                ).trim(),
+                selskap: String(
+                  row.navn || row.selskapsnavn || row.company_name || row.Selskap || ''
+                ).trim(),
+                aksjeklasse: String(
+                  row.aksjeklasse || row.Aksjeklasse || row.share_class || ''
+                ).trim() || null,
+                navn_aksjonaer: String(
+                  row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || 
+                  row['Navn aksjonÃ¦r'] || row['Navn aksjonær'] || ''
+                ).trim(),
+                fodselsar_orgnr: String(
+                  row.eier_orgnr || row.holder_orgnr || row.fodselsar_orgnr || 
+                  row['FÃ¸dselsÃ¥r/orgnr'] || row['Fødselsår/orgnr'] || ''
+                ).trim() || null,
+                landkode: String(
+                  row.landkode || row.Landkode || row.country_code || ''
+                ).trim() || null,
+                antall_aksjer: String(
+                  row.aksjer || row.shares || row.antall_aksjer || 
+                  row['Antall aksjer'] || '0'
+                ).trim(),
+                antall_aksjer_selskap: String(
+                  row.antall_aksjer_selskap || row.total_shares || 
+                  row['Antall aksjer selskap'] || ''
+                ).trim() || null
+              }
+
+              // Debug logging for data mapping
+              if (currentRowNumber <= 3) {
+                addLog(`Normalisert rad ${currentRowNumber}: orgnr=${normalizedRow.orgnr}, selskap=${normalizedRow.selskap}, aksjer=${normalizedRow.antall_aksjer}`)
+              }
+
+              // Filter for clients-only mode
+              if (data.mode === 'clients-only') {
+                // This would need client org numbers - simplified for now
+                // In practice, you'd need to fetch client org numbers first
+              }
+
+              buffer.push(normalizedRow)
+
+              // Process batch when full
+              if (buffer.length >= BATCH_SIZE) {
+                parser.pause()
+                await processBatch()
+                if (!isPaused) {
+                  parser.resume()
+                }
+              }
+            },
+            complete: async () => {
+              try {
+                // Process remaining buffer
+                await processBatch()
+                
+                addLog('Avslutter import...')
+                const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
+                
+                setUploadProgress(100)
+                addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
+                
+                resolve({
+                  processedRows: totalProcessed,
+                  skippedRows: 0,
+                  errorRows: 0,
+                  totalRows: currentRowNumber
+                })
+              } catch (error) {
+                reject(error)
+              }
+            },
+            error: (error) => {
+              addLog(`Parsing feil: ${error.message}`)
               reject(error)
             }
-          },
-          error: (error) => {
-            addLog(`Parsing feil: ${error.message}`)
-            reject(error)
-          }
-        })
+          })
+        }
       })
     },
     onSuccess: (result) => {
@@ -263,12 +401,12 @@ export const ShareholdersImportForm: React.FC = () => {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       {/* Filvalg */}
       <div className="space-y-2">
-        <Label htmlFor="file">CSV-fil fra Skatteetaten</Label>
+        <Label htmlFor="file">CSV/Excel-fil fra Skatteetaten</Label>
         <div className="flex items-center gap-4">
           <Input
             id="file"
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             onChange={handleFileChange}
             disabled={isProcessing}
           />

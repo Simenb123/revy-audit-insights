@@ -47,9 +47,9 @@ const AksjonaerregisterPage: React.FC = () => {
         <TabsContent value="import" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Import CSV fra Skatteetaten</CardTitle>
+              <CardTitle>Import CSV/Excel fra Skatteetaten</CardTitle>
               <CardDescription>
-                Last opp CSV-filer med aksjonærinformasjon. Støtter store filer (100-300MB+) med automatisk encoding-deteksjon.
+                Last opp CSV/Excel-filer med aksjonærinformasjon. Støtter store filer (100-300MB+) med automatisk encoding-deteksjon.
               </CardDescription>
             </CardHeader>
             <CardContent>
