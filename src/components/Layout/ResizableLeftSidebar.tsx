@@ -245,23 +245,11 @@ const ResizableLeftSidebar = () => {
     },
   ] : []
 
-  // Sales sub-items (placeholder for future)
-  const salesItems = clientId ? [
-    {
-      title: 'Salgsdata',
-      url: `/clients/${clientId}/sales`,
-      icon: TrendingUp,
-    },
-  ] : []
+  // Sales sub-items (removed as requested)
+  const salesItems: any[] = []
 
-  // Costs sub-items (placeholder for future)
-  const costItems = clientId ? [
-    {
-      title: 'Kostnadsanalyse',
-      url: `/clients/${clientId}/costs`,
-      icon: Receipt,
-    },
-  ] : []
+  // Costs sub-items (removed as requested)  
+  const costItems: any[] = []
 
   // Investment sub-items (client-specific only)
   const investmentItems = clientId ? [
