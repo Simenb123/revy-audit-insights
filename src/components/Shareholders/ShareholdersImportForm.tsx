@@ -135,7 +135,7 @@ export const ShareholdersImportForm: React.FC = () => {
 
             // Map common header variations to standard fields
             const normalizedRow = {
-              orgnr: String(row.orgnr || row.organisasjonsnummer || row.org_nr || '').trim(),
+              orgnr: String(row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || '').trim(),
               selskap: String(row.navn || row.selskapsnavn || row.company_name || '').trim(),
               aksjeklasse: String(row.aksjeklasse || row.share_class || '').trim() || null,
               navn_aksjonaer: String(row.aksjonaer || row.eier || row.holder || row.navn_aksjonaer || '').trim(),
