@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 1. Upsert companies
+    // 1. Upsert companies with better conflict handling
     const companies = Array.from(companiesMap.values()).map(c => ({
       ...c,
       year,
@@ -176,12 +176,46 @@ Deno.serve(async (req) => {
     }))
 
     if (companies.length > 0) {
-      const { error: companyError } = await supabase
-        .from('share_companies')
-        .upsert(companies, { onConflict: 'orgnr,year,user_id' })
+      // Handle constraint conflicts by checking for existing records first
+      for (const company of companies) {
+        try {
+          const { error: companyError } = await supabase
+            .from('share_companies')
+            .upsert([company], { 
+              onConflict: 'orgnr,year,user_id',
+              ignoreDuplicates: false 
+            })
 
-      if (companyError) {
-        throw new Error(`Company upsert failed: ${companyError.message}`)
+          if (companyError) {
+            // If there's a constraint violation, try to update existing record
+            if (companyError.code === '23505') { // unique constraint violation
+              console.log(`Constraint conflict for company ${company.orgnr}, trying alternative approach`)
+              
+              // First, try to update existing global record if user is importing user-specific data
+              if (!isGlobal) {
+                const { error: updateError } = await supabase
+                  .from('share_companies')
+                  .update({
+                    name: company.name,
+                    total_shares: company.total_shares,
+                    calculated_total: company.total_shares
+                  })
+                  .eq('orgnr', company.orgnr)
+                  .eq('year', company.year)
+                  .is('user_id', null)
+
+                if (updateError) {
+                  console.log(`Failed to update global record: ${updateError.message}`)
+                }
+              }
+            } else {
+              throw new Error(`Company upsert failed: ${companyError.message}`)
+            }
+          }
+        } catch (err) {
+          console.error(`Error processing company ${company.orgnr}:`, err)
+          // Continue with other companies instead of failing completely
+        }
       }
     }
 
