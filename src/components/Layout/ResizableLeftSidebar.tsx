@@ -55,11 +55,6 @@ const generalWorkItems = [
 // Administrative områder - rollebasert tilgang
 const adminItems = [
   {
-    title: 'PDF-filer',
-    url: '/documents',
-    icon: FileText,
-  },
-  {
     title: 'Klientadministrasjon',
     url: '/client-admin',
     icon: Building,
@@ -75,12 +70,6 @@ const adminItems = [
     title: 'AI Revy Admin',
     url: '/ai-revy-admin',
     icon: Brain,
-    roles: ['admin'] as const,
-  },
-  {
-    title: 'Standard kontoer',
-    url: '/standard-accounts',
-    icon: Database,
     roles: ['admin'] as const,
   },
 ]
@@ -116,16 +105,6 @@ const resourceItems = [
     title: 'Kunnskapsbase',
     url: '/fag',
     icon: BookOpen,
-  },
-  {
-    title: 'Revisjons Akademiet',
-    url: '/academy',
-    icon: GraduationCap,
-  },
-  {
-    title: 'Læring',
-    url: '/training',
-    icon: GraduationCap,
   },
   {
     title: 'Revisorskolen',
@@ -630,40 +609,25 @@ const ResizableLeftSidebar = () => {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-1">
-                    {filteredAdminItems.map((item) => {
-                      const isItemActive = isActive(item.url)
-                      
-                      return (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isItemActive}
-                            className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                            tooltip={isCollapsed ? item.title : undefined}
-                          >
-                            <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                              <item.icon className="h-4 w-4 flex-shrink-0" />
-                              {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      )
-                    })}
-                    {isSuperAdmin && (
-                      <SidebarMenuItem key="Superadmin">
-                        <SidebarMenuButton 
-                          asChild 
-                          isActive={isActive('/superadmin')}
-                          className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                          tooltip={isCollapsed ? 'Superadmin' : undefined}
-                        >
-                          <Link to="/superadmin" className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                            <Shield className="h-4 w-4 flex-shrink-0" />
-                            {!isCollapsed && <span className="text-xs truncate">Superadmin</span>}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )}
+                     {filteredAdminItems.map((item) => {
+                       const isItemActive = isActive(item.url)
+                       
+                       return (
+                         <SidebarMenuItem key={item.title}>
+                           <SidebarMenuButton 
+                             asChild 
+                             isActive={isItemActive}
+                             className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                             tooltip={isCollapsed ? item.title : undefined}
+                           >
+                             <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                               <item.icon className="h-4 w-4 flex-shrink-0" />
+                               {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                             </Link>
+                           </SidebarMenuButton>
+                         </SidebarMenuItem>
+                       )
+                     })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>

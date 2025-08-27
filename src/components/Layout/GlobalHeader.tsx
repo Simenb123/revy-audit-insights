@@ -10,8 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Users, Book, Brain, FileText, MessageSquare } from 'lucide-react';
+import { Users, Book, Brain, FileText, MessageSquare, GraduationCap, Database, Shield } from 'lucide-react';
 import { RecentClientsDropdown } from './RecentClientsDropdown';
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import TeamChatPanel from '@/components/Communication/TeamChatPanel';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
@@ -39,6 +40,8 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const {
     pageTitle
   } = usePageTitle();
+  const { data: userProfile } = useUserProfile();
+  const { data: isSuperAdmin } = useIsSuperAdmin();
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -191,9 +194,11 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                 <Settings className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuContent className="w-64" align="end">
               <DropdownMenuLabel>Innstillinger</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              
+              {/* Organisasjon */}
               <DropdownMenuItem onClick={() => navigate('/organization/settings')}>
                 Organisasjonsinnstillinger
               </DropdownMenuItem>
@@ -203,6 +208,46 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
               <DropdownMenuItem onClick={() => navigate('/organization/roles')}>
                 Rolleadministrasjon
               </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Verktøy & Ressurser</DropdownMenuLabel>
+              
+              {/* Verktøy som sjelden brukes */}
+              <DropdownMenuItem onClick={() => navigate('/documents')}>
+                <FileText className="mr-2 h-4 w-4" />
+                PDF-filer
+              </DropdownMenuItem>
+              {userProfile?.userRole === 'admin' && (
+                <DropdownMenuItem onClick={() => navigate('/standard-accounts')}>
+                  <Database className="mr-2 h-4 w-4" />
+                  Standard kontoer
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Læring & Utdanning</DropdownMenuLabel>
+              
+              {/* Læringsfunksjoner */}
+              <DropdownMenuItem onClick={() => navigate('/academy')}>
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Revisjons Akademiet
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/training')}>
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Læring
+              </DropdownMenuItem>
+              
+              {/* Superadmin - kun for super admins */}
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>System</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => navigate('/superadmin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Superadmin
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           
