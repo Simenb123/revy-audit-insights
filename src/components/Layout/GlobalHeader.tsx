@@ -30,6 +30,7 @@ import {
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
 import { Badge } from '@/components/ui/badge';
+import { RecentClientsDropdown } from './RecentClientsDropdown';
 
 const GlobalHeader = () => {
   const { signOut } = useAuth();
@@ -90,6 +91,9 @@ const GlobalHeader = () => {
           <div className="hidden lg:block w-80">
             <GlobalSearch />
           </div>
+
+          {/* Nylig besøkte klienter */}
+          <RecentClientsDropdown />
 
           {/* Innstillinger dropdown */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
