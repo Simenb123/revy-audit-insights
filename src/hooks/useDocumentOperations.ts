@@ -22,7 +22,7 @@ export const useDocumentOperations = (clientId?: string) => {
       // Generate unique filename
       const fileExt = params.file.name.split('.').pop() || 'unknown';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${params.clientId}/${fileName}`;
+      const filePath = `${user.id}/${params.clientId}/${fileName}`;
 
       devLog('Uploading file to client-documents bucket:', filePath);
 
