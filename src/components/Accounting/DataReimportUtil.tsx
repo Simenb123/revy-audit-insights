@@ -68,21 +68,17 @@ const DataReimportUtil: React.FC<DataReimportUtilProps> = ({ clientId, clientNam
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h4 className="font-medium text-yellow-800 mb-2">Problem identifisert:</h4>
+          <h4 className="font-medium text-yellow-800 mb-2">Hovedbok</h4>
           <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• Alle beløp-felt viser 0 eller null</li>
-            <li>• Sannsynligvis på grunn av feil kolonnemapping eller norsk tallformat</li>
-            <li>• Forbedret Norwegian number conversion er nå implementert</li>
+            <li>• Opplastning</li>
           </ul>
         </div>
         
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2">Forbedringer implementert:</h4>
+          <h4 className="font-medium text-blue-800 mb-2">Last opp:</h4>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Utvidet norske aliaser for beløp-felt</li>
-            <li>• Forbedret konvertering av norske tallformater (123.456,78)</li>
-            <li>• Bedre håndtering av tusen-separatorer og desimaler</li>
-            <li>• Forbedret logging for debugging</li>
+            <li>• Transaksjoner</li>
+
           </ul>
         </div>
 
@@ -99,7 +95,6 @@ const DataReimportUtil: React.FC<DataReimportUtilProps> = ({ clientId, clientNam
           
           <p className="text-sm text-gray-600">
             Etter sletting kan du gå til hovedbok-opplastning og laste opp filen på nytt.
-            Den forbedrede mappingen og tallkonverteringen skal nå håndtere norske formater korrekt.
           </p>
         </div>
       </CardContent>
