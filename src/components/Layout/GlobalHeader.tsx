@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import { 
   Settings, 
   LogOut, 
@@ -59,7 +60,7 @@ const GlobalHeader = () => {
     setIsSettingsOpen(false);
   };
 
-  const isSuperAdmin = userProfile?.userRole === 'super_admin';
+  const { data: isSuperAdmin } = useIsSuperAdmin();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
