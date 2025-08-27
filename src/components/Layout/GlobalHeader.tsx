@@ -26,7 +26,7 @@ import {
   BookOpen,
   UserCog
 } from 'lucide-react';
-import GlobalSearch from '@/components/GlobalSearch/GlobalSearch';
+import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
 import { Badge } from '@/components/ui/badge';
 
@@ -34,7 +34,7 @@ const GlobalHeader = () => {
   const { signOut } = useAuth();
   const { data: userProfile } = useUserProfile();
   const navigate = useNavigate();
-  const { title } = usePageTitle();
+  const { pageTitle } = usePageTitle();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -76,10 +76,10 @@ const GlobalHeader = () => {
             <span className="font-bold text-lg hidden sm:inline-block">Revio</span>
           </Link>
           
-          {title && (
+          {pageTitle && (
             <>
               <div className="hidden sm:block text-muted-foreground">/</div>
-              <h1 className="font-semibold truncate text-sm sm:text-base">{title}</h1>
+              <h1 className="font-semibold truncate text-sm sm:text-base">{pageTitle}</h1>
             </>
           )}
         </div>
