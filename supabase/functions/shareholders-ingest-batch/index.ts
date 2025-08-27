@@ -172,7 +172,6 @@ Deno.serve(async (req) => {
     const companies = Array.from(companiesMap.values()).map(c => ({
       ...c,
       year,
-      calculated_total: c.total_shares,
       user_id: isGlobal ? null : user.id
     }))
 
