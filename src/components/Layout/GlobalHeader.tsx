@@ -63,7 +63,7 @@ const GlobalHeader = () => {
   const { data: isSuperAdmin } = useIsSuperAdmin();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-revio-500/95 backdrop-blur supports-[backdrop-filter]:bg-revio-500/60">
       <div className="flex h-14 items-center px-4">
         {/* Logo og tittel */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
@@ -74,13 +74,13 @@ const GlobalHeader = () => {
             <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">R</span>
             </div>
-            <span className="font-bold text-lg hidden sm:inline-block">Revio</span>
+            <span className="font-bold text-lg hidden sm:inline-block text-white">Revio</span>
           </Link>
           
           {pageTitle && (
             <>
-              <div className="hidden sm:block text-muted-foreground">/</div>
-              <h1 className="font-semibold truncate text-sm sm:text-base">{pageTitle}</h1>
+              <div className="hidden sm:block text-white/60">/</div>
+              <h1 className="font-semibold truncate text-sm sm:text-base text-white">{pageTitle}</h1>
             </>
           )}
         </div>
@@ -94,7 +94,7 @@ const GlobalHeader = () => {
           {/* Innstillinger dropdown */}
           <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative">
+              <Button variant="ghost" size="sm" className="relative text-white hover:bg-white/10">
                 <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -166,7 +166,7 @@ const GlobalHeader = () => {
           {/* Bruker dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full text-white hover:bg-white/10">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="" alt={getDisplayName()} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
