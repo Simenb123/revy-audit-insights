@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, ChevronLeft, ChevronRight, Bot, BarChart2 } from 'lucide-react';
+import { MessageSquare, X, ChevronLeft, ChevronRight, Bot, BarChart2, Database } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useClientLookup } from '@/hooks/useClientLookup';
 import { detectPageType, extractClientId } from './pageDetectionHelpers';
@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useRightSidebar } from './RightSidebarContext';
 
 import ClientFiguresPanel from '@/components/Sidebar/ClientFiguresPanel';
+import DocumentDataPanel from '@/components/Sidebar/DocumentDataPanel';
 
 const COLLAPSED_WIDTH = 44;
 
@@ -36,7 +37,7 @@ const ResizableRightSidebar = () => {
   const { data: clientLookup } = useClientLookup(clientIdOrOrg);
   const clientId = clientLookup?.id;
 
-  const [activeTab, setActiveTab] = useState<'ai' | 'chat' | 'figures'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'chat' | 'figures' | 'documents'>('ai');
 
   const startWidthRef = React.useRef(width);
 
@@ -80,6 +81,9 @@ useEffect(() => {
       } else if (key === 'f') {
         e.preventDefault();
         openTab('figures');
+      } else if (key === 'd') {
+        e.preventDefault();
+        openTab('documents');
       }
     }
   };
@@ -108,7 +112,7 @@ useEffect(() => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const openTab = (tab: 'ai' | 'chat' | 'figures') => {
+  const openTab = (tab: 'ai' | 'chat' | 'figures' | 'documents') => {
     if (!isCollapsed && activeTab === tab) {
       setIsCollapsed(true);
     } else {
@@ -140,6 +144,8 @@ useEffect(() => {
       <div className="flex h-full flex-col">
         {activeTab === 'figures' ? (
           <ClientFiguresPanel clientId={clientId} />
+        ) : activeTab === 'documents' ? (
+          <DocumentDataPanel clientId={clientId} />
         ) : (
           <AiRevyCard
             variant={variant}
@@ -284,6 +290,27 @@ useEffect(() => {
                 </TooltipTrigger>
                 <TooltipContent side="left">Analyse</TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative w-full">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`w-full h-10 justify-center hover-scale ${activeTab === 'documents' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'hover:bg-muted'}`}
+                      onClick={() => openTab('documents')}
+                      aria-label="Åpne Dokumenter"
+                    >
+                      <Database className="h-7 w-7" />
+                    </Button>
+                    {activeTab === 'documents' && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-full bg-primary" />
+                    )}
+                    
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">Dokumenter</TooltipContent>
+              </Tooltip>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-2">
@@ -343,6 +370,21 @@ useEffect(() => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="left">Analyse</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 hover-scale ${activeTab === 'documents' ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
+                      onClick={() => openTab('documents')}
+                      aria-label="Bytt til Dokumenter"
+                    >
+                      <Database className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Dokumenter</TooltipContent>
                 </Tooltip>
               </div>
             </div>
