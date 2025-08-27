@@ -229,15 +229,12 @@ Deno.serve(async (req) => {
     const entityIdMap = new Map<string, string>()
 
     if (entities.length > 0) {
-      // Upsert entities
+      // Upsert entities - use ignoreDuplicates since we have separate constraints for person/company
       const { data: upsertedEntities, error: entityError } = await supabase
         .from('share_entities')
         .upsert(
           entities.map(({ _temp_key, ...entity }) => entity),
-          { 
-            onConflict: 'entity_type,name,orgnr,birth_year,user_id',
-            ignoreDuplicates: false 
-          }
+          { ignoreDuplicates: true }
         )
         .select('id, entity_type, name, orgnr, birth_year')
 
@@ -278,7 +275,7 @@ Deno.serve(async (req) => {
         const chunk = holdingsData.slice(i, i + CHUNK_SIZE)
         const { error: holdingError } = await supabase
           .from('share_holdings')
-          .upsert(chunk, { onConflict: 'company_orgnr,holder_id,share_class,year,user_id' })
+          .upsert(chunk, { ignoreDuplicates: true })
 
         if (holdingError) {
           throw new Error(`Holdings upsert failed: ${holdingError.message}`)
