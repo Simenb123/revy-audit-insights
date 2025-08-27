@@ -2,9 +2,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog } from '@/utils/devLogger';
+import { useToast } from '@/hooks/use-toast';
 
 export const useDocumentOperations = (clientId?: string) => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Upload mutation
   const uploadDocument = useMutation({
@@ -14,13 +16,84 @@ export const useDocumentOperations = (clientId?: string) => {
       category?: string;
       subjectArea?: string;
     }) => {
-      // This would need proper file upload implementation
-      // For now, returning a placeholder
-      throw new Error('File upload not implemented');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Generate unique filename
+      const fileExt = params.file.name.split('.').pop() || 'unknown';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${params.clientId}/${fileName}`;
+
+      devLog('Uploading file to client-documents bucket:', filePath);
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('client-documents')
+        .upload(filePath, params.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      // Create document record
+      const { data: document, error: insertError } = await supabase
+        .from('client_documents_files')
+        .insert({
+          client_id: params.clientId,
+          user_id: user.id,
+          file_name: params.file.name,
+          file_path: filePath,
+          file_size: params.file.size,
+          mime_type: params.file.type,
+          category: params.category,
+          subject_area: params.subjectArea,
+          text_extraction_status: 'pending'
+        })
+        .select('*')
+        .single();
+
+      if (insertError) {
+        // Remove uploaded file if database insert failed
+        await supabase.storage.from('client-documents').remove([filePath]);
+        throw new Error(`Failed to create document record: ${insertError.message}`);
+      }
+
+      if (!document) {
+        await supabase.storage.from('client-documents').remove([filePath]);
+        throw new Error('Failed to create document record');
+      }
+
+      devLog('Document uploaded successfully:', document);
+
+      // Trigger text extraction for supported file types
+      if (['application/pdf', 'text/plain'].includes(params.file.type)) {
+        supabase.functions.invoke('document-text-extractor', {
+          body: { documentId: document.id },
+        }).catch(err => {
+          devLog('Failed to invoke text extractor function:', err);
+        });
+      }
+
+      return document;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-documents', clientId] });
+      toast({
+        title: "Dokument lastet opp!",
+        description: "Filen er lagret og behandling har startet.",
+      });
     },
+    onError: (error) => {
+      devLog('Upload error:', error);
+      toast({
+        title: "Opplasting feilet",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   // Delete mutation
