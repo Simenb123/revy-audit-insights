@@ -126,6 +126,11 @@ const resourceItems = [
     url: '/resources/aksjonaerregister',
     icon: Users,
   },
+  {
+    title: 'AI-Studio',
+    url: '/ai/multi-agent-studio',
+    icon: Brain,
+  },
 ]
 
 const ResizableLeftSidebar = () => {
