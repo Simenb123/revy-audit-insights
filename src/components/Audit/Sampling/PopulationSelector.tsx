@@ -66,10 +66,15 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
         }
       });
       
-      // Remove auto-selected accounts from excluded list
-      setExcludedAccountNumbers(prev => 
-        prev.filter(accountNumber => !accountsToAutoInclude.includes(accountNumber))
-      );
+      // Ensure all mapped accounts are included by removing them from excluded list
+      if (accountsToAutoInclude.length > 0) {
+        setExcludedAccountNumbers(prev => 
+          prev.filter(accountNumber => !accountsToAutoInclude.includes(accountNumber))
+        );
+      }
+    } else if (selectedStandardNumbers.length === 0) {
+      // When no standard accounts are selected, clear exclusions to show all accounts as available
+      setExcludedAccountNumbers([]);
     }
   }, [selectedStandardNumbers, trialBalanceData?.standardAccountBalances]);
 
@@ -211,6 +216,13 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
               )}
             </div>
           </div>
+
+          {/* Auto-inclusion message */}
+          {selectedStandardNumbers.length > 0 && (
+            <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+              ✓ Alle kontoer for valgte standardgrupper er automatisk inkludert. Huk av kontoer du vil ekskludere.
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative">
