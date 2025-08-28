@@ -812,6 +812,153 @@ export type Database = {
           },
         ]
       }
+      ai_conversations: {
+        Row: {
+          agents: Json
+          client_id: string | null
+          created_at: string
+          id: string
+          idea: string
+          settings: Json
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agents?: Json
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          idea: string
+          settings?: Json
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agents?: Json
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          idea?: string
+          settings?: Json
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_custom_roles: {
+        Row: {
+          allowed_sources: Json | null
+          audit_firm_id: string | null
+          created_at: string
+          data_scopes: Json | null
+          data_topics: Json | null
+          id: string
+          is_active: boolean
+          model: string
+          name: string
+          system_prompt: string
+          temperature: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_sources?: Json | null
+          audit_firm_id?: string | null
+          created_at?: string
+          data_scopes?: Json | null
+          data_topics?: Json | null
+          id?: string
+          is_active?: boolean
+          model?: string
+          name: string
+          system_prompt: string
+          temperature?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_sources?: Json | null
+          audit_firm_id?: string | null
+          created_at?: string
+          data_scopes?: Json | null
+          data_topics?: Json | null
+          id?: string
+          is_active?: boolean
+          model?: string
+          name?: string
+          system_prompt?: string
+          temperature?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_custom_roles_audit_firm_id_fkey"
+            columns: ["audit_firm_id"]
+            isOneToOne: false
+            referencedRelation: "audit_firms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          agent_key: string | null
+          agent_name: string | null
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          turn_index: number | null
+        }
+        Insert: {
+          agent_key?: string | null
+          agent_name?: string | null
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          turn_index?: number | null
+        }
+        Update: {
+          agent_key?: string | null
+          agent_name?: string | null
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          turn_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_prompt_configurations: {
         Row: {
           base_prompt: string

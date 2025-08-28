@@ -46,3 +46,7 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.shareholders-import-finish]
     verify_jwt = true
+  [functions.revy-multi-agent]
+    verify_jwt = true
+  [functions.revy-role-test]
+    verify_jwt = true
