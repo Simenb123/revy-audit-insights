@@ -52,7 +52,7 @@ serve(async (req) => {
       body: JSON.stringify({ 
         model: agent.model || 'gpt-5-mini-2025-08-07', 
         messages, 
-        max_completion_tokens: 500 
+        max_completion_tokens: 500
       }),
     });
     

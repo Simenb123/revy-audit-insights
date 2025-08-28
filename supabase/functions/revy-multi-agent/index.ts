@@ -85,7 +85,7 @@ serve(async (req) => {
       ];
       try {
         const raw = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
-          max_completion_tokens: 120 
+          max_completion_tokens: 150 
         });
         const parsed = JSON.parse(raw);
         const cleaned = parsed.filter((k: string) => remaining.includes(k));
@@ -120,7 +120,7 @@ serve(async (req) => {
       ];
       
       const modContent = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
-        max_completion_tokens: settings.maxTokensPerTurn 
+        max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
       });
       
       const modMessage = { 
@@ -173,7 +173,7 @@ serve(async (req) => {
         ];
         
         const content = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
-          max_completion_tokens: settings.maxTokensPerTurn 
+          max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
         });
         
         const agentMessage = { 
@@ -226,7 +226,7 @@ serve(async (req) => {
         ];
         
         const summary = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
-          max_completion_tokens: 220 
+          max_completion_tokens: 300
         });
         
         runningSummary = summary;
