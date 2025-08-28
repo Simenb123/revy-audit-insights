@@ -21,6 +21,13 @@ serve(async (req) => {
     if (!user) throw new Error('Unauthorized');
 
     const { idea, agents, settings, context } = await req.json();
+    
+    console.log('Multi-agent discussion started:', { 
+      idea: idea?.slice(0, 100), 
+      agentCount: agents?.length,
+      settings: settings,
+      agentKeys: agents?.map((a: any) => a.key)
+    });
 
     // Create conversation record
     const { data: conversation, error: convError } = await supabase
@@ -45,14 +52,20 @@ serve(async (req) => {
     if (!openaiKey) throw new Error('OPENAI_API_KEY mangler');
 
     const callOpenAI = async (model: string, messages: any[], opts: any = {}) => {
+      console.log('Calling OpenAI with:', { model, messageCount: messages.length, opts });
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ model, messages, ...opts }),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error?.message || 'OpenAI feil');
-      return data.choices[0].message.content as string;
+      if (!resp.ok) {
+        console.error('OpenAI API Error:', data);
+        throw new Error(data?.error?.message || 'OpenAI feil');
+      }
+      const content = data.choices?.[0]?.message?.content || '';
+      console.log('OpenAI response content length:', content.length);
+      return content;
     };
 
     const transcript: any[] = [];
@@ -123,6 +136,12 @@ serve(async (req) => {
       transcript.push(modMessage);
 
       // Store message in database
+      console.log('Storing moderator message:', { 
+        agent: mod.name, 
+        contentLength: modContent?.length || 0,
+        isEmpty: !modContent || modContent.trim() === ''
+      });
+      
       await supabase.from('ai_messages').insert({
         conversation_id: conversation.id,
         role: 'assistant',
@@ -170,6 +189,12 @@ serve(async (req) => {
         transcript.push(agentMessage);
 
         // Store message in database
+        console.log('Storing agent message:', { 
+          agent: agent.name, 
+          contentLength: content?.length || 0,
+          isEmpty: !content || content.trim() === ''
+        });
+        
         await supabase.from('ai_messages').insert({
           conversation_id: conversation.id,
           role: 'assistant',
@@ -183,6 +208,17 @@ serve(async (req) => {
       // 3) Runde-oppsummering (Referent)
       if (settings.autoSummarize) {
         const note = agentByKey[settings.noteTakerKey];
+        console.log('Note taker found:', { 
+          noteTakerKey: settings.noteTakerKey, 
+          noteExists: !!note,
+          noteModel: note?.model 
+        });
+        
+        if (!note) {
+          console.error('Note taker not found for key:', settings.noteTakerKey);
+          throw new Error(`Note taker agent not found for key: ${settings.noteTakerKey}`);
+        }
+        
         const lastRound = transcript.filter(t => t.turnIndex === r).map(t => `${t.agentName}: ${t.content}`).join('\n');
         const sumMsg = [ 
           { role: 'system', content: 'Du er referent. Oppsummer runden i 3–5 punkt, samt 1–3 neste steg. Kort og tydelig. Norsk.' }, 
@@ -222,6 +258,16 @@ serve(async (req) => {
     // 4) Endelig totalreferat
     if (settings.autoSummarize) {
       const note = agentByKey[settings.noteTakerKey];
+      console.log('Final summary - Note taker found:', { 
+        noteTakerKey: settings.noteTakerKey, 
+        noteExists: !!note 
+      });
+      
+      if (!note) {
+        console.error('Note taker not found for final summary:', settings.noteTakerKey);
+        throw new Error(`Note taker agent not found for final summary: ${settings.noteTakerKey}`);
+      }
+      
       const all = transcript.map(t => `${t.agentName}: ${t.content}`).join('\n');
       const finalMsg = [ 
         { role: 'system', content: 'Du er referent. Lever ET endelig totalreferat: 1) Sammendrag (5–8 punkt), 2) Beslutninger, 3) Åpne spørsmål/risiko, 4) Anbefalte neste steg. Kort, tydelig, og gruppert. Norsk.' }, 
