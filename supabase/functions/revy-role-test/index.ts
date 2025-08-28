@@ -46,15 +46,12 @@ serve(async (req) => {
       { role: 'user', content: question },
     ];
     
-    const temperature = typeof agent.temperature === 'number' ? agent.temperature : undefined;
-
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         model: agent.model || 'gpt-5-mini-2025-08-07', 
         messages, 
-        ...(temperature !== undefined ? { temperature } : {}), 
         max_completion_tokens: 500 
       }),
     });

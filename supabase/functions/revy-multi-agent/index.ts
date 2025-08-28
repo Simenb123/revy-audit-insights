@@ -72,7 +72,6 @@ serve(async (req) => {
       ];
       try {
         const raw = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
-          temperature: moderator.temperature ?? 0.2, 
           max_completion_tokens: 120 
         });
         const parsed = JSON.parse(raw);
@@ -108,7 +107,6 @@ serve(async (req) => {
       ];
       
       const modContent = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
-        temperature: mod.temperature ?? 0.2, 
         max_completion_tokens: settings.maxTokensPerTurn 
       });
       
@@ -155,9 +153,7 @@ serve(async (req) => {
           { role: 'user', content: 'Gi ditt korte bidrag.' } 
         ];
         
-        const temp = typeof agent.temperature === 'number' ? agent.temperature : (typeof settings.temperature === 'number' ? settings.temperature : undefined);
         const content = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
-          temperature: temp, 
           max_completion_tokens: settings.maxTokensPerTurn 
         });
         
@@ -194,7 +190,6 @@ serve(async (req) => {
         ];
         
         const summary = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
-          temperature: note.temperature ?? 0.2, 
           max_completion_tokens: 220 
         });
         
@@ -234,7 +229,6 @@ serve(async (req) => {
       ];
       
       const finalSummary = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', finalMsg, { 
-        temperature: note.temperature ?? 0.2, 
         max_completion_tokens: 400 
       });
       

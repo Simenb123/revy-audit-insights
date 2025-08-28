@@ -26,7 +26,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er moderator. Oppsummer kort idéen, sett spilleregler (kort, presis, respektfull), fordel talere dynamisk per runde, og oppsummer kort.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.2,
+    temperature: null,
     dataScopes: [],
   },
   {
@@ -36,7 +36,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er optimist. Løft frem muligheter, quick wins, og lavthengende frukter. Vær konkret og handlingsorientert.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.9,
+    temperature: null,
     dataScopes: ['artikler'],
   },
   {
@@ -46,7 +46,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er kritisk og stiller vanskelige spørsmål. Identifiser risiko, antakelser og fallgruver. Foreslå tester som falsifiserer hypoteser.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.4,
+    temperature: null,
     dataScopes: ['artikler'],
   },
   {
@@ -56,7 +56,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er advokat. Vurder juss, personvern (GDPR), kontrakter og ansvar. Snakk som en advokat: presis, forbehold ved usikkerhet.',
     model: 'gpt-5-2025-08-07',
-    temperature: 0.1,
+    temperature: null,
     dataScopes: ['lover','forskrifter','rundskriv','lovkommentarer','artikler'],
   },
   {
@@ -66,7 +66,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er revisor. Bruk ISA/RS-tenkning: vesentlighet, risiko, kontroller, bevis. Foreslå konkrete revisjonshandlinger.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.2,
+    temperature: null,
     dataScopes: ['artikler'],
   },
   {
@@ -76,7 +76,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er utvikler. Foreslå teknisk arkitektur, datamodeller, APIer og tradeoffs. Kort og pragmatisk.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.3,
+    temperature: null,
     dataScopes: [],
   },
   {
@@ -86,7 +86,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er kreativ idé-maker. Kom med utradisjonelle vinkler, navn, pitch-lines og visuelle konsepter.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 1.0,
+    temperature: null,
     dataScopes: ['artikler'],
   },
   {
@@ -96,7 +96,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du representerer sluttbruker. Fokuser på nytte, enkelhet og tillit. Hva vil forvirre eller glede?',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.6,
+    temperature: null,
     dataScopes: [],
   },
   {
@@ -106,7 +106,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du er strateg. Marked, posisjonering, budsjettrammer, risiko/avkastning. Prioriter neste steg.',
     model: 'gpt-5-mini-2025-08-07',  
-    temperature: 0.3,
+    temperature: null,
     dataScopes: ['artikler'],
   },
   {
@@ -116,7 +116,7 @@ export const DEFAULT_AGENT_ROLES: AgentConfig[] = [
     systemPrompt:
       'Du tar notater. Ikke delta i debatt. Lever til slutt: sammendrag, beslutninger, åpne spørsmål, neste steg.',
     model: 'gpt-5-mini-2025-08-07',
-    temperature: 0.1,
+    temperature: null,
     dataScopes: [],
   },
 ];
