@@ -197,35 +197,100 @@ serve(async (req) => {
 });
 
 async function fetchTransactionData(supabase: any, payload: SamplingRequest): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('general_ledger_transactions')
-    .select(`
-      id,
-      transaction_date,
-      debit_amount,
-      credit_amount,
-      description,
-      client_chart_of_accounts!inner(
-        account_number,
-        account_name
-      )
-    `)
-    .eq('client_id', payload.clientId)
-    .gte('transaction_date', `${payload.fiscalYear}-01-01`)
-    .lte('transaction_date', `${payload.fiscalYear}-12-31`)
-    .order('transaction_date');
+  try {
+    // Try to fetch from trial_balances first as a fallback since general_ledger_transactions might not exist
+    log('🔍 Attempting to fetch transaction data from trial_balances');
+    
+    let query = supabase
+      .from('trial_balances')
+      .select(`
+        id,
+        client_id,
+        period_year,
+        closing_balance,
+        client_chart_of_accounts!inner(
+          account_number,
+          account_name
+        )
+      `)
+      .eq('client_id', payload.clientId)
+      .eq('period_year', payload.fiscalYear)
+      .neq('closing_balance', 0);
 
-  if (error) throw error;
+    // Filter by selected standard numbers if provided
+    if (payload.selectedStandardNumbers && payload.selectedStandardNumbers.length > 0) {
+      // Get account mappings for this client
+      const { data: mappingsData } = await supabase
+        .from('trial_balance_mappings')
+        .select('account_number, statement_line_number')
+        .eq('client_id', payload.clientId);
 
-  return (data || []).map(tx => ({
-    id: tx.id,
-    transaction_date: tx.transaction_date,
-    account_no: tx.client_chart_of_accounts.account_number,
-    account_name: tx.client_chart_of_accounts.account_name,
-    description: tx.description || '',
-    amount: tx.debit_amount || -(tx.credit_amount || 0),
-    risk_score: calculateRiskScore(tx, payload)
-  }));
+      const { data: standardAccounts } = await supabase
+        .from('standard_accounts')
+        .select('standard_number')
+        .in('standard_number', payload.selectedStandardNumbers);
+
+      // Build list of relevant account numbers
+      const relevantAccountNumbers = new Set<string>();
+      
+      if (mappingsData && standardAccounts) {
+        mappingsData.forEach((mapping: any) => {
+          if (payload.selectedStandardNumbers?.includes(mapping.statement_line_number)) {
+            relevantAccountNumbers.add(mapping.account_number);
+          }
+        });
+
+        if (relevantAccountNumbers.size > 0) {
+          // Get the accounts that match
+          const { data: accountsData } = await supabase
+            .from('client_chart_of_accounts')
+            .select('account_number')
+            .eq('client_id', payload.clientId)
+            .in('account_number', Array.from(relevantAccountNumbers));
+
+          if (accountsData && accountsData.length > 0) {
+            const accountNumbers = accountsData.map((acc: any) => acc.account_number);
+            query = query.in('client_chart_of_accounts.account_number', accountNumbers);
+          }
+        }
+      }
+    }
+
+    // Apply exclusions
+    if (payload.excludedAccountNumbers && payload.excludedAccountNumbers.length > 0) {
+      query = query.not('client_chart_of_accounts.account_number', 'in', `(${payload.excludedAccountNumbers.join(',')})`);
+    }
+
+    const { data, error } = await query.order('client_chart_of_accounts.account_number');
+
+    if (error) {
+      logError('Error fetching trial balance data:', error);
+      throw new Error(`Failed to fetch population data: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      log('⚠️ No trial balance data found for the specified criteria');
+      return [];
+    }
+
+    // Convert trial balance entries to transaction format
+    return data.map((tb: any, index: number) => ({
+      id: `tb_${tb.id}_${index}`,
+      transaction_date: `${payload.fiscalYear}-12-31`, // Use year-end date for trial balance
+      account_no: tb.client_chart_of_accounts.account_number,
+      account_name: tb.client_chart_of_accounts.account_name,
+      description: `Year-end balance for ${tb.client_chart_of_accounts.account_name}`,
+      amount: tb.closing_balance || 0,
+      risk_score: calculateRiskScore({
+        closing_balance: tb.closing_balance,
+        client_chart_of_accounts: tb.client_chart_of_accounts
+      }, payload)
+    }));
+
+  } catch (error) {
+    logError('❌ Failed to fetch transaction data:', error);
+    throw new Error(`Transaction data fetch failed: ${error.message}`);
+  }
 }
 
 function calculateSampleSize(payload: SamplingRequest, transactions: Transaction[]): number {
@@ -411,7 +476,8 @@ function createSeededRNG(seed: number): () => number {
 function calculateRiskScore(tx: any, payload: SamplingRequest): number {
   let riskScore = 0.1; // Base risk score
   
-  const amount = Math.abs(tx.debit_amount || tx.credit_amount || 0);
+  // Handle both transaction and trial balance formats
+  const amount = Math.abs(tx.debit_amount || tx.credit_amount || tx.closing_balance || 0);
   const accountNumber = tx.client_chart_of_accounts?.account_number || '';
   
   // Amount-based risk factors

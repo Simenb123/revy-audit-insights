@@ -45,18 +45,20 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
       console.log('[PopulationSelector] Auto-including accounts for standards:', selectedStandardNumbers);
       console.log('[PopulationSelector] Available accounts:', populationData.accounts.length);
       
-      // When standard accounts are selected, all returned accounts should be included
-      // Remove all population accounts from excluded list to show them as checked
+      // When standard accounts are selected, all returned accounts should be included by default
+      // Remove all population accounts from excluded list to show them as checked (green)
       const allPopulationAccountNumbers = populationData.accounts.map(acc => acc.account_number);
       
       setExcludedAccountNumbers(prev => {
+        // Remove any accounts from exclusion list that are now part of the population
         const newExcluded = prev.filter(accountNumber => !allPopulationAccountNumbers.includes(accountNumber));
-        console.log('[PopulationSelector] Removed from excluded:', allPopulationAccountNumbers.length, 'accounts');
+        console.log('[PopulationSelector] Auto-included accounts:', allPopulationAccountNumbers.length);
+        console.log('[PopulationSelector] Remaining excluded accounts:', newExcluded.length);
         return newExcluded;
       });
     } else if (selectedStandardNumbers.length === 0) {
-      // When no standard accounts are selected, clear exclusions to show all accounts as available
-      console.log('[PopulationSelector] Clearing all exclusions');
+      // When no standard accounts are selected, clear exclusions
+      console.log('[PopulationSelector] No standards selected - clearing exclusions');
       setExcludedAccountNumbers([]);
     }
   }, [selectedStandardNumbers, populationData?.accounts]);
