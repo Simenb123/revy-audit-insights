@@ -8,11 +8,9 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, TrendingUp, Filter, X } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator } from '@/hooks/usePopulationCalculator';
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
-import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import { formatCurrency, formatNumber } from '@/services/sampling/utils';
 
 interface PopulationSelectorProps {
@@ -22,12 +20,6 @@ interface PopulationSelectorProps {
 const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => {
   const { selectedFiscalYear } = useFiscalYear();
   const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId);
-  
-  const { data: trialBalanceData } = useTrialBalanceWithMappings(
-    clientId,
-    selectedFiscalYear,
-    activeTrialBalanceVersion?.version
-  );
 
   const [selectedStandardNumbers, setSelectedStandardNumbers] = useState<string[]>([]);
   const [excludedAccountNumbers, setExcludedAccountNumbers] = useState<string[]>([]);
@@ -49,34 +41,25 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
 
   // Auto-include accounts when standard accounts are selected
   useEffect(() => {
-    if (selectedStandardNumbers.length > 0 && trialBalanceData?.standardAccountBalances) {
-      const accountsToAutoInclude: string[] = [];
+    if (selectedStandardNumbers.length > 0 && populationData?.accounts) {
+      console.log('[PopulationSelector] Auto-including accounts for standards:', selectedStandardNumbers);
+      console.log('[PopulationSelector] Available accounts:', populationData.accounts.length);
       
-      selectedStandardNumbers.forEach(standardNumber => {
-        const standardAccount = trialBalanceData.standardAccountBalances.find(
-          balance => balance.standard_number === standardNumber
-        );
-        
-        if (standardAccount) {
-          standardAccount.mapped_accounts.forEach(account => {
-            if (!accountsToAutoInclude.includes(account.account_number)) {
-              accountsToAutoInclude.push(account.account_number);
-            }
-          });
-        }
+      // When standard accounts are selected, all returned accounts should be included
+      // Remove all population accounts from excluded list to show them as checked
+      const allPopulationAccountNumbers = populationData.accounts.map(acc => acc.account_number);
+      
+      setExcludedAccountNumbers(prev => {
+        const newExcluded = prev.filter(accountNumber => !allPopulationAccountNumbers.includes(accountNumber));
+        console.log('[PopulationSelector] Removed from excluded:', allPopulationAccountNumbers.length, 'accounts');
+        return newExcluded;
       });
-      
-      // Ensure all mapped accounts are included by removing them from excluded list
-      if (accountsToAutoInclude.length > 0) {
-        setExcludedAccountNumbers(prev => 
-          prev.filter(accountNumber => !accountsToAutoInclude.includes(accountNumber))
-        );
-      }
     } else if (selectedStandardNumbers.length === 0) {
       // When no standard accounts are selected, clear exclusions to show all accounts as available
+      console.log('[PopulationSelector] Clearing all exclusions');
       setExcludedAccountNumbers([]);
     }
-  }, [selectedStandardNumbers, trialBalanceData?.standardAccountBalances]);
+  }, [selectedStandardNumbers, populationData?.accounts]);
 
   const handleStandardAccountToggle = (accountNumber: string) => {
     setSelectedStandardNumbers(prev => 
@@ -138,7 +121,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
             <div>
               <div className="text-sm text-muted-foreground">Totalt inkludert</div>
-              <div className="font-medium">{formatNumber(populationData.size - excludedAccountNumbers.length)} kontoer</div>
+              <div className="font-medium">{formatNumber((populationData.accounts?.length || 0) - excludedAccountNumbers.length)} kontoer</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Inkludert beløp</div>

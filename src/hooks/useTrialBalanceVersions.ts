@@ -219,18 +219,30 @@ export const useActiveTrialBalanceVersion = (clientId: string) => {
       }
 
       if (activeVersionData) {
-        // Get corresponding trial balance data
-        const { data: tbData, error: tbError } = await supabase
-          .from('trial_balances')
-          .select('version, period_year, created_at')
-          .eq('client_id', clientId)
-          .eq('version', activeVersionData.file_name || `Version ${activeVersionData.version_number}`)
-          .limit(1)
-          .maybeSingle();
+        // Try different version formats to match trial balance data
+        const possibleVersions = [
+          activeVersionData.file_name,
+          `v${activeVersionData.version_number}`,
+          `Version ${activeVersionData.version_number}`,
+          activeVersionData.version_number.toString()
+        ].filter(Boolean);
 
-        if (!tbError && tbData) {
-          return tbData;
+        for (const versionToTry of possibleVersions) {
+          const { data: tbData, error: tbError } = await supabase
+            .from('trial_balances')
+            .select('version, period_year, created_at')
+            .eq('client_id', clientId)
+            .eq('version', versionToTry)
+            .limit(1)
+            .maybeSingle();
+
+          if (!tbError && tbData) {
+            console.log('[Active TB Version] Found matching version:', versionToTry);
+            return tbData;
+          }
         }
+        
+        console.log('[Active TB Version] No matching trial balance found for versions:', possibleVersions);
       }
 
       // Fallback to most recent trial balance if no active version found
