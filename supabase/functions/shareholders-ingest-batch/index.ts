@@ -181,7 +181,12 @@ Deno.serve(async (req) => {
         .upsert(companies, { ignoreDuplicates: true })
 
       if (companyError) {
-        throw new Error(`Company upsert failed: ${companyError.message}`)
+        console.error('Company upsert error details:', companyError)
+        if (companyError.message?.includes('duplicate key value')) {
+          console.log(`Constraint conflict on companies - using ignoreDuplicates, continuing...`)
+        } else {
+          throw new Error(`Company upsert failed: ${companyError.message}`)
+        }
       }
     }
 
@@ -205,7 +210,12 @@ Deno.serve(async (req) => {
         .select('id, entity_type, name, orgnr, birth_year')
 
       if (entityError) {
-        throw new Error(`Entity upsert failed: ${entityError.message}`)
+        console.error('Entity upsert error details:', entityError)
+        if (entityError.message?.includes('duplicate key value')) {
+          console.log(`Constraint conflict on entities - using ignoreDuplicates, continuing...`)
+        } else {
+          throw new Error(`Entity upsert failed: ${entityError.message}`)
+        }
       }
 
       // Map returned entities back to keys
@@ -244,7 +254,12 @@ Deno.serve(async (req) => {
           .upsert(chunk, { ignoreDuplicates: true })
 
         if (holdingError) {
-          throw new Error(`Holdings upsert failed: ${holdingError.message}`)
+          console.error('Holdings upsert error details:', holdingError)
+          if (holdingError.message?.includes('duplicate key value')) {
+            console.log(`Constraint conflict on holdings chunk ${Math.floor(i/CHUNK_SIZE)+1} - using ignoreDuplicates, continuing...`)
+          } else {
+            throw new Error(`Holdings upsert failed: ${holdingError.message}`)
+          }
         }
       }
     }
@@ -266,8 +281,26 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Batch processing error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = error.message
+    let errorType = 'UNKNOWN_ERROR'
+    
+    if (error.message?.includes('duplicate key value')) {
+      errorMessage = 'Data already exists. This might happen when importing the same data multiple times.'
+      errorType = 'DUPLICATE_DATA'
+    } else if (error.message?.includes('violates row-level security')) {
+      errorMessage = 'Permission denied. Make sure you have the right permissions to import this data.'
+      errorType = 'PERMISSION_DENIED'
+    } else if (error.message?.includes('Invalid token')) {
+      errorMessage = 'Authentication failed. Please try logging in again.'
+      errorType = 'AUTH_ERROR'
+    }
+    
     return new Response(JSON.stringify({
-      error: error.message
+      error: errorMessage,
+      error_type: errorType,
+      original_error: error.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

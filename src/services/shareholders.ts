@@ -17,7 +17,24 @@ export async function startImportSession(year: number): Promise<{ session_id: st
   })
   
   if (error) {
-    throw new Error(`Failed to start import session: ${error.message}`)
+    console.error('Start import session error:', error)
+    
+    // Parse error details if available
+    let errorMessage = error.message
+    if (error.details?.error_type) {
+      switch (error.details.error_type) {
+        case 'AUTH_ERROR':
+          errorMessage = 'Autentisering feilet. Vennligst logg inn på nytt.'
+          break
+        case 'PERMISSION_DENIED':
+          errorMessage = 'Du har ikke tilgang til å starte en import session.'
+          break
+        default:
+          errorMessage = error.details.error || error.message
+      }
+    }
+    
+    throw new Error(`Kunne ikke starte import session: ${errorMessage}`)
   }
   
   return data
@@ -37,7 +54,27 @@ export async function ingestBatch(
   })
   
   if (error) {
-    throw new Error(`Batch processing failed: ${error.message}`)
+    console.error('Batch processing error:', error)
+    
+    // Parse error details if available
+    let errorMessage = error.message
+    if (error.details?.error_type) {
+      switch (error.details.error_type) {
+        case 'DUPLICATE_DATA':
+          errorMessage = 'Noen av dataene eksisterer allerede i systemet. Dette kan skje ved gjentatt import av samme data.'
+          break
+        case 'PERMISSION_DENIED':
+          errorMessage = 'Du har ikke tilgang til å importere disse dataene.'
+          break
+        case 'AUTH_ERROR':
+          errorMessage = 'Autentisering feilet. Vennligst logg inn på nytt.'
+          break
+        default:
+          errorMessage = error.details.error || error.message
+      }
+    }
+    
+    throw new Error(`Batch prosessering feilet: ${errorMessage}`)
   }
   
   return data
@@ -56,7 +93,24 @@ export async function finishImport(
   })
   
   if (error) {
-    throw new Error(`Failed to finish import: ${error.message}`)
+    console.error('Finish import error:', error)
+    
+    // Parse error details if available
+    let errorMessage = error.message
+    if (error.details?.error_type) {
+      switch (error.details.error_type) {
+        case 'AUTH_ERROR':
+          errorMessage = 'Autentisering feilet. Vennligst logg inn på nytt.'
+          break
+        case 'PERMISSION_DENIED':
+          errorMessage = 'Du har ikke tilgang til å fullføre importen.'
+          break
+        default:
+          errorMessage = error.details.error || error.message
+      }
+    }
+    
+    throw new Error(`Kunne ikke fullføre import: ${errorMessage}`)
   }
   
   return data
