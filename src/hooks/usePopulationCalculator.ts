@@ -161,14 +161,20 @@ export function usePopulationCalculator(
             transaction_count: 0 // Will be implemented later
           };
         })
-        .filter(account => !excludedAccountNumbers.includes(account.account_number)) || [];
+        || [];
 
       const totalSum = accounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+      
+      // Filter for included accounts (not excluded) for statistics only
+      const includedAccounts = accounts.filter(account => 
+        !excludedAccountNumbers.includes(account.account_number)
+      );
+      const includedSum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
 
       return {
-        size: accounts.length,
-        sum: totalSum,
-        accounts: accounts
+        size: includedAccounts.length, // Statistics based on included accounts only
+        sum: includedSum,
+        accounts: accounts // Return all accounts, UI handles inclusion/exclusion display
       };
     },
     enabled: !!clientId
