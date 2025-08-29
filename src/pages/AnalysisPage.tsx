@@ -14,6 +14,7 @@ import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
 import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
 import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
+import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
 
 const AnalysisPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -99,7 +100,10 @@ const AnalysisPage = () => {
               </TabsContent>
               
               <TabsContent value="sampling" className="mt-6">
-                <AuditSampling clientId={client.id} />
+                <div className="space-y-6">
+                  <GeneralLedgerComparison clientId={client.id} />
+                  <AuditSampling clientId={client.id} />
+                </div>
               </TabsContent>
               
               <TabsContent value="reports" className="mt-6">
