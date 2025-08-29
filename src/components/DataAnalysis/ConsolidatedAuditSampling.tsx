@@ -40,6 +40,7 @@ import { usePopulationCalculator, PopulationAccount } from '@/hooks/usePopulatio
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
+import PopulationInsights from './PopulationInsights';
 
 interface ConsolidatedAuditSamplingProps {
   clientId: string;
@@ -123,6 +124,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyExcluded, setShowOnlyExcluded] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['population', 'accounts']));
+  const [analysisLevel, setAnalysisLevel] = useState<'account' | 'statement_line'>('account');
   
   const [params, setParams] = useState<SamplingParams>({
     fiscalYear: selectedFiscalYear || new Date().getFullYear(),
@@ -504,6 +506,20 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
+          {/* Population Analysis Section */}
+          {params.selectedStandardNumbers.length > 0 && (
+            <div className="mb-6">
+              <PopulationInsights
+                clientId={clientId}
+                fiscalYear={params.fiscalYear}
+                selectedStandardNumbers={params.selectedStandardNumbers}
+                excludedAccountNumbers={params.excludedAccountNumbers}
+                versionId={activeTrialBalanceVersion?.version}
+                analysisLevel={analysisLevel}
+                onAnalysisLevelChange={setAnalysisLevel}
+              />
+            </div>
+          )}
           <div className="space-y-6">
 
       <div className="grid gap-6">

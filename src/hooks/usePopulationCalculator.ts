@@ -158,10 +158,41 @@ export function usePopulationCalculator(
             account_number: account.account_number,
             account_name: account.account_name || 'Ukjent konto',
             closing_balance: tb.closing_balance || 0,
-            transaction_count: 0 // Will be implemented later
+            transaction_count: 0 // TODO: Calculate from general_ledger_transactions
           };
         })
         || [];
+
+      // Get transaction counts for each account
+      if (accounts.length > 0) {
+        const accountNumbers = accounts.map(acc => acc.account_number);
+        
+        let transactionCountQuery = supabase
+          .from('general_ledger_transactions')
+          .select('account_number')
+          .eq('client_id', clientId)
+          .gte('transaction_date', `${fiscalYear}-01-01`)
+          .lte('transaction_date', `${fiscalYear}-12-31`)
+          .in('account_number', accountNumbers);
+
+        if (versionId) {
+          transactionCountQuery = transactionCountQuery.eq('version_id', versionId);
+        }
+
+        const { data: transactionCounts } = await transactionCountQuery;
+        
+        // Count transactions per account
+        const countMap = new Map<string, number>();
+        transactionCounts?.forEach(t => {
+          const current = countMap.get(t.account_number) || 0;
+          countMap.set(t.account_number, current + 1);
+        });
+
+        // Update accounts with transaction counts
+        accounts.forEach(account => {
+          account.transaction_count = countMap.get(account.account_number) || 0;
+        });
+      }
 
       const totalSum = accounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
       
