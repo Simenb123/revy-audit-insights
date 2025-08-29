@@ -19,7 +19,7 @@ interface ModelTestResult {
 export const ModelTestDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState('gpt-5-mini-2025-08-07');
+  const [model, setModel] = useState('gpt-5-mini');
   const [prompt, setPrompt] = useState('Test message - please respond with "OK"');
   const [result, setResult] = useState<ModelTestResult | null>(null);
   const { toast } = useToast();
@@ -91,7 +91,7 @@ export const ModelTestDialog = () => {
               id="model"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="gpt-5-mini-2025-08-07"
+              placeholder="gpt-5-mini"
             />
           </div>
           

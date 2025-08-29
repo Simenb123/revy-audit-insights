@@ -94,7 +94,7 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
       key: customKey,
       name: 'Egendefinert rolle',
       systemPrompt: 'Beskriv rollen og hvordan den skal svare. Norsk språk.',
-      model: 'gpt-5-mini-2025-08-07',
+      model: 'gpt-5-mini',
       temperature: null,
       dataScopes: [],
       dataTopics: [],
@@ -256,7 +256,7 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
                       <label className="text-sm font-medium">Modell</label>
                       <select
                         className="border rounded-md px-2 py-1 w-full text-sm"
-                        value={agent.model || 'gpt-5-mini-2025-08-07'}
+                        value={agent.model || 'gpt-5-mini'}
                         onChange={(e) => updateAgent(agent.key, { model: e.target.value })}
                       >
                         {GPT5_MODELS.map((m) => (
