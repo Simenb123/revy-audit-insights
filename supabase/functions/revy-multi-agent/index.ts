@@ -51,21 +51,102 @@ serve(async (req) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiKey) throw new Error('OPENAI_API_KEY mangler');
 
-    const callOpenAI = async (model: string, messages: any[], opts: any = {}) => {
-      console.log('Calling OpenAI with:', { model, messageCount: messages.length, opts });
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, ...opts }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        console.error('OpenAI API Error:', data);
-        throw new Error(data?.error?.message || 'OpenAI feil');
+    const callOpenAI = async (model: string, messages: any[], opts: any = {}): Promise<{ content: string; modelUsed: string; fallbackUsed: boolean }> => {
+      let primaryModel = model;
+      let fallbackModel = 'gpt-4o-mini';
+      let fallbackUsed = false;
+      
+      // For legacy models, convert max_completion_tokens to max_tokens
+      const requestOpts = { ...opts };
+      if (model?.includes('gpt-4o') && requestOpts.max_completion_tokens) {
+        requestOpts.max_tokens = requestOpts.max_completion_tokens;
+        delete requestOpts.max_completion_tokens;
       }
-      const content = data.choices?.[0]?.message?.content || '';
-      console.log('OpenAI response content length:', content.length);
-      return content;
+
+      const tryModel = async (modelName: string, isRetry = false): Promise<string> => {
+        const requestBody = { model: modelName, messages, ...requestOpts };
+        
+        console.log(`🔄 OpenAI ${isRetry ? 'FALLBACK' : 'PRIMARY'} request:`, { 
+          model: modelName, 
+          messageCount: messages.length, 
+          opts: requestOpts,
+          systemPrompt: messages[0]?.content?.slice(0, 100) + '...',
+          isRetry
+        });
+
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+        
+        const data = await resp.json();
+        
+        console.log(`📥 OpenAI response (${modelName}):`, {
+          status: resp.status,
+          ok: resp.ok,
+          hasChoices: !!data.choices,
+          choicesLength: data.choices?.length || 0,
+          error: data.error || null,
+          usage: data.usage || null
+        });
+
+        if (!resp.ok) {
+          console.error(`❌ OpenAI API Error (${modelName}):`, data);
+          throw new Error(data?.error?.message || `OpenAI feil for ${modelName}`);
+        }
+        
+        const content = data.choices?.[0]?.message?.content || '';
+        
+        console.log(`✅ OpenAI content received (${modelName}):`, {
+          contentLength: content.length,
+          isEmpty: content.trim() === '',
+          preview: content.slice(0, 150) + (content.length > 150 ? '...' : '')
+        });
+
+        if (!content || content.trim() === '') {
+          console.warn(`⚠️ ${modelName} returnerte tomt innhold!`);
+          if (!isRetry) {
+            throw new Error(`Tomt svar fra ${modelName}`);
+          }
+        }
+        
+        return content;
+      };
+
+      try {
+        // Prøv primærmodell først
+        const content = await tryModel(primaryModel);
+        if (content && content.trim() !== '') {
+          console.log(`🎉 Suksess med primærmodell: ${primaryModel}`);
+          return { content, modelUsed: primaryModel, fallbackUsed: false };
+        }
+        throw new Error('Tomt svar fra primærmodell');
+      } catch (primaryError) {
+        console.warn(`⚠️ Primærmodell ${primaryModel} feilet:`, primaryError.message);
+        console.log(`🔄 Prøver fallback til ${fallbackModel}...`);
+        
+        try {
+          // Konverter opts for fallback-modell
+          const fallbackOpts = { ...opts };
+          if (fallbackModel.includes('gpt-4o') && fallbackOpts.max_completion_tokens) {
+            fallbackOpts.max_tokens = fallbackOpts.max_completion_tokens;
+            delete fallbackOpts.max_completion_tokens;
+          }
+          
+          const content = await tryModel(fallbackModel, true);
+          fallbackUsed = true;
+          
+          console.log(`🎉 Fallback suksess med ${fallbackModel}`);
+          return { content, modelUsed: fallbackModel, fallbackUsed: true };
+        } catch (fallbackError) {
+          console.error(`❌ Både ${primaryModel} og ${fallbackModel} feilet!`, {
+            primaryError: primaryError.message,
+            fallbackError: fallbackError.message
+          });
+          throw new Error(`AI-modeller utilgjengelig: ${primaryError.message}`);
+        }
+      }
     };
 
     const transcript: any[] = [];
@@ -84,9 +165,10 @@ serve(async (req) => {
         { role: 'user', content: `Agenter tilgjengelig: ${JSON.stringify(remaining)}\nIdé: ${idea}\nSiste oppsummering: ${runningSummary || 'Ingen'}\nRunde: ${roundIdx + 1}` },
       ];
       try {
-        const raw = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
+        const orderResult = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
           max_completion_tokens: 150 
         });
+        const raw = orderResult.content;
         const parsed = JSON.parse(raw);
         const cleaned = parsed.filter((k: string) => remaining.includes(k));
         if (cleaned.length) return cleaned;
@@ -119,9 +201,10 @@ serve(async (req) => {
         { role: 'user', content: r === 0 ? 'Start med å oppsummere idéen og sett rammene.' : 'Før ordet videre og fokuser diskusjonen.' } 
       ];
       
-      const modContent = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
+      const modResult = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
         max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
       });
+      const modContent = modResult.content;
       
       const modMessage = { 
         id: crypto.randomUUID(), 
@@ -130,7 +213,9 @@ serve(async (req) => {
         agentName: mod.name, 
         content: modContent, 
         turnIndex: r, 
-        createdAt: new Date().toISOString() 
+        createdAt: new Date().toISOString(),
+        modelUsed: modResult.modelUsed,
+        fallbackUsed: modResult.fallbackUsed
       };
       
       transcript.push(modMessage);
@@ -172,9 +257,10 @@ serve(async (req) => {
           { role: 'user', content: 'Gi ditt korte bidrag.' } 
         ];
         
-        const content = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
+        const agentResult = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
           max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
         });
+        const content = agentResult.content;
         
         const agentMessage = { 
           id: crypto.randomUUID(), 
@@ -183,7 +269,9 @@ serve(async (req) => {
           agentName: agent.name, 
           content, 
           turnIndex: r, 
-          createdAt: new Date().toISOString() 
+          createdAt: new Date().toISOString(),
+          modelUsed: agentResult.modelUsed,
+          fallbackUsed: agentResult.fallbackUsed
         };
         
         transcript.push(agentMessage);
@@ -225,9 +313,10 @@ serve(async (req) => {
           { role: 'user', content: lastRound } 
         ];
         
-        const summary = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
+        const summaryResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
           max_completion_tokens: 300
         });
+        const summary = summaryResult.content;
         
         runningSummary = summary;
         
@@ -238,7 +327,9 @@ serve(async (req) => {
           agentName: 'Referent', 
           content: summary, 
           turnIndex: r, 
-          createdAt: new Date().toISOString() 
+          createdAt: new Date().toISOString(),
+          modelUsed: summaryResult.modelUsed,
+          fallbackUsed: summaryResult.fallbackUsed
         };
         
         transcript.push(summaryMessage);
@@ -274,9 +365,10 @@ serve(async (req) => {
         { role: 'user', content: all } 
       ];
       
-      const finalSummary = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', finalMsg, { 
+      const finalResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', finalMsg, { 
         max_completion_tokens: 400 
       });
+      const finalSummary = finalResult.content;
       
       const finalMessage = { 
         id: crypto.randomUUID(), 
@@ -285,7 +377,9 @@ serve(async (req) => {
         agentName: 'Referent', 
         content: finalSummary, 
         turnIndex: settings.rounds, 
-        createdAt: new Date().toISOString() 
+        createdAt: new Date().toISOString(),
+        modelUsed: finalResult.modelUsed,
+        fallbackUsed: finalResult.fallbackUsed
       };
       
       transcript.push(finalMessage);
@@ -307,7 +401,18 @@ serve(async (req) => {
       .update({ status: 'completed' })
       .eq('id', conversation.id);
 
-    return new Response(JSON.stringify({ transcript, conversationId: conversation.id }), { 
+    // Samle fallback-statistikk
+    const fallbackCount = transcript.filter(m => m.fallbackUsed).length;
+    
+    return new Response(JSON.stringify({ 
+      transcript, 
+      conversationId: conversation.id,
+      metadata: {
+        totalMessages: transcript.length,
+        fallbackUsed: fallbackCount > 0,
+        fallbackCount
+      }
+    }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {

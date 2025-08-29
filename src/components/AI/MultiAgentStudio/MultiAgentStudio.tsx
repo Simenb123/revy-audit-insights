@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AgentConfig, DiscussionSettings, TranscriptMessage, AgentRoleKey } from './types';
 import { DEFAULT_AGENT_ROLES, GPT5_MODELS } from './constants';
 import { useMultiAgentDiscussion } from './useMultiAgentDiscussion';
+import { ModelTestDialog } from './ModelTestDialog';
 
 interface MultiAgentStudioProps {
   clientId?: string;
@@ -105,9 +106,17 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
   return (
     <Card className="flex flex-col">
       <CardHeader className="gap-2">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" /> Multi-agent diskusjonsstudio
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" /> Multi-agent diskusjonsstudio
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <ModelTestDialog />
+            <Badge variant="secondary" className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              Beta
+            </Badge>
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">
           Velg roller, angi regler, lim inn idéen – og la moderator styre runden.
         </p>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AgentConfig, DiscussionSettings, TranscriptMessage } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 interface UseMultiAgentDiscussionArgs {
   clientId?: string;
@@ -27,6 +28,7 @@ export const useMultiAgentDiscussion = ({
     error?: string; 
     sources?: string[] 
   }>>({});
+  const { toast } = useToast();
 
   const startDiscussion = useCallback(
     async ({ idea, agents, settings }: StartPayload) => {
@@ -37,9 +39,39 @@ export const useMultiAgentDiscussion = ({
           body: { idea, agents, settings, context: { clientId, documentContext } },
         });
         if (error) throw error;
+        
         const messages: TranscriptMessage[] = data?.transcript ?? [];
         setTranscript(messages);
+        
+        // Vis fallback-info til bruker hvis relevant
+        if (data?.metadata?.fallbackUsed) {
+          toast({
+            title: "AI-modell fallback",
+            description: `GPT-5 var ikke tilgjengelig, brukte GPT-4 (${data.metadata.fallbackCount} meldinger)`,
+            variant: "default",
+          });
+          console.log('🔄 Fallback brukt:', data.metadata);
+        }
+        
       } catch (e: any) {
+        console.error('Multi-agent discussion error:', e);
+        
+        // Gi bedre feilmeldinger til bruker
+        let errorMessage = 'En ukjent feil oppstod';
+        if (e.message?.includes('AI-modeller utilgjengelig')) {
+          errorMessage = 'AI-tjenesten er midlertidig utilgjengelig. Prøv igjen om litt.';
+        } else if (e.message?.includes('OpenAI')) {
+          errorMessage = 'Problem med AI-tjenesten. Kontakt support hvis problemet vedvarer.';
+        } else if (e.message) {
+          errorMessage = e.message;
+        }
+        
+        toast({
+          title: "Diskusjon feilet",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
         onError?.(e);
       } finally {
         setIsLoading(false);
