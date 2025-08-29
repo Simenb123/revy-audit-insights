@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,9 +23,14 @@ import {
   Calculator, 
   Target,
   BarChart3,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Filter,
+  FilterX
 } from 'lucide-react';
 import { usePopulationAnalysis, PopulationAnalysisData } from '@/hooks/usePopulationAnalysis';
+import DrillDownModal from './DrillDownModal';
+import ExportControls from './ExportControls';
+import AdvancedAnomalyDetection from './AdvancedAnomalyDetection';
 
 interface PopulationInsightsProps {
   clientId: string;
@@ -71,6 +76,12 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
   analysisLevel = 'account',
   onAnalysisLevelChange
 }) => {
+  const [selectedCounterAccounts, setSelectedCounterAccounts] = useState<string[]>([]);
+  const [drillDownAccount, setDrillDownAccount] = useState<{
+    accountNumber: string;
+    accountName: string;
+  } | null>(null);
+
   const { 
     data: analysisData, 
     isLoading, 
@@ -147,22 +158,50 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
 
   const { counterAccountDistribution, transactionStatistics, riskIndicators } = analysisData;
 
-  // Prepare data for pie chart
-  const pieData = counterAccountDistribution.map((item, index) => ({
+  // Filter counter accounts based on selection
+  const filteredCounterAccounts = selectedCounterAccounts.length > 0 
+    ? counterAccountDistribution.filter(item => selectedCounterAccounts.includes(item.account_number))
+    : counterAccountDistribution;
+
+  // Prepare data for pie chart with click handling
+  const pieData = filteredCounterAccounts.map((item, index) => ({
     name: `${item.account_number} ${item.account_name}`,
     value: item.percentage,
     amount: item.total_amount,
     count: item.transaction_count,
-    color: CHART_COLORS[index % CHART_COLORS.length]
+    color: CHART_COLORS[index % CHART_COLORS.length],
+    account_number: item.account_number,
+    account_name: item.account_name
   }));
 
   // Prepare data for bar chart (top counter accounts)
-  const barData = counterAccountDistribution.slice(0, 5).map(item => ({
+  const barData = filteredCounterAccounts.slice(0, 5).map(item => ({
     account: `${item.account_number}`,
     name: item.account_name.length > 20 ? item.account_name.substring(0, 17) + '...' : item.account_name,
     amount: item.total_amount,
-    count: item.transaction_count
+    count: item.transaction_count,
+    account_number: item.account_number,
+    full_name: item.account_name
   }));
+
+  const handlePieClick = (data: any) => {
+    setDrillDownAccount({
+      accountNumber: data.account_number,
+      accountName: data.account_name
+    });
+  };
+
+  const handleCounterAccountToggle = (accountNumber: string) => {
+    setSelectedCounterAccounts(prev => 
+      prev.includes(accountNumber) 
+        ? prev.filter(acc => acc !== accountNumber)
+        : [...prev, accountNumber]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedCounterAccounts([]);
+  };
 
   return (
     <div className="space-y-6">
@@ -178,24 +217,40 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
                 Deskriptiv analyse og visualisering av valgte populasjon
               </CardDescription>
             </div>
-            {onAnalysisLevelChange && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              <ExportControls 
+                analysisData={analysisData} 
+                fiscalYear={fiscalYear}
+              />
+              {selectedCounterAccounts.length > 0 && (
                 <Button
-                  variant={analysisLevel === 'account' ? 'default' : 'outline'}
+                  variant="outline"
                   size="sm"
-                  onClick={() => onAnalysisLevelChange('account')}
+                  onClick={clearFilters}
                 >
-                  Kontonivå
+                  <FilterX className="h-4 w-4 mr-2" />
+                  Fjern filter
                 </Button>
-                <Button
-                  variant={analysisLevel === 'statement_line' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onAnalysisLevelChange('statement_line')}
-                >
-                  Regnskapslinje
-                </Button>
-              </div>
-            )}
+              )}
+              {onAnalysisLevelChange && (
+                <>
+                  <Button
+                    variant={analysisLevel === 'account' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => onAnalysisLevelChange('account')}
+                  >
+                    Kontonivå
+                  </Button>
+                  <Button
+                    variant={analysisLevel === 'statement_line' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => onAnalysisLevelChange('statement_line')}
+                  >
+                    Regnskapslinje
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -257,52 +312,89 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
               <CardTitle className="flex items-center gap-2">
                 <PieChartIcon className="h-4 w-4" />
                 Motkontofordeling
+                {selectedCounterAccounts.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Filter className="h-3 w-3 mr-1" />
+                    {selectedCounterAccounts.length} filtrert
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Prosentvis fordeling av de mest brukte motkontoene
+                Klikk på segmenter for drill-down analyse
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percentage }) => `${percentage.toFixed(1)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any, name: any, props: any) => [
-                        `${value.toFixed(1)}% (${formatCurrency(props.payload.amount)})`,
-                        'Andel'
-                      ]}
-                    />
-                  </PieChart>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percentage }) => `${percentage.toFixed(1)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        onClick={handlePieClick}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                            stroke={selectedCounterAccounts.includes(entry.account_number) ? '#000' : 'none'}
+                            strokeWidth={selectedCounterAccounts.includes(entry.account_number) ? 2 : 0}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any, name: any, props: any) => [
+                          `${value.toFixed(1)}% (${formatCurrency(props.payload.amount)})`,
+                          'Andel'
+                        ]}
+                      />
+                    </PieChart>
                 </ResponsiveContainer>
               </div>
               
-              {/* Legend */}
+              {/* Interactive Legend */}
               <div className="mt-4 space-y-2">
                 {pieData.slice(0, 5).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-colors ${
+                      selectedCounterAccounts.includes(item.account_number) 
+                        ? 'bg-primary/10 border border-primary/20' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => handleCounterAccountToggle(item.account_number)}
+                  >
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-3 h-3 rounded" 
                         style={{ backgroundColor: item.color }}
                       />
-                      <span className="font-mono text-xs">{item.name.split(' ')[0]}</span>
-                      <span className="truncate">{item.name.split(' ').slice(1).join(' ')}</span>
+                      <span className="font-mono text-xs">{item.account_number}</span>
+                      <span className="truncate">{item.account_name}</span>
                     </div>
-                    <Badge variant="outline">{item.value.toFixed(1)}%</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{item.value.toFixed(1)}%</Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDrillDownAccount({
+                            accountNumber: item.account_number,
+                            accountName: item.account_name
+                          });
+                        }}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -420,6 +512,32 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Advanced Anomaly Detection */}
+      <AdvancedAnomalyDetection
+        clientId={clientId}
+        fiscalYear={fiscalYear}
+        selectedAccountNumbers={selectedStandardNumbers.length > 0 ? 
+          Array.from(new Set(counterAccountDistribution.flatMap(item => [item.account_number])))
+          : []
+        }
+        versionId={versionId}
+      />
+
+      {/* Drill Down Modal */}
+      <DrillDownModal
+        isOpen={!!drillDownAccount}
+        onOpenChange={() => setDrillDownAccount(null)}
+        clientId={clientId}
+        fiscalYear={fiscalYear}
+        selectedAccountNumbers={selectedStandardNumbers.length > 0 ? 
+          Array.from(new Set(counterAccountDistribution.flatMap(item => [item.account_number])))
+          : []
+        }
+        counterAccountNumber={drillDownAccount?.accountNumber || ''}
+        counterAccountName={drillDownAccount?.accountName || ''}
+        versionId={versionId}
+      />
     </div>
   );
 };
