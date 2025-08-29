@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
-import { Upload, FileText, AlertCircle, Pause, Play, X } from 'lucide-react'
+import { Upload, FileText, AlertCircle, Pause, Play, X, AlertTriangle, RefreshCw } from 'lucide-react'
 import Papa from 'papaparse'
 
 import { Button } from '@/components/ui/button'
@@ -16,9 +16,10 @@ import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/use-toast'
 
-import { startImportSession, ingestBatch, finishImport } from '@/services/shareholders'
+import { startImportSession, ingestBatch, finishImport, finishImportBatch } from '@/services/shareholders'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx'
+import { ImportRecoveryDialog } from './ImportRecoveryDialog'
 
 const importSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, 'Fil er påkrevd'),
@@ -42,6 +43,7 @@ export const ShareholdersImportForm: React.FC = () => {
   const [totalRows, setTotalRows] = useState(0)
   const [processingLog, setProcessingLog] = useState<string[]>([])
   const [showLog, setShowLog] = useState(false)
+  const [showRecovery, setShowRecovery] = useState(false)
   const parserRef = useRef<Papa.Parser | null>(null)
 
   const form = useForm<ImportFormData>({
@@ -206,10 +208,45 @@ export const ShareholdersImportForm: React.FC = () => {
                 await processBatch()
                 
                 addLog('Avslutter import...')
-                const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
                 
-                setUploadProgress(100)
-                addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
+                // Try batch processing for large datasets
+                let offset = 0
+                const batchSize = 1000
+                let hasMore = true
+                let aggregationComplete = false
+
+                while (hasMore && !aggregationComplete) {
+                  try {
+                    const batchResult = await finishImportBatch(session.session_id, data.year, data.isGlobal, batchSize, offset)
+                    
+                    const progress = 90 + Math.min(10, (batchResult.batch_result.processed_count / batchResult.batch_result.total_companies) * 10)
+                    setUploadProgress(progress)
+                    
+                    addLog(`Aggregerer batch ${Math.floor(offset / batchSize) + 1}: ${batchResult.batch_result.processed_count} selskaper`)
+                    
+                    hasMore = batchResult.batch_result.has_more
+                    offset += batchSize
+                    
+                    if (batchResult.completed && batchResult.summary) {
+                      aggregationComplete = true
+                      setUploadProgress(100)
+                      addLog(`Import fullført! ${batchResult.summary.companies} selskaper, ${batchResult.summary.holdings} eierandeler`)
+                      
+                      resolve({
+                        processedRows: totalProcessed,
+                        skippedRows: 0,
+                        errorRows: 0,
+                        totalRows: currentRowNumber,
+                        summary: batchResult.summary
+                      })
+                      return
+                    }
+                  } catch (batchError) {
+                    addLog(`Batch aggregering feilet: ${batchError.message}`)
+                    // Fall back to original method or throw error
+                    throw batchError
+                  }
+                }
                 
                 resolve({
                   processedRows: totalProcessed,
@@ -310,10 +347,45 @@ export const ShareholdersImportForm: React.FC = () => {
                 await processBatch()
                 
                 addLog('Avslutter import...')
-                const finishResult = await finishImport(session.session_id, data.year, data.isGlobal)
                 
-                setUploadProgress(100)
-                addLog(`Import fullført! ${finishResult.summary.companies} selskaper, ${finishResult.summary.holdings} eierandeler`)
+                // Try batch processing for large datasets
+                let offset = 0
+                const batchSize = 1000
+                let hasMore = true
+                let aggregationComplete = false
+
+                while (hasMore && !aggregationComplete) {
+                  try {
+                    const batchResult = await finishImportBatch(session.session_id, data.year, data.isGlobal, batchSize, offset)
+                    
+                    const progress = 90 + Math.min(10, (batchResult.batch_result.processed_count / batchResult.batch_result.total_companies) * 10)
+                    setUploadProgress(progress)
+                    
+                    addLog(`Aggregerer batch ${Math.floor(offset / batchSize) + 1}: ${batchResult.batch_result.processed_count} selskaper`)
+                    
+                    hasMore = batchResult.batch_result.has_more
+                    offset += batchSize
+                    
+                    if (batchResult.completed && batchResult.summary) {
+                      aggregationComplete = true
+                      setUploadProgress(100)
+                      addLog(`Import fullført! ${batchResult.summary.companies} selskaper, ${batchResult.summary.holdings} eierandeler`)
+                      
+                      resolve({
+                        processedRows: totalProcessed,
+                        skippedRows: 0,
+                        errorRows: 0,
+                        totalRows: currentRowNumber,
+                        summary: batchResult.summary
+                      })
+                      return
+                    }
+                  } catch (batchError) {
+                    addLog(`Batch aggregering feilet: ${batchError.message}`)
+                    // Fall back to original method or throw error
+                    throw batchError
+                  }
+                }
                 
                 resolve({
                   processedRows: totalProcessed,
@@ -584,6 +656,38 @@ export const ShareholdersImportForm: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Recovery Button */}
+      <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            Import Recovery
+          </CardTitle>
+          <CardDescription>
+            Hvis en tidligere import feilet på grunn av timeout, kan du prøve å gjenopprette den her.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ImportRecoveryDialog 
+            isOpen={showRecovery}
+            onOpenChange={setShowRecovery}
+            sessionId=""
+            year={form.watch('year')}
+            isGlobal={form.watch('isGlobal') || false}
+          />
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowRecovery(true)}
+            disabled={isProcessing}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Recovery Import
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Submit knapp */}
       <Button type="submit" disabled={!file || isProcessing} className="w-full">

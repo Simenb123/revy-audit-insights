@@ -117,6 +117,48 @@ export async function finishImport(
 }
 
 /**
+ * Avslutter import i batches for store datasett
+ */
+export async function finishImportBatch(
+  sessionId: string, 
+  year: number, 
+  isGlobal = false,
+  batchSize = 1000,
+  offset = 0
+): Promise<{ success: boolean; batch_result: any; summary?: any; completed: boolean }> {
+  const { data, error } = await supabase.functions.invoke('shareholders-import-finish-batch', {
+    body: { session_id: sessionId, year, isGlobal, batch_size: batchSize, offset }
+  })
+  
+  if (error) {
+    console.error('Batch finish import error:', error)
+    throw new Error(`Kunne ikke fullføre batch import: ${error.message}`)
+  }
+  
+  return data
+}
+
+/**
+ * Sjekker status på en import session for recovery
+ */
+export async function checkImportRecovery(
+  sessionId: string,
+  year: number,
+  isGlobal = false
+): Promise<{ success: boolean; status: any; can_recover: boolean; needs_aggregation: boolean }> {
+  const { data, error } = await supabase.functions.invoke('shareholders-import-recover', {
+    body: { session_id: sessionId, year, isGlobal }
+  })
+  
+  if (error) {
+    console.error('Recovery check error:', error)
+    throw new Error(`Kunne ikke sjekke recovery status: ${error.message}`)
+  }
+  
+  return data
+}
+
+/**
  * Legacy function - kept for compatibility
  */
 export async function importShareholders(formData: FormData): Promise<ImportResult> {

@@ -12632,6 +12632,10 @@ export type Database = {
         }
         Returns: number
       }
+      get_import_session_status: {
+        Args: { p_session_id: string; p_user_id?: string; p_year: number }
+        Returns: Json
+      }
       get_next_version_number: {
         Args: { p_client_id: string }
         Returns: number
@@ -12857,6 +12861,15 @@ export type Database = {
       update_checklist_completion: {
         Args: { p_checklist_id: string }
         Returns: undefined
+      }
+      update_total_shares_batch: {
+        Args: {
+          p_batch_size?: number
+          p_offset?: number
+          p_user_id?: string
+          p_year: number
+        }
+        Returns: Json
       }
       update_total_shares_for_year: {
         Args:

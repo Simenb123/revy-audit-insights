@@ -34,15 +34,43 @@ Deno.serve(async (req) => {
 
     console.log(`Finishing import session: ${session_id}`)
 
-    // Update total_shares for all companies for this year
-    const { error: updateError } = await supabase.rpc('update_total_shares_for_year', {
-      p_year: year,
-      p_user_id: isGlobal ? null : user.id
-    })
+    // Try batch processing instead of all at once
+    let offset = 0
+    const batchSize = 1000
+    let totalProcessed = 0
+    let hasMore = true
 
-    if (updateError) {
-      console.warn('Warning: Could not update total_shares:', updateError)
+    console.log('Starting batch aggregation process...')
+
+    while (hasMore) {
+      const { data: batchResult, error: batchError } = await supabase.rpc('update_total_shares_batch', {
+        p_year: year,
+        p_user_id: isGlobal ? null : user.id,
+        p_batch_size: batchSize,
+        p_offset: offset
+      })
+
+      if (batchError) {
+        console.warn(`Batch ${offset}-${offset + batchSize} failed:`, batchError)
+        // Continue with next batch instead of failing completely
+        offset += batchSize
+        continue
+      }
+
+      totalProcessed += batchResult.processed_count
+      hasMore = batchResult.has_more
+      offset += batchSize
+
+      console.log(`Processed batch: ${batchResult.processed_count} companies (${totalProcessed}/${batchResult.total_companies})`)
+
+      // Prevent infinite loops
+      if (offset > 500000) {
+        console.warn('Batch processing limit reached, stopping')
+        break
+      }
     }
+
+    console.log(`Aggregation completed. Processed ${totalProcessed} companies.`)
 
     // Get final counts for summary
     const { data: companiesCount } = await supabase
