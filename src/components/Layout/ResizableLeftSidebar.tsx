@@ -55,7 +55,7 @@ const generalWorkItems = [
 // Administrative områder - rollebasert tilgang
 const adminItems = [
   {
-    title: 'Klientadministrasjon',
+    title: 'Klientadmin',
     url: '/client-admin',
     icon: Building,
     roles: ['admin', 'partner', 'manager'] as const,
@@ -97,7 +97,7 @@ const resourceItems = [
     icon: Users,
   },
   {
-    title: 'Ressursplanlegger',
+    title: 'Budsjett',
     url: '/resource-planner',
     icon: BarChart3,
   },
