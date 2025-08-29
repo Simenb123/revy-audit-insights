@@ -32,7 +32,7 @@ const clients: Client[] = (clientList || []).map((c: any) => ({
   const { setPageTitle } = usePageTitle();
 
   useEffect(() => {
-    setPageTitle('Klientadministrasjon');
+    setPageTitle('Klientadmin');
   }, [setPageTitle]);
 
   useEffect(() => {
