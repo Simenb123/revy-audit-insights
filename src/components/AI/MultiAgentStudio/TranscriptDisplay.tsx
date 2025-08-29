@@ -10,7 +10,9 @@ import {
   Download,
   Search,
   Users,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TranscriptMessage, AgentConfig } from './types';
@@ -89,6 +91,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   const rounds = Object.keys(messagesByRound).map(Number).sort((a, b) => a - b);
   const hasMessages = transcript.length > 0;
+  const totalSources = transcript.reduce((sum, msg) => sum + (msg.sources?.length || 0), 0);
+  const messagesWithSources = transcript.filter(msg => msg.sources && msg.sources.length > 0).length;
 
   return (
     <Card className={cn('h-full flex flex-col', className)}>
@@ -100,9 +104,23 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               Diskusjons-transkript
             </CardTitle>
             {hasMessages && (
-              <Badge variant="secondary" className="ml-2">
-                {transcript.length} meldinger
-              </Badge>
+              <div className="flex items-center gap-2 ml-2">
+                <Badge variant="secondary">
+                  {transcript.length} meldinger
+                </Badge>
+                {totalSources > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <FileText className="h-3 w-3" />
+                    {totalSources} kilder
+                  </Badge>
+                )}
+                {messagesWithSources > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <Activity className="h-3 w-3" />
+                    {messagesWithSources} søk
+                  </Badge>
+                )}
+              </div>
             )}
           </div>
           
@@ -152,7 +170,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       </CardHeader>
 
       <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[520px]">
+        <ScrollArea className="min-h-[600px] max-h-[80vh]">
           <div className="px-4 pb-4">
             {!hasMessages && !isLoading && (
               <div className="flex flex-col items-center justify-center h-64 text-center">

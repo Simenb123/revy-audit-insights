@@ -2,6 +2,75 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import 'https://deno.land/x/xhr@0.1.0/mod.ts';
 
+// Document search functionality
+async function performDocumentSearch(supabase: any, clientId: string, query: string): Promise<any[]> {
+  try {
+    console.log(`🔍 Searching for: "${query}" (client: ${clientId})`);
+    
+    const { data, error } = await supabase.functions.invoke('enhanced-semantic-search', {
+      body: {
+        term: query,
+        clientId: clientId,
+        limit: 5,
+        filters: {
+          category: null,
+          subjectArea: null,
+          dateRange: null,
+          aiValidation: null,
+          confidenceLevel: 0.6
+        }
+      }
+    });
+
+    if (error) {
+      console.error('Search error:', error);
+      return [];
+    }
+
+    console.log(`📄 Found ${data?.results?.length || 0} documents for query: "${query}"`);
+    return data?.results || [];
+  } catch (error) {
+    console.error('Document search failed:', error);
+    return [];
+  }
+}
+
+// Smart keyword detection for when to perform searches
+function shouldPerformSearch(content: string): string[] {
+  const searchTriggers = [
+    // Legal terms
+    /regnskapslov(?:en)?|§\s*\d+/gi,
+    /revisjonsloven?|revisjonsstandard/gi,
+    /ISA\s*\d+|RS\s*\d+/gi,
+    /bokføringsloven?/gi,
+    /aksjeloven?|allmennaksjeloven?/gi,
+    
+    // Audit terms
+    /intern[e]?\s*kontroll/gi,
+    /risikovurdering/gi,
+    /vesentlighet/gi,
+    /substanstest/gi,
+    /kontrolltest/gi,
+    
+    // Accounting terms
+    /regnskapsprinsipp/gi,
+    /avskrivning/gi,
+    /goodwill/gi,
+    /nedskrivning/gi,
+    /konsernregnskap/gi
+  ];
+
+  const queries: string[] = [];
+  for (const trigger of searchTriggers) {
+    const matches = content.match(trigger);
+    if (matches) {
+      queries.push(...matches.map(match => match.trim()));
+    }
+  }
+
+  return [...new Set(queries)]; // Remove duplicates
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -28,7 +97,9 @@ serve(async (req) => {
       idea: idea?.slice(0, 100), 
       agentCount: agents?.length,
       settings: settings,
-      agentKeys: agents?.map((a: any) => a.key)
+      agentKeys: agents?.map((a: any) => a.key),
+      allowBackgroundDocs: settings?.allowBackgroundDocs,
+      clientId: context?.clientId
     });
 
     // Create conversation record
@@ -53,7 +124,7 @@ serve(async (req) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiKey) throw new Error('OPENAI_API_KEY mangler');
 
-    const callOpenAI = async (model: string, messages: any[], opts: any = {}): Promise<{ content: string; modelUsed: string; fallbackUsed: boolean }> => {
+    const callOpenAI = async (model: string, messages: any[], opts: any = {}, agentKey?: string): Promise<{ content: string; modelUsed: string; fallbackUsed: boolean; sources?: string[] }> => {
       let primaryModel = model;
       let fallbackModel = 'gpt-4o-mini';
       let fallbackUsed = false;
@@ -118,10 +189,34 @@ serve(async (req) => {
 
       try {
         // Prøv primærmodell først
-        const content = await tryModel(primaryModel);
+        let content = await tryModel(primaryModel);
+        
+        // Perform document search if enabled and relevant keywords detected
+        let sources: string[] = [];
+        if (settings.allowBackgroundDocs && context?.clientId && content) {
+          const searchQueries = shouldPerformSearch(content);
+          if (searchQueries.length > 0) {
+            console.log(`🔍 Agent ${agentKey} triggered search for:`, searchQueries);
+            
+            for (const query of searchQueries.slice(0, 3)) { // Limit to 3 searches per response
+              const searchResults = await performDocumentSearch(supabase, context.clientId, query);
+              if (searchResults.length > 0) {
+                sources.push(...searchResults.map((r: any) => `${r.file_name}: ${r.summary || 'Relevant dokument'}`));
+                
+                // Enhance content with search context
+                const contextInfo = searchResults.slice(0, 2).map((r: any) => 
+                  `[Fra ${r.file_name}]: ${r.summary || r.match_reasons || 'Relevant informasjon'}`
+                ).join('\n');
+                
+                content += `\n\n*Basert på dokumenter: ${contextInfo}*`;
+              }
+            }
+          }
+        }
+        
         if (content && content.trim() !== '') {
-          console.log(`🎉 Suksess med primærmodell: ${primaryModel}`);
-          return { content, modelUsed: primaryModel, fallbackUsed: false };
+          console.log(`🎉 Suksess med primærmodell: ${primaryModel}`, sources.length > 0 ? `(${sources.length} kilder)` : '');
+          return { content, modelUsed: primaryModel, fallbackUsed: false, sources: sources.slice(0, 5) };
         }
         throw new Error('Tomt svar fra primærmodell');
       } catch (primaryError) {
@@ -136,11 +231,25 @@ serve(async (req) => {
             delete fallbackOpts.max_completion_tokens;
           }
           
-          const content = await tryModel(fallbackModel, true);
+          let content = await tryModel(fallbackModel, true);
           fallbackUsed = true;
           
-          console.log(`🎉 Fallback suksess med ${fallbackModel}`);
-          return { content, modelUsed: fallbackModel, fallbackUsed: true };
+          // Perform document search for fallback too if enabled
+          let sources: string[] = [];
+          if (settings.allowBackgroundDocs && context?.clientId && content) {
+            const searchQueries = shouldPerformSearch(content);
+            if (searchQueries.length > 0) {
+              for (const query of searchQueries.slice(0, 2)) {
+                const searchResults = await performDocumentSearch(supabase, context.clientId, query);
+                if (searchResults.length > 0) {
+                  sources.push(...searchResults.map((r: any) => `${r.file_name}: ${r.summary || 'Relevant dokument'}`));
+                }
+              }
+            }
+          }
+          
+          console.log(`🎉 Fallback suksess med ${fallbackModel}`, sources.length > 0 ? `(${sources.length} kilder)` : '');
+          return { content, modelUsed: fallbackModel, fallbackUsed: true, sources: sources.slice(0, 5) };
         } catch (fallbackError) {
           console.error(`❌ Både ${primaryModel} og ${fallbackModel} feilet!`, {
             primaryError: primaryError.message,
@@ -205,20 +314,21 @@ serve(async (req) => {
       
       const modResult = await callOpenAI(mod.model || 'gpt-5-mini', modMsg, { 
         max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
-      });
+      }, settings.moderatorKey);
       const modContent = modResult.content;
       
-      const modMessage = { 
-        id: crypto.randomUUID(), 
-        role: 'assistant', 
-        agentKey: settings.moderatorKey, 
-        agentName: mod.name, 
-        content: modContent, 
-        turnIndex: r, 
-        createdAt: new Date().toISOString(),
-        modelUsed: modResult.modelUsed,
-        fallbackUsed: modResult.fallbackUsed
-      };
+        const modMessage = { 
+          id: crypto.randomUUID(), 
+          role: 'assistant', 
+          agentKey: settings.moderatorKey, 
+          agentName: mod.name, 
+          content: modContent, 
+          turnIndex: r, 
+          createdAt: new Date().toISOString(),
+          modelUsed: modResult.modelUsed,
+          fallbackUsed: modResult.fallbackUsed,
+          sources: modResult.sources || []
+        };
       
       transcript.push(modMessage);
 
@@ -261,7 +371,7 @@ serve(async (req) => {
         
         const agentResult = await callOpenAI(agent.model || 'gpt-5-mini', messages, { 
           max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
-        });
+        }, agentKey);
         const content = agentResult.content;
         
         const agentMessage = { 
@@ -273,7 +383,8 @@ serve(async (req) => {
           turnIndex: r, 
           createdAt: new Date().toISOString(),
           modelUsed: agentResult.modelUsed,
-          fallbackUsed: agentResult.fallbackUsed
+          fallbackUsed: agentResult.fallbackUsed,
+          sources: agentResult.sources || []
         };
         
         transcript.push(agentMessage);

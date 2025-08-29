@@ -42,4 +42,7 @@ export interface TranscriptMessage {
   content: string;
   turnIndex?: number;
   createdAt: string;
+  modelUsed?: string;
+  fallbackUsed?: boolean;
+  sources?: string[];
 }
