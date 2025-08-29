@@ -36,9 +36,13 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
 }) => {
   const { toast } = useToast();
   const [idea, setIdea] = useState('');
-  const [selectedAgents, setSelectedAgents] = useState<AgentConfig[]>(
-    DEFAULT_AGENT_ROLES.slice(0, 4)
-  );
+  const [selectedAgents, setSelectedAgents] = useState<AgentConfig[]>([
+    DEFAULT_AGENT_ROLES[0], // moderator
+    DEFAULT_AGENT_ROLES[1], // optimist  
+    DEFAULT_AGENT_ROLES[2], // devils_advocate
+    DEFAULT_AGENT_ROLES[3], // lawyer
+    DEFAULT_AGENT_ROLES[9], // notetaker (referent)
+  ]);
   const [settings, setSettings] = useState<DiscussionSettings>({
     rounds: 5,
     maxTokensPerTurn: 220,
