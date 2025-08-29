@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,9 @@ import { usePopulationAnalysis, PopulationAnalysisData } from '@/hooks/usePopula
 import DrillDownModal from './DrillDownModal';
 import ExportControls from './ExportControls';
 import AdvancedAnomalyDetection from './AdvancedAnomalyDetection';
+import ErrorBoundary from '@/components/ui/error-boundary';
+import LoadingSkeleton from '@/components/ui/loading-skeleton';
+import { VirtualScrollArea } from '@/components/ui/virtual-scroll-area';
 
 interface PopulationInsightsProps {
   clientId: string;
@@ -119,22 +122,13 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Populasjonsanalyse
-          </CardTitle>
-          <CardDescription>Analyserer populasjonsdata...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="h-4 bg-muted animate-pulse rounded" />
-            <div className="h-32 bg-muted animate-pulse rounded" />
-            <div className="h-4 bg-muted animate-pulse rounded w-2/3" />
-          </div>
-        </CardContent>
-      </Card>
+      <LoadingSkeleton 
+        title="Populasjonsanalyse"
+        description="Analyserer populasjonsdata og genererer innsikt..."
+        showCharts={true}
+        showStats={true}
+        rows={4}
+      />
     );
   }
 
@@ -184,39 +178,48 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     full_name: item.account_name
   }));
 
-  const handlePieClick = (data: any) => {
+  const handlePieClick = useCallback((data: any) => {
     setDrillDownAccount({
       accountNumber: data.account_number,
       accountName: data.account_name
     });
-  };
+  }, []);
 
-  const handleCounterAccountToggle = (accountNumber: string) => {
+  const handleCounterAccountToggle = useCallback((accountNumber: string) => {
     setSelectedCounterAccounts(prev => 
       prev.includes(accountNumber) 
         ? prev.filter(acc => acc !== accountNumber)
         : [...prev, accountNumber]
     );
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSelectedCounterAccounts([]);
-  };
+  }, []);
+
+  // Keyboard navigation for charts
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Populasjonsanalyse
-              </CardTitle>
-              <CardDescription>
-                Deskriptiv analyse og visualisering av valgte populasjon
-              </CardDescription>
-            </div>
+    <ErrorBoundary>
+      <div className="space-y-6" role="main" aria-label="Populasjonsanalyse">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" aria-hidden="true" />
+                  Populasjonsanalyse
+                </CardTitle>
+                <CardDescription>
+                  Deskriptiv analyse og visualisering av valgte populasjon
+                </CardDescription>
+              </div>
             <div className="flex gap-2">
               <ExportControls 
                 analysisData={analysisData} 
@@ -324,7 +327,13 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64">
+              <div 
+                className="h-64" 
+                role="img" 
+                aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
+                tabIndex={0}
+                onKeyDown={(e) => handleKeyDown(e, () => {})}
+              >
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -359,44 +368,56 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
               </div>
               
               {/* Interactive Legend */}
-              <div className="mt-4 space-y-2">
-                {pieData.slice(0, 5).map((item, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-colors ${
-                      selectedCounterAccounts.includes(item.account_number) 
-                        ? 'bg-primary/10 border border-primary/20' 
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => handleCounterAccountToggle(item.account_number)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded" 
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="font-mono text-xs">{item.account_number}</span>
-                      <span className="truncate">{item.account_name}</span>
+              <div className="mt-4 space-y-2" role="list" aria-label="Motkontoer i diagrammet">
+                <VirtualScrollArea
+                  items={pieData.slice(0, 10)}
+                  height={200}
+                  itemHeight={48}
+                  className="border rounded-md"
+                  renderItem={(item, index) => (
+                    <div 
+                      key={index}
+                      role="listitem"
+                      tabIndex={0}
+                      className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-colors focus:ring-2 focus:ring-primary focus:outline-none ${
+                        selectedCounterAccounts.includes(item.account_number) 
+                          ? 'bg-primary/10 border border-primary/20' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => handleCounterAccountToggle(item.account_number)}
+                      onKeyDown={(e) => handleKeyDown(e, () => handleCounterAccountToggle(item.account_number))}
+                      aria-selected={selectedCounterAccounts.includes(item.account_number)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded" 
+                          style={{ backgroundColor: item.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="font-mono text-xs">{item.account_number}</span>
+                        <span className="truncate">{item.account_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{item.value.toFixed(1)}%</Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownAccount({
+                              accountNumber: item.account_number,
+                              accountName: item.account_name
+                            });
+                          }}
+                          aria-label={`Vis detaljer for ${item.account_name}`}
+                        >
+                          <Eye className="h-3 w-3" aria-hidden="true" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{item.value.toFixed(1)}%</Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDrillDownAccount({
-                            accountNumber: item.account_number,
-                            accountName: item.account_name
-                          });
-                        }}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                />
               </div>
             </CardContent>
           </Card>
@@ -450,35 +471,46 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-64">
-              <div className="space-y-3">
-                {riskIndicators.map((indicator, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${
+            <VirtualScrollArea
+              items={riskIndicators}
+              height={256}
+              itemHeight={72}
+              className="border rounded-md"
+              renderItem={(indicator, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg m-2"
+                  role="listitem"
+                  tabIndex={0}
+                  aria-label={`Risikoindikator: ${indicator.description}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className={`w-2 h-2 rounded-full ${
                         indicator.risk_score >= 0.7 ? 'bg-destructive' :
                         indicator.risk_score >= 0.5 ? 'bg-warning' : 'bg-muted'
-                      }`} />
-                      <div>
-                        <div className="font-medium text-sm">{indicator.description}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Konto: {indicator.account_number}
-                        </div>
+                      }`} 
+                      aria-label={`Risiko: ${indicator.risk_score >= 0.7 ? 'Høy' : indicator.risk_score >= 0.5 ? 'Medium' : 'Lav'}`}
+                    />
+                    <div>
+                      <div className="font-medium text-sm">{indicator.description}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Konto: {indicator.account_number}
                       </div>
                     </div>
-                    <Badge 
-                      variant={indicator.risk_score >= 0.7 ? 'destructive' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {indicator.type === 'large_transaction' && 'Stor transaksjon'}
-                      {indicator.type === 'round_amount' && 'Rundt beløp'}
-                      {indicator.type === 'unusual_counter_account' && 'Uvanlig motkonto'}
-                      {indicator.type === 'late_posting' && 'Sen postering'}
-                    </Badge>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <Badge 
+                    variant={indicator.risk_score >= 0.7 ? 'destructive' : 'secondary'}
+                    className="text-xs"
+                  >
+                    {indicator.type === 'large_transaction' && 'Stor transaksjon'}
+                    {indicator.type === 'round_amount' && 'Rundt beløp'}
+                    {indicator.type === 'unusual_counter_account' && 'Uvanlig motkonto'}
+                    {indicator.type === 'late_posting' && 'Sen postering'}
+                  </Badge>
+                </div>
+              )}
+            />
           </CardContent>
         </Card>
       )}
@@ -539,6 +571,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
         versionId={versionId}
       />
     </div>
+    </ErrorBoundary>
   );
 };
 

@@ -48,6 +48,7 @@ export function usePopulationAnalysis(
   return useQuery({
     queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId, analysisLevel],
     queryFn: async (): Promise<PopulationAnalysisData> => {
+      try {
       // If no accounts selected, return empty analysis
       if (selectedStandardNumbers.length === 0) {
         return {
@@ -327,7 +328,19 @@ export function usePopulationAnalysis(
         },
         riskIndicators: riskIndicators.slice(0, 20) // Limit to top 20 risk indicators
       };
+      } catch (error) {
+        console.error('Error in population analysis:', error);
+        throw new Error(
+          error instanceof Error 
+            ? `Feil ved populasjonsanalyse: ${error.message}` 
+            : 'Ukjent feil ved populasjonsanalyse'
+        );
+      }
     },
-    enabled: !!clientId && selectedStandardNumbers.length > 0
+    enabled: !!clientId && selectedStandardNumbers.length > 0,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000 // 10 minutes
   });
 }
