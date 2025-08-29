@@ -25,6 +25,8 @@ import { AgentConfig, DiscussionSettings, TranscriptMessage, AgentRoleKey } from
 import { DEFAULT_AGENT_ROLES, GPT5_MODELS } from './constants';
 import { useMultiAgentDiscussion } from './useMultiAgentDiscussion';
 import { ModelTestDialog } from './ModelTestDialog';
+import TranscriptDisplay from './TranscriptDisplay';
+import AgentAvatar from './AgentAvatar';
 
 interface MultiAgentStudioProps {
   clientId?: string;
@@ -231,14 +233,14 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
             </div>
             <div className="flex flex-col gap-3">
               {selectedAgents.map((agent) => (
-                <div key={agent.key as string} className="border rounded-lg p-2">
+                <div key={agent.key as string} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {agent.icon}
+                    <div className="flex items-center gap-3">
+                      <AgentAvatar agent={agent} size="sm" />
                       <Input
                         value={agent.name}
                         onChange={(e) => updateAgent(agent.key, { name: e.target.value })}
-                        className="w-56"
+                        className="w-56 font-medium"
                       />
                       <Badge variant="outline">{String(agent.key)}</Badge>
                     </div>
@@ -386,45 +388,11 @@ const MultiAgentStudio: React.FC<MultiAgentStudioProps> = ({
 
         {/* Høyre: Transkript */}
         <div className="md:col-span-2">
-          <Card className="bg-muted/40">
-            <CardHeader>
-              <CardTitle>Transkript</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[520px] pr-4">
-                <div className="space-y-4">
-                  {transcript.map((msg: TranscriptMessage) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                          msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1 text-xs opacity-70">
-                          {msg.role === 'assistant' ? (
-                            <Bot className="h-3 w-3" />
-                          ) : (
-                            <User className="h-3 w-3" />
-                          )}
-                          <span>{msg.agentName ?? (msg.role === 'user' ? 'Bruker' : 'Agent')}</span>
-                          {typeof msg.turnIndex === 'number' && (
-                            <Badge variant="outline">r{msg.turnIndex + 1}</Badge>
-                          )}
-                        </div>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={scrollRef} />
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          <TranscriptDisplay 
+            transcript={transcript}
+            agents={selectedAgents}
+            isLoading={isLoading}
+          />
         </div>
       </CardContent>
     </Card>

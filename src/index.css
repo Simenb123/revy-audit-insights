@@ -50,6 +50,30 @@
     --sidebar-border: 175 20% 50%;
     --sidebar-ring: 174 57% 80%;
 
+    /* Agent-specific colors for Multi-Agent Studio */
+    --agent-moderator: 213 100% 45%;
+    --agent-moderator-bg: 213 100% 96%;
+    --agent-optimist: 120 70% 45%;
+    --agent-optimist-bg: 120 70% 95%;
+    --agent-devils-advocate: 15 85% 55%;
+    --agent-devils-advocate-bg: 15 85% 96%;
+    --agent-lawyer: 220 85% 45%;
+    --agent-lawyer-bg: 220 85% 96%;
+    --agent-auditor: 280 70% 50%;
+    --agent-auditor-bg: 280 70% 96%;
+    --agent-engineer: 200 80% 45%;
+    --agent-engineer-bg: 200 80% 96%;
+    --agent-creative: 45 100% 50%;
+    --agent-creative-bg: 45 100% 96%;
+    --agent-user-rep: 160 60% 45%;
+    --agent-user-rep-bg: 160 60% 95%;
+    --agent-strategist: 260 70% 50%;
+    --agent-strategist-bg: 260 70% 96%;
+    --agent-notetaker: 0 0% 40%;
+    --agent-notetaker-bg: 0 0% 95%;
+    --agent-custom: 175 80% 40%;
+    --agent-custom-bg: 175 80% 95%;
+
     /* Sub-header surface */
     --sub-header-bg: 173 57% 39%;
     --sub-header-foreground: 0 0% 100%;
