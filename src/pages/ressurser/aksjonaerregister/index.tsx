@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, Upload, Search, Network } from 'lucide-react'
 
-import { ShareholdersImportForm } from '@/components/Shareholders/ShareholdersImportForm'
-import { OptimizedImportForm } from '@/components/Shareholders/OptimizedImportForm'
+import { ShareholdersUpload } from '@/components/Shareholders/ShareholdersUpload'
 import { ShareholdersTable } from '@/components/Shareholders/ShareholdersTable'
 import { OwnershipGraph } from '@/components/Shareholders/OwnershipGraph'
 
@@ -46,29 +45,7 @@ const AksjonaerregisterPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="import" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Import CSV/Excel fra Skatteetaten</CardTitle>
-              <CardDescription>
-                Optimalisert import med støtte for store filer (100-300MB+), automatisk gjenopprettelse og real-time progress.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OptimizedImportForm />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Legacy Import (Backup)</CardTitle>
-              <CardDescription>
-                Fallback import-metode for mindre filer eller hvis den optimaliserte importen ikke fungerer.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ShareholdersImportForm />
-            </CardContent>
-          </Card>
+          <ShareholdersUpload />
         </TabsContent>
 
         <TabsContent value="search" className="space-y-4">
