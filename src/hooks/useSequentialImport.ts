@@ -59,21 +59,9 @@ export const useSequentialImport = () => {
     let totalProcessedRows = 0
     
     try {
-      // Start session
-      console.log(`🚀 Starting import session: ${sessionId}`)
-      const startResult = await supabase.functions.invoke('shareholders-batch-processor', {
-        body: {
-          action: 'START_SESSION',
-          sessionId,
-          year
-        }
-      })
-
-      if (startResult.error) {
-        throw new Error(`Failed to start session: ${startResult.error.message}`)
-      }
-
-      // Process files one by one
+      console.log(`🚀 Starting optimized import session: ${sessionId}`)
+      
+      // Process files one by one using optimized import
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         
@@ -103,17 +91,14 @@ export const useSequentialImport = () => {
             reader.readAsDataURL(file)
           })
           
-          // Process file in batches using shareholders-batch-processor
-          const result = await supabase.functions.invoke('shareholders-batch-processor', {
+          // Use optimized import function for large files
+          const result = await supabase.functions.invoke('shareholders-optimized-import', {
             body: {
-              action: 'PROCESS_BATCH',
               sessionId,
               year,
               fileName: file.name,
-              fileContent: base64Content,
-              batchSize: 10000, // Optimized for large files
-              maxRetries: 3,
-              delayBetweenBatches: 100 // Reduced delay for faster processing
+              fileContent: `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64Content}`,
+              fileSize: file.size
             }
           })
 
@@ -168,19 +153,7 @@ export const useSequentialImport = () => {
         }
       }
 
-      // Finish session and aggregate data
-      console.log(`🏁 Finishing session: ${sessionId}`)
-      const finishResult = await supabase.functions.invoke('shareholders-batch-processor', {
-        body: {
-          action: 'FINISH_SESSION',
-          sessionId,
-          year
-        }
-      })
-
-      if (finishResult.error) {
-        console.warn(`Warning during session finish: ${finishResult.error.message}`)
-      }
+      console.log(`🏁 All files processed for session: ${sessionId}`)
 
       // Check if any files were processed successfully
       const successfulFiles = state.fileStatuses.filter(f => f.status === 'completed').length

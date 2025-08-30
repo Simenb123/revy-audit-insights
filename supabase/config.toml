@@ -60,3 +60,5 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.shareholders-batch-processor]
     verify_jwt = true
+  [functions.shareholders-optimized-import]
+    verify_jwt = true
