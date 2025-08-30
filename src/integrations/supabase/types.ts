@@ -6979,6 +6979,57 @@ export type Database = {
           },
         ]
       }
+      import_sessions: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          metadata: Json | null
+          processed_rows: number
+          progress: number
+          session_type: string
+          status: string
+          total_rows: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_rows?: number
+          progress?: number
+          session_type?: string
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_rows?: number
+          progress?: number
+          session_type?: string
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       internal_codes: {
         Row: {
           aga: boolean

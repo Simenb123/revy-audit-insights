@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, Upload, Search, Network } from 'lucide-react'
 
 import { ShareholdersImportForm } from '@/components/Shareholders/ShareholdersImportForm'
+import { OptimizedImportForm } from '@/components/Shareholders/OptimizedImportForm'
 import { ShareholdersTable } from '@/components/Shareholders/ShareholdersTable'
 import { OwnershipGraph } from '@/components/Shareholders/OwnershipGraph'
 
@@ -49,7 +50,19 @@ const AksjonaerregisterPage: React.FC = () => {
             <CardHeader>
               <CardTitle>Import CSV/Excel fra Skatteetaten</CardTitle>
               <CardDescription>
-                Last opp CSV/Excel-filer med aksjonærinformasjon. Støtter store filer (100-300MB+) med automatisk encoding-deteksjon.
+                Optimalisert import med støtte for store filer (100-300MB+), automatisk gjenopprettelse og real-time progress.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OptimizedImportForm />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Legacy Import (Backup)</CardTitle>
+              <CardDescription>
+                Fallback import-metode for mindre filer eller hvis den optimaliserte importen ikke fungerer.
               </CardDescription>
             </CardHeader>
             <CardContent>
