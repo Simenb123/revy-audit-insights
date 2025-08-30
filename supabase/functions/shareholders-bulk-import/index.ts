@@ -84,22 +84,43 @@ serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json()
-      const { 
-        sessionId, 
-        year, 
-        fileName, 
-        fileContent, 
-        batchSize = 8000, 
-        maxRetries = 3,
-        delayBetweenBatches = 200,
-        fileSize
-      } = body
+
+      // Handle both old and new formats
+      let sessionId, year, fileName, fileContent, batchSize, maxRetries, delayBetweenBatches, fileSize
+
+      if (body.action === 'START_SESSION') {
+        // Old format from OptimizedImportForm
+        console.log('📥 Received old format request:', body)
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'This function expects file content to be uploaded. Please use the standard import form instead.',
+            requiresFileContent: true
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } else {
+        // New format with actual file content
+        sessionId = body.sessionId
+        year = body.year
+        fileName = body.fileName
+        fileContent = body.fileContent
+        batchSize = body.batchSize || 8000
+        maxRetries = body.maxRetries || 3
+        delayBetweenBatches = body.delayBetweenBatches || 200
+        fileSize = body.fileSize
+      }
 
       console.log(`🚀 Starting bulk import: ${fileName} (${(fileSize / 1024 / 1024).toFixed(1)}MB)`)
       console.log(`📊 Batch size: ${batchSize}, Max retries: ${maxRetries}`)
 
       try {
         let jsonData: any[] = []
+        
+        // Validate that we have file content
+        if (!fileContent) {
+          throw new Error('No file content provided')
+        }
         
         // Check if it's a data URL (starts with data:)
         let actualFileContent = fileContent
