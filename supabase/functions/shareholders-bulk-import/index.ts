@@ -386,28 +386,67 @@ async function processBatchDirect(supabaseClient: any, batchData: any[], year: n
         ).trim().toUpperCase() || 'NO'
       }
 
-      const conflictColumns = entityType === 'company' && holderOrgNr 
-        ? 'orgnr,user_id' 
-        : 'name,birth_year,country_code,user_id,entity_type'
+      // First try to find existing entity
+      let entityResult
+      if (entityType === 'company' && holderOrgNr) {
+        const { data: existing } = await supabaseClient
+          .from('share_entities')
+          .select('id')
+          .eq('orgnr', holderOrgNr)
+          .eq('user_id', userId)
+          .maybeSingle()
         
-      const { data: entityResult, error: entityError } = await supabaseClient
-        .from('share_entities')
-        .upsert(entityData, {
-          onConflict: conflictColumns,
-          ignoreDuplicates: false
-        })
-        .select('id')
-        .single()
-
-      if (entityError) {
-        console.error('Entity upsert error:', entityError)
-        errors.push(`Feil ved lagring av eier ${eierNavn}: ${entityError.message}`)
-        continue
+        if (existing) {
+          entityResult = existing
+        } else {
+          const { data: inserted, error: entityError } = await supabaseClient
+            .from('share_entities')
+            .insert(entityData)
+            .select('id')
+            .single()
+          
+          if (entityError) {
+            console.error('Entity insert error:', entityError)
+            errors.push(`Failed to insert entity ${holderName}: ${entityError.message}`)
+            continue
+          }
+          entityResult = inserted
+        }
+      } else {
+        // For persons, try to find by name, birth year, country
+        const birthYear = entityData.birth_year
+        const countryCode = entityData.country_code
+        
+        const { data: existing } = await supabaseClient
+          .from('share_entities')
+          .select('id')
+          .eq('name', holderName)
+          .eq('birth_year', birthYear)
+          .eq('country_code', countryCode)
+          .eq('user_id', userId)
+          .eq('entity_type', 'person')
+          .maybeSingle()
+        
+        if (existing) {
+          entityResult = existing
+        } else {
+          const { data: inserted, error: entityError } = await supabaseClient
+            .from('share_entities')
+            .insert(entityData)
+            .select('id')
+            .single()
+          
+          if (entityError) {
+            console.error('Entity insert error:', entityError)
+            errors.push(`Failed to insert entity ${holderName}: ${entityError.message}`)
+            continue
+          }
+          entityResult = inserted
+        }
       }
 
-      const entityId = entityResult?.id
-      if (!entityId) {
-        errors.push(`Kunne ikke få entity ID for ${eierNavn}`)
+      if (!entityResult?.id) {
+        errors.push(`Kunne ikke få entity ID for ${holderName}`)
         continue
       }
 
@@ -418,24 +457,47 @@ async function processBatchDirect(supabaseClient: any, batchData: any[], year: n
       
       const holdingData = {
         company_orgnr: normalizedOrgnr, // Use normalized org number
-        holder_id: entityId,
+        holder_id: entityResult.id,
         share_class: shareClass,
         shares: shares,
         year: year,
         user_id: userId
       }
       
-      const { error: holdingError } = await supabaseClient
+      // For holdings, check if it exists first too
+      const { data: existingHolding } = await supabaseClient
         .from('share_holdings')
-        .upsert(holdingData, {
-          onConflict: 'company_orgnr,holder_id,share_class,year,user_id',
-          ignoreDuplicates: false
-        })
-
-      if (holdingError) {
-        console.error('Holding upsert error:', holdingError)
-        errors.push(`Feil ved lagring av eierskap for ${eierNavn}: ${holdingError.message}`)
-        continue
+        .select('id')
+        .eq('company_orgnr', normalizedOrgnr)
+        .eq('holder_id', entityResult.id)
+        .eq('share_class', shareClass)
+        .eq('year', year)
+        .eq('user_id', userId)
+        .maybeSingle()
+      
+      if (existingHolding) {
+        // Update existing holding
+        const { error: holdingError } = await supabaseClient
+          .from('share_holdings')
+          .update({ shares: shares })
+          .eq('id', existingHolding.id)
+          
+        if (holdingError) {
+          console.error('Holding update error:', holdingError)
+          errors.push(`Feil ved oppdatering av eierskap for ${holderName}: ${holdingError.message}`)
+          continue
+        }
+      } else {
+        // Insert new holding
+        const { error: holdingError } = await supabaseClient
+          .from('share_holdings')
+          .insert(holdingData)
+        
+        if (holdingError) {
+          console.error('Holding insert error:', holdingError)
+          errors.push(`Feil ved lagring av eierskap for ${holderName}: ${holdingError.message}`)
+          continue
+        }
       }
 
       processedRows++
