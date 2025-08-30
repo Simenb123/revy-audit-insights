@@ -7,8 +7,12 @@ function parseCSV(csvContent: string): any[] {
   const lines = csvContent.split('\n').filter(line => line.trim())
   if (lines.length === 0) return []
   
-  // Detect delimiter by checking the first line
-  const firstLine = lines[0]
+  // Detect delimiter by checking the first line (remove outer quotes first if present)
+  let firstLine = lines[0]
+  if (firstLine.startsWith('"') && firstLine.endsWith('"')) {
+    firstLine = firstLine.slice(1, -1)
+  }
+  
   const semicolonCount = (firstLine.match(/;/g) || []).length
   const commaCount = (firstLine.match(/,/g) || []).length
   const delimiter = semicolonCount > commaCount ? ';' : ','
@@ -18,6 +22,9 @@ function parseCSV(csvContent: string): any[] {
   const result: any[] = []
   const headers = parseCSVLine(lines[0], delimiter)
   
+  console.log(`📋 Parsed headers:`, headers)
+  console.log(`📋 Total columns found: ${headers.length}`)
+  
   // Create objects with column headers
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i], delimiter)
@@ -26,6 +33,12 @@ function parseCSV(csvContent: string): any[] {
       row[header] = values[index] || ''
     })
     result.push(row)
+    
+    // Log first data row for debugging
+    if (i === 1) {
+      console.log(`📋 First data row:`, values)
+      console.log(`📋 Mapped first row:`, row)
+    }
   }
   
   return result
@@ -36,8 +49,14 @@ function parseCSVLine(line: string, delimiter: string): string[] {
   let currentField = ''
   let inQuotes = false
   
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
+  // Remove outer quotes if the entire line is wrapped in quotes
+  let processedLine = line.trim()
+  if (processedLine.startsWith('"') && processedLine.endsWith('"')) {
+    processedLine = processedLine.slice(1, -1)
+  }
+  
+  for (let i = 0; i < processedLine.length; i++) {
+    const char = processedLine[i]
     
     if (char === '"' && !inQuotes) {
       inQuotes = true
