@@ -62,7 +62,7 @@ export function ImportVerificationDashboard({ year, sessionId }: ImportVerificat
       setLoading(true)
       setError(null)
 
-      const { data, error: verifyError } = await supabase.rpc('get_import_verification' as any, {
+      const { data, error: verifyError } = await (supabase.rpc as any)('get_import_verification', {
         p_year: year,
         p_session_id: sessionId
       })
