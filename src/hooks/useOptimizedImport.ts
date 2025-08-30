@@ -148,10 +148,11 @@ export function useOptimizedImport() {
             const now = Date.now()
             if (now - lastProgressUpdate > PROGRESS_UPDATE_INTERVAL) {
               const memInfo = memoryUsage ? ` (Minne: ${memoryUsage}MB)` : ''
-              addLog(`Prosessert ${rowCount} rader, ${validRows} gyldige, ${errorRows} feil${memInfo}`)
+              const errorRate = rowCount > 0 ? Math.round((errorRows / rowCount) * 100) : 0
+              addLog(`Prosessert ${rowCount} rader, ${validRows} gyldige (${100 - errorRate}%), ${errorRows} advarsler${memInfo}`)
               updateProgress({ 
                 processedRows: rowCount,
-                progress: Math.min((rowCount / (totalRows || rowCount)) * 60, 60) // Cap at 60% during parsing
+                progress: Math.min((validRows / (totalRows || validRows)) * 50, 50) // More accurate progress based on valid rows
               })
               lastProgressUpdate = now
             }
@@ -201,8 +202,9 @@ export function useOptimizedImport() {
             break
 
           case 'PARSE_COMPLETE':
-            addLog(`Parsing fullført: ${totalRows} rader, ${validRows} gyldige, ${errorRows} feil`)
-            updateProgress({ totalRows, status: 'uploading', progress: 60 })
+            const successRate = totalRows > 0 ? Math.round((validRows / totalRows) * 100) : 0
+            addLog(`Parsing fullført: ${totalRows} rader totalt, ${validRows} gyldige (${successRate}%), ${errorRows} advarsler`)
+            updateProgress({ totalRows: validRows, status: 'uploading', progress: 50 }) // Use valid rows as total
             
             // Wait for all batches to complete
             const waitForBatches = setInterval(async () => {
@@ -321,10 +323,11 @@ export function useOptimizedImport() {
     
     for (let attempt = 1; attempt <= retryAttempts; attempt++) {
       try {
-        // Pre-validate batch data
+        // Pre-validate batch data with relaxed validation
         const validRows = batchData.filter(row => {
           const orgnr = String(row.orgnr || '').trim().replace(/\D/g, '')
-          return orgnr && orgnr.length === 9
+          const orgnrLength = orgnr.length
+          return orgnr && (orgnrLength === 8 || orgnrLength === 9) && (row.selskap || row.navn_aksjonaer)
         })
         
         if (validRows.length === 0) {
@@ -404,11 +407,19 @@ export function useOptimizedImport() {
   }
 
   const normalizeRowData = (row: any) => {
+    // Normalize org number with padding for 8-digit numbers
+    let orgnr = String(
+      row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || 
+      row.A || ''
+    ).trim().replace(/\D/g, '') // Remove non-digits
+    
+    // Pad 8-digit org numbers to 9 digits
+    if (orgnr.length === 8) {
+      orgnr = '0' + orgnr
+    }
+
     return {
-      orgnr: String(
-        row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || row.org_nr || 
-        row.A || ''
-      ).trim(),
+      orgnr: orgnr,
       selskap: String(
         row.navn || row.selskapsnavn || row.company_name || row.Selskap || 
         row.B || ''

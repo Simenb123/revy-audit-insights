@@ -173,26 +173,31 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
         ).replace(/[^\d]/g, '')
         const shares = parseInt(sharesStr) || 0
 
-        // More lenient validation - only require org number and some identifier
-        if (!orgnr || orgnr.length !== 9) {
-          errors.push(`Ugyldig organisasjonsnummer: ${orgnr} (må være 9 siffer)`)
+        // Very lenient validation - support both 8 and 9 digit org numbers
+        let normalizedOrgnr = orgnr
+        if (normalizedOrgnr.length === 8) {
+          normalizedOrgnr = '0' + normalizedOrgnr // Pad with leading zero
+        }
+        
+        if (!normalizedOrgnr || (normalizedOrgnr.length !== 9 && normalizedOrgnr.length !== 8)) {
+          errors.push(`Ugyldig organisasjonsnummer: ${orgnr} (må være 8-9 siffer)`)
           continue
         }
         
         if (!selskap && !eierNavn) {
-          errors.push(`Mangler både selskapsnavn og eiernavn for orgnr: ${orgnr}`)
+          errors.push(`Mangler både selskapsnavn og eiernavn for orgnr: ${normalizedOrgnr}`)
           continue
         }
         
-        // Use org number as company name if missing
-        const companyName = selskap || `Ukjent selskap (${orgnr})`
+        // Use normalized org number and provide fallback names
+        const companyName = selskap || `Ukjent selskap (${normalizedOrgnr})`
         const holderName = eierNavn || `Ukjent eier`
 
-        // Upsert company with better error handling (removed calculated_total)
+        // Upsert company with normalized org number
         const { error: companyError } = await supabaseClient
           .from('share_companies')
           .upsert({
-            orgnr: orgnr,
+            orgnr: normalizedOrgnr,
             name: companyName,
             year: year,
             user_id: userId,
@@ -278,7 +283,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
         ).trim() || 'Ordinære'
         
         const holdingData = {
-          company_orgnr: orgnr,
+          company_orgnr: normalizedOrgnr, // Use normalized org number
           holder_id: entityId,
           share_class: shareClass,
           shares: shares,
@@ -371,22 +376,38 @@ async function finishSession(supabaseClient: any, sessionId: string, year: numbe
 
     console.log('Aggregation completed, getting summary...')
 
-    // Get final counts for summary
-    const { data: companiesCount } = await supabaseClient
+    // Get final counts for summary with proper query
+    const companiesQuery = supabaseClient
       .from('share_companies')
       .select('*', { count: 'exact', head: true })
       .eq('year', year)
-      .eq('user_id', userId)
 
-    const { data: holdingsCount } = await supabaseClient
+    const holdingsQuery = supabaseClient
       .from('share_holdings')
       .select('*', { count: 'exact', head: true })
       .eq('year', year)
-      .eq('user_id', userId)
+
+    const entitiesQuery = supabaseClient
+      .from('share_entities')
+      .select('*', { count: 'exact', head: true })
+
+    // Filter by user_id only if not global
+    if (userId) {
+      companiesQuery.eq('user_id', userId)
+      holdingsQuery.eq('user_id', userId)
+      entitiesQuery.eq('user_id', userId)
+    }
+
+    const [companiesResult, holdingsResult, entitiesResult] = await Promise.all([
+      companiesQuery,
+      holdingsQuery,
+      entitiesQuery
+    ])
 
     const summary = {
-      companies: companiesCount?.length || 0,
-      holdings: holdingsCount?.length || 0,
+      companies: companiesResult.count || 0,
+      holdings: holdingsResult.count || 0,
+      entities: entitiesResult.count || 0,
       year: year
     }
 

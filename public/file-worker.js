@@ -122,20 +122,26 @@ function parseFile(data) {
           // Enhanced data validation and normalization
           const normalizedRow = normalizeRowData(row);
           
-          // More lenient validation - only require org number
-          if (!normalizedRow.orgnr || normalizedRow.orgnr.length !== 9) {
+          // Very lenient validation - allow 8-9 digit org numbers
+          const orgnrLength = normalizedRow.orgnr.length;
+          if (!normalizedRow.orgnr || (orgnrLength !== 8 && orgnrLength !== 9)) {
             errorRowsInChunk++;
             failedRows++;
-            logMessage('warn', `Skipping invalid row ${rowCount}: invalid orgnr '${normalizedRow.orgnr}'`);
+            logMessage('warn', `Skipping row ${rowCount}: invalid orgnr '${normalizedRow.orgnr}' (${orgnrLength} digits)`);
             continue;
           }
           
-          // Check for at least some identifier data
+          // Require either company name OR holder name (not both)
           if (!normalizedRow.selskap && !normalizedRow.navn_aksjonaer) {
             errorRowsInChunk++;
             failedRows++;
-            logMessage('warn', `Skipping invalid row ${rowCount}: missing both company and holder name`);
+            logMessage('warn', `Skipping row ${rowCount}: missing both company and holder name for orgnr ${normalizedRow.orgnr}`);
             continue;
+          }
+          
+          // Log warnings for missing data but don't skip
+          if (!normalizedRow.antall_aksjer || normalizedRow.antall_aksjer === 0) {
+            logMessage('warn', `Row ${rowCount}: Zero shares for ${normalizedRow.orgnr} - ${normalizedRow.selskap || normalizedRow.navn_aksjonaer}`);
           }
           
           buffer.push(normalizedRow);
@@ -220,11 +226,19 @@ function parseFile(data) {
 
 // Enhanced data normalization with better validation
 function normalizeRowData(row) {
+  // Extract org number with more flexible handling
+  let orgnr = String(
+    row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+    row.org_nr || row['org-nr'] || row.A || ''
+  ).trim().replace(/\D/g, ''); // Remove non-digits
+  
+  // Pad 8-digit org numbers to 9 digits with leading zero
+  if (orgnr.length === 8) {
+    orgnr = '0' + orgnr;
+  }
+  
   return {
-    orgnr: String(
-      row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
-      row.org_nr || row['org-nr'] || row.A || ''
-    ).trim().replace(/\D/g, ''), // Remove non-digits for org numbers
+    orgnr: orgnr,
     
     selskap: String(
       row.navn || row.selskapsnavn || row.company_name || row.Selskap || 
