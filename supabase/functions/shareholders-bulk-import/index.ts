@@ -124,9 +124,9 @@ serve(async (req) => {
         year = body.year
         fileName = body.fileName
         fileContent = body.fileContent
-        batchSize = body.batchSize || 8000
+        batchSize = body.batchSize || 2000 // Reduced from 8000 to prevent timeouts
         maxRetries = body.maxRetries || 3
-        delayBetweenBatches = body.delayBetweenBatches || 200
+        delayBetweenBatches = body.delayBetweenBatches || 100 // Reduced delay
         fileSize = body.fileSize
       }
 
@@ -193,24 +193,9 @@ serve(async (req) => {
           
           while (retryCount < maxRetries && !batchSuccess) {
             try {
-              const { data: batchResult, error: batchError } = await supabaseClient.functions.invoke('shareholders-batch-processor', {
-                body: {
-                  action: 'PROCESS_BATCH',
-                  session_id: sessionId,
-                  year: year,
-                  batch_data: batchData,
-                  is_global: false
-                }
-              })
-
-              if (batchError) {
-                throw new Error(`Batch processing error: ${batchError.message}`)
-              }
-
-              if (!batchResult?.success) {
-                throw new Error(`Batch failed: ${JSON.stringify(batchResult)}`)
-              }
-
+              // Process batch directly instead of calling external function
+              const batchResult = await processBatchDirect(supabaseClient, batchData, year, user.id)
+              
               totalProcessedRows += batchResult.processed_rows || 0
               if (batchResult.errors && batchResult.errors.length > 0) {
                 totalErrors.push(...batchResult.errors)
@@ -224,7 +209,7 @@ serve(async (req) => {
               console.error(`❌ Batch ${batchIndex + 1} attempt ${retryCount} failed:`, batchError)
               
               if (retryCount < maxRetries) {
-                const retryDelay = delayBetweenBatches * Math.pow(2, retryCount - 1) // Exponential backoff
+                const retryDelay = delayBetweenBatches * Math.pow(2, retryCount - 1)
                 console.log(`⏳ Retrying batch ${batchIndex + 1} in ${retryDelay}ms...`)
                 await new Promise(resolve => setTimeout(resolve, retryDelay))
               } else {
@@ -242,27 +227,10 @@ serve(async (req) => {
 
         console.log(`📊 File processing complete: ${totalProcessedRows} rows processed, ${totalErrors.length} errors`)
 
-        // Start aggregation process
+        // Start aggregation process directly
         console.log(`🔄 Starting aggregation for session ${sessionId}...`)
         
-        const { data: aggregationResult, error: aggregationError } = await supabaseClient.functions.invoke('shareholders-batch-processor', {
-          body: {
-            action: 'FINISH_SESSION',
-            session_id: sessionId,
-            year: year,
-            is_global: false
-          }
-        })
-
-        if (aggregationError) {
-          console.error('❌ Aggregation failed:', aggregationError)
-          throw new Error(`Import finish failed: ${aggregationError.message}`)
-        }
-
-        if (!aggregationResult?.success) {
-          console.error('❌ Aggregation returned non-success:', aggregationResult)
-          throw new Error(`Import finish failed: ${JSON.stringify(aggregationResult)}`)
-        }
+        const aggregationResult = await performAggregationDirect(supabaseClient, year, user.id)
 
         console.log(`🎉 Import completed successfully! Session: ${sessionId}`)
 
@@ -272,7 +240,7 @@ serve(async (req) => {
             processedRows: totalProcessedRows,
             totalRows: jsonData.length,
             errors: totalErrors.slice(0, 50), // Limit error list to prevent response overflow
-            summary: aggregationResult.summary,
+            summary: aggregationResult,
             sessionId: sessionId
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -304,3 +272,262 @@ serve(async (req) => {
     )
   }
 })
+
+// Direct batch processing function (consolidated from shareholders-batch-processor)
+async function processBatchDirect(supabaseClient: any, batchData: any[], year: number, userId: string) {
+  let processedRows = 0
+  let errors: string[] = []
+
+  // Process each row in the batch with optimized upserts
+  for (const row of batchData) {
+    try {
+      // Skip empty rows
+      if (!row || Object.keys(row).length === 0) {
+        continue
+      }
+
+      // Extract and validate required fields - optimized for Norwegian CSV format
+      const orgnr = String(
+        row.Orgnr || row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+        row.org_nr || row['org-nr'] || ''
+      ).trim().replace(/\D/g, '') // Remove non-digits
+      
+      const selskap = String(
+        row.Selskap || row.selskap || row.selskapsnavn || row.navn || row.company_name || ''
+      ).trim()
+      
+      const eierNavn = String(
+        row['Navn aksjonær'] || row['navn aksjonær'] || row.navn_aksjonaer || 
+        row.aksjonaer || row.eier || row.holder || row.eier_navn || ''
+      ).trim()
+      
+      const sharesStr = String(
+        row['Antall aksjer'] || row['antall aksjer'] || row.antall_aksjer || 
+        row.aksjer || row.shares || row.andeler || '0'
+      ).replace(/[^\d]/g, '')
+      const shares = parseInt(sharesStr) || 0
+
+      // Very lenient validation - support both 8 and 9 digit org numbers
+      let normalizedOrgnr = orgnr
+      if (normalizedOrgnr.length === 8) {
+        normalizedOrgnr = '0' + normalizedOrgnr // Pad with leading zero
+      }
+      
+      if (!normalizedOrgnr || (normalizedOrgnr.length !== 9 && normalizedOrgnr.length !== 8)) {
+        errors.push(`Ugyldig organisasjonsnummer: ${orgnr} (må være 8-9 siffer)`)
+        continue
+      }
+      
+      if (!selskap && !eierNavn) {
+        errors.push(`Mangler både selskapsnavn og eiernavn for orgnr: ${normalizedOrgnr}`)
+        continue
+      }
+      
+      // Use normalized org number and provide fallback names
+      const companyName = selskap || `Ukjent selskap (${normalizedOrgnr})`
+      const holderName = eierNavn || `Ukjent eier`
+
+      // Upsert company with normalized org number
+      const { error: companyError } = await supabaseClient
+        .from('share_companies')
+        .upsert({
+          orgnr: normalizedOrgnr,
+          name: companyName,
+          year: year,
+          user_id: userId,
+          total_shares: 0 // Will be calculated later
+        }, {
+          onConflict: 'orgnr,year,user_id',
+          ignoreDuplicates: false
+        })
+
+      if (companyError) {
+        console.error('Company upsert error:', companyError)
+        errors.push(`Feil ved lagring av selskap ${selskap}: ${companyError.message}`)
+        continue
+      }
+
+      // Enhanced entity type detection - handle Norwegian CSV format  
+      const holderOrgNr = String(
+        row['Fødselsår/orgnr'] || row['fødselsår/orgnr'] || row.fodselsar_orgnr || 
+        row.eier_orgnr || row.holder_orgnr || ''
+      ).trim().replace(/\D/g, '')
+      
+      const entityType = (holderOrgNr.length === 9 && /^\d+$/.test(holderOrgNr)) ? 'company' : 'person'
+      
+      // Upsert entity (holder) with better conflict resolution
+      const entityData: any = {
+        entity_type: entityType,
+        name: holderName,
+        user_id: userId
+      }
+
+      if (entityType === 'company' && holderOrgNr) {
+        entityData.orgnr = holderOrgNr
+      } else {
+        // For persons, try to extract birth year from various sources
+        const birthYearSources = [
+          row.fodselsar_orgnr, row.eier_orgnr, row.birth_year, 
+          holderName.match(/\b(19\d{2}|20\d{2})\b/)?.[1]
+        ]
+        
+        for (const source of birthYearSources) {
+          if (source) {
+            const year = parseInt(String(source).replace(/\D/g, ''))
+            if (year >= 1900 && year <= new Date().getFullYear()) {
+              entityData.birth_year = year
+              break
+            }
+          }
+        }
+        
+        entityData.country_code = String(
+          row.Landkode || row.landkode || row.country_code || 'NO'
+        ).trim().toUpperCase() || 'NO'
+      }
+
+      const conflictColumns = entityType === 'company' && holderOrgNr 
+        ? 'orgnr,user_id' 
+        : 'name,user_id'
+        
+      const { data: entityResult, error: entityError } = await supabaseClient
+        .from('share_entities')
+        .upsert(entityData, {
+          onConflict: conflictColumns,
+          ignoreDuplicates: false
+        })
+        .select('id')
+        .single()
+
+      if (entityError) {
+        console.error('Entity upsert error:', entityError)
+        errors.push(`Feil ved lagring av eier ${eierNavn}: ${entityError.message}`)
+        continue
+      }
+
+      const entityId = entityResult?.id
+      if (!entityId) {
+        errors.push(`Kunne ikke få entity ID for ${eierNavn}`)
+        continue
+      }
+
+      // Insert holding record with better share class handling
+      const shareClass = String(
+        row.aksjeklasse || row.Aksjeklasse || row.share_class || 'Ordinære'
+      ).trim() || 'Ordinære'
+      
+      const holdingData = {
+        company_orgnr: normalizedOrgnr, // Use normalized org number
+        holder_id: entityId,
+        share_class: shareClass,
+        shares: shares,
+        year: year,
+        user_id: userId
+      }
+      
+      const { error: holdingError } = await supabaseClient
+        .from('share_holdings')
+        .upsert(holdingData, {
+          onConflict: 'company_orgnr,holder_id,share_class,year,user_id',
+          ignoreDuplicates: false
+        })
+
+      if (holdingError) {
+        console.error('Holding upsert error:', holdingError)
+        errors.push(`Feil ved lagring av eierskap for ${eierNavn}: ${holdingError.message}`)
+        continue
+      }
+
+      processedRows++
+
+    } catch (rowError) {
+      console.error('Error processing row:', rowError)
+      errors.push(`Feil ved prosessering av rad: ${rowError.message}`)
+    }
+  }
+
+  console.log(`Batch processed: ${processedRows} successful, ${errors.length} errors`)
+
+  return {
+    success: true,
+    processed_rows: processedRows,
+    total_rows: batchData.length,
+    errors: errors
+  }
+}
+
+// Direct aggregation function (consolidated from shareholders-batch-processor)
+async function performAggregationDirect(supabaseClient: any, year: number, userId: string) {
+  console.log(`Starting direct aggregation for year ${year}, userId: ${userId}`)
+  
+  try {
+    // Use optimized batch processing for large datasets to avoid timeouts
+    console.log('Starting optimized batch aggregation...')
+    let offset = 0
+    let hasMore = true
+    let totalProcessed = 0
+    const batchSize = 1000 // Smaller batches to avoid timeout
+    
+    while (hasMore) {
+      console.log(`Processing aggregation batch at offset ${offset}...`)
+      
+      const { data: batchResult, error: batchError } = await supabaseClient.rpc('update_total_shares_batch_optimized', {
+        p_year: year,
+        p_user_id: userId,
+        p_batch_size: batchSize,
+        p_offset: offset,
+        p_max_execution_time_seconds: 60 // Conservative timeout
+      })
+
+      if (batchError) {
+        console.error('Batch aggregation error:', batchError)
+        throw new Error(`Batch aggregation failed: ${batchError.message}`)
+      }
+
+      totalProcessed += batchResult.processed_count
+      offset = batchResult.next_offset
+      hasMore = batchResult.has_more
+
+      console.log(`Batch completed: ${batchResult.processed_count} processed, ${totalProcessed} total, hasMore: ${hasMore}`)
+      
+      // Small delay between batches to prevent overload
+      if (hasMore) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+    }
+
+    console.log(`Aggregation completed successfully: ${totalProcessed} companies processed`)
+
+    // Get final counts for summary
+    const [companiesResult, holdingsResult, entitiesResult] = await Promise.all([
+      supabaseClient
+        .from('share_companies')
+        .select('*', { count: 'exact', head: true })
+        .eq('year', year)
+        .eq('user_id', userId),
+      supabaseClient
+        .from('share_holdings')
+        .select('*', { count: 'exact', head: true })
+        .eq('year', year)
+        .eq('user_id', userId),
+      supabaseClient
+        .from('share_entities')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+    ])
+
+    const summary = {
+      companies: companiesResult.count || 0,
+      holdings: holdingsResult.count || 0,
+      entities: entitiesResult.count || 0,
+      year: year
+    }
+
+    console.log(`Summary: ${summary.companies} companies, ${summary.holdings} holdings`)
+    return summary
+
+  } catch (error) {
+    console.error('Error in direct aggregation:', error)
+    throw error
+  }
+}
