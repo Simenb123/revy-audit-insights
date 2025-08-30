@@ -153,23 +153,24 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           continue
         }
 
-        // Extract and validate required fields with enhanced field mapping
+        // Extract and validate required fields - optimized for Norwegian CSV format
         const orgnr = String(
-          row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+          row.Orgnr || row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
           row.org_nr || row['org-nr'] || ''
         ).trim().replace(/\D/g, '') // Remove non-digits
         
         const selskap = String(
-          row.selskap || row.navn || row.selskapsnavn || row.company_name || row.Selskap || ''
+          row.Selskap || row.selskap || row.selskapsnavn || row.navn || row.company_name || ''
         ).trim()
         
         const eierNavn = String(
-          row.navn_aksjonaer || row.aksjonaer || row.eier || row.holder || 
-          row.eier_navn || row['Navn aksjonær'] || row['Navn aksjonÃ¦r'] || ''
+          row['Navn aksjonær'] || row['navn aksjonær'] || row.navn_aksjonaer || 
+          row.aksjonaer || row.eier || row.holder || row.eier_navn || ''
         ).trim()
         
         const sharesStr = String(
-          row.antall_aksjer || row.aksjer || row.shares || row.andeler || '0'
+          row['Antall aksjer'] || row['antall aksjer'] || row.antall_aksjer || 
+          row.aksjer || row.shares || row.andeler || '0'
         ).replace(/[^\d]/g, '')
         const shares = parseInt(sharesStr) || 0
 
@@ -213,10 +214,10 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           continue
         }
 
-        // Enhanced entity type detection
+        // Enhanced entity type detection - handle Norwegian CSV format  
         const holderOrgNr = String(
-          row.fodselsar_orgnr || row.eier_orgnr || row.holder_orgnr || 
-          row['Fødselsår/orgnr'] || row['FÃ¸dselsÃ¥r/orgnr'] || ''
+          row['Fødselsår/orgnr'] || row['fødselsår/orgnr'] || row.fodselsar_orgnr || 
+          row.eier_orgnr || row.holder_orgnr || ''
         ).trim().replace(/\D/g, '')
         
         const entityType = (holderOrgNr.length === 9 && /^\d+$/.test(holderOrgNr)) ? 'company' : 'person'
@@ -248,7 +249,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           }
           
           entityData.country_code = String(
-            row.landkode || row.Landkode || row.country_code || 'NO'
+            row.Landkode || row.landkode || row.country_code || 'NO'
           ).trim().toUpperCase() || 'NO'
         }
 

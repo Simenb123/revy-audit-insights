@@ -105,8 +105,8 @@ export const useSequentialImport = () => {
             reader.readAsDataURL(file)
           })
           
-          // Use optimized import function for large files
-          const result = await supabase.functions.invoke('shareholders-optimized-import', {
+          // Use bulk import function for all files
+          const result = await supabase.functions.invoke('shareholders-bulk-import', {
             body: {
               sessionId,
               year,

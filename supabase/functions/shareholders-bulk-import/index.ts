@@ -2,6 +2,59 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import * as XLSX from 'https://esm.sh/xlsx@0.18.5'
 
+// CSV parsing with automatic delimiter detection and Norwegian column support
+function parseCSV(csvContent: string): any[] {
+  const lines = csvContent.split('\n').filter(line => line.trim())
+  if (lines.length === 0) return []
+  
+  // Detect delimiter by checking the first line
+  const firstLine = lines[0]
+  const semicolonCount = (firstLine.match(/;/g) || []).length
+  const commaCount = (firstLine.match(/,/g) || []).length
+  const delimiter = semicolonCount > commaCount ? ';' : ','
+  
+  console.log(`🔍 Detected CSV delimiter: "${delimiter}" (semicolons: ${semicolonCount}, commas: ${commaCount})`)
+  
+  const result: any[] = []
+  const headers = parseCSVLine(lines[0], delimiter)
+  
+  // Create objects with column headers
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i], delimiter)
+    const row: any = {}
+    headers.forEach((header, index) => {
+      row[header] = values[index] || ''
+    })
+    result.push(row)
+  }
+  
+  return result
+}
+
+function parseCSVLine(line: string, delimiter: string): string[] {
+  const result: string[] = []
+  let currentField = ''
+  let inQuotes = false
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    
+    if (char === '"' && !inQuotes) {
+      inQuotes = true
+    } else if (char === '"' && inQuotes) {
+      inQuotes = false
+    } else if (char === delimiter && !inQuotes) {
+      result.push(currentField.trim())
+      currentField = ''
+    } else {
+      currentField += char
+    }
+  }
+  
+  result.push(currentField.trim())
+  return result
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -46,20 +99,35 @@ serve(async (req) => {
       console.log(`📊 Batch size: ${batchSize}, Max retries: ${maxRetries}`)
 
       try {
+        let jsonData: any[] = []
+        
+        // Check if it's a data URL (starts with data:)
+        let actualFileContent = fileContent
+        if (fileContent.startsWith('data:')) {
+          // Extract base64 content from data URL
+          actualFileContent = fileContent.split(',')[1]
+        }
+        
         // Decode base64 content
-        const binaryString = atob(fileContent)
+        const binaryString = atob(actualFileContent)
         const bytes = new Uint8Array(binaryString.length)
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i)
         }
 
-        // Parse Excel file
-        const workbook = XLSX.read(bytes, { type: 'array' })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet)
-
-        console.log(`📋 Parsed ${jsonData.length} rows from Excel file`)
+        if (fileName.toLowerCase().endsWith('.csv')) {
+          // Parse CSV file with Norwegian column support
+          const textContent = new TextDecoder('utf-8').decode(bytes)
+          jsonData = parseCSV(textContent)
+          console.log(`📋 Parsed ${jsonData.length} rows from CSV file`)
+        } else {
+          // Parse Excel file
+          const workbook = XLSX.read(bytes, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          jsonData = XLSX.utils.sheet_to_json(worksheet)
+          console.log(`📋 Parsed ${jsonData.length} rows from Excel file`)
+        }
 
         if (jsonData.length === 0) {
           throw new Error('No data found in Excel file')
@@ -84,7 +152,7 @@ serve(async (req) => {
           
           while (retryCount < maxRetries && !batchSuccess) {
             try {
-              const { data: batchResult, error: batchError } = await supabaseClient.functions.invoke('shareholders-bulk-import', {
+              const { data: batchResult, error: batchError } = await supabaseClient.functions.invoke('shareholders-batch-processor', {
                 body: {
                   action: 'PROCESS_BATCH',
                   session_id: sessionId,
