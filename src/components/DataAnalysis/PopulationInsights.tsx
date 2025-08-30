@@ -14,7 +14,8 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -70,6 +71,8 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat('nb-NO').format(num);
 };
 
+const generateColor = (index: number) => CHART_COLORS[index % CHART_COLORS.length];
+
 const PopulationInsights: React.FC<PopulationInsightsProps> = ({
   clientId,
   fiscalYear,
@@ -94,8 +97,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     fiscalYear,
     selectedStandardNumbers,
     excludedAccountNumbers,
-    versionId,
-    analysisLevel
+    versionId
   );
 
   if (selectedStandardNumbers.length === 0) {
@@ -150,38 +152,47 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     );
   }
 
-  const { counterAccountDistribution, transactionStatistics, riskIndicators } = analysisData;
+  const hasData = analysisData?.counterAccountAnalysis && analysisData?.basicStatistics && analysisData?.anomalyDetection?.anomalies;
+
+  if (!hasData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Populasjonsanalyse</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Ingen data tilgjengelig for analyse.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Filter counter accounts based on selection
   const filteredCounterAccounts = selectedCounterAccounts.length > 0 
-    ? counterAccountDistribution.filter(item => selectedCounterAccounts.includes(item.account_number))
-    : counterAccountDistribution;
+    ? analysisData.counterAccountAnalysis.filter((item) => selectedCounterAccounts.includes(item.counterAccount))
+    : analysisData.counterAccountAnalysis;
 
   // Prepare data for pie chart with click handling
-  const pieData = filteredCounterAccounts.map((item, index) => ({
-    name: `${item.account_number} ${item.account_name}`,
-    value: item.percentage,
-    amount: item.total_amount,
-    count: item.transaction_count,
-    color: CHART_COLORS[index % CHART_COLORS.length],
-    account_number: item.account_number,
-    account_name: item.account_name
+  const pieData = filteredCounterAccounts.slice(0, 5).map((item, index) => ({
+    name: item.counterAccountName || item.counterAccount,
+    value: item.totalAmount,
+    account_number: item.counterAccount,
+    color: generateColor(index)
   }));
 
   // Prepare data for bar chart (top counter accounts)
-  const barData = filteredCounterAccounts.slice(0, 5).map(item => ({
-    account: `${item.account_number}`,
-    name: item.account_name.length > 20 ? item.account_name.substring(0, 17) + '...' : item.account_name,
-    amount: item.total_amount,
-    count: item.transaction_count,
-    account_number: item.account_number,
-    full_name: item.account_name
+  const barData = filteredCounterAccounts.slice(0, 10).map((item) => ({
+    name: item.counterAccountName?.length > 20 
+      ? item.counterAccountName.substring(0, 20) + '...' 
+      : item.counterAccountName,
+    value: item.transactionCount,
+    full_name: item.counterAccountName
   }));
 
   const handlePieClick = useCallback((data: any) => {
     setDrillDownAccount({
       accountNumber: data.account_number,
-      accountName: data.account_name
+      accountName: data.name
     });
   }, []);
 
@@ -205,6 +216,129 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     }
   }, []);
 
+  const renderPieChart = () => {
+    if (pieData.length === 0) return null;
+
+    return (
+      <PieChart>
+        <Pie
+          data={pieData}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
+          outerRadius={80}
+          fill="#8884d8"
+          dataKey="value"
+          onClick={handlePieClick}
+          style={{ cursor: 'pointer' }}
+        >
+          {pieData.map((entry: any, index: number) => (
+            <Cell key={`cell-${index}`} fill={(entry as any).color} />
+          ))}
+        </Pie>
+        <Tooltip 
+          formatter={(value: any) => [
+            `${Math.abs(Number(value)).toLocaleString('no-NO', { 
+              style: 'currency', 
+              currency: 'NOK' 
+            })}`, 
+            'Beløp'
+          ]}
+        />
+        <Legend 
+          formatter={(value: string, entry: any) => (
+            <span style={{ color: entry.color, fontSize: '12px' }}>
+              {entry.payload?.full_name || value}
+            </span>
+          )}
+        />
+      </PieChart>
+    );
+  }
+
+  const renderRiskIndicators = () => {
+    if (!analysisData?.anomalyDetection?.anomalies) return null;
+
+    return (
+      <div className="space-y-2 max-h-64 overflow-y-auto">
+        {analysisData.anomalyDetection.anomalies.map((item, index) => {
+          const severity = item.severity;
+          const bgColor = severity === 'high' ? 'bg-red-50 border-red-200' : 
+                          severity === 'medium' ? 'bg-yellow-50 border-yellow-200' : 
+                          'bg-gray-50 border-gray-200';
+          
+          return (
+            <div key={`${item.accountNumber}-${index}`} className={`p-3 rounded-lg border ${bgColor}`}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">{item.description}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">
+                    Konto: {item.accountNumber}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    severity === 'high' ? 'bg-red-100 text-red-800' :
+                    severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {severity === 'high' ? 'Høy' : severity === 'medium' ? 'Medium' : 'Lav'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const renderOutlierCards = () => {
+    return analysisData?.outlierDetection?.outliers?.slice(0, 3).map((outlier, index) => (
+      <div key={index} className="p-3 border rounded-lg bg-blue-50">
+        <div className="text-xs text-gray-500">Konto: {outlier.accountNumber} - {outlier.accountName}</div>
+        <div className="text-lg font-semibold text-blue-600">
+          {Math.abs(outlier.closingBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+        </div>
+        <div className="text-xs text-gray-400">
+          {outlier.outlierType === 'high' ? 'Uvanlig høy saldo' : 'Uvanlig lav saldo'}
+        </div>
+      </div>
+    ));
+  }
+
+  const renderStatisticsCards = () => {
+    return (
+      <>
+        <div className="p-3 border rounded-lg bg-green-50">
+          <div className="font-medium text-green-600">
+            Gjennomsnitt: {Math.abs(analysisData.basicStatistics.averageBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+          </div>
+          <div className="text-sm text-gray-600">
+            Median: {Math.abs(analysisData.basicStatistics.medianBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+          </div>
+        </div>
+        
+        <div className="p-3 border rounded-lg bg-purple-50">
+          <div className="font-medium text-purple-600">
+            {analysisData.counterAccountAnalysis.length} motkontoer
+          </div>
+          <div className="text-sm text-gray-600">
+            Mest aktive: {analysisData.counterAccountAnalysis[0]?.counterAccountName || 'Ingen'}
+          </div>
+        </div>
+        
+        <div className="p-3 border rounded-lg bg-orange-50">
+          <div className="font-medium text-orange-600">
+            Totalt: {analysisData.basicStatistics.totalAccounts} kontoer
+          </div>
+          <div className="text-sm text-gray-600">
+            Største: {Math.abs(analysisData.basicStatistics.maxBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <div className="space-y-6" role="main" aria-label="Populasjonsanalyse">
@@ -220,357 +354,190 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
                   Deskriptiv analyse og visualisering av valgte populasjon
                 </CardDescription>
               </div>
-            <div className="flex gap-2">
-              <ExportControls 
-                analysisData={analysisData} 
-                fiscalYear={fiscalYear}
-              />
-              {selectedCounterAccounts.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearFilters}
-                >
-                  <FilterX className="h-4 w-4 mr-2" />
-                  Fjern filter
-                </Button>
-              )}
-              {onAnalysisLevelChange && (
-                <>
-                  <Button
-                    variant={analysisLevel === 'account' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onAnalysisLevelChange('account')}
-                  >
-                    Kontonivå
-                  </Button>
-                  <Button
-                    variant={analysisLevel === 'statement_line' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onAnalysisLevelChange('statement_line')}
-                  >
-                    Regnskapslinje
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Key Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {formatNumber(transactionStatistics.totalTransactions)}
-              </div>
-              <div className="text-sm text-muted-foreground">Transaksjoner</div>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {formatCurrency(transactionStatistics.averageAmount)}
-              </div>
-              <div className="text-sm text-muted-foreground">Gjennomsnitt</div>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {formatCurrency(transactionStatistics.medianAmount)}
-              </div>
-              <div className="text-sm text-muted-foreground">Median</div>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-destructive">
-                {riskIndicators.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Risikoindikatorer</div>
-            </div>
-          </div>
-
-          {/* Additional Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
-              <div className="text-lg font-semibold">{formatCurrency(transactionStatistics.minAmount)}</div>
-              <div className="text-xs text-muted-foreground">Minimum</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold">{formatCurrency(transactionStatistics.q1)}</div>
-              <div className="text-xs text-muted-foreground">Q1 (25%)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold">{formatCurrency(transactionStatistics.q3)}</div>
-              <div className="text-xs text-muted-foreground">Q3 (75%)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold">{formatCurrency(transactionStatistics.maxAmount)}</div>
-              <div className="text-xs text-muted-foreground">Maksimum</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Counter Account Distribution */}
-      {counterAccountDistribution.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChartIcon className="h-4 w-4" />
-                Motkontofordeling
+              <div className="flex gap-2">
+                <ExportControls 
+                  analysisData={analysisData} 
+                  fiscalYear={fiscalYear}
+                />
                 {selectedCounterAccounts.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    <Filter className="h-3 w-3 mr-1" />
-                    {selectedCounterAccounts.length} filtrert
-                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Fjern filter
+                  </Button>
                 )}
-              </CardTitle>
-              <CardDescription>
-                Klikk på segmenter for drill-down analyse
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div 
-                className="h-64" 
-                role="img" 
-                aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
-                tabIndex={0}
-                onKeyDown={(e) => handleKeyDown(e, () => {})}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percentage }) => `${percentage.toFixed(1)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        onClick={handlePieClick}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color}
-                            stroke={selectedCounterAccounts.includes(entry.account_number) ? '#000' : 'none'}
-                            strokeWidth={selectedCounterAccounts.includes(entry.account_number) ? 2 : 0}
-                          />
-                        ))}
-                      </Pie>
+                {onAnalysisLevelChange && (
+                  <>
+                    <Button
+                      variant={analysisLevel === 'account' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onAnalysisLevelChange('account')}
+                    >
+                      Kontonivå
+                    </Button>
+                    <Button
+                      variant={analysisLevel === 'statement_line' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onAnalysisLevelChange('statement_line')}
+                    >
+                      Regnskapslinje
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Key Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {formatNumber(analysisData.basicStatistics.totalAccounts)}
+                </div>
+                <div className="text-sm text-muted-foreground">Kontoer</div>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(analysisData.basicStatistics.averageBalance)}
+                </div>
+                <div className="text-sm text-muted-foreground">Gjennomsnitt</div>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(analysisData.basicStatistics.medianBalance)}
+                </div>
+                <div className="text-sm text-muted-foreground">Median</div>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-bold text-destructive">
+                  {analysisData.anomalyDetection.anomalies.length}
+                </div>
+                <div className="text-sm text-muted-foreground">Anomalier</div>
+              </div>
+            </div>
+
+            {/* Additional Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center">
+                <div className="text-lg font-semibold">{formatCurrency(analysisData.basicStatistics.minBalance)}</div>
+                <div className="text-xs text-muted-foreground">Minimum</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold">{formatCurrency(analysisData.basicStatistics.q1)}</div>
+                <div className="text-xs text-muted-foreground">Q1 (25%)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold">{formatCurrency(analysisData.basicStatistics.q3)}</div>
+                <div className="text-xs text-muted-foreground">Q3 (75%)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold">{formatCurrency(analysisData.basicStatistics.maxBalance)}</div>
+                <div className="text-xs text-muted-foreground">Maksimum</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Counter Account Distribution */}
+        {analysisData.counterAccountAnalysis.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChartIcon className="h-4 w-4" />
+                  Motkontofordeling
+                  {selectedCounterAccounts.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Filter className="h-3 w-3 mr-1" />
+                      {selectedCounterAccounts.length} filtrert
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Klikk på segmenter for drill-down analyse
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="h-64" 
+                  role="img" 
+                  aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
+                  tabIndex={0}
+                  onKeyDown={(e) => handleKeyDown(e, () => {})}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    {renderPieChart()}
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Transaksjonsvolum
+                </CardTitle>
+                <CardDescription>
+                  Antall transaksjoner per motkonto (topp 10)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip 
-                        formatter={(value: any, name: any, props: any) => [
-                          `${value.toFixed(1)}% (${formatCurrency(props.payload.amount)})`,
-                          'Andel'
+                        formatter={(value: any) => [
+                          formatNumber(value),
+                          'Transaksjoner'
                         ]}
                       />
-                    </PieChart>
-                </ResponsiveContainer>
-              </div>
-              
-              {/* Interactive Legend */}
-              <div className="mt-4 space-y-2" role="list" aria-label="Motkontoer i diagrammet">
-                <VirtualScrollArea
-                  items={pieData.slice(0, 10)}
-                  height={200}
-                  itemHeight={48}
-                  className="border rounded-md"
-                  renderItem={(item, index) => (
-                    <div 
-                      key={index}
-                      role="listitem"
-                      tabIndex={0}
-                      className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-colors focus:ring-2 focus:ring-primary focus:outline-none ${
-                        selectedCounterAccounts.includes(item.account_number) 
-                          ? 'bg-primary/10 border border-primary/20' 
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => handleCounterAccountToggle(item.account_number)}
-                      onKeyDown={(e) => handleKeyDown(e, () => handleCounterAccountToggle(item.account_number))}
-                      aria-selected={selectedCounterAccounts.includes(item.account_number)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded" 
-                          style={{ backgroundColor: item.color }}
-                          aria-hidden="true"
-                        />
-                        <span className="font-mono text-xs">{item.account_number}</span>
-                        <span className="truncate">{item.account_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{item.value.toFixed(1)}%</Badge>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDrillDownAccount({
-                              accountNumber: item.account_number,
-                              accountName: item.account_name
-                            });
-                          }}
-                          aria-label={`Vis detaljer for ${item.account_name}`}
-                        >
-                          <Eye className="h-3 w-3" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                      <Bar dataKey="value" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
+        {/* Risk Indicators */}
+        {analysisData.anomalyDetection.anomalies.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Transaksjonsvolum
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Anomalier og avvik
               </CardTitle>
               <CardDescription>
-                Antall transaksjoner per motkonto (topp 5)
+                Automatisk identifiserte avvik og potensielle risikoområder
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="account" 
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value: any, name: any, props: any) => [
-                        formatNumber(value),
-                        'Transaksjoner'
-                      ]}
-                      labelFormatter={(label) => `Konto ${label}`}
-                    />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {renderRiskIndicators()}
             </CardContent>
           </Card>
+        )}
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {renderOutlierCards()}
+          {renderStatisticsCards()}
         </div>
-      )}
 
-      {/* Risk Indicators */}
-      {riskIndicators.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              Risikoindikatorer
-            </CardTitle>
-            <CardDescription>
-              Automatisk identifiserte avvik og potensielle risikoområder
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <VirtualScrollArea
-              items={riskIndicators}
-              height={256}
-              itemHeight={72}
-              className="border rounded-md"
-              renderItem={(indicator, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg m-2"
-                  role="listitem"
-                  tabIndex={0}
-                  aria-label={`Risikoindikator: ${indicator.description}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className={`w-2 h-2 rounded-full ${
-                        indicator.risk_score >= 0.7 ? 'bg-destructive' :
-                        indicator.risk_score >= 0.5 ? 'bg-warning' : 'bg-muted'
-                      }`} 
-                      aria-label={`Risiko: ${indicator.risk_score >= 0.7 ? 'Høy' : indicator.risk_score >= 0.5 ? 'Medium' : 'Lav'}`}
-                    />
-                    <div>
-                      <div className="font-medium text-sm">{indicator.description}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Konto: {indicator.account_number}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={indicator.risk_score >= 0.7 ? 'destructive' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {indicator.type === 'large_transaction' && 'Stor transaksjon'}
-                    {indicator.type === 'round_amount' && 'Rundt beløp'}
-                    {indicator.type === 'unusual_counter_account' && 'Uvanlig motkonto'}
-                    {indicator.type === 'late_posting' && 'Sen postering'}
-                  </Badge>
-                </div>
-              )}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Outliers */}
-      {transactionStatistics.outliers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Statistiske avvikere
-            </CardTitle>
-            <CardDescription>
-              Transaksjoner som ligger utenfor normal variasjon (IQR ± 1.5)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {transactionStatistics.outliers.slice(0, 10).map((outlier, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="font-medium">{formatCurrency(outlier.amount)}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {outlier.account_number} • {outlier.transaction_date} • {outlier.description}
-                    </div>
-                  </div>
-                  <Badge variant="outline">Avviker</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Advanced Anomaly Detection */}
-      <AdvancedAnomalyDetection
-        clientId={clientId}
-        fiscalYear={fiscalYear}
-        selectedAccountNumbers={selectedStandardNumbers.length > 0 ? 
-          Array.from(new Set(counterAccountDistribution.flatMap(item => [item.account_number])))
-          : []
-        }
-        versionId={versionId}
-      />
-
-      {/* Drill Down Modal */}
-      <DrillDownModal
-        isOpen={!!drillDownAccount}
-        onOpenChange={() => setDrillDownAccount(null)}
-        clientId={clientId}
-        fiscalYear={fiscalYear}
-        selectedAccountNumbers={selectedStandardNumbers.length > 0 ? 
-          Array.from(new Set(counterAccountDistribution.flatMap(item => [item.account_number])))
-          : []
-        }
-        counterAccountNumber={drillDownAccount?.accountNumber || ''}
-        counterAccountName={drillDownAccount?.accountName || ''}
-        versionId={versionId}
-      />
-    </div>
+        {/* Note: Advanced components temporarily disabled during backend migration */}
+        {/* <AdvancedAnomalyDetection /> */}
+        {/* <DrillDownModal /> */}
+      </div>
     </ErrorBoundary>
   );
 };

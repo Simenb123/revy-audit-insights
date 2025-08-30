@@ -36,16 +36,18 @@ const ExportControls: React.FC<ExportControlsProps> = ({
         ['Populasjonsanalyse', `${clientName} - ${fiscalYear}`],
         [''],
         ['Nøkkelstatistikk', ''],
-        ['Totalt antall transaksjoner', analysisData.transactionStatistics.totalTransactions],
-        ['Gjennomsnittlig beløp', analysisData.transactionStatistics.averageAmount],
-        ['Median beløp', analysisData.transactionStatistics.medianAmount],
-        ['Minimum beløp', analysisData.transactionStatistics.minAmount],
-        ['Maksimum beløp', analysisData.transactionStatistics.maxAmount],
-        ['Standardavvik', analysisData.transactionStatistics.standardDeviation],
-        ['Q1 (25%)', analysisData.transactionStatistics.q1],
-        ['Q3 (75%)', analysisData.transactionStatistics.q3],
+        ['Totalt antall kontoer', analysisData.basicStatistics.totalAccounts],
+        ['Kontoer med saldo', analysisData.basicStatistics.accountsWithBalance],
+        ['Total sum', analysisData.basicStatistics.totalSum],
+        ['Gjennomsnittlig saldo', analysisData.basicStatistics.averageBalance],
+        ['Median saldo', analysisData.basicStatistics.medianBalance],
+        ['Minimum saldo', analysisData.basicStatistics.minBalance],
+        ['Maksimum saldo', analysisData.basicStatistics.maxBalance],
+        ['Standardavvik', analysisData.basicStatistics.stdDev],
+        ['Q1 (25%)', analysisData.basicStatistics.q1],
+        ['Q3 (75%)', analysisData.basicStatistics.q3],
         [''],
-        ['Risikoindikatorer', analysisData.riskIndicators.length]
+        ['Anomalier', analysisData.anomalyDetection.anomalies.length]
       ];
 
       const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
@@ -54,11 +56,11 @@ const ExportControls: React.FC<ExportControlsProps> = ({
       // Counter account distribution sheet
       const counterAccountData = [
         ['Kontonummer', 'Kontonavn', 'Antall transaksjoner', 'Totalt beløp', 'Prosentandel'],
-        ...analysisData.counterAccountDistribution.map(item => [
-          item.account_number,
-          item.account_name,
-          item.transaction_count,
-          item.total_amount,
+        ...analysisData.counterAccountAnalysis.map((item) => [
+          item.counterAccount,
+          item.counterAccountName,
+          item.transactionCount,
+          item.totalAmount,
           `${item.percentage.toFixed(2)}%`
         ])
       ];
@@ -66,31 +68,31 @@ const ExportControls: React.FC<ExportControlsProps> = ({
       const counterAccountWs = XLSX.utils.aoa_to_sheet(counterAccountData);
       XLSX.utils.book_append_sheet(wb, counterAccountWs, 'Motkontofordeling');
 
-      // Risk indicators sheet
-      if (analysisData.riskIndicators.length > 0) {
-        const riskData = [
-          ['Type', 'Kontonummer', 'Beskrivelse', 'Risikoscore'],
-          ...analysisData.riskIndicators.map(risk => [
-            risk.type,
-            risk.account_number,
-            risk.description,
-            risk.risk_score
+      // Anomalies sheet
+      if (analysisData.anomalyDetection.anomalies.length > 0) {
+        const anomaliesData = [
+          ['Type', 'Kontonummer', 'Beskrivelse', 'Alvorlighetsgrad'],
+          ...analysisData.anomalyDetection.anomalies.map((anomaly) => [
+            anomaly.anomalyType,
+            anomaly.accountNumber,
+            anomaly.description,
+            anomaly.severity
           ])
         ];
 
-        const riskWs = XLSX.utils.aoa_to_sheet(riskData);
-        XLSX.utils.book_append_sheet(wb, riskWs, 'Risikoindikatorer');
+        const anomaliesWs = XLSX.utils.aoa_to_sheet(anomaliesData);
+        XLSX.utils.book_append_sheet(wb, anomaliesWs, 'Anomalier');
       }
 
       // Outliers sheet
-      if (analysisData.transactionStatistics.outliers.length > 0) {
+      if (analysisData.outlierDetection.outliers.length > 0) {
         const outliersData = [
-          ['Kontonummer', 'Beløp', 'Dato', 'Beskrivelse'],
-          ...analysisData.transactionStatistics.outliers.map(outlier => [
-            outlier.account_number,
-            outlier.amount,
-            outlier.transaction_date,
-            outlier.description
+          ['Kontonummer', 'Kontonavn', 'Saldo', 'Type avvik'],
+          ...analysisData.outlierDetection.outliers.map((outlier) => [
+            outlier.accountNumber,
+            outlier.accountName,
+            outlier.closingBalance,
+            outlier.outlierType
           ])
         ];
 
@@ -117,25 +119,27 @@ const ExportControls: React.FC<ExportControlsProps> = ({
 
   const copyToClipboard = async () => {
     try {
-      const stats = analysisData.transactionStatistics;
+      const stats = analysisData.basicStatistics;
       const summary = `
 POPULASJONSANALYSE - ${clientName.toUpperCase()} (${fiscalYear})
 
 NØKKELSTATISTIKK:
-• Totalt antall transaksjoner: ${stats.totalTransactions.toLocaleString('nb-NO')}
-• Gjennomsnittlig beløp: ${formatCurrency(stats.averageAmount)}
-• Median beløp: ${formatCurrency(stats.medianAmount)}
-• Spredning: ${formatCurrency(stats.minAmount)} - ${formatCurrency(stats.maxAmount)}
-• Standardavvik: ${formatCurrency(stats.standardDeviation)}
+• Totalt antall kontoer: ${stats.totalAccounts.toLocaleString('nb-NO')}
+• Kontoer med saldo: ${stats.accountsWithBalance.toLocaleString('nb-NO')}
+• Total sum: ${formatCurrency(stats.totalSum)}
+• Gjennomsnittlig saldo: ${formatCurrency(stats.averageBalance)}
+• Median saldo: ${formatCurrency(stats.medianBalance)}
+• Spredning: ${formatCurrency(stats.minBalance)} - ${formatCurrency(stats.maxBalance)}
+• Standardavvik: ${formatCurrency(stats.stdDev)}
 
 MOTKONTOFORDELING (topp 5):
-${analysisData.counterAccountDistribution.slice(0, 5).map(item => 
-  `• ${item.account_number} ${item.account_name}: ${item.percentage.toFixed(1)}% (${formatCurrency(item.total_amount)})`
+${analysisData.counterAccountAnalysis.slice(0, 5).map((item) => 
+  `• ${item.counterAccount} ${item.counterAccountName}: ${item.percentage.toFixed(1)}% (${formatCurrency(item.totalAmount)})`
 ).join('\n')}
 
-RISIKOINDIKATORER: ${analysisData.riskIndicators.length} identifisert
-${analysisData.riskIndicators.slice(0, 3).map(risk => 
-  `• ${risk.description} (${risk.account_number})`
+ANOMALIER: ${analysisData.anomalyDetection.anomalies.length} identifisert
+${analysisData.anomalyDetection.anomalies.slice(0, 3).map((anomaly) => 
+  `• ${anomaly.description} (${anomaly.accountNumber})`
 ).join('\n')}
       `.trim();
 
