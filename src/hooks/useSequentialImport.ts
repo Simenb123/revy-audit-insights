@@ -76,9 +76,18 @@ export const useSequentialImport = () => {
         console.log(`🔄 Processing file ${i + 1}/${files.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
         
         try {
-          // Convert file to base64
-          const fileBuffer = await file.arrayBuffer()
-          const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
+          // Convert file to base64 using FileReader for large files
+          const base64Content = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const result = reader.result as string
+              // Remove the data URL prefix to get just the base64 content
+              const base64 = result.split(',')[1]
+              resolve(base64)
+            }
+            reader.onerror = () => reject(new Error('Failed to read file'))
+            reader.readAsDataURL(file)
+          })
           
           // Process single file with optimized settings for large files
           const result = await supabase.functions.invoke('shareholders-bulk-import', {
