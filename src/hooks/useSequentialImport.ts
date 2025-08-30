@@ -59,6 +59,20 @@ export const useSequentialImport = () => {
     let totalProcessedRows = 0
     
     try {
+      // Start session
+      console.log(`🚀 Starting import session: ${sessionId}`)
+      const startResult = await supabase.functions.invoke('shareholders-batch-processor', {
+        body: {
+          action: 'START_SESSION',
+          sessionId,
+          year
+        }
+      })
+
+      if (startResult.error) {
+        throw new Error(`Failed to start session: ${startResult.error.message}`)
+      }
+
       // Process files one by one
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
@@ -89,17 +103,17 @@ export const useSequentialImport = () => {
             reader.readAsDataURL(file)
           })
           
-          // Process single file with optimized settings for large files
-          const result = await supabase.functions.invoke('shareholders-bulk-import', {
+          // Process file in batches using shareholders-batch-processor
+          const result = await supabase.functions.invoke('shareholders-batch-processor', {
             body: {
+              action: 'PROCESS_BATCH',
               sessionId,
               year,
               fileName: file.name,
               fileContent: base64Content,
-              batchSize: 8000, // Larger batches for efficiency with 800K files
+              batchSize: 10000, // Optimized for large files
               maxRetries: 3,
-              delayBetweenBatches: 200, // Reduced delay for faster processing
-              fileSize: file.size
+              delayBetweenBatches: 100 // Reduced delay for faster processing
             }
           })
 
@@ -127,10 +141,9 @@ export const useSequentialImport = () => {
           
           console.log(`✅ Completed ${file.name}: ${fileRows} rows processed`)
           
-          // Add delay between files to prevent overwhelming (reduced for large files)
+          // Minimal delay between files
           if (i < files.length - 1) {
-            console.log('⏳ Waiting 1 second before next file...')
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            await new Promise(resolve => setTimeout(resolve, 500))
           }
           
         } catch (fileError: any) {
@@ -153,6 +166,20 @@ export const useSequentialImport = () => {
           // Continue with next file
           console.log('📄 Continuing with next file...')
         }
+      }
+
+      // Finish session and aggregate data
+      console.log(`🏁 Finishing session: ${sessionId}`)
+      const finishResult = await supabase.functions.invoke('shareholders-batch-processor', {
+        body: {
+          action: 'FINISH_SESSION',
+          sessionId,
+          year
+        }
+      })
+
+      if (finishResult.error) {
+        console.warn(`Warning during session finish: ${finishResult.error.message}`)
       }
 
       // Check if any files were processed successfully
