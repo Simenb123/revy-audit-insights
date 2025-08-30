@@ -20,6 +20,8 @@ import { startImportSession, ingestBatch, finishImport, finishImportBatch } from
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx'
 import { ImportRecoveryDialog } from './ImportRecoveryDialog'
+import { TestUploadDialog } from './TestUploadDialog'
+import { useSessionStorage } from '@/hooks/useSessionStorage'
 
 const importSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, 'Fil er påkrevd'),
@@ -44,7 +46,17 @@ export const ShareholdersImportForm: React.FC = () => {
   const [processingLog, setProcessingLog] = useState<string[]>([])
   const [showLog, setShowLog] = useState(false)
   const [showRecovery, setShowRecovery] = useState(false)
+  const [showTestUpload, setShowTestUpload] = useState(false)
+  const [currentSessionId, setCurrentSessionId] = useState<string>('')
   const parserRef = useRef<Papa.Parser | null>(null)
+
+  // Session storage hook
+  const { saveSession, updateSessionStatus, getActiveSession, clearOldSessions } = useSessionStorage()
+
+  // Clear old sessions on mount
+  React.useEffect(() => {
+    clearOldSessions()
+  }, [])
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importSchema),
@@ -85,6 +97,17 @@ export const ShareholdersImportForm: React.FC = () => {
       // Start import session
       const session = await startImportSession(data.year)
       addLog(`Session startet: ${session.session_id}`)
+      
+      // Save session to local storage
+      setCurrentSessionId(session.session_id)
+      saveSession({
+        sessionId: session.session_id,
+        year: data.year,
+        isGlobal: data.isGlobal || false,
+        fileName: file.name,
+        startedAt: Date.now(),
+        status: 'active'
+      })
 
       const BATCH_SIZE = 2000
       let buffer: any[] = []
@@ -407,6 +430,16 @@ export const ShareholdersImportForm: React.FC = () => {
     },
     onSuccess: (result) => {
       setIsProcessing(false)
+      
+      // Update session status
+      if (currentSessionId) {
+        updateSessionStatus(currentSessionId, { 
+          status: 'completed',
+          totalRows: result.totalRows,
+          processedRows: result.processedRows
+        })
+      }
+      
       toast({
         title: 'Import fullført',
         description: `${result.processedRows} rader importert`,
@@ -418,10 +451,17 @@ export const ShareholdersImportForm: React.FC = () => {
       setUploadProgress(0)
       setProcessedRows(0)
       setTotalRows(0)
+      setCurrentSessionId('')
     },
     onError: (error) => {
       setIsProcessing(false)
       setUploadProgress(0)
+      
+      // Update session status
+      if (currentSessionId) {
+        updateSessionStatus(currentSessionId, { status: 'failed' })
+      }
+      
       addLog(`FEIL: ${error.message}`)
       toast({
         title: 'Import feilet',
@@ -669,23 +709,44 @@ export const ShareholdersImportForm: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Action Buttons */}
+          {!isProcessing && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowTestUpload(true)}
+                disabled={!file}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Test Fil
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowRecovery(true)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Recovery Import
+              </Button>
+            </div>
+          )}
+
           <ImportRecoveryDialog 
             isOpen={showRecovery}
             onOpenChange={setShowRecovery}
-            sessionId=""
+            sessionId={currentSessionId || getActiveSession(form.watch('year'), form.watch('isGlobal') || false)?.sessionId || ''}
             year={form.watch('year')}
-            isGlobal={form.watch('isGlobal') || false}
+            isGlobal={form.watch('isGlobal')}
+            onRecoveryComplete={() => setShowRecovery(false)}
           />
-          <Button 
-            type="button"
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowRecovery(true)}
-            disabled={isProcessing}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Recovery Import
-          </Button>
+
+          <TestUploadDialog 
+            isOpen={showTestUpload}
+            onOpenChange={setShowTestUpload}
+            file={file}
+          />
         </CardContent>
       </Card>
 

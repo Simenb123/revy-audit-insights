@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { AlertTriangle, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
+import { AlertTriangle, RefreshCw, CheckCircle, XCircle, Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/components/ui/use-toast'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { checkImportRecovery, finishImportBatch } from '@/services/shareholders'
+import { useSessionStorage } from '@/hooks/useSessionStorage'
 
 interface ImportRecoveryDialogProps {
   isOpen: boolean
@@ -23,16 +25,26 @@ interface ImportRecoveryDialogProps {
 export const ImportRecoveryDialog: React.FC<ImportRecoveryDialogProps> = ({
   isOpen,
   onOpenChange,
-  sessionId,
+  sessionId: initialSessionId,
   year,
   isGlobal = false,
   onRecoveryComplete
 }) => {
   const { toast } = useToast()
+  const { sessions } = useSessionStorage()
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId || '')
   const [recoveryStatus, setRecoveryStatus] = useState<any>(null)
   const [isRecovering, setIsRecovering] = useState(false)
   const [recoveryProgress, setRecoveryProgress] = useState(0)
   const [recoveryLog, setRecoveryLog] = useState<string[]>([])
+
+  // Get available sessions for the year
+  const availableSessions = sessions.filter(s => 
+    s.year === year && s.isGlobal === isGlobal
+  )
+
+  // Use selected session ID or fallback to initial
+  const activeSessionId = selectedSessionId || initialSessionId
 
   // Add log entry
   const addLog = (message: string) => {
@@ -41,7 +53,7 @@ export const ImportRecoveryDialog: React.FC<ImportRecoveryDialogProps> = ({
 
   // Check recovery status
   const checkStatusMutation = useMutation({
-    mutationFn: () => checkImportRecovery(sessionId, year, isGlobal),
+    mutationFn: () => checkImportRecovery(activeSessionId, year, isGlobal),
     onSuccess: (result) => {
       setRecoveryStatus(result.status)
       addLog(`Status sjekket: ${result.status.companies_count} selskaper, ${result.status.holdings_count} eierandeler`)
@@ -75,7 +87,7 @@ export const ImportRecoveryDialog: React.FC<ImportRecoveryDialogProps> = ({
       addLog('Starter recovery prosess...')
 
       while (hasMore) {
-        const result = await finishImportBatch(sessionId, year, isGlobal, batchSize, offset)
+        const result = await finishImportBatch(activeSessionId, year, isGlobal, batchSize, offset)
         
         totalProcessed += result.batch_result.processed_count
         const progress = Math.min(100, (totalProcessed / result.batch_result.total_companies) * 100)
@@ -134,15 +146,47 @@ export const ImportRecoveryDialog: React.FC<ImportRecoveryDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Session Info */}
+          {/* Session Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Session Informasjon</CardTitle>
+              <CardTitle className="text-sm">Session Valg</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm space-y-1">
-              <div><strong>Session ID:</strong> {sessionId}</div>
-              <div><strong>År:</strong> {year}</div>
-              <div><strong>Type:</strong> {isGlobal ? 'Global' : 'Bruker'}</div>
+            <CardContent className="space-y-4">
+              {availableSessions.length > 0 ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Velg Session:</label>
+                  <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Velg en session..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSessions.map(session => (
+                        <SelectItem key={session.sessionId} value={session.sessionId}>
+                          <div className="flex flex-col">
+                            <span>{session.fileName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {session.sessionId} - {new Date(session.startedAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <Alert>
+                  <Search className="h-4 w-4" />
+                  <AlertDescription>
+                    Ingen aktive sessions funnet for år {year}. Prøv å starte en ny import først.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div><strong>Session ID:</strong> {activeSessionId || 'Ikke valgt'}</div>
+                <div><strong>År:</strong> {year}</div>
+                <div><strong>Type:</strong> {isGlobal ? 'Global' : 'Bruker'}</div>
+              </div>
             </CardContent>
           </Card>
 
@@ -150,7 +194,7 @@ export const ImportRecoveryDialog: React.FC<ImportRecoveryDialogProps> = ({
           <div className="space-y-4">
             <Button 
               onClick={() => checkStatusMutation.mutate()} 
-              disabled={checkStatusMutation.isPending || isRecovering}
+              disabled={checkStatusMutation.isPending || isRecovering || !activeSessionId}
               className="w-full"
             >
               {checkStatusMutation.isPending ? (
