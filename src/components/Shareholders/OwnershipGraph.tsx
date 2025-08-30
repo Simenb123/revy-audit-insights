@@ -48,13 +48,13 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
     )
   }
 
-  // Transform data to React Flow format
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
+  // Transform data to React Flow format and apply layout
+  const { nodes, edges } = useMemo(() => {
     if (!graphData?.nodes || !graphData?.edges) {
       return { nodes: [], edges: [] }
     }
 
-    const nodes: Node[] = graphData.nodes.map(node => ({
+    const initialNodes: Node[] = graphData.nodes.map(node => ({
       id: node.id,
       type: node.type === 'company' ? 'company' : 'person',
       position: { x: 0, y: 0 }, // Will be set by layout
@@ -67,7 +67,7 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
       measured: { width: 200, height: 80 }
     }))
 
-    const edges: Edge[] = graphData.edges.map(edge => ({
+    const initialEdges: Edge[] = graphData.edges.map(edge => ({
       id: edge.id || `${edge.source}-${edge.target}`,
       source: edge.source || edge.from,
       target: edge.target || edge.to,
@@ -87,23 +87,19 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
       }
     }))
 
-    return { nodes, edges }
-  }, [graphData, rootOrgnr])
-
-  // Apply layout
-  const layoutedElements = useMemo(() => {
+    // Apply layout directly in the same useMemo to avoid extra re-renders
     if (initialNodes.length === 0) return { nodes: [], edges: [] }
     return getLayoutedElements(initialNodes, initialEdges, 'TB')
-  }, [initialNodes, initialEdges])
+  }, [graphData, rootOrgnr])
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedElements.nodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedElements.edges)
+  const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes)
+  const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges)
 
-  // Update nodes and edges when layout changes
+  // Update flow state when data changes (only when necessary)
   useEffect(() => {
-    setNodes(layoutedElements.nodes)
-    setEdges(layoutedElements.edges)
-  }, [layoutedElements.nodes, layoutedElements.edges, setNodes, setEdges])
+    setFlowNodes(nodes)
+    setFlowEdges(edges)
+  }, [nodes, edges, setFlowNodes, setFlowEdges])
 
   // Handle node clicks
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -156,8 +152,8 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
 
       <div className="flex-1">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={flowNodes}
+          edges={flowEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
