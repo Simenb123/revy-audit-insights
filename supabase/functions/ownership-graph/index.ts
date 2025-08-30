@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('orgnr', currentOrgnr)
         .eq('year', year)
-        .eq('user_id', user.id)
+        .is('user_id', null)
         .single()
 
       if (company) {
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
           `)
           .eq('company_orgnr', currentOrgnr)
           .eq('year', year)
-          .eq('user_id', user.id)
+          .is('user_id', null)
 
         for (const holding of upstreamHoldings || []) {
           const entity = holding.share_entities
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
           `)
           .eq('share_entities.orgnr', currentOrgnr)
           .eq('year', year)
-          .eq('user_id', user.id)
+          .is('user_id', null)
 
         const ownedCompanies = new Set<string>()
         
@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
             .select('*')
             .in('orgnr', Array.from(ownedCompanies))
             .eq('year', year)
-            .eq('user_id', user.id)
+            .is('user_id', null)
 
           for (const ownedCompany of ownedCompaniesData || []) {
             const ownedNodeId = makeNodeId('company', ownedCompany.orgnr)

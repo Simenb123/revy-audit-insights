@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         year,
         created_at
       `)
-      .eq('user_id', user.id)
+      .is('user_id', null)
       .limit(50)
 
     // Hvis søket ser ut som et org.nummer (kun siffer)
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         orgnr,
         created_at
       `)
-      .eq('user_id', user.id)
+      .is('user_id', null)
       .limit(50)
 
     if (/^\d+$/.test(query)) {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           .select('share_class, shares')
           .eq('company_orgnr', company.orgnr)
           .eq('year', company.year)
-          .eq('user_id', user.id)
+          .is('user_id', null)
 
         // Grupper per aksjeklasse
         const shareClasses: Record<string, number> = {}
