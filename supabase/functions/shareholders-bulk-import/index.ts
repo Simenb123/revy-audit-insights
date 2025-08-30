@@ -122,27 +122,28 @@ serve(async (req) => {
           throw new Error('No file content provided')
         }
         
-        // Check if it's a data URL (starts with data:)
-        let actualFileContent = fileContent
-        if (fileContent.startsWith('data:')) {
-          // Extract base64 content from data URL
-          actualFileContent = fileContent.split(',')[1]
-        }
-        
-        // Decode base64 content
-        const binaryString = atob(actualFileContent)
-        const bytes = new Uint8Array(binaryString.length)
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i)
-        }
-
         if (fileName.toLowerCase().endsWith('.csv')) {
-          // Parse CSV file with Norwegian column support
-          const textContent = new TextDecoder('utf-8').decode(bytes)
-          jsonData = parseCSV(textContent)
+          // CSV files are sent as plain text, use directly
+          console.log('📋 Processing CSV file as plain text')
+          jsonData = parseCSV(fileContent)
           console.log(`📋 Parsed ${jsonData.length} rows from CSV file`)
         } else {
-          // Parse Excel file
+          // Excel files are sent as base64 data URLs, need to decode
+          console.log('📋 Processing Excel file, decoding base64...')
+          
+          let actualFileContent = fileContent
+          if (fileContent.startsWith('data:')) {
+            // Extract base64 content from data URL
+            actualFileContent = fileContent.split(',')[1]
+          }
+          
+          // Decode base64 content for Excel files
+          const binaryString = atob(actualFileContent)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          
           const workbook = XLSX.read(bytes, { type: 'array' })
           const sheetName = workbook.SheetNames[0]
           const worksheet = workbook.Sheets[sheetName]
