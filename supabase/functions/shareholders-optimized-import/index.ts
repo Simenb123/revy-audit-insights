@@ -3,13 +3,22 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const XLSX = await import('https://esm.sh/xlsx@0.18.5')
 
-// For CSV parsing
+// For CSV parsing with automatic delimiter detection
 function parseCSV(csvContent: string): any[][] {
   const lines = csvContent.split('\n').filter(line => line.trim())
+  if (lines.length === 0) return []
+  
+  // Detect delimiter by checking the first line
+  const firstLine = lines[0]
+  const semicolonCount = (firstLine.match(/;/g) || []).length
+  const commaCount = (firstLine.match(/,/g) || []).length
+  const delimiter = semicolonCount > commaCount ? ';' : ','
+  
+  console.log(`🔍 Detected CSV delimiter: "${delimiter}" (semicolons: ${semicolonCount}, commas: ${commaCount})`)
+  
   const result: any[][] = []
   
   for (const line of lines) {
-    // Simple CSV parser - handles quoted fields with commas
     const row: any[] = []
     let currentField = ''
     let inQuotes = false
@@ -21,7 +30,7 @@ function parseCSV(csvContent: string): any[][] {
         inQuotes = true
       } else if (char === '"' && inQuotes) {
         inQuotes = false
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === delimiter && !inQuotes) {
         row.push(currentField.trim())
         currentField = ''
       } else {
@@ -300,32 +309,38 @@ async function processBatchWithRetry(
 function processRow(row: any[], headers: string[], year: number): ProcessedRow | null {
   const getValue = (colNames: string[]): string => {
     for (const name of colNames) {
-      const idx = headers.findIndex(h => h.includes(name))
+      const idx = headers.findIndex(h => h.includes(name.toLowerCase()))
       if (idx >= 0 && row[idx]) return String(row[idx]).trim()
     }
     return ''
   }
 
+  // Updated to handle Norwegian column names from your CSV file
   const orgnr = getValue(['orgnr', 'organisasjonsnummer', 'org.nr'])
-  const companyName = getValue(['selskapsnavn', 'navn', 'selskap'])
-  const holderName = getValue(['eier', 'aksjeeier', 'deltaker'])
-  const shareClass = getValue(['aksjeklasse', 'klasse']) || 'A'
-  const shares = parseInt(getValue(['antall', 'aksjer', 'andeler'])) || 0
+  const companyName = getValue(['selskap', 'selskapsnavn', 'navn', 'company'])
+  const holderName = getValue(['navn aksjonær', 'aksjonær', 'eier', 'aksjeeier', 'deltaker', 'holder'])
+  const shareClass = getValue(['aksjeklasse', 'klasse', 'class']) || 'A'
+  const shares = parseInt(getValue(['antall aksjer', 'antall', 'aksjer', 'andeler', 'shares'])) || 0
 
   if (!orgnr || !companyName || !holderName || shares <= 0) {
     return null
   }
 
-  // Extract holder details
-  let holderOrgnr = getValue(['eier_orgnr', 'eier_organisasjonsnummer'])
+  // Extract holder details - handle the combined "Fødselsår/orgnr" column
+  const birthYearOrOrgnr = getValue(['fødselsår/orgnr', 'fodselsaar/orgnr', 'birth_year', 'eier_orgnr'])
+  let holderOrgnr: string | undefined
   let holderBirthYear: number | undefined
-  let holderCountry = getValue(['land', 'country']) || 'NO'
+  let holderCountry = getValue(['landkode', 'land', 'country']) || 'NO'
 
-  // If no orgnr, try to extract birth year
-  if (!holderOrgnr) {
-    const birthYearStr = getValue(['fodselsaar', 'fodselsar', 'birth_year', 'year'])
-    if (birthYearStr) {
-      const parsed = parseInt(birthYearStr)
+  // Parse the birth year/orgnr field
+  if (birthYearOrOrgnr) {
+    const cleaned = birthYearOrOrgnr.replace(/\s/g, '')
+    // If it's 9 digits, it's an organization number
+    if (/^\d{9}$/.test(cleaned)) {
+      holderOrgnr = cleaned
+    } else {
+      // Try to parse as birth year
+      const parsed = parseInt(cleaned)
       if (parsed > 1900 && parsed < 2100) {
         holderBirthYear = parsed
       }
@@ -336,11 +351,12 @@ function processRow(row: any[], headers: string[], year: number): ProcessedRow |
     orgnr: orgnr.replace(/\s/g, ''),
     company_name: companyName,
     holder_name: holderName,
-    holder_orgnr: holderOrgnr?.replace(/\s/g, '') || undefined,
+    holder_orgnr: holderOrgnr,
     holder_birth_year: holderBirthYear,
     holder_country: holderCountry,
     share_class: shareClass,
-    shares
+    shares,
+    year
   }
 }
 
