@@ -51,7 +51,7 @@ export function EnhancedImportMonitor({ sessionId, year, totalFileRows, onComple
       setError(null)
 
       // Get detailed import status
-      const { data, error: statusError } = await supabase.rpc('get_detailed_import_status', {
+      const { data, error: statusError } = await supabase.rpc('get_detailed_import_status' as any, {
         p_session_id: sessionId || 'unknown',
         p_year: year,
         p_total_file_rows: totalFileRows || 0
