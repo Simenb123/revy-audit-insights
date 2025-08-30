@@ -153,58 +153,92 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
 }
 
 async function finishSession(supabaseClient: any, sessionId: string, year: number, isGlobal: boolean) {
-  // Use the existing finish batch function for aggregation
-  let offset = 0
-  const batchSize = 5000 // Increased batch size for aggregation
-  let hasMore = true
-  let summary = null
-
-  while (hasMore) {
-    const { data, error } = await supabaseClient.functions.invoke('shareholders-import-finish-batch', {
-      body: {
-        session_id: sessionId,
-        year: year,
-        isGlobal: isGlobal,
-        batch_size: batchSize,
-        offset: offset
-      }
-    })
-
-    if (error) {
-      throw new Error(`Aggregation failed: ${error.message}`)
+  console.log(`Starting aggregation for session ${sessionId}, year ${year}, isGlobal: ${isGlobal}`)
+  
+  try {
+    // Get user from session if not global
+    let userId = null
+    if (!isGlobal) {
+      const { data: { user } } = await supabaseClient.auth.getUser()
+      userId = user?.id || null
     }
 
-    hasMore = data.batch_result.has_more
-    offset += batchSize
-
-    if (data.completed && data.summary) {
-      summary = data.summary
-      break
-    }
-  }
-
-  // Update session status
-  const { error: updateError } = await supabaseClient
-    .from('import_sessions')
-    .update({ 
-      status: 'completed',
-      progress: 100,
-      updated_at: new Date().toISOString()
+    // Use the database function to aggregate all data for the year
+    console.log('Calling update_total_shares_for_year...')
+    const { error: aggregationError } = await supabaseClient.rpc('update_total_shares_for_year', {
+      p_year: year,
+      p_orgnr: null, // null means update all companies for the year
+      p_user_id: userId
     })
-    .eq('id', sessionId)
 
-  if (updateError) {
-    console.error('Failed to update session status:', updateError)
+    if (aggregationError) {
+      console.error('Aggregation error:', aggregationError)
+      throw new Error(`Aggregation failed: ${aggregationError.message}`)
+    }
+
+    console.log('Aggregation completed, getting summary...')
+
+    // Get final counts for summary
+    const { data: companiesCount } = await supabaseClient
+      .from('share_companies')
+      .select('*', { count: 'exact', head: true })
+      .eq('year', year)
+      .eq('user_id', userId)
+
+    const { data: holdingsCount } = await supabaseClient
+      .from('share_holdings')
+      .select('*', { count: 'exact', head: true })
+      .eq('year', year)
+      .eq('user_id', userId)
+
+    const summary = {
+      companies: companiesCount?.length || 0,
+      holdings: holdingsCount?.length || 0,
+      year: year
+    }
+
+    console.log(`Summary: ${summary.companies} companies, ${summary.holdings} holdings`)
+
+    // Update session status
+    const { error: updateError } = await supabaseClient
+      .from('import_sessions')
+      .update({ 
+        status: 'completed',
+        progress: 100,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+
+    if (updateError) {
+      console.error('Failed to update session status:', updateError)
+    }
+
+    console.log(`Session ${sessionId} completed successfully`)
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        summary: summary,
+        session_id: sessionId
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in finishSession:', error)
+    
+    // Update session as failed
+    await supabaseClient
+      .from('import_sessions')
+      .update({ 
+        status: 'failed',
+        error_message: error.message,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+
+    throw error
   }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      summary: summary,
-      session_id: sessionId
-    }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  )
 }
 
 async function checkSession(supabaseClient: any, sessionId: string) {
