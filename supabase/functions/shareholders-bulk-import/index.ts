@@ -130,8 +130,31 @@ serve(async (req) => {
         fileSize = body.fileSize
       }
 
-      console.log(`🚀 Starting bulk import: ${fileName} (${(fileSize / 1024 / 1024).toFixed(1)}MB)`)
-      console.log(`📊 Batch size: ${batchSize}, Max retries: ${maxRetries}`)
+        console.log(`🚀 Starting bulk import: ${fileName} (${(fileSize / 1024 / 1024).toFixed(1)}MB)`)
+        console.log(`📊 Batch size: ${batchSize}, Max retries: ${maxRetries}`)
+
+        // Initialize session tracking in database
+        const { error: sessionError } = await supabaseClient
+          .from('import_sessions')
+          .upsert({
+            session_id: sessionId,
+            user_id: user.id,
+            year: year,
+            total_file_rows: 0, // Will be updated after parsing
+            processed_rows: 0,
+            current_batch: 0,
+            total_batches: 0,
+            status: 'active',
+            errors_count: 0,
+            duplicates_count: 0,
+            start_time: new Date().toISOString()
+          }, {
+            onConflict: 'session_id,user_id'
+          })
+
+        if (sessionError) {
+          console.warn('⚠️ Could not initialize session tracking:', sessionError)
+        }
 
       try {
         let jsonData: any[] = []
