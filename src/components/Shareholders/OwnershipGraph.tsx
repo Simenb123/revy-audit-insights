@@ -99,7 +99,7 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
   useEffect(() => {
     setFlowNodes(nodes)
     setFlowEdges(edges)
-  }, [nodes, edges, setFlowNodes, setFlowEdges])
+  }, [nodes, edges])
 
   // Handle node clicks
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
