@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useOptimizedImport } from '@/hooks/useOptimizedImport'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 import { supabase } from '@/integrations/supabase/client'
+import { ImportProgressMonitor } from './ImportProgressMonitor'
 
 const importSchema = z.object({
   file: z.instanceof(File).refine(file => file.size > 0, 'Fil er påkrevd'),
@@ -353,6 +354,23 @@ export const OptimizedImportForm: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Database Progress Monitor */}
+      {progress.sessionId && (
+        <ImportProgressMonitor 
+          sessionId={progress.sessionId}
+          year={form.getValues('year')}
+          onComplete={(summary) => {
+            addLog(`Database status: ${summary.companies_count} selskaper, ${summary.holdings_count} eierandeler`)
+            if (progress.status !== 'completed') {
+              toast({
+                title: "Import fullført i database",
+                description: `${summary.companies_count.toLocaleString()} selskaper og ${summary.holdings_count.toLocaleString()} eierandeler er nå tilgjengelig.`,
+              })
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -114,63 +114,126 @@ export function useOptimizedImport() {
   }
 
   const processCSVFile = async (file: File, sessionId: string, options: ImportOptions) => {
-    addLog('Prosesserer CSV-fil med Web Worker...')
+    addLog('Prosesserer stor CSV-fil med forbedret Web Worker...')
     
     return new Promise<void>((resolve, reject) => {
-      // Create web worker
+      // Create enhanced web worker
       workerRef.current = new Worker('/file-worker.js')
       
       let totalBatches = 0
       let processedBatches = 0
-      const pendingBatches: any[] = []
+      let successfulBatches = 0
+      let failedBatches = 0
+      const activeBatches = new Set()
+      const MAX_CONCURRENT_BATCHES = 5 // Increased concurrency
+      
+      // Enhanced progress tracking
+      let lastProgressUpdate = Date.now()
+      const PROGRESS_UPDATE_INTERVAL = 2000 // Update every 2 seconds
 
       workerRef.current.onmessage = async (e) => {
-        const { type, batch, rowCount, totalRows, error } = e.data
+        const { type, batch, batchNumber, rowCount, totalRows, validRows, errorRows, error, memoryUsage } = e.data
 
         switch (type) {
+          case 'LOG':
+            addLog(`[Worker] ${e.data.message}`)
+            break
+
           case 'PARSE_START':
+            addLog(`Starter prosessering av ${e.data.fileName} (${Math.round(e.data.fileSize / 1024 / 1024)}MB)`)
             updateProgress({ status: 'parsing' })
             break
 
           case 'PROGRESS':
-            updateProgress({ processedRows: rowCount })
+            const now = Date.now()
+            if (now - lastProgressUpdate > PROGRESS_UPDATE_INTERVAL) {
+              const memInfo = memoryUsage ? ` (Minne: ${memoryUsage}MB)` : ''
+              addLog(`Prosessert ${rowCount} rader, ${validRows} gyldige, ${errorRows} feil${memInfo}`)
+              updateProgress({ 
+                processedRows: rowCount,
+                progress: Math.min((rowCount / (totalRows || rowCount)) * 60, 60) // Cap at 60% during parsing
+              })
+              lastProgressUpdate = now
+            }
             break
 
           case 'BATCH_READY':
-            pendingBatches.push(batch)
             totalBatches++
             
-            // Process batches immediately to avoid memory buildup
-            if (pendingBatches.length >= 3) { // Process multiple batches in parallel
-              const batchesToProcess = pendingBatches.splice(0, 3)
-              await Promise.all(batchesToProcess.map(async (batchData) => {
-                await processSingleBatch(batchData, sessionId, options)
+            // Wait if too many concurrent batches
+            while (activeBatches.size >= MAX_CONCURRENT_BATCHES) {
+              await new Promise(resolve => setTimeout(resolve, 100))
+            }
+            
+            // Process batch asynchronously
+            const batchId = `${sessionId}-${batchNumber}`
+            activeBatches.add(batchId)
+            
+            processSingleBatch(batch, sessionId, options)
+              .then(() => {
+                successfulBatches++
                 processedBatches++
+                activeBatches.delete(batchId)
+                
+                const overallProgress = 60 + (processedBatches / totalBatches) * 30 // 60-90%
                 updateProgress({ 
                   status: 'uploading',
-                  progress: (processedBatches / totalBatches) * 90 
+                  progress: overallProgress
                 })
-              }))
-            }
+                
+                if (processedBatches % 10 === 0) {
+                  addLog(`Fullført ${processedBatches}/${totalBatches} batches (${successfulBatches} vellykket, ${failedBatches} feilet)`)
+                }
+              })
+              .catch((error) => {
+                failedBatches++
+                processedBatches++
+                activeBatches.delete(batchId)
+                addLog(`Batch ${batchNumber} feilet: ${error.message}`)
+                
+                // Continue processing even if some batches fail
+                const overallProgress = 60 + (processedBatches / totalBatches) * 30
+                updateProgress({ 
+                  status: 'uploading',
+                  progress: overallProgress
+                })
+              })
             break
 
           case 'PARSE_COMPLETE':
-            updateProgress({ totalRows, status: 'uploading' })
+            addLog(`Parsing fullført: ${totalRows} rader, ${validRows} gyldige, ${errorRows} feil`)
+            updateProgress({ totalRows, status: 'uploading', progress: 60 })
             
-            // Process remaining batches
-            if (pendingBatches.length > 0) {
-              await Promise.all(pendingBatches.map(async (batchData) => {
-                await processSingleBatch(batchData, sessionId, options)
-                processedBatches++
-              }))
-            }
-
-            // Finish import
-            await finishImport(sessionId, options)
-            resolve()
+            // Wait for all batches to complete
+            const waitForBatches = setInterval(async () => {
+              if (activeBatches.size === 0 && processedBatches >= totalBatches) {
+                clearInterval(waitForBatches)
+                
+                addLog(`Alle batches prosessert: ${successfulBatches}/${totalBatches} vellykket`)
+                
+                if (successfulBatches === 0) {
+                  reject(new Error(`Ingen batches ble prosessert vellykket. Sjekk dataformat og kolonnenavn.`))
+                  return
+                }
+                
+                try {
+                  await finishImport(sessionId, options)
+                  resolve()
+                } catch (error) {
+                  reject(error)
+                }
+              }
+            }, 500)
+            
+            // Timeout after 10 minutes
+            setTimeout(() => {
+              clearInterval(waitForBatches)
+              reject(new Error('Import timeout - tok for lang tid å prosessere alle batches'))
+            }, 600000)
             break
 
           case 'ERROR':
+            addLog(`Worker feil: ${error}`)
             reject(new Error(error))
             break
 
@@ -197,52 +260,98 @@ export function useOptimizedImport() {
   }
 
   const processBatches = async (data: any[], sessionId: string, options: ImportOptions) => {
-    const BATCH_SIZE = 10000 // Increased batch size
+    const BATCH_SIZE = 75000 // Dramatically increased batch size for Excel files
     const batches = []
     
     for (let i = 0; i < data.length; i += BATCH_SIZE) {
       batches.push(data.slice(i, i + BATCH_SIZE))
     }
 
-    addLog(`Prosesserer ${batches.length} batches med ${BATCH_SIZE} rader hver`)
+    addLog(`Prosesserer ${batches.length} store batches med ${BATCH_SIZE} rader hver`)
     updateProgress({ status: 'uploading' })
 
-    // Process batches in parallel (limited concurrency)
-    const CONCURRENT_BATCHES = 3
+    // Increased concurrency for large batches
+    const CONCURRENT_BATCHES = 6
+    let successfulBatches = 0
+    let failedBatches = 0
+    
     for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
       const batchGroup = batches.slice(i, i + CONCURRENT_BATCHES)
       
-      await Promise.all(batchGroup.map(async (batch, index) => {
+      const results = await Promise.allSettled(batchGroup.map(async (batch, index) => {
         const normalizedBatch = batch.map(row => normalizeRowData(row))
         await processSingleBatch(normalizedBatch, sessionId, options)
         
-        const totalProcessed = (i + index + 1) * BATCH_SIZE
+        const batchIndex = i + index
+        const totalProcessed = Math.min((batchIndex + 1) * BATCH_SIZE, data.length)
         updateProgress({ 
-          processedRows: Math.min(totalProcessed, data.length),
-          progress: (Math.min(totalProcessed, data.length) / data.length) * 90
+          processedRows: totalProcessed,
+          progress: (totalProcessed / data.length) * 90
         })
+        
+        return batchIndex
       }))
+      
+      // Count successful vs failed batches
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          successfulBatches++
+        } else {
+          failedBatches++
+          addLog(`Batch ${i + index} feilet: ${result.reason?.message || 'Unknown error'}`)
+        }
+      })
 
-      addLog(`Fullført ${Math.min(i + CONCURRENT_BATCHES, batches.length)} av ${batches.length} batches`)
+      addLog(`Fullført ${Math.min(i + CONCURRENT_BATCHES, batches.length)} av ${batches.length} batches (${successfulBatches} vellykket, ${failedBatches} feilet)`)
+    }
+    
+    if (successfulBatches === 0) {
+      throw new Error('Ingen batches ble prosessert vellykket. Sjekk dataformat og Edge Function logs.')
     }
 
     await finishImport(sessionId, options)
   }
 
   const processSingleBatch = async (batchData: any[], sessionId: string, options: ImportOptions) => {
-    const { error } = await supabase.functions.invoke('shareholders-bulk-import', {
-      body: {
-        action: 'PROCESS_BATCH',
-        session_id: sessionId,
-        year: options.year,
-        batch_data: batchData,
-        is_global: options.isGlobal || false
-      }
-    })
+    const retryAttempts = 3
+    let lastError = null
+    
+    for (let attempt = 1; attempt <= retryAttempts; attempt++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('shareholders-bulk-import', {
+          body: {
+            action: 'PROCESS_BATCH',
+            session_id: sessionId,
+            year: options.year,
+            batch_data: batchData,
+            is_global: options.isGlobal || false
+          }
+        })
 
-    if (error) {
-      throw new Error(`Batch processing failed: ${error.message}`)
+        if (error) {
+          throw new Error(`Batch processing failed: ${error.message}`)
+        }
+        
+        // Log batch results for debugging
+        if (data && (data.processed_rows === 0 || data.errors?.length > 0)) {
+          addLog(`Batch warning: ${data.processed_rows}/${batchData.length} rader prosessert. Feil: ${data.errors?.length || 0}`)
+          if (data.errors?.length > 0) {
+            addLog(`Første 3 feil: ${data.errors.slice(0, 3).join('; ')}`)
+          }
+        }
+        
+        return data // Success
+        
+      } catch (error) {
+        lastError = error
+        if (attempt < retryAttempts) {
+          addLog(`Batch forsøk ${attempt} feilet, prøver igjen...`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
+        }
+      }
     }
+    
+    throw lastError
   }
 
   const finishImport = async (sessionId: string, options: ImportOptions) => {

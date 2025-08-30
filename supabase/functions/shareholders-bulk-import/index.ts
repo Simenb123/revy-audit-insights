@@ -153,30 +153,54 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           continue
         }
 
-        // Extract and validate required fields
-        const orgnr = String(row.orgnr || '').trim()
-        const selskap = String(row.selskap || '').trim()
-        const eierNavn = String(row.eier_navn || row.navn || '').trim()
-        const sharesStr = String(row.andeler || row.shares || '0').replace(/[^\d]/g, '')
+        // Extract and validate required fields with enhanced field mapping
+        const orgnr = String(
+          row.orgnr || row.Orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+          row.org_nr || row['org-nr'] || ''
+        ).trim().replace(/\D/g, '') // Remove non-digits
+        
+        const selskap = String(
+          row.selskap || row.navn || row.selskapsnavn || row.company_name || row.Selskap || ''
+        ).trim()
+        
+        const eierNavn = String(
+          row.navn_aksjonaer || row.aksjonaer || row.eier || row.holder || 
+          row.eier_navn || row['Navn aksjonær'] || row['Navn aksjonÃ¦r'] || ''
+        ).trim()
+        
+        const sharesStr = String(
+          row.antall_aksjer || row.aksjer || row.shares || row.andeler || '0'
+        ).replace(/[^\d]/g, '')
         const shares = parseInt(sharesStr) || 0
 
-        if (!orgnr || !selskap || !eierNavn) {
-          errors.push(`Mangler påkrevd data for rad: orgnr=${orgnr}, selskap=${selskap}, eier=${eierNavn}`)
+        // More lenient validation - only require org number and some identifier
+        if (!orgnr || orgnr.length !== 9) {
+          errors.push(`Ugyldig organisasjonsnummer: ${orgnr} (må være 9 siffer)`)
           continue
         }
+        
+        if (!selskap && !eierNavn) {
+          errors.push(`Mangler både selskapsnavn og eiernavn for orgnr: ${orgnr}`)
+          continue
+        }
+        
+        // Use org number as company name if missing
+        const companyName = selskap || `Ukjent selskap (${orgnr})`
+        const holderName = eierNavn || `Ukjent eier`
 
-        // Upsert company
+        // Upsert company with better error handling
         const { error: companyError } = await supabaseClient
           .from('share_companies')
           .upsert({
             orgnr: orgnr,
-            name: selskap,
+            name: companyName,
             year: year,
             user_id: userId,
             total_shares: 0, // Will be calculated later
             calculated_total: 0
           }, {
-            onConflict: 'orgnr,year,user_id'
+            onConflict: 'orgnr,year' + (userId ? ',user_id' : ''),
+            ignoreDuplicates: false
           })
 
         if (companyError) {
@@ -185,31 +209,54 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           continue
         }
 
-        // Determine entity type based on organization number patterns
-        const entityType = orgnr.length === 9 && /^\d+$/.test(orgnr) ? 'company' : 'person'
+        // Enhanced entity type detection
+        const holderOrgNr = String(
+          row.fodselsar_orgnr || row.eier_orgnr || row.holder_orgnr || 
+          row['Fødselsår/orgnr'] || row['FÃ¸dselsÃ¥r/orgnr'] || ''
+        ).trim().replace(/\D/g, '')
         
-        // Upsert entity (holder)
+        const entityType = (holderOrgNr.length === 9 && /^\d+$/.test(holderOrgNr)) ? 'company' : 'person'
+        
+        // Upsert entity (holder) with better conflict resolution
         const entityData: any = {
           entity_type: entityType,
-          name: eierNavn,
+          name: holderName,
           user_id: userId
         }
 
-        if (entityType === 'company') {
-          entityData.orgnr = orgnr
+        if (entityType === 'company' && holderOrgNr) {
+          entityData.orgnr = holderOrgNr
         } else {
-          // For persons, try to extract birth year from name patterns
-          const birthYearMatch = eierNavn.match(/\b(19\d{2}|20\d{2})\b/)
-          if (birthYearMatch) {
-            entityData.birth_year = parseInt(birthYearMatch[1])
+          // For persons, try to extract birth year from various sources
+          const birthYearSources = [
+            row.fodselsar_orgnr, row.eier_orgnr, row.birth_year, 
+            holderName.match(/\b(19\d{2}|20\d{2})\b/)?.[1]
+          ]
+          
+          for (const source of birthYearSources) {
+            if (source) {
+              const year = parseInt(String(source).replace(/\D/g, ''))
+              if (year >= 1900 && year <= new Date().getFullYear()) {
+                entityData.birth_year = year
+                break
+              }
+            }
           }
-          entityData.country_code = 'NO' // Default to Norway
+          
+          entityData.country_code = String(
+            row.landkode || row.Landkode || row.country_code || 'NO'
+          ).trim().toUpperCase() || 'NO'
         }
 
+        const conflictColumns = entityType === 'company' && holderOrgNr 
+          ? (userId ? 'orgnr,user_id' : 'orgnr') 
+          : (userId ? 'name,user_id' : 'name')
+          
         const { data: entityResult, error: entityError } = await supabaseClient
           .from('share_entities')
           .upsert(entityData, {
-            onConflict: entityType === 'company' ? 'orgnr,user_id' : 'name,user_id'
+            onConflict: conflictColumns,
+            ignoreDuplicates: false
           })
           .select('id')
           .single()
@@ -226,18 +273,29 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
           continue
         }
 
-        // Insert holding record
+        // Insert holding record with better share class handling
+        const shareClass = String(
+          row.aksjeklasse || row.Aksjeklasse || row.share_class || 'Ordinære'
+        ).trim() || 'Ordinære'
+        
+        const holdingData = {
+          company_orgnr: orgnr,
+          holder_id: entityId,
+          share_class: shareClass,
+          shares: shares,
+          year: year,
+          user_id: userId
+        }
+        
+        const conflictHoldingColumns = userId 
+          ? 'company_orgnr,holder_id,share_class,year,user_id'
+          : 'company_orgnr,holder_id,share_class,year'
+        
         const { error: holdingError } = await supabaseClient
           .from('share_holdings')
-          .upsert({
-            company_orgnr: orgnr,
-            holder_id: entityId,
-            share_class: 'Ordinære', // Default share class
-            shares: shares,
-            year: year,
-            user_id: userId
-          }, {
-            onConflict: 'company_orgnr,holder_id,share_class,year,user_id'
+          .upsert(holdingData, {
+            onConflict: conflictHoldingColumns,
+            ignoreDuplicates: false
           })
 
         if (holdingError) {
