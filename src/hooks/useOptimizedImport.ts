@@ -53,41 +53,57 @@ export function useOptimizedImport() {
     
     try {
       addLog('Starter optimalisert import...')
-      updateProgress({ status: 'parsing' })
+      updateProgress({ status: 'parsing', progress: 10 })
 
-      // Start import session
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('shareholders-bulk-import', {
-        body: {
-          action: 'START_SESSION',
-          year: options.year,
-          file_data: { name: file.name, size: file.size }
-        }
-      })
-
-      if (sessionError) {
-        throw new Error(`Session start failed: ${sessionError.message}`)
-      }
-
-      const sessionId = sessionData.session_id
+      // Generate session ID
+      const sessionId = `import-${Date.now()}-${Math.random().toString(36).substring(2)}`
       sessionRef.current = sessionId
 
       updateProgress({ 
         sessionId,
         status: 'parsing',
-        canResume: true
+        canResume: true,
+        progress: 20
       })
 
       addLog(`Session startet: ${sessionId}`)
+      addLog('Leser filinnhold...')
 
-      // Determine file type and processing method
-      const fileName = file.name.toLowerCase()
-      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls')
-
-      if (isExcel) {
-        await processExcelFile(file, sessionId, options)
+      // Read file content
+      let fileContent: string
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        fileContent = await readFileAsText(file)
+      } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+        fileContent = await readFileAsBase64(file)
       } else {
-        await processCSVFile(file, sessionId, options)
+        throw new Error('Støtter kun CSV og Excel filer')
       }
+
+      updateProgress({ status: 'uploading', progress: 30 })
+      addLog('Sender fildata til server for prosessering...')
+
+      // Send file directly to edge function with new format
+      const { data, error } = await supabase.functions.invoke('shareholders-bulk-import', {
+        body: {
+          sessionId,
+          year: options.year,
+          fileName: file.name,
+          fileContent,
+          fileSize: file.size,
+          batchSize: 8000,
+          maxRetries: 3,
+          delayBetweenBatches: 200
+        }
+      })
+
+      if (error) {
+        throw new Error(`Import failed: ${error.message}`)
+      }
+
+      updateProgress({ status: 'completed', progress: 100, totalRows: data.processedRows || 0, processedRows: data.processedRows || 0 })
+      addLog(`Import fullført! ${data.processedRows || 0} rader prosessert`)
+      
+      options.onComplete?.(data)
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -96,6 +112,29 @@ export function useOptimizedImport() {
       options.onError?.(errorMessage)
     }
   }, [addLog, updateProgress])
+
+  // Helper function to read file as text (for CSV)
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsText(file, 'utf-8')
+    })
+  }
+
+  // Helper function to read file as base64 (for Excel)
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = reader.result as string
+        resolve(base64) // Keep full data URL for Excel files
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
+  }
 
   const processExcelFile = async (file: File, sessionId: string, options: ImportOptions) => {
     addLog('Prosesserer Excel-fil...')
