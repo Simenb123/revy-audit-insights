@@ -108,7 +108,7 @@ export function usePopulationAnalysis(
         throw new Error('No data returned from population analysis');
       }
 
-      // Type the backend response
+      // Type the enhanced backend response
       const responseData = data as {
         basicStats: {
           totalAccounts: number;
@@ -122,6 +122,9 @@ export function usePopulationAnalysis(
           maxBalance: number;
           stdDev: number;
           iqr: number;
+          p10?: number;
+          p90?: number;
+          skewness?: number;
         };
         counterAccounts: Array<{
           counterAccount: string;
@@ -136,11 +139,27 @@ export function usePopulationAnalysis(
           closingBalance: number;
           absBalance: number;
           outlierType: 'high' | 'low';
+          zScore?: number;
+          iqrScore?: number;
+          detectionMethod?: string;
         }>;
+        anomalies: Array<{
+          accountNumber: string;
+          accountName: string;
+          anomalyType: string;
+          severity: 'high' | 'medium' | 'low';
+          description: string;
+          closingBalance: number;
+        }>;
+        trendAnalysis: {
+          trend: 'stable' | 'increasing' | 'decreasing' | 'insufficient_data';
+          seasonality: 'none' | 'detected';
+        };
         timeSeries: Array<{
           month: string;
           transactionCount: number;
           totalAmount: number;
+          avgAmount?: number;
         }>;
         accounts: Array<{
           id: string;
@@ -154,15 +173,17 @@ export function usePopulationAnalysis(
         versionId?: string;
       };
 
-      // Transform the backend response to match our frontend interface
+      // Transform the enhanced backend response to match our frontend interface
       const basicStats = responseData.basicStats;
       const counterAccounts = responseData.counterAccounts || [];
       const outliers = responseData.outliers || [];
+      const anomalies = responseData.anomalies || [];
+      const trendAnalysis = responseData.trendAnalysis;
       const timeSeries = responseData.timeSeries || [];
       const accounts = responseData.accounts || [];
       const executionTime = responseData.executionTimeMs;
 
-      // All calculations are now done on the backend
+      // All calculations are now done on the backend with enhanced statistical analysis
       return {
         basicStatistics: {
           totalAccounts: basicStats.totalAccounts,
@@ -190,7 +211,7 @@ export function usePopulationAnalysis(
             accountName: outlier.accountName,
             closingBalance: outlier.closingBalance,
             outlierType: outlier.outlierType,
-            deviationScore: Math.abs(outlier.absBalance - basicStats.medianBalance) / (basicStats.stdDev || 1)
+            deviationScore: outlier.zScore || Math.abs(outlier.absBalance - basicStats.medianBalance) / (basicStats.stdDev || 1)
           })),
           outlierThreshold: 1.5 * basicStats.iqr
         },
@@ -200,18 +221,18 @@ export function usePopulationAnalysis(
             transactionCount: ts.transactionCount,
             totalAmount: ts.totalAmount
           })),
-          trend: timeSeries.length > 1 ? 'stable' : 'insufficient_data',
-          seasonality: 'none'
+          trend: trendAnalysis?.trend || 'insufficient_data',
+          seasonality: trendAnalysis?.seasonality || 'none'
         },
         anomalyDetection: {
-          anomalies: outliers.slice(0, 5).map((outlier) => ({
-            accountNumber: outlier.accountNumber,
-            accountName: outlier.accountName,
-            anomalyType: `balance_${outlier.outlierType}`,
-            severity: outlier.outlierType === 'high' ? 'high' : 'medium',
-            description: `Konto ${outlier.accountNumber} har en ${outlier.outlierType === 'high' ? 'uvanlig høy' : 'uvanlig lav'} saldo: ${Math.abs(outlier.closingBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}`
+          anomalies: anomalies.map((anomaly) => ({
+            accountNumber: anomaly.accountNumber,
+            accountName: anomaly.accountName,
+            anomalyType: anomaly.anomalyType,
+            severity: anomaly.severity as 'high' | 'medium' | 'low',
+            description: anomaly.description
           })),
-          anomalyScore: outliers.length / Math.max(basicStats.totalAccounts, 1) * 100
+          anomalyScore: anomalies.length / Math.max(basicStats.totalAccounts, 1) * 100
         },
         accounts: accounts.map((acc) => ({
           id: acc.id,
@@ -233,9 +254,11 @@ export function usePopulationAnalysis(
       };
     },
     enabled: !!clientId && selectedStandardNumbers.length > 0,
-    retry: 2,
+    retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - matches backend cache
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
 }

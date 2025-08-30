@@ -87,6 +87,11 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     accountNumber: string;
     accountName: string;
   } | null>(null);
+  const [isDrillDownOpen, setIsDrillDownOpen] = useState(false);
+  const [selectedCounterAccount, setSelectedCounterAccount] = useState<{
+    counterAccount: string;
+    counterAccountName: string;
+  } | null>(null);
 
   const { 
     data: analysisData, 
@@ -190,10 +195,11 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
   }));
 
   const handlePieClick = useCallback((data: any) => {
-    setDrillDownAccount({
-      accountNumber: data.account_number,
-      accountName: data.name
+    setSelectedCounterAccount({
+      counterAccount: data.account_number,
+      counterAccountName: data.name
     });
+    setIsDrillDownOpen(true);
   }, []);
 
   const handleCounterAccountToggle = useCallback((accountNumber: string) => {
@@ -534,9 +540,24 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           {renderStatisticsCards()}
         </div>
 
-        {/* Note: Advanced components temporarily disabled during backend migration */}
-        {/* <AdvancedAnomalyDetection /> */}
-        {/* <DrillDownModal /> */}
+        <AdvancedAnomalyDetection
+          clientId={clientId}
+          fiscalYear={fiscalYear}
+          selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
+          versionId={versionId}
+        />
+
+        {/* Drill-down modal for detailed transaction analysis */}
+        <DrillDownModal
+          isOpen={isDrillDownOpen}
+          onOpenChange={setIsDrillDownOpen}
+          clientId={clientId}
+          fiscalYear={fiscalYear}  
+          selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
+          counterAccountNumber={selectedCounterAccount?.counterAccount || ''}
+          counterAccountName={selectedCounterAccount?.counterAccountName || ''}
+          versionId={versionId}
+        />
       </div>
     </ErrorBoundary>
   );
