@@ -32,22 +32,6 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
     enabled: !!rootOrgnr
   })
 
-  if (!rootOrgnr) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Velg et selskap fra søkeresultatet for å vise eierstruktur
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        Laster eierstruktur...
-      </div>
-    )
-  }
-
   // Transform data to React Flow format and apply layout
   const { nodes, edges } = useMemo(() => {
     if (!graphData?.nodes || !graphData?.edges) {
@@ -110,77 +94,89 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
 
   return (
     <div className="h-full flex flex-col gap-4">
-      <div className="flex items-center gap-4 p-4 border-b">
-        <div className="flex items-center gap-2">
-          <Label>Retning:</Label>
-          <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="up">Opp</SelectItem>
-              <SelectItem value="down">Ned</SelectItem>
-              <SelectItem value="both">Begge</SelectItem>
-            </SelectContent>
-          </Select>
+      {!rootOrgnr ? (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          Velg et selskap fra søkeresultatet for å vise eierstruktur
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Label>Dybde:</Label>
-          <Select value={depth.toString()} onValueChange={(v) => setDepth(parseInt(v))}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[1,2,3,4,5,6].map(d => (
-                <SelectItem key={d} value={d.toString()}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      ) : isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          Laster eierstruktur...
         </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-4 p-4 border-b">
+            <div className="flex items-center gap-2">
+              <Label>Retning:</Label>
+              <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="up">Opp</SelectItem>
+                  <SelectItem value="down">Ned</SelectItem>
+                  <SelectItem value="both">Begge</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Label>Dybde:</Label>
+              <Select value={depth.toString()} onValueChange={(v) => setDepth(parseInt(v))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1,2,3,4,5,6].map(d => (
+                    <SelectItem key={d} value={d.toString()}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="flex items-center gap-2">
-          <Label>År:</Label>
-          <Input 
-            type="number" 
-            value={year} 
-            onChange={(e) => setYear(parseInt(e.target.value))}
-            className="w-20"
-          />
-        </div>
-      </div>
+            <div className="flex items-center gap-2">
+              <Label>År:</Label>
+              <Input 
+                type="number" 
+                value={year} 
+                onChange={(e) => setYear(parseInt(e.target.value))}
+                className="w-20"
+              />
+            </div>
+          </div>
 
-      <div className="flex-1">
-        <ReactFlow
-          nodes={flowNodes}
-          edges={flowEdges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.1}
-          maxZoom={2}
-          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-          style={{ backgroundColor: "hsl(var(--muted))" }}
-        >
-          <Background 
-            color="hsl(var(--muted-foreground))" 
-            gap={20} 
-            size={1}
-          />
-          <Controls />
-          <MiniMap 
-            nodeColor="hsl(var(--primary))"
-            maskColor="hsl(var(--muted) / 0.6)"
-            style={{
-              backgroundColor: 'hsl(var(--background))',
-              border: '1px solid hsl(var(--border))'
-            }}
-          />
-        </ReactFlow>
-      </div>
+          <div className="flex-1">
+            <ReactFlow
+              nodes={flowNodes}
+              edges={flowEdges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={onNodeClick}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.2 }}
+              minZoom={0.1}
+              maxZoom={2}
+              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+              style={{ backgroundColor: "hsl(var(--muted))" }}
+            >
+              <Background 
+                color="hsl(var(--muted-foreground))" 
+                gap={20} 
+                size={1}
+              />
+              <Controls />
+              <MiniMap 
+                nodeColor="hsl(var(--primary))"
+                maskColor="hsl(var(--muted) / 0.6)"
+                style={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))'
+                }}
+              />
+            </ReactFlow>
+          </div>
+        </>
+      )}
     </div>
   )
 }
