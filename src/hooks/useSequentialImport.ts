@@ -80,16 +80,17 @@ export const useSequentialImport = () => {
           const fileBuffer = await file.arrayBuffer()
           const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
           
-          // Process single file
+          // Process single file with optimized settings for large files
           const result = await supabase.functions.invoke('shareholders-bulk-import', {
             body: {
               sessionId,
               year,
               fileName: file.name,
               fileContent: base64Content,
-              batchSize: 2000, // Smaller batches for 800k files to avoid timeouts
-              maxRetries: 5,
-              delayBetweenBatches: 500 // Add delay between batches
+              batchSize: 8000, // Larger batches for efficiency with 800K files
+              maxRetries: 3,
+              delayBetweenBatches: 200, // Reduced delay for faster processing
+              fileSize: file.size
             }
           })
 
@@ -117,10 +118,10 @@ export const useSequentialImport = () => {
           
           console.log(`✅ Completed ${file.name}: ${fileRows} rows processed`)
           
-          // Add delay between files to prevent overwhelming
+          // Add delay between files to prevent overwhelming (reduced for large files)
           if (i < files.length - 1) {
-            console.log('⏳ Waiting 2 seconds before next file...')
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            console.log('⏳ Waiting 1 second before next file...')
+            await new Promise(resolve => setTimeout(resolve, 1000))
           }
           
         } catch (fileError: any) {

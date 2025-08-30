@@ -12932,10 +12932,18 @@ export type Database = {
         }
         Returns: Json
       }
+      update_total_shares_batch_optimized: {
+        Args: {
+          p_batch_size?: number
+          p_max_execution_time_seconds?: number
+          p_offset?: number
+          p_user_id?: string
+          p_year: number
+        }
+        Returns: Json
+      }
       update_total_shares_for_year: {
-        Args:
-          | { p_orgnr: string; p_user_id?: string; p_year: number }
-          | { p_orgnr?: string; p_user_id?: string; p_year: number }
+        Args: { p_orgnr?: string; p_user_id?: string; p_year: number }
         Returns: undefined
       }
       user_owns_client: {
