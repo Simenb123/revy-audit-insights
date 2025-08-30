@@ -152,7 +152,7 @@ export const OptimizedImportForm: React.FC = () => {
   const handleResumeSession = async () => {
     if (!resumableSession) return
 
-    const sessionData = await checkSession(resumableSession)
+    const sessionData = await checkSession()
     if (sessionData) {
       addLog(`Gjenopptar session: ${resumableSession}`)
       // Implementation for resuming would go here
