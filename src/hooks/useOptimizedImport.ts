@@ -125,7 +125,7 @@ export function useOptimizedImport() {
       let successfulBatches = 0
       let failedBatches = 0
       const activeBatches = new Set()
-      const MAX_CONCURRENT_BATCHES = 5 // Increased concurrency
+      const MAX_CONCURRENT_BATCHES = 2 // Reduced to avoid overloading Edge Functions
       
       // Enhanced progress tracking
       let lastProgressUpdate = Date.now()
@@ -260,18 +260,18 @@ export function useOptimizedImport() {
   }
 
   const processBatches = async (data: any[], sessionId: string, options: ImportOptions) => {
-    const BATCH_SIZE = 75000 // Dramatically increased batch size for Excel files
+    const BATCH_SIZE = 3000 // Drastically reduced to avoid WORKER_LIMIT errors
     const batches = []
     
     for (let i = 0; i < data.length; i += BATCH_SIZE) {
       batches.push(data.slice(i, i + BATCH_SIZE))
     }
 
-    addLog(`Prosesserer ${batches.length} store batches med ${BATCH_SIZE} rader hver`)
+    addLog(`Prosesserer ${batches.length} mindre batches med ${BATCH_SIZE} rader hver`)
     updateProgress({ status: 'uploading' })
 
-    // Increased concurrency for large batches
-    const CONCURRENT_BATCHES = 6
+    // Reduced concurrency to avoid overloading
+    const CONCURRENT_BATCHES = 2
     let successfulBatches = 0
     let failedBatches = 0
     
@@ -282,14 +282,17 @@ export function useOptimizedImport() {
         const normalizedBatch = batch.map(row => normalizeRowData(row))
         await processSingleBatch(normalizedBatch, sessionId, options)
         
-        const batchIndex = i + index
-        const totalProcessed = Math.min((batchIndex + 1) * BATCH_SIZE, data.length)
-        updateProgress({ 
-          processedRows: totalProcessed,
-          progress: (totalProcessed / data.length) * 90
-        })
-        
-        return batchIndex
+                const batchIndex = i + index
+                const totalProcessed = Math.min((batchIndex + 1) * BATCH_SIZE, data.length)
+                updateProgress({ 
+                  processedRows: totalProcessed,
+                  progress: (totalProcessed / data.length) * 90
+                })
+                
+                // Add delay between batches to avoid overwhelming Edge Functions
+                await new Promise(resolve => setTimeout(resolve, 200))
+                
+                return batchIndex
       }))
       
       // Count successful vs failed batches
@@ -313,40 +316,63 @@ export function useOptimizedImport() {
   }
 
   const processSingleBatch = async (batchData: any[], sessionId: string, options: ImportOptions) => {
-    const retryAttempts = 3
+    const retryAttempts = 5 // Increased retry attempts
     let lastError = null
     
     for (let attempt = 1; attempt <= retryAttempts; attempt++) {
       try {
+        // Pre-validate batch data
+        const validRows = batchData.filter(row => {
+          const orgnr = String(row.orgnr || '').trim().replace(/\D/g, '')
+          return orgnr && orgnr.length === 9
+        })
+        
+        if (validRows.length === 0) {
+          addLog(`Batch skipped: ingen gyldige rader av ${batchData.length}`)
+          return { processed_rows: 0, total_rows: batchData.length, errors: ['No valid rows in batch'] }
+        }
+        
         const { data, error } = await supabase.functions.invoke('shareholders-bulk-import', {
           body: {
             action: 'PROCESS_BATCH',
             session_id: sessionId,
             year: options.year,
-            batch_data: batchData,
+            batch_data: validRows, // Send only valid rows
             is_global: options.isGlobal || false
           }
         })
 
         if (error) {
+          // Check for specific error types
+          if (error.message?.includes('WORKER_LIMIT') || error.message?.includes('546')) {
+            throw new Error(`Edge Function overloaded (WORKER_LIMIT). Batch too large or too many concurrent requests.`)
+          }
           throw new Error(`Batch processing failed: ${error.message}`)
         }
         
-        // Log batch results for debugging
-        if (data && (data.processed_rows === 0 || data.errors?.length > 0)) {
-          addLog(`Batch warning: ${data.processed_rows}/${batchData.length} rader prosessert. Feil: ${data.errors?.length || 0}`)
+        // Enhanced logging
+        const processedCount = data?.processed_rows || 0
+        const errorCount = data?.errors?.length || 0
+        
+        if (processedCount === 0 && errorCount > 0) {
+          addLog(`Batch feilet: ${errorCount} feil, ingen rader prosessert`)
           if (data.errors?.length > 0) {
             addLog(`Første 3 feil: ${data.errors.slice(0, 3).join('; ')}`)
           }
+        } else {
+          addLog(`Batch OK: ${processedCount}/${validRows.length} rader prosessert, ${errorCount} feil`)
         }
         
         return data // Success
         
       } catch (error) {
         lastError = error
+        const isWorkerLimit = error.message?.includes('WORKER_LIMIT') || error.message?.includes('546')
+        
         if (attempt < retryAttempts) {
-          addLog(`Batch forsøk ${attempt} feilet, prøver igjen...`)
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
+          const waitTime = isWorkerLimit ? 5000 * attempt : 1000 * attempt // Longer wait for worker limits
+          addLog(`Batch forsøk ${attempt} feilet: ${error.message}. Venter ${waitTime}ms før retry...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
         }
       }
     }

@@ -7,23 +7,28 @@ let totalRowsProcessed = 0;
 let failedRows = 0;
 let memoryUsage = { current: 0, peak: 0 };
 
-// Dynamic batch sizing based on available memory
+// Conservative batch sizing to avoid WORKER_LIMIT errors
 function calculateOptimalBatchSize() {
   try {
-    // Estimate available memory (conservative approach)
-    const estimatedMemory = performance.memory ? performance.memory.usedJSHeapSize : 50 * 1024 * 1024;
-    const availableMemory = (100 * 1024 * 1024) - estimatedMemory; // Reserve 100MB, use rest
+    // Use much smaller batches to avoid Edge Function timeouts
+    // Start with 2K rows, max 5K based on system performance
+    const baseSize = 2000;
+    const maxSize = 5000;
     
-    // Each row is roughly 500 bytes, batch should use max 50MB
-    const maxRowsForMemory = Math.floor(availableMemory / 1000);
+    // Scale based on available memory if possible
+    if (performance.memory) {
+      const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+      if (memoryMB > 80) {
+        return baseSize; // Use minimum if memory is high
+      } else if (memoryMB > 50) {
+        return Math.min(baseSize * 1.5, maxSize);
+      }
+    }
     
-    // Start with 50K rows, scale up to 150K based on memory
-    const optimalSize = Math.min(Math.max(50000, maxRowsForMemory), 150000);
-    
-    return optimalSize;
+    return Math.min(baseSize * 2, maxSize);
   } catch (error) {
-    console.warn('Could not calculate optimal batch size, using default:', error);
-    return 75000; // Conservative default
+    console.warn('Could not calculate optimal batch size, using conservative default:', error);
+    return 1000; // Very conservative default
   }
 }
 
@@ -117,11 +122,19 @@ function parseFile(data) {
           // Enhanced data validation and normalization
           const normalizedRow = normalizeRowData(row);
           
-          // Skip rows with critical missing data
-          if (!normalizedRow.orgnr || !normalizedRow.selskap || !normalizedRow.navn_aksjonaer) {
+          // More lenient validation - only require org number
+          if (!normalizedRow.orgnr || normalizedRow.orgnr.length !== 9) {
             errorRowsInChunk++;
             failedRows++;
-            logMessage('warn', `Skipping invalid row ${rowCount}: missing critical data`, normalizedRow);
+            logMessage('warn', `Skipping invalid row ${rowCount}: invalid orgnr '${normalizedRow.orgnr}'`);
+            continue;
+          }
+          
+          // Check for at least some identifier data
+          if (!normalizedRow.selskap && !normalizedRow.navn_aksjonaer) {
+            errorRowsInChunk++;
+            failedRows++;
+            logMessage('warn', `Skipping invalid row ${rowCount}: missing both company and holder name`);
             continue;
           }
           

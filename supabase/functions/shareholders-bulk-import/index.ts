@@ -188,7 +188,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
         const companyName = selskap || `Ukjent selskap (${orgnr})`
         const holderName = eierNavn || `Ukjent eier`
 
-        // Upsert company with better error handling
+        // Upsert company with better error handling (removed calculated_total)
         const { error: companyError } = await supabaseClient
           .from('share_companies')
           .upsert({
@@ -196,8 +196,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
             name: companyName,
             year: year,
             user_id: userId,
-            total_shares: 0, // Will be calculated later
-            calculated_total: 0
+            total_shares: 0 // Will be calculated later
           }, {
             onConflict: 'orgnr,year' + (userId ? ',user_id' : ''),
             ignoreDuplicates: false
