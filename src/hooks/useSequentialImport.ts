@@ -78,6 +78,20 @@ export const useSequentialImport = () => {
         console.log(`🔄 Processing file ${i + 1}/${files.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
         
         try {
+          // Detect file type and set correct MIME type
+          const getFileType = (fileName: string): { mimeType: string, fileType: 'csv' | 'excel' } => {
+            const extension = fileName.toLowerCase().split('.').pop()
+            if (extension === 'csv') {
+              return { mimeType: 'text/csv', fileType: 'csv' }
+            } else if (extension === 'xlsx' || extension === 'xls') {
+              return { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileType: 'excel' }
+            } else {
+              throw new Error(`Unsupported file type: ${extension}`)
+            }
+          }
+          
+          const { mimeType, fileType } = getFileType(file.name)
+          
           // Convert file to base64 using FileReader for large files
           const base64Content = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader()
@@ -97,8 +111,9 @@ export const useSequentialImport = () => {
               sessionId,
               year,
               fileName: file.name,
-              fileContent: `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64Content}`,
-              fileSize: file.size
+              fileContent: `data:${mimeType};base64,${base64Content}`,
+              fileSize: file.size,
+              fileType: fileType
             }
           })
 

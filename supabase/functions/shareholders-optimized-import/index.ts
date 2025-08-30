@@ -3,6 +3,40 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const XLSX = await import('https://esm.sh/xlsx@0.18.5')
 
+// For CSV parsing
+function parseCSV(csvContent: string): any[][] {
+  const lines = csvContent.split('\n').filter(line => line.trim())
+  const result: any[][] = []
+  
+  for (const line of lines) {
+    // Simple CSV parser - handles quoted fields with commas
+    const row: any[] = []
+    let currentField = ''
+    let inQuotes = false
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      
+      if (char === '"' && !inQuotes) {
+        inQuotes = true
+      } else if (char === '"' && inQuotes) {
+        inQuotes = false
+      } else if (char === ',' && !inQuotes) {
+        row.push(currentField.trim())
+        currentField = ''
+      } else {
+        currentField += char
+      }
+    }
+    
+    // Add the last field
+    row.push(currentField.trim())
+    result.push(row)
+  }
+  
+  return result
+}
+
 interface ImportSession {
   id: string
   year: number
@@ -39,11 +73,11 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: req.headers.get('Authorization')! } }
     })
 
-    const { sessionId, year, fileName, fileContent, fileSize } = await req.json()
+    const { sessionId, year, fileName, fileContent, fileSize, fileType } = await req.json()
     
     const fileSizeMB = (fileSize / 1024 / 1024).toFixed(2)
     console.log(`🚀 Starting optimized import: ${fileName} (${fileSizeMB}MB)`)
-    console.log(`📊 Session: ${sessionId}, Year: ${year}`)
+    console.log(`📊 Session: ${sessionId}, Year: ${year}, Type: ${fileType}`)
 
     // Get user ID from auth
     const { data: { user } } = await supabase.auth.getUser()
@@ -70,12 +104,21 @@ Deno.serve(async (req) => {
       throw new Error(`Session error: ${sessionError.message}`)
     }
 
-    // Parse file content
-    console.log('📖 Parsing Excel file...')
-    const buffer = Uint8Array.from(atob(fileContent.split(',')[1]), c => c.charCodeAt(0))
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][]
+    // Parse file content based on type
+    let jsonData: any[][]
+    
+    if (fileType === 'csv') {
+      console.log('📖 Parsing CSV file...')
+      const base64Content = fileContent.split(',')[1]
+      const csvContent = atob(base64Content)
+      jsonData = parseCSV(csvContent)
+    } else {
+      console.log('📖 Parsing Excel file...')
+      const buffer = Uint8Array.from(atob(fileContent.split(',')[1]), c => c.charCodeAt(0))
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+      jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][]
+    }
 
     if (jsonData.length <= 1) {
       throw new Error('File appears to be empty or has no data rows')
