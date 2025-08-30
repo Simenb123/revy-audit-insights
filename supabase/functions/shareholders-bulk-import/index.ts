@@ -132,24 +132,160 @@ async function updateSessionProgress(supabaseClient: any, sessionId: string, pro
 }
 
 async function processBatch(supabaseClient: any, sessionId: string, year: number, batchData: any[], isGlobal: boolean) {
-  // Use the existing ingest batch function
-  const { data, error } = await supabaseClient.functions.invoke('shareholders-ingest-batch', {
-    body: {
-      session_id: sessionId,
-      year: year,
-      batch_data: batchData,
-      is_global: isGlobal
+  console.log(`Processing batch for session ${sessionId}, year ${year}, rows: ${batchData.length}`)
+  
+  try {
+    // Get user from session if not global
+    let userId = null
+    if (!isGlobal) {
+      const { data: { user } } = await supabaseClient.auth.getUser()
+      userId = user?.id || null
     }
-  })
 
-  if (error) {
+    let processedRows = 0
+    let errors: string[] = []
+
+    // Process each row in the batch
+    for (const row of batchData) {
+      try {
+        // Skip empty rows
+        if (!row || Object.keys(row).length === 0) {
+          continue
+        }
+
+        // Extract and validate required fields
+        const orgnr = String(row.orgnr || '').trim()
+        const selskap = String(row.selskap || '').trim()
+        const eierNavn = String(row.eier_navn || row.navn || '').trim()
+        const sharesStr = String(row.andeler || row.shares || '0').replace(/[^\d]/g, '')
+        const shares = parseInt(sharesStr) || 0
+
+        if (!orgnr || !selskap || !eierNavn) {
+          errors.push(`Mangler påkrevd data for rad: orgnr=${orgnr}, selskap=${selskap}, eier=${eierNavn}`)
+          continue
+        }
+
+        // Upsert company
+        const { error: companyError } = await supabaseClient
+          .from('share_companies')
+          .upsert({
+            orgnr: orgnr,
+            name: selskap,
+            year: year,
+            user_id: userId,
+            total_shares: 0, // Will be calculated later
+            calculated_total: 0
+          }, {
+            onConflict: 'orgnr,year,user_id'
+          })
+
+        if (companyError) {
+          console.error('Company upsert error:', companyError)
+          errors.push(`Feil ved lagring av selskap ${selskap}: ${companyError.message}`)
+          continue
+        }
+
+        // Determine entity type based on organization number patterns
+        const entityType = orgnr.length === 9 && /^\d+$/.test(orgnr) ? 'company' : 'person'
+        
+        // Upsert entity (holder)
+        const entityData: any = {
+          entity_type: entityType,
+          name: eierNavn,
+          user_id: userId
+        }
+
+        if (entityType === 'company') {
+          entityData.orgnr = orgnr
+        } else {
+          // For persons, try to extract birth year from name patterns
+          const birthYearMatch = eierNavn.match(/\b(19\d{2}|20\d{2})\b/)
+          if (birthYearMatch) {
+            entityData.birth_year = parseInt(birthYearMatch[1])
+          }
+          entityData.country_code = 'NO' // Default to Norway
+        }
+
+        const { data: entityResult, error: entityError } = await supabaseClient
+          .from('share_entities')
+          .upsert(entityData, {
+            onConflict: entityType === 'company' ? 'orgnr,user_id' : 'name,user_id'
+          })
+          .select('id')
+          .single()
+
+        if (entityError) {
+          console.error('Entity upsert error:', entityError)
+          errors.push(`Feil ved lagring av eier ${eierNavn}: ${entityError.message}`)
+          continue
+        }
+
+        const entityId = entityResult?.id
+        if (!entityId) {
+          errors.push(`Kunne ikke få entity ID for ${eierNavn}`)
+          continue
+        }
+
+        // Insert holding record
+        const { error: holdingError } = await supabaseClient
+          .from('share_holdings')
+          .upsert({
+            company_orgnr: orgnr,
+            holder_id: entityId,
+            share_class: 'Ordinære', // Default share class
+            shares: shares,
+            year: year,
+            user_id: userId
+          }, {
+            onConflict: 'company_orgnr,holder_id,share_class,year,user_id'
+          })
+
+        if (holdingError) {
+          console.error('Holding upsert error:', holdingError)
+          errors.push(`Feil ved lagring av eierskap for ${eierNavn}: ${holdingError.message}`)
+          continue
+        }
+
+        processedRows++
+
+      } catch (rowError) {
+        console.error('Error processing row:', rowError)
+        errors.push(`Feil ved prosessering av rad: ${rowError.message}`)
+      }
+    }
+
+    console.log(`Batch processed: ${processedRows} successful, ${errors.length} errors`)
+
+    // Update session with total processed rows if we have a session
+    if (sessionId && sessionId !== 'unknown') {
+      const { error: updateError } = await supabaseClient
+        .from('import_sessions')
+        .update({
+          processed_rows: processedRows,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId)
+
+      if (updateError) {
+        console.error('Failed to update session processed rows:', updateError)
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        processed_rows: processedRows,
+        total_rows: batchData.length,
+        errors: errors,
+        session_id: sessionId
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in processBatch:', error)
     throw new Error(`Batch processing failed: ${error.message}`)
   }
-
-  return new Response(
-    JSON.stringify(data),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  )
 }
 
 async function finishSession(supabaseClient: any, sessionId: string, year: number, isGlobal: boolean) {
