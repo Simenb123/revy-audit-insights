@@ -2,39 +2,82 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CounterAccountDistribution {
-  account_number: string;
-  account_name: string;
-  transaction_count: number;
-  total_amount: number;
+  counterAccount: string;
+  counterAccountName: string;
+  transactionCount: number;
+  totalAmount: number;
   percentage: number;
 }
 
-export interface TransactionStatistics {
-  totalTransactions: number;
-  averageAmount: number;
-  medianAmount: number;
-  minAmount: number;
-  maxAmount: number;
-  standardDeviation: number;
+export interface OutlierDetection {
+  accountNumber: string;
+  accountName: string;
+  closingBalance: number;
+  outlierType: 'high' | 'low';
+  deviationScore: number;
+}
+
+export interface AnomalyDetection {
+  accountNumber: string;
+  accountName: string;
+  anomalyType: string;
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+}
+
+export interface BasicStatistics {
+  totalAccounts: number;
+  accountsWithBalance: number;
+  totalSum: number;
+  averageBalance: number;
+  medianBalance: number;
   q1: number;
   q3: number;
-  outliers: Array<{
-    account_number: string;
-    amount: number;
-    transaction_date: string;
-    description: string;
-  }>;
+  minBalance: number;
+  maxBalance: number;
+  stdDev: number;
+  iqr: number;
+}
+
+export interface TimeSeriesData {
+  month: string;
+  transactionCount: number;
+  totalAmount: number;
 }
 
 export interface PopulationAnalysisData {
-  counterAccountDistribution: CounterAccountDistribution[];
-  transactionStatistics: TransactionStatistics;
-  riskIndicators: Array<{
-    type: 'unusual_counter_account' | 'large_transaction' | 'round_amount' | 'late_posting';
+  basicStatistics: BasicStatistics;
+  counterAccountAnalysis: CounterAccountDistribution[];
+  outlierDetection: {
+    outliers: OutlierDetection[];
+    outlierThreshold: number;
+  };
+  timeSeriesAnalysis: {
+    monthlyData: TimeSeriesData[];
+    trend: 'stable' | 'increasing' | 'decreasing' | 'insufficient_data';
+    seasonality: 'none' | 'detected';
+  };
+  anomalyDetection: {
+    anomalies: AnomalyDetection[];
+    anomalyScore: number;
+  };
+  accounts: Array<{
+    id: string;
     account_number: string;
-    description: string;
-    risk_score: number;
+    account_name: string;
+    closing_balance: number;
+    transaction_count: number;
   }>;
+  executionTime: number;
+  metadata: {
+    clientId: string;
+    fiscalYear: number;
+    selectedStandardNumbers: string[];
+    excludedAccountNumbers: string[];
+    versionId?: string;
+    analysisTimestamp: string;
+    totalRecords: number;
+  };
 }
 
 export function usePopulationAnalysis(
@@ -42,300 +85,152 @@ export function usePopulationAnalysis(
   fiscalYear: number,
   selectedStandardNumbers: string[],
   excludedAccountNumbers: string[],
-  versionId?: string,
-  analysisLevel: 'account' | 'statement_line' = 'account'
+  versionId?: string
 ) {
   return useQuery({
-    queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId, analysisLevel],
+    queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId],
     queryFn: async (): Promise<PopulationAnalysisData> => {
-      try {
-      // If no accounts selected, return empty analysis
-      if (selectedStandardNumbers.length === 0) {
-        return {
-          counterAccountDistribution: [],
-          transactionStatistics: {
-            totalTransactions: 0,
-            averageAmount: 0,
-            medianAmount: 0,
-            minAmount: 0,
-            maxAmount: 0,
-            standardDeviation: 0,
-            q1: 0,
-            q3: 0,
-            outliers: []
-          },
-          riskIndicators: []
-        };
-      }
-
-      // Get the same account mappings as usePopulationCalculator
-      const { data: mappingsData } = await supabase
-        .from('trial_balance_mappings')
-        .select('account_number, statement_line_number')
-        .eq('client_id', clientId);
-
-      const { data: classificationsData } = await supabase
-        .from('account_classifications')
-        .select('account_number, new_category')
-        .eq('client_id', clientId)
-        .eq('is_active', true);
-
-      const { data: standardAccounts } = await supabase
-        .from('standard_accounts')
-        .select('id, standard_number, standard_name');
-
-      // Build account mapping lookup
-      const mappingLookup = new Map<string, string>();
-      (mappingsData as any[])?.forEach((mapping: any) => {
-        const standardAccount = (standardAccounts as any[])?.find(sa => sa.standard_number === mapping.statement_line_number);
-        if (standardAccount) {
-          mappingLookup.set(mapping.account_number, standardAccount.standard_number);
-        }
+      // Use the new comprehensive SQL function
+      const { data, error } = await supabase.rpc('calculate_population_analysis', {
+        p_client_id: clientId,
+        p_fiscal_year: fiscalYear,
+        p_selected_standard_numbers: selectedStandardNumbers,
+        p_excluded_account_numbers: excludedAccountNumbers,
+        p_version_id: versionId || null
       });
 
-      const classificationLookup = new Map<string, string>();
-      (classificationsData as any[])?.forEach((classification: any) => {
-        if (mappingLookup.has(classification.account_number)) return;
-        
-        const standardAccount = (standardAccounts as any[])?.find(sa => sa.standard_name === classification.new_category);
-        if (standardAccount) {
-          classificationLookup.set(classification.account_number, standardAccount.standard_number);
-        }
-      });
-
-      // Get relevant account numbers
-      const relevantAccountNumbers = new Set<string>();
-      for (const [accountNumber, standardNumber] of mappingLookup.entries()) {
-        if (selectedStandardNumbers.includes(standardNumber)) {
-          relevantAccountNumbers.add(accountNumber);
-        }
-      }
-      for (const [accountNumber, standardNumber] of classificationLookup.entries()) {
-        if (selectedStandardNumbers.includes(standardNumber)) {
-          relevantAccountNumbers.add(accountNumber);
-        }
+      if (error) {
+        console.error('Error calculating population analysis:', error);
+        throw error;
       }
 
-      // Filter out excluded accounts
-      const includedAccountNumbers = Array.from(relevantAccountNumbers).filter(
-        accountNumber => !excludedAccountNumbers.includes(accountNumber)
-      );
+      if (!data || typeof data !== 'object') {
+        throw new Error('No data returned from population analysis');
+      }
 
-      if (includedAccountNumbers.length === 0) {
-        return {
-          counterAccountDistribution: [],
-          transactionStatistics: {
-            totalTransactions: 0,
-            averageAmount: 0,
-            medianAmount: 0,
-            minAmount: 0,
-            maxAmount: 0,
-            standardDeviation: 0,
-            q1: 0,
-            q3: 0,
-            outliers: []
-          },
-          riskIndicators: []
+      // Type the backend response
+      const responseData = data as {
+        basicStats: {
+          totalAccounts: number;
+          accountsWithBalance: number;
+          totalSum: number;
+          averageBalance: number;
+          medianBalance: number;
+          q1: number;
+          q3: number;
+          minBalance: number;
+          maxBalance: number;
+          stdDev: number;
+          iqr: number;
         };
-      }
-
-      // Get general ledger transactions for analysis
-      let transactionQuery = supabase
-        .from('general_ledger_transactions')
-        .select(`
-          id,
-          transaction_date,
-          account_number,
-          description,
-          debit_amount,
-          credit_amount,
-          voucher_number
-        `)
-        .eq('client_id', clientId)
-        .gte('transaction_date', `${fiscalYear}-01-01`)
-        .lte('transaction_date', `${fiscalYear}-12-31`)
-        .in('account_number', includedAccountNumbers);
-
-      if (versionId) {
-        transactionQuery = transactionQuery.eq('version_id', versionId);
-      }
-
-      const { data: transactions } = await transactionQuery;
-
-      if (!transactions || transactions.length === 0) {
-        return {
-          counterAccountDistribution: [],
-          transactionStatistics: {
-            totalTransactions: 0,
-            averageAmount: 0,
-            medianAmount: 0,
-            minAmount: 0,
-            maxAmount: 0,
-            standardDeviation: 0,
-            q1: 0,
-            q3: 0,
-            outliers: []
-          },
-          riskIndicators: []
-        };
-      }
-
-      // Calculate transaction amounts
-      const amounts = transactions.map(t => Math.abs((t.debit_amount || 0) - (t.credit_amount || 0)));
-      amounts.sort((a, b) => a - b);
-
-      // Calculate statistics
-      const totalTransactions = transactions.length;
-      const sum = amounts.reduce((a, b) => a + b, 0);
-      const averageAmount = sum / totalTransactions;
-      const medianAmount = amounts[Math.floor(amounts.length / 2)] || 0;
-      const minAmount = amounts[0] || 0;
-      const maxAmount = amounts[amounts.length - 1] || 0;
-      
-      // Calculate standard deviation
-      const variance = amounts.reduce((sum, amount) => sum + Math.pow(amount - averageAmount, 2), 0) / amounts.length;
-      const standardDeviation = Math.sqrt(variance);
-
-      // Calculate quartiles
-      const q1 = amounts[Math.floor(amounts.length * 0.25)] || 0;
-      const q3 = amounts[Math.floor(amounts.length * 0.75)] || 0;
-      const iqr = q3 - q1;
-      
-      // Identify outliers (beyond 1.5 * IQR)
-      const outlierThresholdLow = q1 - 1.5 * iqr;
-      const outlierThresholdHigh = q3 + 1.5 * iqr;
-      
-      const outliers = transactions
-        .filter(t => {
-          const amount = Math.abs((t.debit_amount || 0) - (t.credit_amount || 0));
-          return amount < outlierThresholdLow || amount > outlierThresholdHigh;
-        })
-        .map(t => ({
-          account_number: t.account_number,
-          amount: Math.abs((t.debit_amount || 0) - (t.credit_amount || 0)),
-          transaction_date: t.transaction_date,
-          description: t.description || 'Ingen beskrivelse'
-        }))
-        .slice(0, 10); // Limit to top 10 outliers
-
-      // Get counter-account distribution by analyzing vouchers
-      const voucherNumbers = [...new Set(transactions.map(t => t.voucher_number).filter(Boolean))];
-      
-      let counterAccountQuery = supabase
-        .from('general_ledger_transactions')
-        .select(`
-          account_number,
-          debit_amount,
-          credit_amount,
-          voucher_number,
-          client_chart_of_accounts!inner(account_name)
-        `)
-        .eq('client_id', clientId)
-        .in('voucher_number', voucherNumbers);
-
-      if (versionId) {
-        counterAccountQuery = counterAccountQuery.eq('version_id', versionId);
-      }
-
-      const { data: allVoucherTransactions } = await counterAccountQuery;
-
-      // Find counter accounts (accounts in same vouchers but not in our selection)
-      const counterAccountMap = new Map<string, { 
-        account_name: string; 
-        transaction_count: number; 
-        total_amount: number; 
-      }>();
-
-      allVoucherTransactions?.forEach(t => {
-        if (!includedAccountNumbers.includes(t.account_number)) {
-          const amount = Math.abs((t.debit_amount || 0) - (t.credit_amount || 0));
-          const existing = counterAccountMap.get(t.account_number) || { 
-            account_name: t.client_chart_of_accounts?.account_name || 'Ukjent', 
-            transaction_count: 0, 
-            total_amount: 0 
-          };
-          
-          counterAccountMap.set(t.account_number, {
-            account_name: existing.account_name,
-            transaction_count: existing.transaction_count + 1,
-            total_amount: existing.total_amount + amount
-          });
-        }
-      });
-
-      const totalCounterAmount = Array.from(counterAccountMap.values()).reduce((sum, item) => sum + item.total_amount, 0);
-      
-      const counterAccountDistribution: CounterAccountDistribution[] = Array.from(counterAccountMap.entries())
-        .map(([account_number, data]) => ({
-          account_number,
-          account_name: data.account_name,
-          transaction_count: data.transaction_count,
-          total_amount: data.total_amount,
-          percentage: totalCounterAmount > 0 ? (data.total_amount / totalCounterAmount) * 100 : 0
-        }))
-        .sort((a, b) => b.total_amount - a.total_amount)
-        .slice(0, 10); // Top 10 counter accounts
-
-      // Generate risk indicators
-      const riskIndicators: Array<{
-        type: 'unusual_counter_account' | 'large_transaction' | 'round_amount' | 'late_posting';
-        account_number: string;
-        description: string;
-        risk_score: number;
-      }> = [];
-
-      // Large transactions (top 1% by amount)
-      const largeThreshold = amounts[Math.floor(amounts.length * 0.99)] || 0;
-      transactions
-        .filter(t => Math.abs((t.debit_amount || 0) - (t.credit_amount || 0)) >= largeThreshold)
-        .forEach(t => {
-          riskIndicators.push({
-            type: 'large_transaction' as const,
-            account_number: t.account_number,
-            description: `Stor transaksjon: ${Math.abs((t.debit_amount || 0) - (t.credit_amount || 0)).toLocaleString('nb-NO', { style: 'currency', currency: 'NOK' })}`,
-            risk_score: 0.7
-          });
-        });
-
-      // Round amounts (potential manual entries)
-      transactions
-        .filter(t => {
-          const amount = Math.abs((t.debit_amount || 0) - (t.credit_amount || 0));
-          return amount > 0 && amount % 1000 === 0 && amount >= 10000;
-        })
-        .slice(0, 5)
-        .forEach(t => {
-          riskIndicators.push({
-            type: 'round_amount' as const,
-            account_number: t.account_number,
-            description: `Runde beløp: ${Math.abs((t.debit_amount || 0) - (t.credit_amount || 0)).toLocaleString('nb-NO', { style: 'currency', currency: 'NOK' })}`,
-            risk_score: 0.5
-          });
-        });
-
-      return {
-        counterAccountDistribution,
-        transactionStatistics: {
-          totalTransactions,
-          averageAmount,
-          medianAmount,
-          minAmount,
-          maxAmount,
-          standardDeviation,
-          q1,
-          q3,
-          outliers
-        },
-        riskIndicators: riskIndicators.slice(0, 20) // Limit to top 20 risk indicators
+        counterAccounts: Array<{
+          counterAccount: string;
+          counterAccountName: string;
+          transactionCount: number;
+          totalAmount: number;
+          percentage: number;
+        }>;
+        outliers: Array<{
+          accountNumber: string;
+          accountName: string;
+          closingBalance: number;
+          absBalance: number;
+          outlierType: 'high' | 'low';
+        }>;
+        timeSeries: Array<{
+          month: string;
+          transactionCount: number;
+          totalAmount: number;
+        }>;
+        accounts: Array<{
+          id: string;
+          accountNumber: string;
+          accountName: string;
+          closingBalance: number;
+          transactionCount: number;
+        }>;
+        executionTimeMs: number;
+        totalRecords: number;
+        versionId?: string;
       };
-      } catch (error) {
-        console.error('Error in population analysis:', error);
-        throw new Error(
-          error instanceof Error 
-            ? `Feil ved populasjonsanalyse: ${error.message}` 
-            : 'Ukjent feil ved populasjonsanalyse'
-        );
-      }
+
+      // Transform the backend response to match our frontend interface
+      const basicStats = responseData.basicStats;
+      const counterAccounts = responseData.counterAccounts || [];
+      const outliers = responseData.outliers || [];
+      const timeSeries = responseData.timeSeries || [];
+      const accounts = responseData.accounts || [];
+      const executionTime = responseData.executionTimeMs;
+
+      // All calculations are now done on the backend
+      return {
+        basicStatistics: {
+          totalAccounts: basicStats.totalAccounts,
+          accountsWithBalance: basicStats.accountsWithBalance,
+          totalSum: basicStats.totalSum,
+          averageBalance: basicStats.averageBalance,
+          medianBalance: basicStats.medianBalance,
+          q1: basicStats.q1,
+          q3: basicStats.q3,
+          minBalance: basicStats.minBalance,
+          maxBalance: basicStats.maxBalance,
+          stdDev: basicStats.stdDev,
+          iqr: basicStats.iqr
+        },
+        counterAccountAnalysis: counterAccounts.map((ca) => ({
+          counterAccount: ca.counterAccount,
+          counterAccountName: ca.counterAccountName,
+          transactionCount: ca.transactionCount,
+          totalAmount: ca.totalAmount,
+          percentage: ca.percentage
+        })),
+        outlierDetection: {
+          outliers: outliers.map((outlier) => ({
+            accountNumber: outlier.accountNumber,
+            accountName: outlier.accountName,
+            closingBalance: outlier.closingBalance,
+            outlierType: outlier.outlierType,
+            deviationScore: Math.abs(outlier.absBalance - basicStats.medianBalance) / (basicStats.stdDev || 1)
+          })),
+          outlierThreshold: 1.5 * basicStats.iqr
+        },
+        timeSeriesAnalysis: {
+          monthlyData: timeSeries.map((ts) => ({
+            month: ts.month,
+            transactionCount: ts.transactionCount,
+            totalAmount: ts.totalAmount
+          })),
+          trend: timeSeries.length > 1 ? 'stable' : 'insufficient_data',
+          seasonality: 'none'
+        },
+        anomalyDetection: {
+          anomalies: outliers.slice(0, 5).map((outlier) => ({
+            accountNumber: outlier.accountNumber,
+            accountName: outlier.accountName,
+            anomalyType: `balance_${outlier.outlierType}`,
+            severity: outlier.outlierType === 'high' ? 'high' : 'medium',
+            description: `Konto ${outlier.accountNumber} har en ${outlier.outlierType === 'high' ? 'uvanlig høy' : 'uvanlig lav'} saldo: ${Math.abs(outlier.closingBalance).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' })}`
+          })),
+          anomalyScore: outliers.length / Math.max(basicStats.totalAccounts, 1) * 100
+        },
+        accounts: accounts.map((acc) => ({
+          id: acc.id,
+          account_number: acc.accountNumber,
+          account_name: acc.accountName,
+          closing_balance: acc.closingBalance,
+          transaction_count: acc.transactionCount
+        })),
+        executionTime,
+        metadata: {
+          clientId,
+          fiscalYear,
+          selectedStandardNumbers,
+          excludedAccountNumbers,
+          versionId: responseData.versionId,
+          analysisTimestamp: new Date().toISOString(),
+          totalRecords: responseData.totalRecords
+        }
+      };
     },
     enabled: !!clientId && selectedStandardNumbers.length > 0,
     retry: 2,
