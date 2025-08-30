@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Upsert entities and get IDs
+    // 2. Process entities with proper ID mapping
     const entities = Array.from(entitiesMap.entries()).map(([key, entity]) => ({
       ...entity,
       user_id: isGlobal ? null : user.id,
@@ -200,36 +200,108 @@ Deno.serve(async (req) => {
     const entityIdMap = new Map<string, string>()
 
     if (entities.length > 0) {
-      // Upsert entities - use ignoreDuplicates since we have separate constraints for person/company
-      const { data: upsertedEntities, error: entityError } = await supabase
-        .from('share_entities')
-        .upsert(
-          entities.map(({ _temp_key, ...entity }) => entity),
-          { ignoreDuplicates: true }
+      console.log(`Processing ${entities.length} unique entities`)
+      
+      // First, query for existing entities to build complete ID mapping
+      const existingEntitiesPromises = []
+      
+      // Query companies by orgnr
+      const companyOrgnrs = entities.filter(e => e.entity_type === 'company').map(e => e.orgnr).filter(Boolean)
+      if (companyOrgnrs.length > 0) {
+        existingEntitiesPromises.push(
+          supabase
+            .from('share_entities')
+            .select('id, orgnr, name')
+            .eq('entity_type', 'company')
+            .in('orgnr', companyOrgnrs)
+            .is('user_id', isGlobal ? null : user.id)
         )
-        .select('id, entity_type, name, orgnr, birth_year')
-
-      if (entityError) {
-        console.error('Entity upsert error details:', entityError)
-        if (entityError.message?.includes('duplicate key value')) {
-          console.log(`Constraint conflict on entities - using ignoreDuplicates, continuing...`)
+      }
+      
+      // Query persons by name and birth_year combinations
+      const persons = entities.filter(e => e.entity_type === 'person')
+      for (const person of persons) {
+        if (person.birth_year) {
+          existingEntitiesPromises.push(
+            supabase
+              .from('share_entities')
+              .select('id, name, birth_year')
+              .eq('entity_type', 'person')
+              .eq('name', person.name)
+              .eq('birth_year', person.birth_year)
+              .is('user_id', isGlobal ? null : user.id)
+          )
         } else {
-          throw new Error(`Entity upsert failed: ${entityError.message}`)
+          existingEntitiesPromises.push(
+            supabase
+              .from('share_entities')
+              .select('id, name, birth_year')
+              .eq('entity_type', 'person')
+              .eq('name', person.name)
+              .is('birth_year', null)
+              .is('user_id', isGlobal ? null : user.id)
+          )
         }
       }
-
-      // Map returned entities back to keys
-      for (const entity of upsertedEntities || []) {
-        let key = ''
-        if (entity.orgnr) {
-          key = `org:${entity.orgnr}`
-        } else if (entity.birth_year) {
-          key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
-        } else {
-          key = `p:${entity.name.toUpperCase()}:`
+      
+      // Execute all queries and build existing entity mapping
+      const existingResults = await Promise.all(existingEntitiesPromises)
+      const existingEntityIds = new Set<string>()
+      
+      for (const { data: existingEntities } of existingResults) {
+        for (const entity of existingEntities || []) {
+          let key = ''
+          if (entity.orgnr) {
+            key = `org:${entity.orgnr}`
+          } else if (entity.birth_year) {
+            key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
+          } else {
+            key = `p:${entity.name.toUpperCase()}:`
+          }
+          entityIdMap.set(key, entity.id)
+          existingEntityIds.add(key)
         }
-        entityIdMap.set(key, entity.id)
       }
+      
+      console.log(`Found ${entityIdMap.size} existing entities in database`)
+      
+      // Insert only new entities
+      const newEntities = entities.filter(e => !existingEntityIds.has(e._temp_key))
+      
+      if (newEntities.length > 0) {
+        console.log(`Inserting ${newEntities.length} new entities`)
+        
+        const { data: insertedEntities, error: entityError } = await supabase
+          .from('share_entities')
+          .insert(
+            newEntities.map(({ _temp_key, ...entity }) => entity)
+          )
+          .select('id, entity_type, name, orgnr, birth_year')
+
+        if (entityError) {
+          console.error('Entity insert error details:', entityError)
+          throw new Error(`Entity insert failed: ${entityError.message}`)
+        }
+
+        // Add newly inserted entities to the mapping
+        for (const entity of insertedEntities || []) {
+          let key = ''
+          if (entity.orgnr) {
+            key = `org:${entity.orgnr}`
+          } else if (entity.birth_year) {
+            key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
+          } else {
+            key = `p:${entity.name.toUpperCase()}:`
+          }
+          entityIdMap.set(key, entity.id)
+        }
+        
+        console.log(`Successfully inserted ${insertedEntities?.length || 0} new entities`)
+      } else {
+        console.log(`All ${entities.length} entities already exist in database`)
+      }
+      
+      console.log(`Complete entity ID mapping: ${entityIdMap.size} entities mapped`)
     }
 
     // 3. Build and upsert holdings
@@ -240,15 +312,30 @@ Deno.serve(async (req) => {
         share_class: h.share_class,
         shares: h.shares,
         year,
-        user_id: isGlobal ? null : user.id
+        user_id: isGlobal ? null : user.id,
+        _holder_key: h.holder_key // Keep for debugging
       }))
       .filter(h => h.holder_id) // Only include holdings where we found the entity
+
+    // Log filtering details
+    const filteredOutCount = holdings.length - holdingsData.length
+    if (filteredOutCount > 0) {
+      console.log(`WARNING: ${filteredOutCount} holdings filtered out due to missing entity mapping`)
+      
+      // Show examples of filtered out holdings
+      const filteredOut = holdings.filter(h => !entityIdMap.get(h.holder_key)).slice(0, 5)
+      for (const h of filteredOut) {
+        console.log(`Filtered holding: ${h.company_orgnr} -> ${h.holder_key} (${h.shares} shares)`)
+      }
+    }
+
+    console.log(`Holdings to import: ${holdingsData.length} out of ${holdings.length} total holdings`)
 
     if (holdingsData.length > 0) {
       // Process in smaller chunks to avoid memory issues
       const CHUNK_SIZE = 1000
       for (let i = 0; i < holdingsData.length; i += CHUNK_SIZE) {
-        const chunk = holdingsData.slice(i, i + CHUNK_SIZE)
+        const chunk = holdingsData.slice(i, i + CHUNK_SIZE).map(({ _holder_key, ...h }) => h) // Remove debug field
         const { error: holdingError } = await supabase
           .from('share_holdings')
           .upsert(chunk, { ignoreDuplicates: true })
@@ -262,6 +349,8 @@ Deno.serve(async (req) => {
           }
         }
       }
+    } else if (holdings.length > 0) {
+      console.log(`ERROR: No holdings imported despite ${holdings.length} holdings found in data`)
     }
 
     const duration = Math.round(performance.now() - startTime)
