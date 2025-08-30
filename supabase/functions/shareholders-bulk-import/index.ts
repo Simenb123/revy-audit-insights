@@ -388,7 +388,7 @@ async function processBatchDirect(supabaseClient: any, batchData: any[], year: n
 
       const conflictColumns = entityType === 'company' && holderOrgNr 
         ? 'orgnr,user_id' 
-        : 'name,user_id'
+        : 'user_id,name,birth_year'
         
       const { data: entityResult, error: entityError } = await supabaseClient
         .from('share_entities')
@@ -428,7 +428,7 @@ async function processBatchDirect(supabaseClient: any, batchData: any[], year: n
       const { error: holdingError } = await supabaseClient
         .from('share_holdings')
         .upsert(holdingData, {
-          onConflict: 'company_orgnr,holder_id,share_class,year,user_id',
+          onConflict: 'holder_id,user_id,year,share_class,company_orgnr',
           ignoreDuplicates: false
         })
 
