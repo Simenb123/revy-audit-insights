@@ -28,9 +28,15 @@ Deno.serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    // Hent søkeparameter
-    const url = new URL(req.url)
-    const query = url.searchParams.get('q') || ''
+    // Hent søkeparameter fra URL eller body
+    let query = ''
+    if (req.method === 'POST') {
+      const body = await req.json()
+      query = body.q || ''
+    } else {
+      const url = new URL(req.url)
+      query = url.searchParams.get('q') || ''
+    }
     
     if (!query || query.length < 2) {
       return new Response(JSON.stringify({

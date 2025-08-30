@@ -183,10 +183,7 @@ export async function searchShareholders(query: string): Promise<ShareholderSear
 
   // Kall edge function med query parameter
   const { data, error } = await supabase.functions.invoke('shareholders-search', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    body: { q: query }
   })
   
   if (error) {
@@ -205,11 +202,13 @@ export async function fetchOwnershipGraph(params: {
   direction?: 'up' | 'down' | 'both'
   depth?: number
 }): Promise<OwnershipGraph> {
-  // Kall edge function med parametere via query string
+  // Kall edge function med parametere i body
   const { data, error } = await supabase.functions.invoke('ownership-graph', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
+    body: {
+      orgnr: params.orgnr,
+      year: params.year || 2024,
+      direction: params.direction || 'both',
+      depth: params.depth || 3
     }
   })
   

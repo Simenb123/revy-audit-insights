@@ -60,12 +60,28 @@ Deno.serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    // Hent parametere
-    const url = new URL(req.url)
-    const orgnr = url.searchParams.get('orgnr')
-    const year = parseInt(url.searchParams.get('year') || new Date().getFullYear().toString())
-    const direction = url.searchParams.get('direction') || 'both' // up, down, both
-    const depth = Math.min(parseInt(url.searchParams.get('depth') || '2'), 6) // max 6 nivåer
+    // Hent parametere fra body eller URL
+    let params: {
+      orgnr: string
+      year?: number
+      direction?: 'up' | 'down' | 'both'
+      depth?: number
+    }
+
+    if (req.method === 'POST') {
+      params = await req.json()
+    } else {
+      const url = new URL(req.url)
+      params = {
+        orgnr: url.searchParams.get('orgnr') || '',
+        year: parseInt(url.searchParams.get('year') || new Date().getFullYear().toString()),
+        direction: (url.searchParams.get('direction') as 'up' | 'down' | 'both') || 'both',
+        depth: parseInt(url.searchParams.get('depth') || '2')
+      }
+    }
+
+    const { orgnr, year = new Date().getFullYear(), direction = 'both', depth: requestedDepth = 2 } = params
+    const depth = Math.min(requestedDepth, 6) // max 6 nivåer
 
     if (!orgnr) {
       throw new Error('orgnr parameter is required')
