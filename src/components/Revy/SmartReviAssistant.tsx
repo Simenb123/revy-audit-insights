@@ -7,6 +7,7 @@ import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import MultiAgentIntegration from '@/components/AI/MultiAgentIntegration';
+import { contextAwarePromptEnhancer } from '@/services/contextAwarePromptEnhancer';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
