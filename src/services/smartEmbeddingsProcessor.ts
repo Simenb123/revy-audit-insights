@@ -1,4 +1,3 @@
-import { logger } from '@/utils/logger';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface EmbeddingProcessingStatus {
@@ -13,52 +12,75 @@ export interface EmbeddingProcessingStatus {
 
 export interface BatchProcessingOptions {
   batchSize: number;
-  delayBetweenBatches: number; // milliseconds
+  delayBetweenBatches: number;
   maxRetries: number;
   prioritizeByImportance: boolean;
 }
 
 const DEFAULT_OPTIONS: BatchProcessingOptions = {
   batchSize: 10,
-  delayBetweenBatches: 2000, // 2 seconds to avoid rate limits
+  delayBetweenBatches: 2000,
   maxRetries: 3,
   prioritizeByImportance: true
 };
 
-export class SmartEmbeddingsProcessor {
-  private status: EmbeddingProcessingStatus = {
-    total: 0,
-    processed: 0,
-    failed: 0,
-    inProgress: false,
-    currentBatch: 0,
-    totalBatches: 0,
-    estimatedTimeRemaining: 0
-  };
+interface EmbeddingItem {
+  id: string;
+  type: 'knowledge_article' | 'legal_provision' | 'legal_document';
+  title: string;
+  content: string;
+  priority: number;
+}
 
-  private statusCallbacks: Array<(status: EmbeddingProcessingStatus) => void> = [];
+export class SmartEmbeddingsProcessor {
+  private status: EmbeddingProcessingStatus;
+  private statusCallbacks: Array<(status: EmbeddingProcessingStatus) => void>;
+
+  constructor() {
+    this.status = {
+      total: 0,
+      processed: 0,
+      failed: 0,
+      inProgress: false,
+      currentBatch: 0,
+      totalBatches: 0,
+      estimatedTimeRemaining: 0
+    };
+    this.statusCallbacks = [];
+  }
 
   onStatusUpdate(callback: (status: EmbeddingProcessingStatus) => void) {
     this.statusCallbacks.push(callback);
   }
 
   private updateStatus(updates: Partial<EmbeddingProcessingStatus>) {
-    this.status = { ...this.status, ...updates };
+    this.status.total = updates.total ?? this.status.total;
+    this.status.processed = updates.processed ?? this.status.processed;
+    this.status.failed = updates.failed ?? this.status.failed;
+    this.status.inProgress = updates.inProgress ?? this.status.inProgress;
+    this.status.currentBatch = updates.currentBatch ?? this.status.currentBatch;
+    this.status.totalBatches = updates.totalBatches ?? this.status.totalBatches;
+    this.status.estimatedTimeRemaining = updates.estimatedTimeRemaining ?? this.status.estimatedTimeRemaining;
+    
     this.statusCallbacks.forEach(callback => callback(this.status));
   }
 
   async processAllMissingEmbeddings(options: Partial<BatchProcessingOptions> = {}) {
-    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const opts = {
+      batchSize: options.batchSize ?? DEFAULT_OPTIONS.batchSize,
+      delayBetweenBatches: options.delayBetweenBatches ?? DEFAULT_OPTIONS.delayBetweenBatches,
+      maxRetries: options.maxRetries ?? DEFAULT_OPTIONS.maxRetries,
+      prioritizeByImportance: options.prioritizeByImportance ?? DEFAULT_OPTIONS.prioritizeByImportance
+    };
     
     try {
-      logger.log('Starting smart embeddings processing', opts);
+      console.log('Starting smart embeddings processing', opts);
       this.updateStatus({ inProgress: true, processed: 0, failed: 0 });
 
-      // Get all items missing embeddings with prioritization
       const missingItems = await this.getMissingEmbeddingsWithPriority();
       
       if (missingItems.length === 0) {
-        logger.log('No missing embeddings found');
+        console.log('No missing embeddings found');
         this.updateStatus({ inProgress: false });
         return { success: true, message: 'Ingen manglende embeddings funnet' };
       }
@@ -66,13 +88,12 @@ export class SmartEmbeddingsProcessor {
       const totalBatches = Math.ceil(missingItems.length / opts.batchSize);
       this.updateStatus({ 
         total: missingItems.length, 
-        totalBatches,
-        estimatedTimeRemaining: totalBatches * (opts.delayBetweenBatches + 5000) // Rough estimate
+        totalBatches: totalBatches,
+        estimatedTimeRemaining: totalBatches * (opts.delayBetweenBatches + 5000)
       });
 
-      logger.log(`Processing ${missingItems.length} items in ${totalBatches} batches`);
+      console.log(`Processing ${missingItems.length} items in ${totalBatches} batches`);
 
-      // Process in batches
       for (let i = 0; i < missingItems.length; i += opts.batchSize) {
         const batch = missingItems.slice(i, i + opts.batchSize);
         const batchNumber = Math.floor(i / opts.batchSize) + 1;
@@ -82,16 +103,15 @@ export class SmartEmbeddingsProcessor {
           estimatedTimeRemaining: (totalBatches - batchNumber) * (opts.delayBetweenBatches + 5000)
         });
 
-        logger.log(`Processing batch ${batchNumber}/${totalBatches}`, { batchSize: batch.length });
+        console.log(`Processing batch ${batchNumber}/${totalBatches}`, { batchSize: batch.length });
 
         try {
           await this.processBatch(batch, opts.maxRetries);
         } catch (error) {
-          logger.error(`Batch ${batchNumber} failed:`, error);
+          console.error(`Batch ${batchNumber} failed:`, error);
           this.updateStatus({ failed: this.status.failed + batch.length });
         }
 
-        // Delay between batches to avoid rate limits
         if (i + opts.batchSize < missingItems.length) {
           await this.delay(opts.delayBetweenBatches);
         }
@@ -99,7 +119,7 @@ export class SmartEmbeddingsProcessor {
 
       this.updateStatus({ inProgress: false, estimatedTimeRemaining: 0 });
       
-      logger.log('Smart embeddings processing completed', {
+      console.log('Smart embeddings processing completed', {
         total: this.status.total,
         processed: this.status.processed,
         failed: this.status.failed
@@ -116,87 +136,81 @@ export class SmartEmbeddingsProcessor {
       };
 
     } catch (error) {
-      logger.error('Smart embeddings processing failed:', error);
+      console.error('Smart embeddings processing failed:', error);
       this.updateStatus({ inProgress: false });
       throw error;
     }
   }
 
-  private async getMissingEmbeddingsWithPriority() {
-    const missingItems: Array<{
-      id: string;
-      type: 'knowledge_article' | 'legal_provision' | 'legal_document';
-      title: string;
-      content: string;
-      priority: number;
-    }> = [];
+  private async getMissingEmbeddingsWithPriority(): Promise<EmbeddingItem[]> {
+    const missingItems: EmbeddingItem[] = [];
 
-    // Get knowledge articles missing embeddings (high priority)
-    const { data: articles } = await supabase
+    // Knowledge articles
+    const articlesResponse = await supabase
       .from('knowledge_articles')
       .select('id, title, content')
       .eq('status', 'published')
       .is('embedding', null);
 
-    if (articles) {
-      missingItems.push(...articles.map(article => ({
-        id: article.id,
-        type: 'knowledge_article' as const,
-        title: article.title,
-        content: article.content || '',
-        priority: 1 // Highest priority
-      })));
+    if (articlesResponse.data) {
+      for (const article of articlesResponse.data) {
+        missingItems.push({
+          id: article.id,
+          type: 'knowledge_article',
+          title: article.title,
+          content: article.content || '',
+          priority: 1
+        });
+      }
     }
 
-    // Get legal documents missing embeddings (medium priority)
-    const { data: documents } = await supabase
+    // Legal documents  
+    const documentsResponse = await supabase
       .from('legal_documents')
       .select('id, title, content')
       .eq('is_active', true)
       .is('embedding', null);
 
-    if (documents) {
-      missingItems.push(...documents.map(doc => ({
-        id: doc.id,
-        type: 'legal_document' as const,
-        title: doc.title,
-        content: doc.content || '',
-        priority: 2
-      })));
+    if (documentsResponse.data) {
+      for (const doc of documentsResponse.data) {
+        missingItems.push({
+          id: doc.id,
+          type: 'legal_document',
+          title: doc.title,
+          content: doc.content || '',
+          priority: 2
+        });
+      }
     }
 
-    // Get legal provisions missing embeddings (medium-low priority, but lots of them)
-    const { data: provisions } = await supabase
+    // Legal provisions
+    const provisionsResponse = await supabase
       .from('legal_provisions')
       .select('id, title, content, law_identifier, provision_number')
       .eq('is_active', true)
       .is('embedding', null)
-      .limit(500); // Process in chunks to avoid memory issues
+      .limit(500);
 
-    if (provisions) {
-      missingItems.push(...provisions.map(provision => ({
-        id: provision.id,
-        type: 'legal_provision' as const,
-        title: `${provision.law_identifier} ${provision.provision_number}: ${provision.title}`,
-        content: provision.content || '',
-        priority: provision.law_identifier?.toLowerCase().includes('isa') ? 2 : 3
-      })));
+    if (provisionsResponse.data) {
+      for (const provision of provisionsResponse.data) {
+        const priority = provision.law_identifier?.toLowerCase().includes('isa') ? 2 : 3;
+        missingItems.push({
+          id: provision.id,
+          type: 'legal_provision',
+          title: `${provision.law_identifier} ${provision.provision_number}: ${provision.title}`,
+          content: provision.content || '',
+          priority: priority
+        });
+      }
     }
 
-    // Sort by priority, then by content length (longer content gets lower priority within same priority level)
     return missingItems.sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
-      return a.content.length - b.content.length; // Shorter content first within same priority
+      return a.content.length - b.content.length;
     });
   }
 
-  private async processBatch(items: Array<{
-    id: string;
-    type: 'knowledge_article' | 'legal_provision' | 'legal_document';
-    title: string;
-    content: string;
-  }>, maxRetries: number) {
-    
+  private async processBatch(items: EmbeddingItem[], maxRetries: number) {
     const batchPromises = items.map(async (item) => {
       let attempts = 0;
       while (attempts < maxRetries) {
@@ -206,43 +220,31 @@ export class SmartEmbeddingsProcessor {
           return;
         } catch (error) {
           attempts++;
-          logger.warn(`Item ${item.id} failed attempt ${attempts}:`, error);
+          console.warn(`Item ${item.id} failed attempt ${attempts}:`, error);
           
           if (attempts >= maxRetries) {
-            logger.error(`Item ${item.id} failed after ${maxRetries} attempts:`, error);
+            console.error(`Item ${item.id} failed after ${maxRetries} attempts:`, error);
             this.updateStatus({ failed: this.status.failed + 1 });
             throw error;
           }
           
-          // Exponential backoff
           await this.delay(1000 * Math.pow(2, attempts));
         }
       }
     });
 
-    // Process all items in the batch concurrently
     await Promise.allSettled(batchPromises);
   }
 
-  private async processItem(item: {
-    id: string;
-    type: 'knowledge_article' | 'legal_provision' | 'legal_document';
-    title: string;
-    content: string;
-  }) {
-    
+  private async processItem(item: EmbeddingItem) {
     const textToEmbed = `${item.title}\n\n${item.content}`.trim();
     
     if (!textToEmbed || textToEmbed.length < 10) {
       throw new Error(`Item ${item.id} has insufficient content for embedding`);
     }
 
-    logger.log(`Processing embedding for ${item.type} ${item.id}`, {
-      title: item.title.substring(0, 50),
-      contentLength: item.content.length
-    });
+    console.log(`Processing embedding for ${item.type} ${item.id}`);
 
-    // Call our batch-generate-embeddings edge function
     const { data, error } = await supabase.functions.invoke('batch-generate-embeddings', {
       body: {
         items: [{
@@ -267,55 +269,72 @@ export class SmartEmbeddingsProcessor {
   }
 
   getStatus(): EmbeddingProcessingStatus {
-    return { ...this.status };
+    return {
+      total: this.status.total,
+      processed: this.status.processed,
+      failed: this.status.failed,
+      inProgress: this.status.inProgress,
+      currentBatch: this.status.currentBatch,
+      totalBatches: this.status.totalBatches,
+      estimatedTimeRemaining: this.status.estimatedTimeRemaining
+    };
   }
 
   async getOverallStats() {
     try {
-      // Get stats for each type
-      const [articlesStats, documentsStats, provisionsStats] = await Promise.all([
-        supabase
-          .from('knowledge_articles')  
-          .select('id, embedding')
-          .eq('status', 'published'),
-        
-        supabase
-          .from('legal_documents')
-          .select('id, embedding')
-          .eq('is_active', true),
-          
-        supabase
-          .from('legal_provisions')
-          .select('id, embedding')
-          .eq('is_active', true)
-      ]);
+      const articlesResult = await supabase
+        .from('knowledge_articles')
+        .select('id, embedding')
+        .eq('status', 'published');
 
-      const stats = {
+      const documentsResult = await supabase
+        .from('legal_documents')
+        .select('id, embedding')
+        .eq('is_active', true);
+
+      const provisionsResult = await supabase
+        .from('legal_provisions')
+        .select('id, embedding')
+        .eq('is_active', true);
+
+      const articlesData: any[] = articlesResult.data || [];
+      const documentsData: any[] = documentsResult.data || [];  
+      const provisionsData: any[] = provisionsResult.data || [];
+
+      const articlesTotal = articlesData.length;
+      const articlesWithEmbeddings = articlesData.filter((item: any) => item.embedding).length;
+      
+      const documentsTotal = documentsData.length;
+      const documentsWithEmbeddings = documentsData.filter((item: any) => item.embedding).length;
+      
+      const provisionsTotal = provisionsData.length;
+      const provisionsWithEmbeddings = provisionsData.filter((item: any) => item.embedding).length;
+
+      const articlesMissing = articlesTotal - articlesWithEmbeddings;
+      const documentsMissing = documentsTotal - documentsWithEmbeddings;
+      const provisionsMissing = provisionsTotal - provisionsWithEmbeddings;
+
+      return {
         knowledge_articles: {
-          total: articlesStats.data?.length || 0,
-          with_embeddings: articlesStats.data?.filter(item => item.embedding).length || 0,
-          missing_embeddings: articlesStats.data?.filter(item => !item.embedding).length || 0
+          total: articlesTotal,
+          with_embeddings: articlesWithEmbeddings,
+          missing_embeddings: articlesMissing
         },
         legal_documents: {
-          total: documentsStats.data?.length || 0,
-          with_embeddings: documentsStats.data?.filter(item => item.embedding).length || 0,
-          missing_embeddings: documentsStats.data?.filter(item => !item.embedding).length || 0
+          total: documentsTotal,
+          with_embeddings: documentsWithEmbeddings,
+          missing_embeddings: documentsMissing
         },
         legal_provisions: {
-          total: provisionsStats.data?.length || 0,
-          with_embeddings: provisionsStats.data?.filter(item => item.embedding).length || 0,
-          missing_embeddings: provisionsStats.data?.filter(item => !item.embedding).length || 0
-        }
+          total: provisionsTotal,
+          with_embeddings: provisionsWithEmbeddings,
+          missing_embeddings: provisionsMissing
+        },
+        total_missing: articlesMissing + documentsMissing + provisionsMissing
       };
 
-      const totalMissing = stats.knowledge_articles.missing_embeddings + 
-                          stats.legal_documents.missing_embeddings + 
-                          stats.legal_provisions.missing_embeddings;
-
-      return { ...stats, total_missing: totalMissing };
-
     } catch (error) {
-      logger.error('Error getting overall stats:', error);
+      console.error('Error getting overall stats:', error);
       return {
         knowledge_articles: { total: 0, with_embeddings: 0, missing_embeddings: 0 },
         legal_documents: { total: 0, with_embeddings: 0, missing_embeddings: 0 },
