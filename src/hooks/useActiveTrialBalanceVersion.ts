@@ -15,7 +15,7 @@ export interface ActiveTrialBalanceVersion {
 export const useActiveTrialBalanceVersion = (clientId: string, fiscalYear?: number) => {
   return useQuery({
     queryKey: ['active-trial-balance-version', clientId, fiscalYear],
-    queryFn: async (): Promise<ActiveTrialBalanceVersion | null> => {
+    queryFn: async () => {
       if (!clientId) {
         return null;
       }
@@ -40,11 +40,14 @@ export const useActiveTrialBalanceVersion = (clientId: string, fiscalYear?: numb
         return null;
       }
 
-      const trialBalance = data[0];
+      return data[0];
+    },
+    select: (data): ActiveTrialBalanceVersion | null => {
+      if (!data) return null;
       
       return {
-        version: trialBalance.version, // This is the actual trial balance version string (v10, v28, etc.)
-        year: trialBalance.period_year,
+        version: data.version, // This is the actual trial balance version string (v10, v28, etc.)
+        year: data.period_year,
         versionId: undefined // No UUID needed for trial balance versions
       };
     },
