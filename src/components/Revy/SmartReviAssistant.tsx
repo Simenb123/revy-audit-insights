@@ -7,6 +7,9 @@ import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import MultiAgentIntegration from '@/components/AI/MultiAgentIntegration';
+import { useSmartRevyEnhancements } from '@/hooks/useSmartRevyEnhancements';
+import { advancedCacheManager } from '@/services/advancedCacheManager'; 
+import { BatchProcessingManager } from '@/services/batchProcessingManager';
 import SmartContextSwitcher from './Assistant/SmartContextSwitcher';
 import IntelligentLoadingFeedback from './Assistant/IntelligentLoadingFeedback';
 
@@ -48,6 +51,28 @@ const SmartReviAssistant = ({
     userRole,
     selectedVariant: activeVariant
   });
+  
+  // Use smart enhancements hook for advanced processing
+  const {
+    isAnalyzing,
+    contextAnalysis,
+    enhancedPromptData,
+    performAnalysis,
+    isEnhancementReady
+  } = useSmartRevyEnhancements();
+
+  // Initialize smart enhancements when context changes
+  useEffect(() => {
+    if (currentContext && clientData && messages) {
+      performAnalysis({
+        context: currentContext,
+        clientData,
+        documentContext: undefined,
+        userRole: userRole || 'employee',
+        sessionHistory: messages
+      });
+    }
+  }, [currentContext, clientData, userRole, performAnalysis, messages]);
 
   // Add context change effect to show visual feedback
   useEffect(() => {
@@ -102,11 +127,11 @@ const SmartReviAssistant = ({
           onContextChange={onContextChange}
         />
         
-        {/* Intelligent Loading Feedback */}
+        {/* Intelligent Loading Feedback - show analysis and processing state */}
         <IntelligentLoadingFeedback
-          isLoading={isLoading}
+          isLoading={isLoading || isAnalyzing}
           context={currentContext}
-          enhancementApplied={true}
+          enhancementApplied={isEnhancementReady}
           estimatedTime={15000}
         />
         
@@ -138,11 +163,11 @@ const SmartReviAssistant = ({
         onContextChange={onContextChange}
       />
       
-      {/* Intelligent Loading Feedback */}
+      {/* Intelligent Loading Feedback - show analysis and processing state */}
       <IntelligentLoadingFeedback
-        isLoading={isLoading}
+        isLoading={isLoading || isAnalyzing}
         context={currentContext}
-        enhancementApplied={true}
+        enhancementApplied={isEnhancementReady}
         estimatedTime={20000}
       />
       
