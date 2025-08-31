@@ -70,7 +70,7 @@ Gi meg følgende informasjon som JSON:
 
     // Call OpenAI for analysis
     const data = await callOpenAI('chat/completions', {
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'system',
@@ -78,7 +78,7 @@ Gi meg følgende informasjon som JSON:
         },
         { role: 'user', content: analysisPrompt }
       ],
-      max_completion_tokens: 1500,
+      max_tokens: 1500,
     });
 
     let analysisText = data.choices?.[0]?.message?.content;

@@ -30,7 +30,7 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
   }
 
   const data = await callOpenAI('chat/completions', {
-    model: 'gpt-5-2025-08-07',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',

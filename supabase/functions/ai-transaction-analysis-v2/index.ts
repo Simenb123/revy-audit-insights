@@ -239,8 +239,8 @@ Please provide a professional audit analysis following the structured format. Fo
 
     console.log('🤖 Sending request to OpenAI...');
 
-    // Use OpenAI Responses API with comprehensive JSON schema
-    const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
+    // Use OpenAI Chat Completions API with structured output
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIKey}`,
@@ -248,7 +248,7 @@ Please provide a professional audit analysis following the structured format. Fo
       },
       body: JSON.stringify({
         model: 'gpt-5-mini',
-        input: [
+        messages: [
           {
             role: 'system',
             content: 'You are a senior Norwegian auditor with expertise in financial statement analysis, internal controls, and risk assessment. Provide professional audit insights in English using standard audit terminology.'
@@ -349,7 +349,8 @@ Please provide a professional audit analysis following the structured format. Fo
               required: ["summary", "insights", "recommendations", "risk_factors", "validation_results", "confidence_score"]
             }
           }
-        }
+        },
+        max_tokens: 2000
       }),
     });
 
@@ -379,21 +380,17 @@ Please provide a professional audit analysis following the structured format. Fo
 
     let analysisResult;
     try {
-      // Handle Responses API output format
-      const aiOutput = openAIData.output;
+      // Handle Chat Completions API output format
+      const aiOutput = openAIData.choices?.[0]?.message?.content;
       if (!aiOutput) {
-        throw new Error('No output in OpenAI Responses API response');
+        throw new Error('No content in OpenAI Chat Completions API response');
       }
 
-      // Since we use JSON schema, the output should already be structured
-      if (typeof aiOutput === 'object') {
-        analysisResult = aiOutput;
-      } else {
-        // Fallback: try to parse as JSON string
-        try {
-          analysisResult = JSON.parse(aiOutput);
-        } catch (parseError) {
-          console.warn('Failed to parse Responses API output, creating fallback');
+      // Since we use JSON schema, parse the JSON content
+      try {
+        analysisResult = JSON.parse(aiOutput);
+      } catch (parseError) {
+          console.warn('Failed to parse Chat Completions API output, creating fallback');
           analysisResult = {
             summary: {
               total_transactions: transactions.length,
@@ -433,10 +430,9 @@ Please provide a professional audit analysis following the structured format. Fo
               critical_issues: vouchersWithImbalance.length > 0 ? ['Imbalanced vouchers detected'] : [],
               compliance_status: vouchersWithImbalance.length > 0 ? 'issues_found' : 'compliant'
             },
-            confidence_score: 4,
-            rawResponse: String(aiOutput).substring(0, 500)
-          };
-        }
+          confidence_score: 4,
+          rawResponse: String(aiOutput).substring(0, 500)
+        };
       }
 
       // Ensure validation results are included even if AI didn't provide them
@@ -451,7 +447,7 @@ Please provide a professional audit analysis following the structured format. Fo
       }
 
     } catch (error) {
-      console.error('Error processing OpenAI Responses API output:', error);
+      console.error('Error processing OpenAI Chat Completions API output:', error);
       console.error('Full response:', JSON.stringify(openAIData, null, 2));
       analysisResult = {
         summary: {
