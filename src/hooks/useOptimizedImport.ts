@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import * as XLSX from 'xlsx'
+import Papa from 'papaparse'
 
 interface ImportProgress {
   sessionId: string
@@ -60,34 +62,42 @@ export function useOptimizedImport() {
       addLog(`Session startet: ${sessionId}`)
       options.onLog?.(`Session startet: ${sessionId}`)
       
-      addLog('Leser filinnhold...')
-      options.onLog?.('Leser filinnhold...')
+      addLog('Leser og prosesserer filinnhold...')
+      options.onLog?.('Leser og prosesserer filinnhold...')
 
-      // Read file content
-      let fileContent: string
+      // Parse file content first
+      let data: any[] = []
+      
       if (file.name.toLowerCase().endsWith('.csv')) {
-        fileContent = await readFileAsText(file)
+        data = await parseCSVFile(file)
       } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
-        fileContent = await readFileAsBase64(file)
+        data = await parseExcelFile(file)
       } else {
         throw new Error('Støtter kun CSV og Excel filer')
       }
 
-      updateProgress({ status: 'uploading', progress: 40 }, options)
-      addLog('Sender fildata til server for prosessering...')
-      options.onLog?.('Sender fildata til server for prosessering...')
+      if (data.length === 0) {
+        throw new Error('Ingen data funnet i filen')
+      }
 
-      // Send file directly to edge function
-      const { data, error } = await supabase.functions.invoke('shareholders-bulk-import', {
+      updateProgress({ 
+        status: 'uploading', 
+        progress: 40,
+        totalRows: data.length
+      }, options)
+      addLog(`Sender ${data.length} rader til server for prosessering...`)
+      options.onLog?.(`Sender ${data.length} rader til server for prosessering...`)
+
+      // Send parsed data to working edge function
+      const { data: result, error } = await supabase.functions.invoke('shareholders-simple-import', {
         body: {
-          sessionId,
+          data: data,
           year: options.year,
-          fileName: file.name,
-          fileContent,
-          fileSize: file.size,
-          batchSize: 8000,
-          maxRetries: 3,
-          delayBetweenBatches: 200
+          batchInfo: {
+            current: 1,
+            total: 1
+          },
+          sessionId
         }
       })
 
@@ -98,14 +108,14 @@ export function useOptimizedImport() {
       updateProgress({ 
         status: 'completed', 
         progress: 100, 
-        totalRows: data.processedRows || 0, 
-        processedRows: data.processedRows || 0 
+        totalRows: result.imported || 0, 
+        processedRows: result.imported || 0 
       }, options)
       
-      addLog(`Import fullført! ${data.processedRows || 0} rader prosessert`)
-      options.onLog?.(`Import fullført! ${data.processedRows || 0} rader prosessert`)
+      addLog(`Import fullført! ${result.imported || 0} rader prosessert`)
+      options.onLog?.(`Import fullført! ${result.imported || 0} rader prosessert`)
       
-      options.onComplete?.(data)
+      options.onComplete?.(result)
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -116,27 +126,129 @@ export function useOptimizedImport() {
     }
   }, [addLog, updateProgress])
 
-  // Helper function to read file as text (for CSV)
-  const readFileAsText = (file: File): Promise<string> => {
+  // Helper functions for file parsing
+  const parseCSVFile = async (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('Failed to read file'))
-      reader.readAsText(file, 'utf-8')
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          try {
+            const mapped = results.data.map((row: any) => mapRowToShareholderData(row))
+            resolve(mapped.filter(row => row !== null))
+          } catch (error) {
+            reject(error)
+          }
+        },
+        error: (error) => reject(new Error(`CSV parsing error: ${error.message}`))
+      })
     })
   }
 
-  // Helper function to read file as base64 (for Excel)
-  const readFileAsBase64 = (file: File): Promise<string> => {
+  const parseExcelFile = async (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = () => {
-        const base64 = reader.result as string
-        resolve(base64) // Keep full data URL for Excel files
+      
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          const jsonData = XLSX.utils.sheet_to_json(worksheet)
+          
+          const mapped = jsonData.map((row: any) => mapRowToShareholderData(row))
+          resolve(mapped.filter(row => row !== null))
+        } catch (error) {
+          reject(new Error(`Excel parsing error: ${(error as Error).message}`))
+        }
       }
+      
       reader.onerror = () => reject(new Error('Failed to read file'))
-      reader.readAsDataURL(file)
+      reader.readAsArrayBuffer(file)
     })
+  }
+
+  const mapRowToShareholderData = (row: any): any | null => {
+    try {
+      // Extract company org number - support various formats
+      const orgNrRaw = String(
+        row.Orgnr || row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+        row.org_nr || row['org-nr'] || row['"Orgnr'] || ''
+      ).trim().replace(/[^\d]/g, '')
+      
+      // Normalize org number
+      let company_orgnr = orgNrRaw
+      if (company_orgnr.length === 8) {
+        company_orgnr = '0' + company_orgnr
+      }
+      
+      if (!company_orgnr || (company_orgnr.length !== 9 && company_orgnr.length !== 8)) {
+        console.warn(`Invalid org number: ${orgNrRaw}`)
+        return null
+      }
+
+      const company_name = String(
+        row.Selskap || row.selskap || row.selskapsnavn || row.navn || row.company_name || ''
+      ).trim()
+
+      const holder_name = String(
+        row['Navn aksjonær'] || row['navn aksjonær'] || row.navn_aksjonaer || 
+        row.aksjonaer || row.eier || row.holder || row.eier_navn || ''
+      ).trim()
+
+      if (!company_name && !holder_name) {
+        console.warn('Missing both company name and holder name')
+        return null
+      }
+
+      // Parse share amount
+      const sharesStr = String(
+        row['Antall aksjer'] || row['antall aksjer'] || row.antall_aksjer || 
+        row.aksjer || row.shares || row.andeler || '0'
+      ).replace(/[^\d]/g, '')
+      
+      const shares = parseInt(sharesStr) || 0
+
+      // Extract holder details
+      const holder_orgnr_raw = String(
+        row['Fødselsår/orgnr'] || row['fødselsår/orgnr'] || row.fodselsar_orgnr || 
+        row.eier_orgnr || row.holder_orgnr || ''
+      ).trim().replace(/[^\d]/g, '')
+
+      let holder_orgnr: string | undefined
+      let holder_birth_year: number | undefined
+
+      if (holder_orgnr_raw.length === 9) {
+        holder_orgnr = holder_orgnr_raw
+      } else if (holder_orgnr_raw.length === 4 && parseInt(holder_orgnr_raw) >= 1900) {
+        holder_birth_year = parseInt(holder_orgnr_raw)
+      }
+
+      const holder_country = String(
+        row.Landkode || row.landkode || row.country_code || 'NO'
+      ).trim().toUpperCase() || 'NO'
+
+      const share_class = String(
+        row.Aksjeklasse || row.aksjeklasse || row.share_class || 'Ordinære aksjer'
+      ).trim() || 'Ordinære aksjer'
+
+      return {
+        company_orgnr,
+        company_name: company_name || `Ukjent selskap (${company_orgnr})`,
+        holder_name: holder_name || 'Ukjent eier',
+        holder_orgnr,
+        holder_birth_year,
+        holder_country,
+        share_class,
+        shares,
+        raw_row: row
+      }
+
+    } catch (error) {
+      console.error('Error mapping row:', error, row)
+      return null
+    }
   }
 
   const pauseImport = useCallback(() => {

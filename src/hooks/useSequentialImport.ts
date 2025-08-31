@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import * as XLSX from 'xlsx'
+import Papa from 'papaparse'
 
 interface FileStatus {
   name: string
@@ -86,45 +88,33 @@ export const useSequentialImport = () => {
         console.log(`🔄 Processing file ${i + 1}/${files.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
         
         try {
-          // Detect file type and set correct MIME type
-          const getFileType = (fileName: string): { mimeType: string, fileType: 'csv' | 'excel' } => {
-            const extension = fileName.toLowerCase().split('.').pop()
-            if (extension === 'csv') {
-              return { mimeType: 'text/csv', fileType: 'csv' }
-            } else if (extension === 'xlsx' || extension === 'xls') {
-              return { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileType: 'excel' }
-            } else {
-              throw new Error(`Unsupported file type: ${extension}`)
-            }
+          // Parse file content first
+          let data: any[] = []
+          
+          if (file.name.toLowerCase().endsWith('.csv')) {
+            data = await parseCSVFile(file)
+          } else if (file.name.toLowerCase().match(/\.(xlsx|xls)$/)) {
+            data = await parseExcelFile(file)
+          } else {
+            throw new Error('Filtype ikke støttet. Bruk CSV eller Excel.')
           }
+
+          if (data.length === 0) {
+            throw new Error('Ingen data funnet i filen')
+          }
+
+          console.log(`📊 Parsed ${data.length} rows from ${file.name}`)
           
-          const { mimeType, fileType } = getFileType(file.name)
-          
-          // Convert file to base64 using FileReader for large files
-          const base64Content = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => {
-              const result = reader.result as string
-              // Remove the data URL prefix to get just the base64 content
-              const base64 = result.split(',')[1]
-              resolve(base64)
-            }
-            reader.onerror = () => reject(new Error('Failed to read file'))
-            reader.readAsDataURL(file)
-          })
-          
-          // Use bulk import function with enhanced batch settings
-          const result = await supabase.functions.invoke('shareholders-bulk-import', {
+          // Use simple import function that works
+          const result = await supabase.functions.invoke('shareholders-simple-import', {
             body: {
-              sessionId,
+              data: data,
               year,
-              fileName: file.name,
-              fileContent: `data:${mimeType};base64,${base64Content}`,
-              fileSize: file.size,
-              fileType: fileType,
-              batchSize: 8000, // Larger batches for efficiency
-              delayBetweenBatches: 2500, // Longer delays for rate limiting
-              maxRetries: 3
+              batchInfo: {
+                current: i + 1,
+                total: files.length
+              },
+              sessionId
             }
           })
 
@@ -233,5 +223,130 @@ export const useSequentialImport = () => {
     ...state,
     processFiles,
     resetImport
+  }
+}
+
+// Helper functions for file parsing
+async function parseCSVFile(file: File): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          const mapped = results.data.map((row: any) => mapRowToShareholderData(row))
+          resolve(mapped.filter(row => row !== null))
+        } catch (error) {
+          reject(error)
+        }
+      },
+      error: (error) => reject(new Error(`CSV parsing error: ${error.message}`))
+    })
+  })
+}
+
+async function parseExcelFile(file: File): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet)
+        
+        const mapped = jsonData.map((row: any) => mapRowToShareholderData(row))
+        resolve(mapped.filter(row => row !== null))
+      } catch (error) {
+        reject(new Error(`Excel parsing error: ${(error as Error).message}`))
+      }
+    }
+    
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+function mapRowToShareholderData(row: any): any | null {
+  try {
+    // Extract company org number - support various formats
+    const orgNrRaw = String(
+      row.Orgnr || row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
+      row.org_nr || row['org-nr'] || row['"Orgnr'] || ''
+    ).trim().replace(/[^\d]/g, '')
+    
+    // Normalize org number
+    let company_orgnr = orgNrRaw
+    if (company_orgnr.length === 8) {
+      company_orgnr = '0' + company_orgnr
+    }
+    
+    if (!company_orgnr || (company_orgnr.length !== 9 && company_orgnr.length !== 8)) {
+      console.warn(`Invalid org number: ${orgNrRaw}`)
+      return null
+    }
+
+    const company_name = String(
+      row.Selskap || row.selskap || row.selskapsnavn || row.navn || row.company_name || ''
+    ).trim()
+
+    const holder_name = String(
+      row['Navn aksjonær'] || row['navn aksjonær'] || row.navn_aksjonaer || 
+      row.aksjonaer || row.eier || row.holder || row.eier_navn || ''
+    ).trim()
+
+    if (!company_name && !holder_name) {
+      console.warn('Missing both company name and holder name')
+      return null
+    }
+
+    // Parse share amount
+    const sharesStr = String(
+      row['Antall aksjer'] || row['antall aksjer'] || row.antall_aksjer || 
+      row.aksjer || row.shares || row.andeler || '0'
+    ).replace(/[^\d]/g, '')
+    
+    const shares = parseInt(sharesStr) || 0
+
+    // Extract holder details
+    const holder_orgnr_raw = String(
+      row['Fødselsår/orgnr'] || row['fødselsår/orgnr'] || row.fodselsar_orgnr || 
+      row.eier_orgnr || row.holder_orgnr || ''
+    ).trim().replace(/[^\d]/g, '')
+
+    let holder_orgnr: string | undefined
+    let holder_birth_year: number | undefined
+
+    if (holder_orgnr_raw.length === 9) {
+      holder_orgnr = holder_orgnr_raw
+    } else if (holder_orgnr_raw.length === 4 && parseInt(holder_orgnr_raw) >= 1900) {
+      holder_birth_year = parseInt(holder_orgnr_raw)
+    }
+
+    const holder_country = String(
+      row.Landkode || row.landkode || row.country_code || 'NO'
+    ).trim().toUpperCase() || 'NO'
+
+    const share_class = String(
+      row.Aksjeklasse || row.aksjeklasse || row.share_class || 'Ordinære aksjer'
+    ).trim() || 'Ordinære aksjer'
+
+    return {
+      company_orgnr,
+      company_name: company_name || `Ukjent selskap (${company_orgnr})`,
+      holder_name: holder_name || 'Ukjent eier',
+      holder_orgnr,
+      holder_birth_year,
+      holder_country,
+      share_class,
+      shares,
+      raw_row: row
+    }
+
+  } catch (error) {
+    console.error('Error mapping row:', error, row)
+    return null
   }
 }
