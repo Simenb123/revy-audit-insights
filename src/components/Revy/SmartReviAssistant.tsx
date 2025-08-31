@@ -42,6 +42,10 @@ const SmartReviAssistant = ({
     messages,
     input,
     isLoading,
+    isLoadingMore,
+    hasMoreMessages,
+    totalMessageCount,
+    loadMoreMessages,
     handleInputChange,
     handleKeyDown,
     handleSendMessage

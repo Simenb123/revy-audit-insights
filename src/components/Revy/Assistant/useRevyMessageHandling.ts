@@ -26,8 +26,13 @@ export const useRevyMessageHandling = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzingDocuments, setIsAnalyzingDocuments] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [totalMessageCount, setTotalMessageCount] = useState(0);
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  const MESSAGES_PER_PAGE = 50;
   
   // Get client documents for AI context
   const { documents: clientDocuments } = useClientDocuments(clientData?.id);
@@ -173,19 +178,35 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
     }
   };
 
-  // Load previous messages from session or add welcome message
+  // Load initial messages from session or add welcome message
   useEffect(() => {
-    const loadPreviousMessages = async () => {
+    const loadInitialMessages = async () => {
       if (!sessionId || !session?.user?.id) {
         return;
       }
 
       try {
+        // First get total message count
+        const { count, error: countError } = await supabase
+          .from('revy_chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', sessionId);
+
+        if (countError) {
+          logger.error('Error counting messages:', countError);
+          throw countError;
+        }
+
+        setTotalMessageCount(count || 0);
+        setHasMoreMessages((count || 0) > MESSAGES_PER_PAGE);
+
+        // Load most recent messages
         const { data, error } = await supabase
           .from('revy_chat_messages')
           .select('*')
           .eq('session_id', sessionId)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: false })
+          .limit(MESSAGES_PER_PAGE);
 
         if (error) {
           logger.error('Error loading messages:', error);
@@ -193,14 +214,16 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
         }
 
         if (data && data.length > 0) {
-          const loadedMessages: RevyMessage[] = data.map(msg => ({
-            id: msg.id,
-            sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
-            content: msg.content,
-            timestamp: new Date(msg.created_at),
-          }));
+          const loadedMessages: RevyMessage[] = data
+            .reverse() // Reverse to get chronological order
+            .map(msg => ({
+              id: msg.id,
+              sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
+              content: msg.content,
+              timestamp: new Date(msg.created_at),
+            }));
           setMessages(loadedMessages);
-          logger.log(`💬 Loaded ${loadedMessages.length} previous messages from session ${sessionId}`);
+          logger.log(`💬 Loaded ${loadedMessages.length} most recent messages from session ${sessionId}`);
         } else {
           // Add welcome message for new sessions
           const welcomeContent = getContextualWelcomeMessage(context, clientData);
@@ -241,8 +264,54 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
       }
     };
 
-    loadPreviousMessages();
+    loadInitialMessages();
   }, [sessionId, session?.user?.id, context, clientData]);
+
+  // Function to load more (older) messages
+  const loadMoreMessages = async () => {
+    if (!sessionId || isLoadingMore || !hasMoreMessages) return;
+
+    setIsLoadingMore(true);
+    try {
+      const oldestMessage = messages[0];
+      if (!oldestMessage) return;
+
+      const { data, error } = await supabase
+        .from('revy_chat_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .lt('created_at', oldestMessage.timestamp.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(MESSAGES_PER_PAGE);
+
+      if (error) {
+        logger.error('Error loading more messages:', error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        const olderMessages: RevyMessage[] = data
+          .reverse()
+          .map(msg => ({
+            id: msg.id,
+            sender: msg.sender === 'revy' ? 'assistant' : msg.sender as 'user' | 'assistant',
+            content: msg.content,
+            timestamp: new Date(msg.created_at),
+          }));
+        
+        setMessages(prev => [...olderMessages, ...prev]);
+        setHasMoreMessages(data.length === MESSAGES_PER_PAGE);
+        logger.log(`💬 Loaded ${data.length} older messages`);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      logger.error('Error loading more messages:', error);
+      toast.error('Kunne ikke laste flere meldinger');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -430,6 +499,10 @@ Du kan også prøve å stille spørsmålet på en annen måte eller kontakte sup
     input,
     isLoading,
     isAnalyzingDocuments,
+    isLoadingMore,
+    hasMoreMessages,
+    totalMessageCount,
+    loadMoreMessages,
     handleInputChange,
     handleKeyDown,
     handleSendMessage,

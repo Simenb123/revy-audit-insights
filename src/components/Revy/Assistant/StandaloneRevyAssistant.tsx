@@ -20,6 +20,11 @@ interface StandaloneRevyAssistantProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onSendMessage: () => void;
+  // New optional props for pagination
+  hasMoreMessages?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  totalMessageCount?: number;
 }
 
 const StandaloneRevyAssistant = ({
@@ -30,7 +35,11 @@ const StandaloneRevyAssistant = ({
   contextDisplayName,
   onInputChange,
   onKeyDown,
-  onSendMessage
+  onSendMessage,
+  hasMoreMessages = false,
+  isLoadingMore = false,
+  onLoadMore,
+  totalMessageCount = 0
 }: StandaloneRevyAssistantProps) => {
   
   const handleVariantChange = (variant: any) => {
@@ -65,6 +74,10 @@ const StandaloneRevyAssistant = ({
           <RevyMessageList
             messages={messages}
             isTyping={isLoading}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={onLoadMore}
+            totalMessageCount={totalMessageCount}
           />
         </div>
         <div className="flex-shrink-0 sticky bottom-0 bg-background border-t">

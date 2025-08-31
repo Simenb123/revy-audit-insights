@@ -24,6 +24,7 @@ import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { Client } from '@/types/revio';
 import { getContextualSuggestions } from '@/services/enhancedRevyService';
+import { RevyMessageList } from './Assistant/RevyMessageList';
 import { RevyInput } from './Assistant/RevyInput';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 
@@ -50,6 +51,10 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
     input,
     isLoading: messageLoading,
     isAnalyzingDocuments,
+    isLoadingMore,
+    hasMoreMessages,
+    totalMessageCount,
+    loadMoreMessages,
     handleInputChange,
     handleKeyDown,
     handleSendMessage,
@@ -194,54 +199,22 @@ const ContextAwareRevyChat: React.FC<ContextAwareRevyChatProps> = ({
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col p-0">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                msg.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-full p-3 rounded-lg ${
-                  msg.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}
-              >
-                <div className="whitespace-pre-wrap">{msg.content}</div>
-                <div
-                  className={`text-xs mt-1 opacity-70 ${
-                    msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                  }`}
-                >
-                  {msg.timestamp.toLocaleTimeString('no-NO', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {(messageLoading || isAnalyzingDocuments) && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 text-gray-900 p-3 rounded-lg flex items-center gap-2">
-                <div className="animate-spin">
-                  <Lightbulb className="h-4 w-4" />
-                </div>
-                <span>
-                  {isAnalyzingDocuments ? 'Analyserer dokumenter...' : 'AI-Revy tenker...'}
-                </span>
-              </div>
-            </div>
-          )}
+        <div className="flex-1">
+          <RevyMessageList
+            messages={messages}
+            compact={false}
+            isTyping={messageLoading}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={loadMoreMessages}
+            totalMessageCount={totalMessageCount}
+          />
         </div>
         
         <div className="p-4 border-t">
           <RevyInput
             message={input}
-            setMessage={(value) => handleInputChange({ target: { value } } as any)}
+            setMessage={(value: string) => handleInputChange({ target: { value } } as React.ChangeEvent<HTMLInputElement>)}
             handleSendMessage={handleSendMessage}
             isTyping={messageLoading}
             placeholder="Spør AI-Revy om noe relatert til denne klienten..."
