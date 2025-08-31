@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,29 +40,24 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     activeTrialBalanceVersion?.version
   );
 
+  // Create stable reference to account numbers to prevent infinite re-renders
+  const populationAccountNumbers = useMemo(() => 
+    populationData?.accounts?.map(acc => acc.account_number) || [],
+    [populationData?.accounts?.length, populationData?.accounts?.[0]?.account_number]
+  );
+
   // Auto-include accounts when standard accounts are selected
   useEffect(() => {
-    if (selectedStandardNumbers.length > 0 && populationData?.accounts) {
-      console.log('[PopulationSelector] Auto-including accounts for standards:', selectedStandardNumbers);
-      console.log('[PopulationSelector] Available accounts:', populationData.accounts.length);
-      
-      // When standard accounts are selected, all returned accounts should be included by default
-      // Remove all population accounts from excluded list to show them as checked (green)
-      const allPopulationAccountNumbers = populationData.accounts.map(acc => acc.account_number);
-      
+    if (selectedStandardNumbers.length > 0 && populationAccountNumbers.length > 0) {
       setExcludedAccountNumbers(prev => {
         // Remove any accounts from exclusion list that are now part of the population
-        const newExcluded = prev.filter(accountNumber => !allPopulationAccountNumbers.includes(accountNumber));
-        console.log('[PopulationSelector] Auto-included accounts:', allPopulationAccountNumbers.length);
-        console.log('[PopulationSelector] Remaining excluded accounts:', newExcluded.length);
+        const newExcluded = prev.filter(accountNumber => !populationAccountNumbers.includes(accountNumber));
         return newExcluded;
       });
     } else if (selectedStandardNumbers.length === 0) {
-      // When no standard accounts are selected, clear exclusions
-      console.log('[PopulationSelector] No standards selected - clearing exclusions');
       setExcludedAccountNumbers([]);
     }
-  }, [selectedStandardNumbers, populationData?.accounts]);
+  }, [selectedStandardNumbers, populationAccountNumbers]);
 
   const handleStandardAccountToggle = (accountNumber: string) => {
     setSelectedStandardNumbers(prev => 
