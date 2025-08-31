@@ -1,7 +1,7 @@
 import "../xhr.ts";
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
-import { callOpenAI } from "../_shared/openai.ts";
+import { chatWithFallback } from "../_shared/openai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,8 +55,13 @@ Deno.serve(async (req: Request) => {
         
         const categoryNames = categories.map(c => c.category_name).join(', ');
         
-        const data = await callOpenAI('chat/completions', {
-          model: 'gpt-5-mini',
+        const apiKey = Deno.env.get('OPENAI_API_KEY');
+        if (!apiKey) {
+          throw new Error('OpenAI API key not configured');
+        }
+
+        const { text: aiResponse } = await chatWithFallback({
+          apiKey,
           messages: [
             {
               role: 'system',
@@ -75,10 +80,10 @@ Deno.serve(async (req: Request) => {
               content: `Filnavn: ${fileName}\n\nInnhold:\n${extractedText.substring(0, 2000)}`
             }
           ],
-          max_completion_tokens: 150,
+          maxTokens: 150,
         });
 
-        const response = JSON.parse(data.choices[0].message.content);
+        const response = JSON.parse(aiResponse);
         aiCategory = response.category;
         aiConfidence = Math.max(0, Math.min(1, response.confidence || 0.5));
         

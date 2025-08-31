@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { chatWithFallback } from "./_shared/openai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -99,42 +100,27 @@ Svar kun med gyldig JSON i dette formatet:
 
     console.log('🤖 Sending request to OpenAI...');
 
-    // Call OpenAI API with working model
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Du er en erfaren revisor som analyserer regnskapstransaksjoner. Gi alltid svar som gyldig JSON.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_completion_tokens: 2000,
-      }),
+    // Call OpenAI API with robust fallback system
+    const { text: aiContent, model } = await chatWithFallback({
+      apiKey: openAIKey,
+      messages: [
+        {
+          role: 'system',
+          content: 'Du er en erfaren revisor som analyserer regnskapstransaksjoner. Gi alltid svar som gyldig JSON.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      maxTokens: 2000,
     });
 
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text();
-      console.error('OpenAI API error:', openAIResponse.status, errorText);
-      throw new Error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
-    }
-
-    const openAIData = await openAIResponse.json();
-    console.log('✅ OpenAI response received');
+    console.log('✅ OpenAI response received from model:', model);
 
     let analysisResult;
     try {
       // Try to parse the OpenAI response as JSON
-      const aiContent = openAIData.choices?.[0]?.message?.content;
       if (!aiContent) {
         throw new Error('No content in OpenAI response');
       }
@@ -175,7 +161,7 @@ Svar kun med gyldig JSON i dette formatet:
         clientId,
         versionId,
         analysisType,
-        model: 'gpt-5',
+        model,
       }
     };
 

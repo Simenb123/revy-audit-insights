@@ -2,7 +2,7 @@
 import "../xhr.ts";
 import { log } from "../_shared/log.ts";
 import { getSupabase } from "../_shared/supabaseClient.ts";
-import { callOpenAI } from "../_shared/openai.ts";
+import { chatWithFallback } from "../_shared/openai.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,8 +29,13 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
     Anbefaler manuell gjennomgang av dette dokumentet da automatisk tekstutvinning ikke ga tilfredsstillende resultat.`;
   }
 
-  const data = await callOpenAI('chat/completions', {
-    model: 'gpt-5-mini',
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const { text: aiResponse } = await chatWithFallback({
+    apiKey,
     messages: [
       {
         role: 'system',
@@ -47,10 +52,10 @@ async function analyzeDocumentWithAI(text: string, fileName: string): Promise<st
         content: `Analyser dette dokumentet: "${fileName}"\n\nInnhold:\n${text.substring(0, 4000)}`
       }
     ],
-    max_completion_tokens: 800,
+    maxTokens: 800,
   });
 
-  return data.choices[0].message.content;
+  return aiResponse;
 }
 
 Deno.serve(async (req) => {
