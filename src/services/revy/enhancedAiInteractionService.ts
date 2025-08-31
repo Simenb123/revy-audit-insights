@@ -9,7 +9,8 @@ export interface AIVariant {
   description: string;
   system_prompt_prefix: string;
   model_config: {
-    max_completion_tokens: number;
+    temperature: number;
+    max_tokens: number;
     model: string;
   };
   context_types: string[];
@@ -48,7 +49,8 @@ export async function generateEnhancedAIResponseWithVariant(
       sessionId,
       variantName: selectedVariant?.name || 'default',
       variantConfig: selectedVariant ? {
-        max_completion_tokens: selectedVariant.model_config.max_completion_tokens,
+        temperature: selectedVariant.model_config.temperature,
+        max_tokens: selectedVariant.model_config.max_tokens,
         model: selectedVariant.model_config.model,
         system_prompt_prefix: selectedVariant.system_prompt_prefix
       } : undefined

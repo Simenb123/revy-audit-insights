@@ -233,8 +233,8 @@ serve(async (req) => {
         { role: 'user', content: `Agenter tilgjengelig: ${JSON.stringify(remaining)}\nIdé: ${idea}\nSiste oppsummering: ${runningSummary || 'Ingen'}\nRunde: ${roundIdx + 1}` },
       ];
       try {
-        const orderResult = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
-          max_completion_tokens: 150 
+        const orderResult = await callOpenAI(moderator.model || 'gpt-5-mini', contextMsg, { 
+          max_tokens: 150 
         });
         const raw = orderResult.content;
         const parsed = JSON.parse(raw);
@@ -269,8 +269,9 @@ serve(async (req) => {
         { role: 'user', content: r === 0 ? 'Start med å oppsummere idéen og sett rammene.' : 'Før ordet videre og fokuser diskusjonen.' } 
       ];
       
-      const modResult = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
-        max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
+      const modResult = await callOpenAI(mod.model || 'gpt-5-mini', modMsg, { 
+        max_tokens: Math.max(150, settings.maxTokensPerTurn),
+        temperature: 0.7
       }, settings.moderatorKey);
       const modContent = modResult.content;
       
@@ -326,8 +327,9 @@ serve(async (req) => {
           { role: 'user', content: 'Gi ditt korte bidrag.' } 
         ];
         
-        const agentResult = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
-          max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
+        const agentResult = await callOpenAI(agent.model || 'gpt-5-mini', messages, { 
+          max_tokens: Math.max(150, settings.maxTokensPerTurn),
+          temperature: 0.7
         }, agentKey);
         const content = agentResult.content;
         
@@ -383,8 +385,9 @@ serve(async (req) => {
           { role: 'user', content: lastRound } 
         ];
         
-        const summaryResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
-          max_completion_tokens: 300
+        const summaryResult = await callOpenAI(note.model || 'gpt-5-mini', sumMsg, { 
+          max_tokens: 300,
+          temperature: 0.5
         });
         const summary = summaryResult.content;
         
@@ -435,8 +438,9 @@ serve(async (req) => {
         { role: 'user', content: all } 
       ];
       
-      const finalResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', finalMsg, { 
-        max_completion_tokens: 400 
+      const finalResult = await callOpenAI(note.model || 'gpt-5-mini', finalMsg, { 
+        max_tokens: 400,
+        temperature: 0.5
       });
       const finalSummary = finalResult.content;
       

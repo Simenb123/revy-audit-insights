@@ -50,9 +50,10 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        model: agent.model || 'gpt-5-mini-2025-08-07', 
+        model: agent.model || 'gpt-5-mini', 
         messages, 
-        max_completion_tokens: 500
+        max_tokens: 500,
+        temperature: 0.7
       }),
     });
     

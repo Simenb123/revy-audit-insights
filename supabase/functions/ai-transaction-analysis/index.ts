@@ -175,7 +175,7 @@ Svar kun med gyldig JSON i dette formatet:
         clientId,
         versionId,
         analysisType,
-        model: 'gpt-5-2025-08-07'
+        model: 'gpt-5',
       }
     };
 

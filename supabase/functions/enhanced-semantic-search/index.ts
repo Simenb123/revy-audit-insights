@@ -388,9 +388,10 @@ Focus on audit-relevant patterns, compliance issues, and risk indicators.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
-      messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 1000,
+    model: 'gpt-5',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 1000,
+    temperature: 0.7
     }),
   });
 

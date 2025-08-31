@@ -240,9 +240,10 @@ Focus on:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 4000,
+      max_tokens: 4000,
+      temperature: 0.7
     }),
   });
 
@@ -317,9 +318,10 @@ Provide trend analysis and predictions in JSON format:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 3000,
+      max_tokens: 3000,
+      temperature: 0.6
     }),
   });
 
@@ -381,9 +383,10 @@ Provide anomaly analysis in JSON format:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 2000,
+      max_tokens: 2000,
+      temperature: 0.5
     }),
   });
 
@@ -452,9 +455,10 @@ Use typical industry benchmarks for the specified industry or general business i
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 3000,
+      max_tokens: 3000,
+      temperature: 0.7
     }),
   });
 

@@ -314,9 +314,10 @@ Provide actionable insights and specific recommendations for improvement.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 4000,
+      max_tokens: 4000,
+      temperature: 0.7
     }),
   });
 

@@ -220,12 +220,13 @@ Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumen
     }
 
     const data = await callOpenAI('chat/completions', {
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      max_completion_tokens: 1500,
+      max_tokens: 1500,
+      temperature: 0.7
     });
 
     const response = data.choices[0].message.content;

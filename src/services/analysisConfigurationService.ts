@@ -38,6 +38,7 @@ export interface RiskScoringConfiguration {
 export interface AIAnalysisConfiguration {
   enabled: boolean;
   model: string;
+  temperature?: number;
   maxTransactions: number;
   confidenceThreshold: number;
   analysisTypes: string[];
@@ -99,7 +100,8 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: true,
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-5',
+        temperature: 0.7,
         maxTransactions: 1000,
         confidenceThreshold: 0.7,
         analysisTypes: ['anomaly_detection', 'pattern_analysis', 'risk_assessment'],
@@ -151,7 +153,7 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: false,
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-5-mini',
         maxTransactions: 500,
         confidenceThreshold: 0.8,
         analysisTypes: ['anomaly_detection'],
@@ -212,7 +214,8 @@ export class AnalysisConfigurationService {
       },
       aiAnalysis: {
         enabled: true,
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-5',
+        temperature: 0.6,
         maxTransactions: 2000,
         confidenceThreshold: 0.6,
         analysisTypes: ['anomaly_detection', 'pattern_analysis', 'risk_assessment', 'compliance_check'],

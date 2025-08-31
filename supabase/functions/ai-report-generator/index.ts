@@ -318,9 +318,10 @@ ${isNorwegian ? 'Write all content in professional Norwegian (bokmål) suitable 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-2025-08-07',
+      model: 'gpt-5',
       messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 6000,
+      max_tokens: 6000,
+      temperature: 0.7
     }),
   });
 

@@ -73,12 +73,14 @@ async function performAIAnalysis(text: string, options: any = {}): Promise<any> 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Analyser følgende dokument:\n\n${text.substring(0, 4000)}` }
         ],
-        max_completion_tokens: 1500,
+        max_tokens: 1500,
+        temperature: 0.6
+      }),
       }),
     });
 
@@ -91,7 +93,7 @@ async function performAIAnalysis(text: string, options: any = {}): Promise<any> 
     return {
       analysis: data.choices[0].message.content,
       confidence: 0.85,
-      model_used: 'gpt-5-mini-2025-08-07'
+      model_used: 'gpt-5-mini'
     };
 
   } catch (error) {

@@ -29,9 +29,10 @@ serve(async (req) => {
     ];
 
     const requestBody = {
-      model: model || 'gpt-5-mini-2025-08-07',
+      model: model || 'gpt-5-mini',
       messages,
-      max_completion_tokens: 50, // Kort svar for testing
+      max_tokens: 50,
+      temperature: 0.5
     };
 
     console.log('OpenAI request body:', JSON.stringify(requestBody));

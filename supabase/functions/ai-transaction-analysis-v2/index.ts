@@ -247,7 +247,7 @@ Please provide a professional audit analysis following the structured format. Fo
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-5-mini',
         input: [
           {
             role: 'system',
@@ -496,7 +496,7 @@ Please provide a professional audit analysis following the structured format. Fo
         analysisDate: new Date().toISOString(),
         transactionCount: transactions.length,
         sessionId: session.id,
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'gpt-5-mini',
         dataVersionId,
         validationData: {
           vouchersWithImbalance: vouchersWithImbalance.length,

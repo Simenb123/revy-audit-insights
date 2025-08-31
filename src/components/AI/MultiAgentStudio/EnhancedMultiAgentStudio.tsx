@@ -174,7 +174,7 @@ const EnhancedMultiAgentStudio: React.FC<EnhancedMultiAgentStudioProps> = ({
       key: customKey,
       name: 'Egendefinert rolle',
       systemPrompt: 'Beskriv rollen og hvordan den skal svare. Norsk språk.',
-      model: 'gpt-5-mini-2025-08-07',
+      model: 'gpt-5-mini',
       temperature: null,
       dataScopes: [],
       dataTopics: [],
@@ -360,11 +360,11 @@ const EnhancedMultiAgentStudio: React.FC<EnhancedMultiAgentStudioProps> = ({
                       <div className="space-y-2">
                         <select
                           className="w-full border rounded-md px-2 py-1 text-sm"
-                          value={agent.model || 'gpt-5-mini-2025-08-07'}
+                          value={agent.model || 'gpt-5-mini'}
                           onChange={(e) => updateAgent(agent.key, { model: e.target.value })}
                         >
-                          <option value="gpt-5-2025-08-07">GPT-5 (premium)</option>
-                          <option value="gpt-5-mini-2025-08-07">GPT-5 Mini</option>
+                          <option value="gpt-5">GPT-5 (premium)</option>
+                          <option value="gpt-5-mini">GPT-5 Mini</option>
                           <option value="gpt-4.1-2025-04-14">GPT-4.1</option>
                         </select>
 
