@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
         const { data: insertedEntity, error } = await supabase
           .from('share_entities')
           .upsert(entity, {
-            onConflict: entity.entity_type === 'company' ? 'orgnr,user_id' : 'name,birth_year,user_id'
+            onConflict: entity.entity_type === 'company' ? 'orgnr,user_id' : 'name,birth_year,country_code,user_id,entity_type'
           })
           .select('id')
           .single()
