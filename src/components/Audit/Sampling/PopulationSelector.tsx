@@ -9,9 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, TrendingUp, Filter, X } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import { usePopulationCalculator } from '@/hooks/usePopulationCalculator';
+import { usePopulationAnalysis } from '@/hooks/usePopulationAnalysis';
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import { formatCurrency, formatNumber } from '@/services/sampling/utils';
+import PopulationAnalysisSection from './PopulationAnalysisSection';
 
 interface PopulationSelectorProps {
   clientId: string;
@@ -26,12 +27,12 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyExcluded, setShowOnlyExcluded] = useState(false);
 
-  // Get population data based on selections
+  // Get comprehensive population analysis data
   const { 
     data: populationData, 
     isLoading: isCalculatingPopulation,
     error: populationError 
-  } = usePopulationCalculator(
+  } = usePopulationAnalysis(
     clientId,
     selectedFiscalYear,
     selectedStandardNumbers,
@@ -118,24 +119,46 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Population Summary */}
+        {/* Enhanced Population Summary */}
         {populationData && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-            <div>
-              <div className="text-sm text-muted-foreground">Totalt inkludert</div>
-              <div className="font-medium">{formatNumber((populationData.accounts?.length || 0) - excludedAccountNumbers.length)} kontoer</div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div>
+                <div className="text-sm text-muted-foreground">Totalt inkludert</div>
+                <div className="font-medium">{formatNumber((populationData.accounts?.length || 0) - excludedAccountNumbers.length)} kontoer</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Inkludert beløp</div>
+                <div className="font-medium">{formatCurrency(includedSum)}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Totalt transaksjoner</div>
+                <div className="font-medium">{formatNumber(populationData.accounts?.filter(acc => !excludedAccountNumbers.includes(acc.account_number)).reduce((sum, acc) => sum + acc.transaction_count, 0) || 0)}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Gjennomsnittssaldo</div>
+                <div className="font-medium">{formatCurrency(populationData.basicStatistics?.averageBalance || 0)}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Inkludert beløp</div>
-              <div className="font-medium">{formatCurrency(includedSum)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Ekskludert</div>
-              <div className="font-medium">{formatNumber(excludedAccountNumbers.length)} kontoer</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Ekskludert beløp</div>
-              <div className="font-medium text-muted-foreground">{formatCurrency(excludedSum)}</div>
+            
+            {/* Enhanced statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-accent/50 rounded-lg">
+              <div>
+                <div className="text-sm text-muted-foreground">Median</div>
+                <div className="font-medium">{formatCurrency(populationData.basicStatistics?.medianBalance || 0)}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Standardavvik</div>
+                <div className="font-medium">{formatCurrency(populationData.basicStatistics?.stdDev || 0)}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Outliers</div>
+                <div className="font-medium text-amber-600">{populationData.outlierDetection?.outliers?.length || 0}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Anomalier</div>
+                <div className="font-medium text-red-600">{populationData.anomalyDetection?.anomalies?.length || 0}</div>
+              </div>
             </div>
           </div>
         )}
@@ -173,6 +196,16 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
             ))}
           </div>
         </div>
+
+        <Separator />
+
+        {/* Population Analysis */}
+        {populationData && selectedStandardNumbers.length > 0 && (
+          <PopulationAnalysisSection 
+            analysisData={populationData}
+            excludedAccountNumbers={excludedAccountNumbers}
+          />
+        )}
 
         <Separator />
 
