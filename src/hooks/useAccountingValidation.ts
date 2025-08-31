@@ -24,11 +24,11 @@ export const useAccountingValidation = (
   selectedTBVersion?: string
 ) => {
   // Get active version info for consistent data access
-  const { versionId: activeVersionId } = useActiveVersionInfo(clientId);
+  const { data: activeVersionInfo } = useActiveVersionInfo(clientId);
   const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId);
   
   // Use provided versions or fallback to active versions
-  const effectiveGLVersion = selectedGLVersion || activeVersionId;
+  const effectiveGLVersion = selectedGLVersion || activeVersionInfo?.id;
   const effectiveTBVersion = selectedTBVersion || activeTrialBalanceVersion?.version;
   
   const { data: generalLedgerData } = useGeneralLedgerData(clientId, effectiveGLVersion);

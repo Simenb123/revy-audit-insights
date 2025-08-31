@@ -153,7 +153,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     params.fiscalYear,
     params.selectedStandardNumbers,
     params.excludedAccountNumbers,
-    activeTrialBalanceVersion?.versionId // Use UUID instead of version string
+    activeTrialBalanceVersion?.version // Use trial balance version string (v10, v28, etc.)
   );
 
   // Auto-select trial balance accounts when standard accounts are selected
@@ -353,7 +353,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
       const payload = {
         clientId,
         ...params,
-        versionId: activeTrialBalanceVersion?.version, // Add version for consistency
+        versionId: activeTrialBalanceVersion?.version, // Use trial balance version string
         planName: autoName, // Add automatic naming
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
@@ -409,7 +409,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
       const payload = {
         clientId,
         ...params,
-        versionId: activeTrialBalanceVersion?.version, // Add version for consistency
+        versionId: activeTrialBalanceVersion?.version, // Use trial balance version string
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
           undefined,

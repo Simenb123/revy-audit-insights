@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useActiveVersion } from '@/hooks/useAccountingVersions';
 
 export interface ActiveTrialBalanceVersion {
   version: string;
@@ -11,29 +10,45 @@ export interface ActiveTrialBalanceVersion {
 /**
  * Hook for getting active trial balance version for consistent data access
  * This ensures all trial balance queries use the same version reference
+ * Fixed to use actual trial balance versions (v10, v28, etc.) instead of accounting data versions
  */
 export const useActiveTrialBalanceVersion = (clientId: string, fiscalYear?: number) => {
-  // Get active accounting data version
-  const { data: activeAccountingVersion } = useActiveVersion(clientId);
-
   return useQuery({
-    queryKey: ['active-trial-balance-version', clientId, fiscalYear, activeAccountingVersion?.id],
+    queryKey: ['active-trial-balance-version', clientId, fiscalYear],
     queryFn: async (): Promise<ActiveTrialBalanceVersion | null> => {
-      if (!activeAccountingVersion) {
+      if (!clientId) {
         return null;
       }
 
-      // For trial balance, we use the file_name as version and the fiscal year
-      const version = activeAccountingVersion.file_name || `Version ${activeAccountingVersion.version_number}`;
       const year = fiscalYear || new Date().getFullYear();
+      
+      // Get the most recent trial balance version for the given client and fiscal year
+      const { data, error } = await supabase
+        .from('trial_balances')
+        .select('version, period_year')
+        .eq('client_id', clientId)
+        .eq('period_year', year)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error fetching trial balance version:', error);
+        throw error;
+      }
 
+      if (!data || data.length === 0) {
+        return null;
+      }
+
+      const trialBalance = data[0];
+      
       return {
-        version,
-        year,
-        versionId: activeAccountingVersion.id
+        version: trialBalance.version, // This is the actual trial balance version string (v10, v28, etc.)
+        year: trialBalance.period_year,
+        versionId: undefined // No UUID needed for trial balance versions
       };
     },
-    enabled: !!clientId && !!activeAccountingVersion,
+    enabled: !!clientId,
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 };
@@ -90,18 +105,25 @@ export const useActiveTrialBalanceData = (clientId: string, fiscalYear?: number)
 };
 
 /**
- * Helper hook to get active version info without data
- * Useful when you just need version metadata
+ * Helper hook to get active accounting version info (separate from trial balance versions)
+ * Useful when you just need accounting version metadata
  */
 export const useActiveVersionInfo = (clientId: string) => {
-  const { data: activeVersion } = useActiveVersion(clientId);
-  
-  return {
-    isLoading: !activeVersion,
-    version: activeVersion,
-    versionId: activeVersion?.id,
-    versionNumber: activeVersion?.version_number,
-    fileName: activeVersion?.file_name,
-    isActive: activeVersion?.is_active || false
-  };
+  return useQuery({
+    queryKey: ['active-accounting-version-info', clientId],
+    queryFn: async () => {
+      if (!clientId) return null;
+      
+      const { data, error } = await supabase
+        .from('accounting_data_versions')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
+  });
 };
