@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 import { getSmartAIVariantRecommendation, type SmartContextSwitchingConfig } from '@/services/enhancedAIVariantService';
+import { enhanceAIPromptWithISAContext, getRelevantISAStandards, type SemanticContext } from '@/services/isaSemanticService';
 
 export interface AIRevyVariant {
   id: string;
@@ -21,6 +22,7 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<AIRevyVariant | null>(null);
   const [smartRecommendation, setSmartRecommendation] = useState<any>(null);
+  const [isaContext, setIsaContext] = useState<string>('');
 
   useEffect(() => {
     loadVariants();
@@ -74,13 +76,29 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
             documentContext
           );
           
+          // Generate ISA context for enhanced AI understanding
+          const semanticContext: SemanticContext = {
+            documentContext,
+            auditPhase: detectAuditPhase(context),
+            riskLevel: detectRiskLevel(context),
+            accountCategories: detectAccountCategories(documentContext)
+          };
+          
+          const relevantISAs = getRelevantISAStandards(semanticContext);
+          const isaPrompt = relevantISAs.length > 0 
+            ? `Relevante ISA standarder: ${relevantISAs.map(isa => isa.isa_number).join(', ')}`
+            : '';
+          
+          setIsaContext(isaPrompt);
+          
           if (recommendation && recommendation.confidence > 0.6) {
             setSmartRecommendation(recommendation);
             setSelectedVariant(recommendation.variant);
-            logger.info('Smart AI variant selected:', {
+            logger.info('Smart AI variant selected with ISA context:', {
               variant: recommendation.variant.name,
               confidence: recommendation.confidence,
-              reasoning: recommendation.reasoning
+              reasoning: recommendation.reasoning,
+              isaStandards: relevantISAs.map(isa => isa.isa_number)
             });
           } else {
             // Fallback to legacy selection
@@ -145,6 +163,25 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
     return highRiskContexts.includes(context) ? 'high' : 'medium';
   };
 
+  const detectAuditPhase = (context?: string): 'planning' | 'execution' | 'completion' => {
+    if (!context) return 'execution';
+    if (context.includes('planning') || context.includes('risk-assessment')) return 'planning';
+    if (context.includes('completion') || context.includes('reporting')) return 'completion';
+    return 'execution';
+  };
+
+  const detectAccountCategories = (documentContext: any): string[] => {
+    if (!documentContext) return [];
+    const text = JSON.stringify(documentContext).toLowerCase();
+    const categories = [];
+    if (text.includes('omsetning') || text.includes('salg')) categories.push('revenue');
+    if (text.includes('kostnad') || text.includes('utgift')) categories.push('expenses');
+    if (text.includes('varelager') || text.includes('beholdning')) categories.push('inventory');
+    if (text.includes('kunde') || text.includes('fordring')) categories.push('receivables');
+    if (text.includes('leverandør') || text.includes('gjeld')) categories.push('payables');
+    return categories;
+  };
+
   const switchVariant = (variant: AIRevyVariant) => {
     setSelectedVariant(variant);
   };
@@ -160,6 +197,7 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
     switchVariant,
     handleVariantChange,
     loadVariants,
-    smartRecommendation
+    smartRecommendation,
+    isaContext
   };
 };
