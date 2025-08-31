@@ -15,7 +15,7 @@ export function useEnhancedPopulationAnalysis(
   fiscalYear: number,
   selectedStandardNumbers: string[],
   excludedAccountNumbers: string[],
-  versionId?: string,
+  versionString?: string,
   options: UseEnhancedPopulationAnalysisOptions = {}
 ) {
   const {
@@ -32,12 +32,12 @@ export function useEnhancedPopulationAnalysis(
       fiscalYear,
       selectedStandardNumbers: selectedStandardNumbers.sort(),
       excludedAccountNumbers: excludedAccountNumbers.sort(),
-      versionId
+      versionString
     })).slice(0, 16)
   };
 
   return useQuery({
-    queryKey: ['enhanced-population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId],
+    queryKey: ['enhanced-population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionString],
     queryFn: async (): Promise<PopulationAnalysisData> => {
       // Check cache first if enabled
       if (enableLocalCache) {
@@ -69,7 +69,7 @@ export function useEnhancedPopulationAnalysis(
         p_fiscal_year: fiscalYear,
         p_selected_standard_numbers: selectedStandardNumbers,
         p_excluded_account_numbers: excludedAccountNumbers,
-        p_version_id: versionId || null
+        p_version_string: versionString || null
       });
 
       const { data, error } = await Promise.race([analysisPromise, timeoutPromise]);
@@ -149,7 +149,7 @@ export function useEnhancedPopulationAnalysis(
           fiscalYear,
           selectedStandardNumbers,
           excludedAccountNumbers,
-          versionId: responseData.versionId,
+          versionString: responseData.versionId,
           analysisTimestamp: new Date().toISOString(),
           totalRecords: responseData.totalRecords || 0
         }

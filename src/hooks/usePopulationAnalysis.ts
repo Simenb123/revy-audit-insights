@@ -74,7 +74,7 @@ export interface PopulationAnalysisData {
     fiscalYear: number;
     selectedStandardNumbers: string[];
     excludedAccountNumbers: string[];
-    versionId?: string;
+    versionString?: string;
     analysisTimestamp: string;
     totalRecords: number;
   };
@@ -85,10 +85,10 @@ export function usePopulationAnalysis(
   fiscalYear: number,
   selectedStandardNumbers: string[],
   excludedAccountNumbers: string[],
-  versionId?: string
+  versionString?: string
 ) {
   return useQuery({
-    queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId],
+    queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionString],
     queryFn: async (): Promise<PopulationAnalysisData> => {
       // Use the new comprehensive SQL function
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
@@ -96,7 +96,7 @@ export function usePopulationAnalysis(
         p_fiscal_year: fiscalYear,
         p_selected_standard_numbers: selectedStandardNumbers,
         p_excluded_account_numbers: excludedAccountNumbers,
-        p_version_id: versionId || null
+        p_version_string: versionString || null
       });
 
       if (error) {
@@ -247,7 +247,7 @@ export function usePopulationAnalysis(
           fiscalYear,
           selectedStandardNumbers,
           excludedAccountNumbers,
-          versionId: responseData.versionId,
+          versionString: responseData.versionId,
           analysisTimestamp: new Date().toISOString(),
           totalRecords: responseData.totalRecords
         }

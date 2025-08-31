@@ -514,7 +514,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
                 fiscalYear={params.fiscalYear}
                 selectedStandardNumbers={params.selectedStandardNumbers}
                 excludedAccountNumbers={params.excludedAccountNumbers}
-                versionId={activeTrialBalanceVersion?.version}
+                versionString={activeTrialBalanceVersion?.version}
                 analysisLevel={analysisLevel}
                 onAnalysisLevelChange={setAnalysisLevel}
               />

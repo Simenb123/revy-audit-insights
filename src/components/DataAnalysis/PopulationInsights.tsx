@@ -41,7 +41,7 @@ interface PopulationInsightsProps {
   fiscalYear: number;
   selectedStandardNumbers: string[];
   excludedAccountNumbers: string[];
-  versionId?: string;
+  versionString?: string;
   analysisLevel?: 'account' | 'statement_line';
   onAnalysisLevelChange?: (level: 'account' | 'statement_line') => void;
 }
@@ -73,14 +73,14 @@ const formatNumber = (num: number) => {
 
 const generateColor = (index: number) => CHART_COLORS[index % CHART_COLORS.length];
 
-const PopulationInsights: React.FC<PopulationInsightsProps> = ({
-  clientId,
-  fiscalYear,
-  selectedStandardNumbers,
-  excludedAccountNumbers,
-  versionId,
-  analysisLevel = 'account',
-  onAnalysisLevelChange
+const PopulationInsights: React.FC<PopulationInsightsProps> = ({ 
+  clientId, 
+  fiscalYear, 
+  selectedStandardNumbers, 
+  excludedAccountNumbers, 
+  versionString, 
+  analysisLevel = 'account', 
+  onAnalysisLevelChange 
 }) => {
   const [selectedCounterAccounts, setSelectedCounterAccounts] = useState<string[]>([]);
   const [drillDownAccount, setDrillDownAccount] = useState<{
@@ -102,7 +102,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     fiscalYear,
     selectedStandardNumbers,
     excludedAccountNumbers,
-    versionId
+    versionString
   );
 
   if (selectedStandardNumbers.length === 0) {
@@ -544,7 +544,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           clientId={clientId}
           fiscalYear={fiscalYear}
           selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
-          versionId={versionId}
+          versionId={versionString}
         />
 
         {/* Drill-down modal for detailed transaction analysis */}
@@ -556,7 +556,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
           counterAccountNumber={selectedCounterAccount?.counterAccount || ''}
           counterAccountName={selectedCounterAccount?.counterAccountName || ''}
-          versionId={versionId}
+          versionId={versionString}
         />
       </div>
     </ErrorBoundary>
