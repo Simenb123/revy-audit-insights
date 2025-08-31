@@ -37,7 +37,7 @@ import {
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator, PopulationAccount } from '@/hooks/usePopulationCalculator';
-import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
+import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
 import PopulationInsights from './PopulationInsights';
@@ -108,7 +108,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
   const { selectedFiscalYear } = useFiscalYear();
   
   // Get active trial balance version
-  const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId);
+  const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId, selectedFiscalYear);
   
   // Get trial balance data with mappings for auto-selection
   const { data: trialBalanceData } = useTrialBalanceWithMappings(
@@ -153,7 +153,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     params.fiscalYear,
     params.selectedStandardNumbers,
     params.excludedAccountNumbers,
-    activeTrialBalanceVersion?.version
+    activeTrialBalanceVersion?.versionId // Use UUID instead of version string
   );
 
   // Auto-select trial balance accounts when standard accounts are selected
