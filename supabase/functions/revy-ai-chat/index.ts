@@ -12,11 +12,30 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  
   try {
-    const { message, context, variantName, clientData, clientDocuments, sessionId, mode } = await req.json();
+    const { 
+      message, 
+      enhancedPrompt,
+      context, 
+      variantName, 
+      clientData, 
+      clientDocuments, 
+      sessionId, 
+      mode,
+      enhancementApplied,
+      recommendedVariant,
+      contextAnalysis
+    } = await req.json();
     
     log(`💬 [REVY-AI-CHAT] Processing message: "${message.substring(0, 100)}..."`);
     log(`🔍 [REVY-AI-CHAT] Context: ${context}, Variant: ${variantName}, Mode: ${mode || 'normal'}`);
+    if (enhancementApplied) {
+      log(`🚀 [REVY-AI-CHAT] Enhanced prompt processing activated`);
+      log(`📊 [REVY-AI-CHAT] Context analysis: ${contextAnalysis ? 'Available' : 'Not available'}`);
+      log(`🎯 [REVY-AI-CHAT] Recommended variant: ${recommendedVariant || 'None'}`);
+    }
     
     const supabase = getSupabase(req);
     
@@ -111,10 +130,26 @@ ${readableDocuments.length === 0 ? '\n💡 For å gjøre dokumenter lesbare for 
         .trim();
     }
 
-    // Enhanced system prompt with better document handling and guidance
+    // Enhanced system prompt with context awareness and intelligent optimization
     let systemPrompt = '';
     
-    if (mode === 'school' && trainingContext) {
+    // Use enhanced prompt if available, otherwise build traditional prompt
+    if (enhancedPrompt && enhancementApplied) {
+      log(`🎯 [REVY-AI-CHAT] Using context-aware enhanced prompt (${enhancedPrompt.length} chars)`);
+      systemPrompt = enhancedPrompt;
+      
+      // Add document context to enhanced prompt if available
+      if (documentsContext) {
+        systemPrompt += `\n\n${documentsContext}`;
+      }
+      
+      // Add knowledge context to enhanced prompt
+      if (knowledgeArticles.length > 0) {
+        systemPrompt += `\n\nRELEVANT FAGKUNNSKAP:\n${knowledgeArticles.map(article => 
+          `📖 ${article.title}\n${article.summary || article.content.substring(0, 300)}...\n`
+        ).join('\n')}\n`;
+      }
+    } else if (mode === 'school' && trainingContext) {
       // School mode system prompt
       systemPrompt = `Du er AI-Revy i SCHOOL-modus - en pedagogisk revisjonsassistent for treningssesjon "${trainingContext.session?.title}".
 
@@ -200,7 +235,12 @@ Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumen
     return new Response(JSON.stringify({ 
       response,
       knowledgeReferences: knowledgeArticles.length,
-      knowledgeArticles: knowledgeArticles.slice(0, 3) // Return top 3 for reference
+      knowledgeArticles: knowledgeArticles.slice(0, 3), // Return top 3 for reference
+      hasKnowledgeReferences: knowledgeArticles.length > 0,
+      enhancementApplied: enhancementApplied || false,
+      contextAnalysisUsed: !!contextAnalysis,
+      recommendedVariant: recommendedVariant,
+      processingTime: Date.now() - startTime
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -7,7 +7,8 @@ import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
 import MultiAgentIntegration from '@/components/AI/MultiAgentIntegration';
-import { contextAwarePromptEnhancer } from '@/services/contextAwarePromptEnhancer';
+import SmartContextSwitcher from './Assistant/SmartContextSwitcher';
+import IntelligentLoadingFeedback from './Assistant/IntelligentLoadingFeedback';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
@@ -90,6 +91,25 @@ const SmartReviAssistant = ({
           clientId={clientData?.id}
           documentContext={undefined}
         />
+        
+        {/* Smart Context Switcher - only show if there are recommendations */}
+        <SmartContextSwitcher
+          currentContext={currentContext}
+          clientData={clientData}
+          documentContext={undefined}
+          userRole={userRole}
+          sessionHistory={messages}
+          onContextChange={onContextChange}
+        />
+        
+        {/* Intelligent Loading Feedback */}
+        <IntelligentLoadingFeedback
+          isLoading={isLoading}
+          context={currentContext}
+          enhancementApplied={true}
+          estimatedTime={15000}
+        />
+        
         <div className="flex-1">
           <EmbeddedRevyAssistant
             messages={messages}
@@ -107,16 +127,36 @@ const SmartReviAssistant = ({
   }
 
   return (
-    <StandaloneRevyAssistant
-      messages={messages}
-      input={input}
-      isLoading={isLoading}
-      selectedVariant={activeVariant}
-      contextDisplayName={contextDisplayName}
-      onInputChange={handleInputChange}
-      onKeyDown={handleKeyDown}
-      onSendMessage={handleSendMessage}
-    />
+    <div className="space-y-4">
+      {/* Smart Context Switcher for standalone mode */}
+      <SmartContextSwitcher
+        currentContext={currentContext}
+        clientData={clientData}
+        documentContext={undefined}
+        userRole={userRole}
+        sessionHistory={messages}
+        onContextChange={onContextChange}
+      />
+      
+      {/* Intelligent Loading Feedback */}
+      <IntelligentLoadingFeedback
+        isLoading={isLoading}
+        context={currentContext}
+        enhancementApplied={true}
+        estimatedTime={20000}
+      />
+      
+      <StandaloneRevyAssistant
+        messages={messages}
+        input={input}
+        isLoading={isLoading}
+        selectedVariant={activeVariant}
+        contextDisplayName={contextDisplayName}
+        onInputChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onSendMessage={handleSendMessage}
+      />
+    </div>
   );
 };
 
