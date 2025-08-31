@@ -7,6 +7,7 @@ import { RevyContext, RevyChatMessage, RevyMessage } from '@/types/revio';
 import { enhanceAIResponse } from '@/services/revyEnhancementService';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { toast } from 'sonner';
+import { contextAwarePromptEnhancer } from '@/services/contextAwarePromptEnhancer';
 
 interface UseRevyMessageHandlingProps {
   context: RevyContext;
@@ -295,14 +296,31 @@ Jeg kan hjelpe deg med **revisjon**, **regnskapsføring**, **dokumentanalyse** o
     try {
       logger.log(`🤖 Sending message to AI-Revy with context: ${context}`);
       
-      // Call the improved revy-ai-chat function directly
+      // Enhance prompt with context awareness
+      const enhancedPromptData = await contextAwarePromptEnhancer.enhancePrompt(
+        userMessage,
+        context,
+        selectedVariant || { name: 'support' },
+        {},
+        {
+          clientData: clientData,
+          documentContext: clientDocuments,
+          userRole: userRole || 'employee',
+          sessionHistory: messages
+        }
+      );
+      
+      // Call the improved revy-ai-chat function with enhanced prompt
       const { data, error } = await supabase.functions.invoke('revy-ai-chat', {
         body: {
           message: userMessage,
+          enhancedPrompt: enhancedPromptData.enhancedPrompt,
           context: context,
           variantName: selectedVariant?.name || 'support',
           clientData: clientData,
-          clientDocuments: clientDocuments || []
+          clientDocuments: clientDocuments || [],
+          enhancementApplied: enhancedPromptData.enhancementApplied,
+          recommendedVariant: enhancedPromptData.recommendedVariant
         }
       });
 

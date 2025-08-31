@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
 import { getSmartAIVariantRecommendation, type SmartContextSwitchingConfig } from '@/services/enhancedAIVariantService';
 import { enhanceAIPromptWithISAContext, getRelevantISAStandards, type SemanticContext } from '@/services/isaSemanticService';
+import { AdvancedContextAnalyzer } from '@/services/advancedContextAnalyzer';
+import type { RevyContext } from '@/types/revio';
 
 export interface AIRevyVariant {
   id: string;
@@ -23,6 +25,8 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
   const [selectedVariant, setSelectedVariant] = useState<AIRevyVariant | null>(null);
   const [smartRecommendation, setSmartRecommendation] = useState<any>(null);
   const [isaContext, setIsaContext] = useState<string>('');
+  const [contextAnalysis, setContextAnalysis] = useState<any>(null);
+  const [contextAnalyzer] = useState(() => new AdvancedContextAnalyzer());
 
   useEffect(() => {
     loadVariants();
@@ -61,27 +65,40 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
       
       // Auto-select most appropriate variant based on context
       if (transformedData && transformedData.length > 0 && !selectedVariant) {
-        // First try smart recommendation
-        const smartConfig: Partial<SmartContextSwitchingConfig> = {
-          userRole: userRole || 'employee',
-          documentTypes: documentContext ? detectDocumentTypes(documentContext) : [],
-          complexity: detectComplexity(context),
-          riskLevel: detectRiskLevel(context)
-        };
-
+        // Use advanced context analysis
         try {
+          const analysis = await contextAnalyzer.analyzeContext({
+            currentContext: (context as RevyContext) || 'general',
+            userRole: userRole || 'employee',
+            documentContext,
+            clientData: undefined, // This would be passed from parent if available
+            sessionHistory: [], // This would contain previous messages if available
+            recentActivity: []
+          });
+          
+          setContextAnalysis(analysis);
+          
+          // Use the analysis to get smart variant recommendation
+          const smartConfig: Partial<SmartContextSwitchingConfig> = {
+            userRole: analysis.userBehaviorPatterns.expertiseLevel,
+            documentTypes: analysis.documentInsights.types,
+            complexity: analysis.documentInsights.complexity === 'low' ? 'simple' : 
+                       analysis.documentInsights.complexity === 'high' ? 'complex' : 'medium',
+            riskLevel: analysis.documentInsights.riskLevel
+          };
+
           const recommendation = await getSmartAIVariantRecommendation(
             context || 'general', 
             smartConfig, 
             documentContext
           );
           
-          // Generate ISA context for enhanced AI understanding
+          // Generate enhanced ISA context
           const semanticContext: SemanticContext = {
             documentContext,
-            auditPhase: detectAuditPhase(context),
-            riskLevel: detectRiskLevel(context),
-            accountCategories: detectAccountCategories(documentContext)
+            auditPhase: analysis.documentInsights.auditPhase as any,
+            riskLevel: analysis.documentInsights.riskLevel,
+            accountCategories: [] // This would be derived from documentContext if needed
           };
           
           const relevantISAs = getRelevantISAStandards(semanticContext);
@@ -94,10 +111,11 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
           if (recommendation && recommendation.confidence > 0.6) {
             setSmartRecommendation(recommendation);
             setSelectedVariant(recommendation.variant);
-            logger.info('Smart AI variant selected with ISA context:', {
+            logger.info('Advanced AI variant selected with context analysis:', {
               variant: recommendation.variant.name,
               confidence: recommendation.confidence,
               reasoning: recommendation.reasoning,
+              contextAnalysis: `${analysis.primaryContext} (${analysis.contextConfidence}% confidence)`,
               isaStandards: relevantISAs.map(isa => isa.isa_number)
             });
           } else {
@@ -198,6 +216,8 @@ export const useAIRevyVariants = (context?: string, userRole?: string, documentC
     handleVariantChange,
     loadVariants,
     smartRecommendation,
-    isaContext
+    isaContext,
+    contextAnalysis,
+    contextAnalyzer
   };
 };

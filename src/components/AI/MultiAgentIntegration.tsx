@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Users, MessageSquare, Brain, Lightbulb } from 'lucide-react';
+import { Users, MessageSquare, Brain, Lightbulb, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AdvancedContextAnalyzer } from '@/services/advancedContextAnalyzer';
+import { contextAwarePromptEnhancer } from '@/services/contextAwarePromptEnhancer';
+import type { RevyContext } from '@/types/revio';
 
 interface MultiAgentIntegrationProps {
   context?: string;
@@ -19,6 +22,31 @@ const MultiAgentIntegration: React.FC<MultiAgentIntegrationProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
+  const [contextAnalysis, setContextAnalysis] = useState<any>(null);
+  const [contextAnalyzer] = useState(() => new AdvancedContextAnalyzer());
+  
+  // Analyze context for smart agent selection
+  useEffect(() => {
+    const analyzeContext = async () => {
+      if (context) {
+        try {
+          const analysis = await contextAnalyzer.analyzeContext({
+            currentContext: (context as RevyContext),
+            userRole: 'employee',
+            documentContext,
+            clientData: { id: clientId },
+            sessionHistory: [],
+            recentActivity: []
+          });
+          setContextAnalysis(analysis);
+        } catch (error) {
+          console.error('Context analysis failed:', error);
+        }
+      }
+    };
+    
+    analyzeContext();
+  }, [context, clientId, documentContext, contextAnalyzer]);
 
   const startMultiAgentSession = () => {
     setIsStarting(true);
@@ -32,16 +60,48 @@ const MultiAgentIntegration: React.FC<MultiAgentIntegrationProps> = ({
   };
 
   const getContextPrompt = () => {
+    if (!contextAnalysis) {
+      return 'Få andre perspektiver og ekspertise fra spesialiserte AI-agenter';
+    }
+    
+    const complexity = contextAnalysis.documentInsights?.complexity || 'medium';
+    const riskLevel = contextAnalysis.documentInsights?.riskLevel || 'medium';
+    const phase = contextAnalysis.documentInsights?.auditPhase || 'execution';
+    
     if (context === 'audit-actions') {
-      return 'Diskuter revisjonshandlinger og kvalitetssikring med spesialiserte AI-agenter';
+      return `Diskuter revisjonshandlinger (${phase}-fase, ${complexity} kompleksitet, ${riskLevel} risiko)`;
     }
     if (context === 'risk-assessment') {
-      return 'Få input fra revisjonseksperter om risikovurdering og materialitet';
+      return `Risikovurdering med ${riskLevel} risikoprofil og ${complexity} kompleksitet`;
     }
     if (context === 'documentation') {
-      return 'Diskuter dokumentasjon og arbeidspapirer med juridisk og revisjonsekspertise';
+      return `Dokumentanalyse med ${contextAnalysis.documentInsights?.types?.length || 0} dokumenttyper`;
     }
-    return 'Få andre perspektiver og ekspertise fra spesialiserte AI-agenter';
+    return `Multi-agent diskusjon tilpasset ${complexity} kompleksitet og ${riskLevel} risiko`;
+  };
+  
+  const getRecommendedAgents = () => {
+    if (!contextAnalysis) return [];
+    
+    const agents = [];
+    const complexity = contextAnalysis.documentInsights?.complexity;
+    const riskLevel = contextAnalysis.documentInsights?.riskLevel;
+    
+    if (complexity === 'high' || riskLevel === 'high') {
+      agents.push({ name: 'Metodikk-ekspert', icon: Brain, color: 'blue' });
+    }
+    
+    if (contextAnalysis.documentInsights?.types?.includes('legal')) {
+      agents.push({ name: 'Juridisk rådgiver', icon: MessageSquare, color: 'green' });
+    }
+    
+    if (riskLevel === 'high' || context === 'risk-assessment') {
+      agents.push({ name: 'Risiko-spesialist', icon: AlertCircle, color: 'yellow' });
+    }
+    
+    agents.push({ name: 'Moderator', icon: Users, color: 'purple' });
+    
+    return agents.slice(0, 4); // Limit to 4 agents max
   };
 
   return (
@@ -58,30 +118,25 @@ const MultiAgentIntegration: React.FC<MultiAgentIntegrationProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-          <div className="flex items-center gap-1">
-            <Brain className="h-3 w-3 text-blue-500" />
-            <span>Metodikk-ekspert</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MessageSquare className="h-3 w-3 text-green-500" />
-            <span>Juridisk rådgiver</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Lightbulb className="h-3 w-3 text-yellow-500" />
-            <span>Risiko-spesialist</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-3 w-3 text-purple-500" />
-            <span>Moderator</span>
-          </div>
+          {getRecommendedAgents().map((agent, index) => (
+            <div key={index} className="flex items-center gap-1">
+              <agent.icon className={`h-3 w-3 text-${agent.color}-500`} />
+              <span>{agent.name}</span>
+            </div>
+          ))}
         </div>
         
         <Separator />
         
         <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
-            Få flere perspektiver på komplekse revisjonsutfordringer
-          </p>
+          <div className="text-sm text-muted-foreground">
+            <p>Få flere perspektiver på komplekse revisjonsutfordringer</p>
+            {contextAnalysis && (
+              <p className="text-xs mt-1">
+                Anbefalt for {contextAnalysis.documentInsights?.complexity || 'medium'} kompleksitet
+              </p>
+            )}
+          </div>
           <Button 
             onClick={startMultiAgentSession}
             disabled={isStarting}
