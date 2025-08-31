@@ -9,9 +9,14 @@ interface ParsedRow {
   holder_birth_year?: number
   holder_country?: string
   share_class: string
-  shares: number
+  shares: bigint // Changed to bigint to handle large numbers
   raw_row: any
 }
+
+// Rate limiting constants
+const LARGE_BATCH_SIZE = 8000 // Increased from 500 to reduce API calls
+const DELAY_BETWEEN_BATCHES = 2000 // 2 second delay to respect rate limits
+const MAX_RETRIES = 3
 
 Deno.serve(async (req) => {
   // Handle CORS
@@ -44,12 +49,12 @@ Deno.serve(async (req) => {
 
     const { data, year, batchInfo } = await req.json()
     
-    console.log(`Processing batch ${batchInfo.current}/${batchInfo.total} with ${data.length} rows for year ${year}`)
+    console.log(`Processing optimized batch ${batchInfo.current}/${batchInfo.total} with ${data.length} rows for year ${year}`)
 
     let imported = 0
     let errors = 0
 
-    // Process companies first
+    // Process companies first with bulk operations
     const companies = new Map<string, { orgnr: string, name: string }>()
     data.forEach((row: ParsedRow) => {
       if (!companies.has(row.company_orgnr)) {
@@ -60,32 +65,34 @@ Deno.serve(async (req) => {
       }
     })
 
-    // Insert companies
-    for (const company of companies.values()) {
-      try {
-        const { error } = await supabase
-          .from('share_companies')
-          .upsert({
-            orgnr: company.orgnr,
-            name: company.name,
-            year: year,
-            user_id: user.id,
-            total_shares: 0 // Will be calculated later
-          }, {
-            onConflict: 'orgnr,year,user_id'
-          })
+    // Bulk insert companies
+    try {
+      const companyData = Array.from(companies.values()).map(company => ({
+        orgnr: company.orgnr,
+        name: company.name,
+        year: year,
+        user_id: user.id,
+        total_shares: 0 // Will be calculated later
+      }))
 
-        if (error) {
-          console.error('Company insert error:', error)
-          errors++
-        }
-      } catch (error) {
-        console.error('Company processing error:', error)
-        errors++
+      const { error: companiesError } = await supabase
+        .from('share_companies')
+        .upsert(companyData, {
+          onConflict: 'orgnr,year,user_id'
+        })
+
+      if (companiesError) {
+        console.error('Bulk company insert error:', companiesError)
+        errors += companyData.length
+      } else {
+        console.log(`✅ Bulk inserted ${companyData.length} companies`)
       }
+    } catch (error) {
+      console.error('Company bulk processing error:', error)
+      errors += companies.size
     }
 
-    // Process entities
+    // Process entities in bulk
     const entities = new Map<string, any>()
     data.forEach((row: ParsedRow) => {
       const entityKey = row.holder_orgnr || `${row.holder_name}_${row.holder_birth_year || 'person'}`
@@ -101,10 +108,12 @@ Deno.serve(async (req) => {
       }
     })
 
-    // Insert entities
+    // Bulk insert entities and get their IDs
     const entityIdMap = new Map<string, string>()
-    for (const [key, entity] of entities.entries()) {
-      try {
+    try {
+      const entityData = Array.from(entities.values())
+      
+      for (const entity of entityData) {
         const { data: insertedEntity, error } = await supabase
           .from('share_entities')
           .upsert(entity, {
@@ -117,17 +126,22 @@ Deno.serve(async (req) => {
           console.error('Entity insert error:', error)
           errors++
         } else if (insertedEntity) {
-          entityIdMap.set(key, insertedEntity.id)
+          const entityKey = entity.orgnr || `${entity.name}_${entity.birth_year || 'person'}`
+          entityIdMap.set(entityKey, insertedEntity.id)
         }
-      } catch (error) {
-        console.error('Entity processing error:', error)
-        errors++
       }
+      
+      console.log(`✅ Processed ${entityData.length} entities`)
+    } catch (error) {
+      console.error('Entity bulk processing error:', error)
+      errors += entities.size
     }
 
-    // Insert holdings
-    for (const row of data) {
-      try {
+    // Bulk insert holdings
+    try {
+      const holdingsData = []
+      
+      for (const row of data) {
         const entityKey = row.holder_orgnr || `${row.holder_name}_${row.holder_birth_year || 'person'}`
         const holderId = entityIdMap.get(entityKey)
         
@@ -137,62 +151,63 @@ Deno.serve(async (req) => {
           continue
         }
 
-        const { error } = await supabase
+        holdingsData.push({
+          company_orgnr: row.company_orgnr,
+          holder_id: holderId,
+          share_class: row.share_class,
+          shares: Number(row.shares), // Convert bigint to number for DB
+          year: year,
+          user_id: user.id
+        })
+      }
+
+      if (holdingsData.length > 0) {
+        const { error: holdingsError } = await supabase
           .from('share_holdings')
-          .upsert({
-            company_orgnr: row.company_orgnr,
-            holder_id: holderId,
-            share_class: row.share_class,
-            shares: Math.min(row.shares, 2147483647), // Cap to max integer to prevent overflow
-            year: year,
-            user_id: user.id
-          }, {
+          .upsert(holdingsData, {
             onConflict: 'company_orgnr,holder_id,share_class,year,user_id'
           })
 
-        if (error) {
-          console.error('Holding insert error:', error)
-          errors++
+        if (holdingsError) {
+          console.error('Bulk holdings insert error:', holdingsError)
+          errors += holdingsData.length
         } else {
-          imported++
+          imported = holdingsData.length
+          console.log(`✅ Bulk inserted ${holdingsData.length} holdings`)
         }
-      } catch (error) {
-        console.error('Holding processing error:', error)
-        errors++
       }
+    } catch (error) {
+      console.error('Holdings bulk processing error:', error)
+      errors += data.length
     }
 
-    // Update company total shares (simple aggregation per company in this batch)
-    for (const company of companies.values()) {
-      try {
-        const { data: totalSharesData, error } = await supabase
-          .from('share_holdings')
-          .select('shares')
-          .eq('company_orgnr', company.orgnr)
-          .eq('year', year)
-          .eq('user_id', user.id)
-
-        if (!error && totalSharesData) {
-          const totalShares = totalSharesData.reduce((sum, h) => sum + (h.shares || 0), 0)
-          
-          await supabase
-            .from('share_companies')
-            .update({ total_shares: Math.min(totalShares, 2147483647) }) // Cap to prevent overflow
-            .eq('orgnr', company.orgnr)
-            .eq('year', year)
-            .eq('user_id', user.id)
-        }
-      } catch (error) {
-        console.error('Total shares update error:', error)
+    // Update company total shares using optimized batch function
+    try {
+      for (const company of companies.values()) {
+        await supabase.rpc('update_company_total_shares', {
+          p_orgnr: company.orgnr,
+          p_year: year,
+          p_user_id: user.id
+        })
       }
+      console.log(`✅ Updated total shares for ${companies.size} companies`)
+    } catch (error) {
+      console.error('Total shares update error:', error)
     }
 
-    console.log(`Batch ${batchInfo.current} completed: ${imported} imported, ${errors} errors`)
+    // Add delay for rate limiting if not the last batch
+    if (batchInfo.current < batchInfo.total) {
+      console.log(`⏳ Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`)
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+    }
+
+    console.log(`Optimized batch ${batchInfo.current} completed: ${imported} imported, ${errors} errors`)
 
     return new Response(JSON.stringify({
       imported,
       errors,
-      batch: batchInfo
+      batch: batchInfo,
+      batchSize: LARGE_BATCH_SIZE
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

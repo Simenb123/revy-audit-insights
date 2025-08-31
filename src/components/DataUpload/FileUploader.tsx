@@ -1,5 +1,3 @@
-import { logger } from '@/utils/logger';
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -10,12 +8,14 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { processExcelFile } from '@/utils/excelProcessor';
+import { processShareholderFile } from '@/utils/shareholderImportProcessor';
 import ImportStatus from './ImportStatus';
 import UploadZone from './UploadZone';
 import FileInfo from './FileInfo';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, Clock } from 'lucide-react';
 
-const FileUploader = () => {
+const ShareholderFileUploader = ({ year }: { year: number }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -23,17 +23,11 @@ const FileUploader = () => {
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [processedRows, setProcessedRows] = useState(0);
-  const [successCount, setSuccessCount] = useState(0);
+  const [currentMessage, setCurrentMessage] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-  const [debug, setDebug] = useState<{ message: string; timestamp: string; }[]>([]);
+  const [estimatedTime, setEstimatedTime] = useState<number>(0);
+  const [showRateLimitWarning, setShowRateLimitWarning] = useState(false);
   const { toast } = useToast();
-  
-  const addLog = (message: string) => {
-    setDebug(prev => [...prev, {
-      message,
-      timestamp: new Date().toLocaleTimeString()
-    }]);
-  };
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -75,44 +69,59 @@ const FileUploader = () => {
     
     setError(null);
     setIsUploading(true);
+    setUploadSuccess(false);
     setProgress(0);
     setProcessedRows(0);
-    setSuccessCount(0);
-    setDebug([]);
+    setCurrentMessage('');
     setFileName(file.name);
-    
-    addLog('Starting import...');
-    addLog(`File: ${file.name} (${file.size} bytes)`);
+    setShowRateLimitWarning(false);
     
     try {
-      await processExcelFile(
-        file,
-        addLog,
-        {
-          onProgress: (processed: number, total: number) => {
-            setProcessedRows(processed);
-            setTotalRows(total);
-            setProgress((processed / total) * 100);
-          },
-          onSuccess: (successful: number, total: number) => {
-            setSuccessCount(successful);
-            setIsUploading(false);
-            setUploadSuccess(true);
-            addLog(`Import complete. ${successful} of ${total} clients imported successfully.`);
-            
-            toast({
-              title: "Import fullført",
-              description: `${successful} av ${total} klienter ble importert.`,
-              variant: successful > 0 ? "default" : "destructive"
-            });
+      await processShareholderFile(file, year, {
+        onProgress: (current: number, total: number, message: string) => {
+          setProgress(current);
+          setCurrentMessage(message);
+          
+          // Check for rate limiting warning
+          if (message.includes('⚠️ Stor fil detektert')) {
+            setShowRateLimitWarning(true);
+            const timeMatch = message.match(/ca\. (\d+) minutter/)
+            if (timeMatch) {
+              setEstimatedTime(parseInt(timeMatch[1]))
+            }
           }
+        },
+        onBatchComplete: (batchNumber: number, totalBatches: number, batchResults: any) => {
+          console.log(`Batch ${batchNumber}/${totalBatches} completed:`, batchResults);
+        },
+        onComplete: (results: any) => {
+          setIsUploading(false);
+          setUploadSuccess(true);
+          setProcessedRows(results.imported);
+          setTotalRows(results.totalRows);
+          setCurrentMessage(`Import fullført! ${results.imported} av ${results.totalRows} rader importert.`);
+          
+          toast({
+            title: "Import fullført",
+            description: `${results.imported} av ${results.totalRows} aksjonærrader ble importert.`,
+            variant: results.imported > 0 ? "default" : "destructive"
+          });
+        },
+        onError: (errorMessage: string) => {
+          setError(errorMessage);
+          setIsUploading(false);
+          
+          toast({
+            title: "Importfeil",
+            description: "Det oppstod en feil under importen av filen.",
+            variant: "destructive"
+          });
         }
-      );
-    } catch (error) {
-      logger.error('Error processing file:', error);
-      setError((error as Error).message || 'Ukjent feil ved prosessering av filen');
+      });
+    } catch (error: any) {
+      console.error('Error processing shareholder file:', error);
+      setError(error.message || 'Ukjent feil ved prosessering av filen');
       setIsUploading(false);
-      addLog(`Fatal error: ${(error as Error).message}`);
       
       toast({
         title: "Importfeil",
@@ -127,19 +136,41 @@ const FileUploader = () => {
     setUploadSuccess(false);
     setProgress(0);
     setProcessedRows(0);
-    setSuccessCount(0);
-    setDebug([]);
+    setCurrentMessage('');
+    setShowRateLimitWarning(false);
+    setEstimatedTime(0);
   };
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Last opp regnskapsdata</CardTitle>
+        <CardTitle>Last opp aksjonærdata for {year}</CardTitle>
         <CardDescription>
-          Dra og slipp saldobalanse eller hovedbok, eller klikk for å velge fil
+          Dra og slipp aksjonærfil, eller klikk for å velge fil. Støtter CSV og Excel format.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {showRateLimitWarning && (
+          <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <span className="font-medium text-orange-800">Stor fil detektert</span>
+            </div>
+            <div className="text-sm text-orange-700 space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  ~{estimatedTime} min
+                </Badge>
+                <span>Importen vil ta tid pga. rate limiting</span>
+              </div>
+              <p className="text-xs">
+                Data prosesseres i store batch(er) med pauser mellom (8,000 rader per batch, 2.5s pause).
+              </p>
+            </div>
+          </div>
+        )}
+
         {isUploading || uploadSuccess || error ? (
           <ImportStatus
             isImporting={isUploading}
@@ -148,9 +179,9 @@ const FileUploader = () => {
             progress={progress}
             processedRows={processedRows}
             totalRows={totalRows}
-            successCount={successCount}
+            successCount={processedRows}
             fileName={fileName}
-            debug={debug}
+            debug={currentMessage ? [{ message: currentMessage, timestamp: new Date().toLocaleTimeString() }] : []}
           />
         ) : (
           <UploadZone
@@ -172,4 +203,4 @@ const FileUploader = () => {
   );
 };
 
-export default FileUploader;
+export default ShareholderFileUploader;

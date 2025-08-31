@@ -61,6 +61,14 @@ export const useSequentialImport = () => {
     try {
       console.log(`🚀 Starting optimized import session: ${sessionId}`)
       
+      // Estimate total file size and warn about large uploads
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+      const totalSizeMB = totalSize / (1024 * 1024)
+      
+      if (totalSizeMB > 50) {
+        console.log(`⚠️ Large upload detected: ${totalSizeMB.toFixed(1)}MB total. This may take several minutes due to rate limiting.`)
+      }
+      
       // Process files one by one using optimized import
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
@@ -105,7 +113,7 @@ export const useSequentialImport = () => {
             reader.readAsDataURL(file)
           })
           
-          // Use bulk import function for all files
+          // Use bulk import function with enhanced batch settings
           const result = await supabase.functions.invoke('shareholders-bulk-import', {
             body: {
               sessionId,
@@ -113,7 +121,10 @@ export const useSequentialImport = () => {
               fileName: file.name,
               fileContent: `data:${mimeType};base64,${base64Content}`,
               fileSize: file.size,
-              fileType: fileType
+              fileType: fileType,
+              batchSize: 8000, // Larger batches for efficiency
+              delayBetweenBatches: 2500, // Longer delays for rate limiting
+              maxRetries: 3
             }
           })
 
@@ -141,13 +152,24 @@ export const useSequentialImport = () => {
           
           console.log(`✅ Completed ${file.name}: ${fileRows} rows processed`)
           
-          // Minimal delay between files
+          // Rate limiting delay between files (especially important for multiple files)
           if (i < files.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500))
+            console.log(`⏳ Waiting 3 seconds between files for rate limiting...`)
+            await new Promise(resolve => setTimeout(resolve, 3000))
           }
           
         } catch (fileError: any) {
           console.error(`❌ Error processing ${file.name}:`, fileError)
+          
+          // Check if it's a rate limiting error
+          const isRateLimitError = fileError.message?.includes('429') || 
+                                   fileError.message?.includes('rate limit') ||
+                                   fileError.message?.includes('too many requests')
+          
+          if (isRateLimitError) {
+            console.log('🚫 Rate limit detected, waiting longer before continuing...')
+            await new Promise(resolve => setTimeout(resolve, 10000)) // 10 second wait
+          }
           
           // Mark file as failed but continue
           setState(prev => ({
@@ -156,7 +178,7 @@ export const useSequentialImport = () => {
               index === i ? { 
                 ...status, 
                 status: 'error', 
-                error: fileError.message,
+                error: isRateLimitError ? 'Rate limit exceeded - try again later' : fileError.message,
                 progress: 0 
               } : status
             ),
@@ -174,7 +196,7 @@ export const useSequentialImport = () => {
       const successfulFiles = state.fileStatuses.filter(f => f.status === 'completed').length
       
       if (successfulFiles === 0) {
-        throw new Error('No files were processed successfully')
+        throw new Error('No files were processed successfully. This may be due to rate limiting - please try again later.')
       }
 
       setState(prev => ({

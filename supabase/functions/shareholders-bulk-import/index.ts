@@ -124,9 +124,9 @@ serve(async (req) => {
         year = body.year
         fileName = body.fileName
         fileContent = body.fileContent
-        batchSize = body.batchSize || 2000 // Reduced from 8000 to prevent timeouts
+        batchSize = body.batchSize || 8000 // Increased to reduce API calls and rate limiting
         maxRetries = body.maxRetries || 3
-        delayBetweenBatches = body.delayBetweenBatches || 100 // Reduced delay
+        delayBetweenBatches = body.delayBetweenBatches || 2000 // Increased delay for rate limiting
         fileSize = body.fileSize
       }
 

@@ -40,10 +40,10 @@ const UploadZone = ({
       <label htmlFor="file-upload" className="cursor-pointer text-center">
         <Upload size={48} className="text-revio-500 mx-auto mb-4" />
         <p className="text-sm text-gray-600 mb-2">
-          Dra og slipp filen her, eller klikk for å velge
+          Dra og slipp aksjonærfil her, eller klikk for å velge
         </p>
         <p className="text-xs text-gray-500">
-          Støtter Excel (.xlsx, .xls) og CSV-filer
+          Støtter Excel (.xlsx, .xls) og CSV-filer med aksjonærdata
         </p>
       </label>
     </div>
