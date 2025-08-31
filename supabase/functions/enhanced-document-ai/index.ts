@@ -1,6 +1,6 @@
 
 import { log } from "../_shared/log.ts"
-import { callOpenAI } from "../_shared/openai.ts"
+import { chatWithFallback } from "../_shared/openai.ts"
 import type { AIRevyVariantName } from "../../../src/constants/aiRevyVariants.ts"
 
 const corsHeaders = {
@@ -69,8 +69,8 @@ Gi meg følgende informasjon som JSON:
     }
 
     // Call OpenAI for analysis
-    const data = await callOpenAI('chat/completions', {
-      model: 'gpt-5-mini',
+    const data = await chatWithFallback({
+      apiKey: Deno.env.get('OPENAI_API_KEY')!,
       messages: [
         {
           role: 'system',
@@ -78,10 +78,10 @@ Gi meg følgende informasjon som JSON:
         },
         { role: 'user', content: analysisPrompt }
       ],
-      max_tokens: 1500,
+      maxTokens: 1500,
     });
 
-    let analysisText = data.choices?.[0]?.message?.content;
+    let analysisText = data.text;
 
     if (!analysisText) {
       throw new Error('No analysis content from OpenAI');

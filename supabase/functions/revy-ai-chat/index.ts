@@ -1,5 +1,5 @@
 import { getSupabase } from "../_shared/supabaseClient.ts";
-import { callOpenAI } from "../_shared/openai.ts";
+import { chatWithFallback } from "../_shared/openai.ts";
 import { log } from "../_shared/log.ts";
 
 const corsHeaders = {
@@ -219,17 +219,17 @@ VED PROBLEMER MED DOKUMENTLESING:
 Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumentinnsikt med fagkunnskap for best mulig rådgivning.`;
     }
 
-    const data = await callOpenAI('chat/completions', {
-      model: 'gpt-5',
+    const data = await chatWithFallback({
+      apiKey: Deno.env.get('OPENAI_API_KEY')!,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      max_tokens: 1500,
+      maxTokens: 1500,
       temperature: 0.7
     });
 
-    const response = data.choices[0].message.content;
+    const response = data.text;
     
     log(`✅ [REVY-AI-CHAT] Response generated (${response.length} chars)`);
 

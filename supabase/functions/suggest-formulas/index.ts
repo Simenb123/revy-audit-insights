@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callOpenAI } from '../_shared/openai.ts'
+import { chatWithFallback } from '../_shared/openai.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,8 +91,8 @@ Regler:
 - Confidence basert på hvor godt kontoplanen passer formelen
 `
 
-    const response = await callOpenAI('chat/completions', {
-      model: 'gpt-5',
+    const response = await chatWithFallback({
+      apiKey: Deno.env.get('OPENAI_API_KEY')!,
       messages: [
         {
           role: 'system',
@@ -103,11 +103,11 @@ Regler:
           content: prompt
         }
       ],
-      max_tokens: 2000,
+      maxTokens: 2000,
       temperature: 0.6
     })
 
-    const suggestions = JSON.parse(response.choices[0].message.content)
+    const suggestions = JSON.parse(response.text)
 
     return new Response(
       JSON.stringify(suggestions),
