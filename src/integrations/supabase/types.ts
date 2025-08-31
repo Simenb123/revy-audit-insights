@@ -12563,13 +12563,21 @@ export type Database = {
         }[]
       }
       calculate_population_analysis: {
-        Args: {
-          p_client_id: string
-          p_excluded_account_numbers?: string[]
-          p_fiscal_year: number
-          p_selected_standard_numbers: string[]
-          p_version_id?: string
-        }
+        Args:
+          | {
+              p_client_id: string
+              p_excluded_account_numbers?: string[]
+              p_fiscal_year: number
+              p_selected_standard_numbers: string[]
+              p_version_id?: string
+            }
+          | {
+              p_client_id: string
+              p_excluded_account_numbers?: string[]
+              p_fiscal_year: number
+              p_selected_standard_numbers: string[]
+              p_version_string?: string
+            }
         Returns: Json
       }
       calculate_straight_line_depreciation: {

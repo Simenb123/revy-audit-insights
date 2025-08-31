@@ -64,13 +64,13 @@ export function usePopulationCalculator(
           }
         }
 
-        // Use the fixed SQL function
+        // Use the fixed SQL function with correct parameter name
         const { data, error } = await supabase.rpc('calculate_population_analysis', {
           p_client_id: clientId,
           p_fiscal_year: fiscalYear,
           p_selected_standard_numbers: selectedStandardNumbers,
           p_excluded_account_numbers: excludedAccountNumbers,
-          p_version_id: uuid_version_id
+          p_version_string: versionId // Now correctly using version string parameter
         });
 
         if (error) {
