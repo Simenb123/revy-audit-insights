@@ -29,16 +29,10 @@ serve(async (req) => {
     ];
 
     const requestBody = {
-      model: model || 'gpt-4o-mini',
+      model: model || 'gpt-5-mini-2025-08-07',
       messages,
       max_completion_tokens: 50, // Kort svar for testing
     };
-
-    // For legacy models, use max_tokens instead
-    if (model?.includes('gpt-4o')) {
-      delete requestBody.max_completion_tokens;
-      requestBody.max_tokens = 50;
-    }
 
     console.log('OpenAI request body:', JSON.stringify(requestBody));
 

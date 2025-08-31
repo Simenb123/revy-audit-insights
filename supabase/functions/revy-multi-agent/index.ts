@@ -125,24 +125,16 @@ serve(async (req) => {
     if (!openaiKey) throw new Error('OPENAI_API_KEY mangler');
 
     const callOpenAI = async (model: string, messages: any[], opts: any = {}, agentKey?: string): Promise<{ content: string; modelUsed: string; fallbackUsed: boolean; sources?: string[] }> => {
-      let primaryModel = model;
-      let fallbackModel = 'gpt-4o-mini';
+      const primaryModel = model;
       let fallbackUsed = false;
-      
-      // For legacy models, convert max_completion_tokens to max_tokens
-      const requestOpts = { ...opts };
-      if (model?.includes('gpt-4o') && requestOpts.max_completion_tokens) {
-        requestOpts.max_tokens = requestOpts.max_completion_tokens;
-        delete requestOpts.max_completion_tokens;
-      }
 
       const tryModel = async (modelName: string, isRetry = false): Promise<string> => {
-        const requestBody = { model: modelName, messages, ...requestOpts };
+        const requestBody = { model: modelName, messages, ...opts };
         
         console.log(`🔄 OpenAI ${isRetry ? 'FALLBACK' : 'PRIMARY'} request:`, { 
           model: modelName, 
           messageCount: messages.length, 
-          opts: requestOpts,
+          opts: opts,
           systemPrompt: messages[0]?.content?.slice(0, 100) + '...',
           isRetry
         });
@@ -215,48 +207,13 @@ serve(async (req) => {
         }
         
         if (content && content.trim() !== '') {
-          console.log(`🎉 Suksess med primærmodell: ${primaryModel}`, sources.length > 0 ? `(${sources.length} kilder)` : '');
+          console.log(`🎉 Suksess med modell: ${primaryModel}`, sources.length > 0 ? `(${sources.length} kilder)` : '');
           return { content, modelUsed: primaryModel, fallbackUsed: false, sources: sources.slice(0, 5) };
         }
-        throw new Error('Tomt svar fra primærmodell');
-      } catch (primaryError) {
-        console.warn(`⚠️ Primærmodell ${primaryModel} feilet:`, primaryError.message);
-        console.log(`🔄 Prøver fallback til ${fallbackModel}...`);
-        
-        try {
-          // Konverter opts for fallback-modell
-          const fallbackOpts = { ...opts };
-          if (fallbackModel.includes('gpt-4o') && fallbackOpts.max_completion_tokens) {
-            fallbackOpts.max_tokens = fallbackOpts.max_completion_tokens;
-            delete fallbackOpts.max_completion_tokens;
-          }
-          
-          let content = await tryModel(fallbackModel, true);
-          fallbackUsed = true;
-          
-          // Perform document search for fallback too if enabled
-          let sources: string[] = [];
-          if (settings.allowBackgroundDocs && context?.clientId && content) {
-            const searchQueries = shouldPerformSearch(content);
-            if (searchQueries.length > 0) {
-              for (const query of searchQueries.slice(0, 2)) {
-                const searchResults = await performDocumentSearch(supabase, context.clientId, query);
-                if (searchResults.length > 0) {
-                  sources.push(...searchResults.map((r: any) => `${r.file_name}: ${r.summary || 'Relevant dokument'}`));
-                }
-              }
-            }
-          }
-          
-          console.log(`🎉 Fallback suksess med ${fallbackModel}`, sources.length > 0 ? `(${sources.length} kilder)` : '');
-          return { content, modelUsed: fallbackModel, fallbackUsed: true, sources: sources.slice(0, 5) };
-        } catch (fallbackError) {
-          console.error(`❌ Både ${primaryModel} og ${fallbackModel} feilet!`, {
-            primaryError: primaryError.message,
-            fallbackError: fallbackError.message
-          });
-          throw new Error(`AI-modeller utilgjengelig: ${primaryError.message}`);
-        }
+        throw new Error('Tomt svar fra modell');
+      } catch (error) {
+        console.error(`❌ Modell ${primaryModel} feilet:`, error.message);
+        throw new Error(`AI-modell utilgjengelig: ${error.message}`);
       }
     };
 
@@ -276,7 +233,7 @@ serve(async (req) => {
         { role: 'user', content: `Agenter tilgjengelig: ${JSON.stringify(remaining)}\nIdé: ${idea}\nSiste oppsummering: ${runningSummary || 'Ingen'}\nRunde: ${roundIdx + 1}` },
       ];
       try {
-        const orderResult = await callOpenAI(moderator.model || 'gpt-5-mini', contextMsg, { 
+        const orderResult = await callOpenAI(moderator.model || 'gpt-5-mini-2025-08-07', contextMsg, { 
           max_completion_tokens: 150 
         });
         const raw = orderResult.content;
@@ -312,7 +269,7 @@ serve(async (req) => {
         { role: 'user', content: r === 0 ? 'Start med å oppsummere idéen og sett rammene.' : 'Før ordet videre og fokuser diskusjonen.' } 
       ];
       
-      const modResult = await callOpenAI(mod.model || 'gpt-5-mini', modMsg, { 
+      const modResult = await callOpenAI(mod.model || 'gpt-5-mini-2025-08-07', modMsg, { 
         max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
       }, settings.moderatorKey);
       const modContent = modResult.content;
@@ -369,7 +326,7 @@ serve(async (req) => {
           { role: 'user', content: 'Gi ditt korte bidrag.' } 
         ];
         
-        const agentResult = await callOpenAI(agent.model || 'gpt-5-mini', messages, { 
+        const agentResult = await callOpenAI(agent.model || 'gpt-5-mini-2025-08-07', messages, { 
           max_completion_tokens: Math.max(150, settings.maxTokensPerTurn)
         }, agentKey);
         const content = agentResult.content;
@@ -426,7 +383,7 @@ serve(async (req) => {
           { role: 'user', content: lastRound } 
         ];
         
-        const summaryResult = await callOpenAI(note.model || 'gpt-5-mini', sumMsg, { 
+        const summaryResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', sumMsg, { 
           max_completion_tokens: 300
         });
         const summary = summaryResult.content;
@@ -478,7 +435,7 @@ serve(async (req) => {
         { role: 'user', content: all } 
       ];
       
-      const finalResult = await callOpenAI(note.model || 'gpt-5-mini', finalMsg, { 
+      const finalResult = await callOpenAI(note.model || 'gpt-5-mini-2025-08-07', finalMsg, { 
         max_completion_tokens: 400 
       });
       const finalSummary = finalResult.content;
