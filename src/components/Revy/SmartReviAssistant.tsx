@@ -110,32 +110,33 @@ const SmartReviAssistant = ({
 
   if (embedded) {
     return (
-      <div className="h-full space-y-4">
-        <MultiAgentIntegration 
-          context={currentContext} 
-          clientId={clientData?.id}
-          documentContext={undefined}
-        />
-        
-        {/* Smart Context Switcher - only show if there are recommendations */}
-        <SmartContextSwitcher
-          currentContext={currentContext}
-          clientData={clientData}
-          documentContext={undefined}
-          userRole={userRole}
-          sessionHistory={messages}
-          onContextChange={onContextChange}
-        />
-        
-        {/* Intelligent Loading Feedback - show analysis and processing state */}
-        <IntelligentLoadingFeedback
-          isLoading={isLoading || isAnalyzing}
-          context={currentContext}
-          enhancementApplied={isEnhancementReady}
-          estimatedTime={15000}
-        />
-        
-        <div className="flex-1">
+      <div className="flex flex-col h-full min-h-0">
+        {/* Compact status bar for embedded mode */}
+        <div className="flex-shrink-0 px-2 py-1 border-b bg-muted/20 space-y-1">
+          {/* Intelligent Loading Feedback - compact version */}
+          {(isLoading || isAnalyzing) && (
+            <IntelligentLoadingFeedback
+              isLoading={isLoading || isAnalyzing}
+              context={currentContext}
+              enhancementApplied={isEnhancementReady}
+              estimatedTime={15000}
+            />
+          )}
+          
+          {/* Smart Context Switcher - compact badge only when recommendations exist */}
+          <SmartContextSwitcher
+            currentContext={currentContext}
+            clientData={clientData}
+            documentContext={undefined}
+            userRole={userRole}
+            sessionHistory={messages}
+            onContextChange={onContextChange}
+            compact={true}
+          />
+        </div>
+
+        {/* Main chat interface - takes remaining space */}
+        <div className="flex-1 min-h-0">
           <EmbeddedRevyAssistant
             messages={messages}
             input={input}
@@ -147,6 +148,18 @@ const SmartReviAssistant = ({
             onSendMessage={handleSendMessage}
           />
         </div>
+
+        {/* Multi-agent integration - show as floating button when relevant */}
+        {messages.length > 2 && (
+          <div className="flex-shrink-0 p-2 border-t">
+            <MultiAgentIntegration 
+              context={currentContext} 
+              clientId={clientData?.id}
+              documentContext={undefined}
+              compact={true}
+            />
+          </div>
+        )}
       </div>
     );
   }

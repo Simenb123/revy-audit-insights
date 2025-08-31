@@ -13,12 +13,14 @@ interface MultiAgentIntegrationProps {
   context?: string;
   clientId?: string;
   documentContext?: any;
+  compact?: boolean;
 }
 
 const MultiAgentIntegration: React.FC<MultiAgentIntegrationProps> = ({
   context,
   clientId,
-  documentContext
+  documentContext,
+  compact = false
 }) => {
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
@@ -103,6 +105,23 @@ const MultiAgentIntegration: React.FC<MultiAgentIntegrationProps> = ({
     
     return agents.slice(0, 4); // Limit to 4 agents max
   };
+
+  // Compact mode - just show button
+  if (compact) {
+    return (
+      <Button
+        onClick={startMultiAgentSession}
+        disabled={isStarting}
+        variant="outline"
+        size="sm"
+        className="w-full"
+      >
+        <Users className="h-4 w-4 mr-2" />
+        Multi-Agent diskusjon
+        <Badge variant="secondary" className="ml-2 text-xs">Ny</Badge>
+      </Button>
+    );
+  }
 
   return (
     <Card className="border-primary/20">

@@ -16,6 +16,7 @@ interface SmartContextSwitcherProps {
   userRole?: string;
   sessionHistory?: any[];
   onContextChange?: (newContext: RevyContext, recommendation?: any) => void;
+  compact?: boolean;
 }
 
 const SmartContextSwitcher: React.FC<SmartContextSwitcherProps> = ({
@@ -24,7 +25,8 @@ const SmartContextSwitcher: React.FC<SmartContextSwitcherProps> = ({
   documentContext,
   userRole = 'employee',
   sessionHistory = [],
-  onContextChange
+  onContextChange,
+  compact = false
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [contextAnalysis, setContextAnalysis] = useState<any>(null);
@@ -207,6 +209,22 @@ const SmartContextSwitcher: React.FC<SmartContextSwitcherProps> = ({
 
   if (!contextAnalysis || recommendations.length === 0) {
     return null;
+  }
+
+  // Compact mode - just show badge with recommendations count
+  if (compact && recommendations.length > 0) {
+    return (
+      <Badge 
+        variant="secondary" 
+        className="cursor-pointer text-xs"
+        onClick={() => toast.info('Kontekstanbefalinger', {
+          description: `${recommendations.length} anbefalte kontekster basert på AI-analyse`
+        })}
+      >
+        <Brain className="h-3 w-3 mr-1" />
+        {recommendations.length} AI-anbefaling{recommendations.length > 1 ? 'er' : ''}
+      </Badge>
+    );
   }
 
   return (
