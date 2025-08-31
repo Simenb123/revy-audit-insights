@@ -7,6 +7,12 @@ export async function callOpenAI(
     throw new Error('OpenAI API key not configured');
   }
 
+  // Transform max_tokens to max_completion_tokens for newer models
+  if (body.max_tokens && (body.model as string)?.startsWith('gpt-5')) {
+    body.max_completion_tokens = body.max_tokens;
+    delete body.max_tokens;
+  }
+
   const response = await fetch(`https://api.openai.com/v1/${endpoint}`, {
     method: 'POST',
     headers: {
