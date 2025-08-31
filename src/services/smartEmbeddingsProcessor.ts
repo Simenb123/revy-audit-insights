@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-
 export interface EmbeddingProcessingStatus {
   total: number;
   processed: number;
@@ -145,63 +143,74 @@ export class SmartEmbeddingsProcessor {
   private async getMissingEmbeddingsWithPriority(): Promise<EmbeddingItem[]> {
     const missingItems: EmbeddingItem[] = [];
 
-    // Knowledge articles
-    const articlesResponse = await supabase
-      .from('knowledge_articles')
-      .select('id, title, content')
-      .eq('status', 'published')
-      .is('embedding', null);
+    try {
+      // Direct HTTP calls to avoid TypeScript deep inference issues
+      const baseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co/rest/v1';
+      const headers = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc',
+        'Content-Type': 'application/json'
+      };
 
-    if (articlesResponse.data) {
-      for (const article of articlesResponse.data) {
-        missingItems.push({
-          id: article.id,
-          type: 'knowledge_article',
-          title: article.title,
-          content: article.content || '',
-          priority: 1
-        });
+      // Knowledge articles
+      const articlesResponse = await fetch(
+        `${baseUrl}/knowledge_articles?select=id,title,content&status=eq.published&embedding=is.null`,
+        { headers }
+      );
+      
+      if (articlesResponse.ok) {
+        const articlesData = await articlesResponse.json();
+        for (const article of articlesData) {
+          missingItems.push({
+            id: article.id,
+            type: 'knowledge_article',
+            title: article.title,
+            content: article.content || '',
+            priority: 1
+          });
+        }
       }
-    }
 
-    // Legal documents  
-    const documentsResponse = await supabase
-      .from('legal_documents')
-      .select('id, title, content')
-      .eq('is_active', true)
-      .is('embedding', null);
-
-    if (documentsResponse.data) {
-      for (const doc of documentsResponse.data) {
-        missingItems.push({
-          id: doc.id,
-          type: 'legal_document',
-          title: doc.title,
-          content: doc.content || '',
-          priority: 2
-        });
+      // Legal documents  
+      const documentsResponse = await fetch(
+        `${baseUrl}/legal_documents?select=id,title,content&is_active=eq.true&embedding=is.null`,
+        { headers }
+      );
+      
+      if (documentsResponse.ok) {
+        const documentsData = await documentsResponse.json();
+        for (const doc of documentsData) {
+          missingItems.push({
+            id: doc.id,
+            type: 'legal_document',
+            title: doc.title,
+            content: doc.content || '',
+            priority: 2
+          });
+        }
       }
-    }
 
-    // Legal provisions
-    const provisionsResponse = await supabase
-      .from('legal_provisions')
-      .select('id, title, content, law_identifier, provision_number')
-      .eq('is_active', true)
-      .is('embedding', null)
-      .limit(500);
-
-    if (provisionsResponse.data) {
-      for (const provision of provisionsResponse.data) {
-        const priority = provision.law_identifier?.toLowerCase().includes('isa') ? 2 : 3;
-        missingItems.push({
-          id: provision.id,
-          type: 'legal_provision',
-          title: `${provision.law_identifier} ${provision.provision_number}: ${provision.title}`,
-          content: provision.content || '',
-          priority: priority
-        });
+      // Legal provisions
+      const provisionsResponse = await fetch(
+        `${baseUrl}/legal_provisions?select=id,title,content,law_identifier,provision_number&is_active=eq.true&embedding=is.null&limit=500`,
+        { headers }
+      );
+      
+      if (provisionsResponse.ok) {
+        const provisionsData = await provisionsResponse.json();
+        for (const provision of provisionsData) {
+          const priority = provision.law_identifier?.toLowerCase().includes('isa') ? 2 : 3;
+          missingItems.push({
+            id: provision.id,
+            type: 'legal_provision',
+            title: `${provision.law_identifier} ${provision.provision_number}: ${provision.title}`,
+            content: provision.content || '',
+            priority: priority
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error in getMissingEmbeddingsWithPriority:', error);
     }
 
     return missingItems.sort((a, b) => {
@@ -245,19 +254,30 @@ export class SmartEmbeddingsProcessor {
 
     console.log(`Processing embedding for ${item.type} ${item.id}`);
 
-    const { data, error } = await supabase.functions.invoke('batch-generate-embeddings', {
-      body: {
-        items: [{
-          id: item.id,
-          type: item.type,
-          text: textToEmbed
-        }]
+    // Direct HTTP call to edge function
+    const response = await fetch(
+      'https://fxelhfwaoizqyecikscu.supabase.co/functions/v1/batch-generate-embeddings',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: [{
+            id: item.id,
+            type: item.type,
+            text: textToEmbed
+          }]
+        })
       }
-    });
+    );
 
-    if (error) {
-      throw new Error(`Embedding generation failed for ${item.id}: ${error.message}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+
+    const data = await response.json();
 
     if (!data?.success) {
       throw new Error(`Embedding generation unsuccessful for ${item.id}: ${data?.error || 'Unknown error'}`);
@@ -282,24 +302,21 @@ export class SmartEmbeddingsProcessor {
 
   async getOverallStats() {
     try {
-      const articlesResult = await supabase
-        .from('knowledge_articles')
-        .select('id, embedding')
-        .eq('status', 'published');
+      const baseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co/rest/v1';
+      const headers = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc'
+      };
 
-      const documentsResult = await supabase
-        .from('legal_documents')
-        .select('id, embedding')
-        .eq('is_active', true);
+      const [articlesResponse, documentsResponse, provisionsResponse] = await Promise.all([
+        fetch(`${baseUrl}/knowledge_articles?select=id,embedding&status=eq.published`, { headers }),
+        fetch(`${baseUrl}/legal_documents?select=id,embedding&is_active=eq.true`, { headers }),
+        fetch(`${baseUrl}/legal_provisions?select=id,embedding&is_active=eq.true`, { headers })
+      ]);
 
-      const provisionsResult = await supabase
-        .from('legal_provisions')
-        .select('id, embedding')
-        .eq('is_active', true);
-
-      const articlesData: any[] = articlesResult.data || [];
-      const documentsData: any[] = documentsResult.data || [];  
-      const provisionsData: any[] = provisionsResult.data || [];
+      const articlesData = articlesResponse.ok ? await articlesResponse.json() : [];
+      const documentsData = documentsResponse.ok ? await documentsResponse.json() : [];
+      const provisionsData = provisionsResponse.ok ? await provisionsResponse.json() : [];
 
       const articlesTotal = articlesData.length;
       const articlesWithEmbeddings = articlesData.filter((item: any) => item.embedding).length;
