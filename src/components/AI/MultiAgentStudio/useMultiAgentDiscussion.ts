@@ -43,14 +43,9 @@ export const useMultiAgentDiscussion = ({
         const messages: TranscriptMessage[] = data?.transcript ?? [];
         setTranscript(messages);
         
-        // Vis fallback-info til bruker hvis relevant
-        if (data?.metadata?.fallbackUsed) {
-          toast({
-            title: "AI-modell fallback",
-            description: `GPT-5 var ikke tilgjengelig, brukte GPT-4 (${data.metadata.fallbackCount} meldinger)`,
-            variant: "default",
-          });
-          console.log('🔄 Fallback brukt:', data.metadata);
+        // Log metadata hvis relevant
+        if (data?.metadata) {
+          console.log('🔄 Diskusjon metadata:', data.metadata);
         }
         
       } catch (e: any) {

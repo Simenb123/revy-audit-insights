@@ -291,7 +291,6 @@ export class IntelligentAgentCoordinator {
       name: 'Diskusjonsleder',
       systemPrompt: 'Du er en erfaren diskusjonsleder som holder samtalen strukturert, sikrer at alle får komme til orde, og oppsummerer viktige punkter. Stil oppfølgingsspørsmål og hold fokus på hovedtemaet.',
       model: 'gpt-5-2025-08-07',
-      temperature: 0.7,
       dataScopes: ['artikler', 'forskrifter']
     });
 
@@ -302,7 +301,6 @@ export class IntelligentAgentCoordinator {
         name: 'Juridisk rådgiver',
         systemPrompt: 'Du er en erfaren jurist med spesialkompetanse innen norsk rett. Analyser juridiske aspekter, referer til relevante lovbestemmelser, og vurder rettslige implikasjoner. Vær presis og faktabasert.',
         model: 'gpt-5-2025-08-07',
-        temperature: 0.3,
         dataScopes: ['lover', 'forskrifter', 'rundskriv', 'lovkommentarer']
       });
     }
@@ -313,7 +311,6 @@ export class IntelligentAgentCoordinator {
         name: 'Revisor',
         systemPrompt: 'Du er en autorisert revisor med bred erfaring innen revisjon og regnskapsføring. Fokuser på internkontroll, risikovurdering, og etterlevelse av revisjonsstandarder. Henvis til ISA-standarder når relevant.',
         model: 'gpt-5-2025-08-07',
-        temperature: 0.4,
         dataScopes: ['artikler', 'forskrifter']
       });
     }
@@ -325,7 +322,6 @@ export class IntelligentAgentCoordinator {
         name: 'Kritisk røst',
         systemPrompt: 'Du stiller kritiske spørsmål, utfordrer antakelser, og peker på potensielle problemer eller svakheter i argumenter. Vær konstruktiv i din kritikk og foreslå alternative løsninger.',
         model: 'gpt-5-mini-2025-08-07',
-        temperature: 0.8,
         dataScopes: ['artikler']
       });
     }
@@ -337,7 +333,6 @@ export class IntelligentAgentCoordinator {
         name: 'Referent',
         systemPrompt: 'Du oppsummerer viktige punkter fra diskusjonen, holder oversikt over beslutninger og handlingsplaner, og sikrer at ingenting viktig går tapt. Lag strukturerte sammendrag.',
         model: 'gpt-5-mini-2025-08-07',
-        temperature: 0.2,
         dataScopes: ['artikler']
       });
     }

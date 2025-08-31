@@ -115,9 +115,8 @@ const SmartDocumentSearch: React.FC<SmartDocumentSearchProps> = ({ clientId }) =
           description: selectedVariant.description,
           system_prompt_prefix: selectedVariant.system_prompt_template,
           model_config: {
-            temperature: 0.2,
-            max_tokens: 1200,
-            model: 'gpt-5-mini'
+            max_completion_tokens: 1200,
+            model: 'gpt-5-mini-2025-08-07'
           },
           context_types: selectedVariant.available_contexts
         } : undefined
