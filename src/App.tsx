@@ -89,6 +89,7 @@ import LegalRelationsAdmin from "./components/Knowledge/admin/LegalRelationsAdmi
 import { PdfCreatorPage } from "./components/pdf/PdfCreatorPage";
 import AksjonaerregisterPage from "./pages/ressurser/aksjonaerregister";
 import AIMultiAgentStudio from "./pages/AIMultiAgentStudio";
+import AdminEmbeddingsManager from "./pages/AdminEmbeddingsManager";
 const queryClient = new QueryClient();
 
 function App() {
@@ -177,8 +178,9 @@ function App() {
                   <Route path="admin/account-relationships" element={<AccountRelationshipsPage />} />
                   <Route path="admin/audit-action-library" element={<AuditActionLibrary />} />
                   <Route path="fag/*" element={<KnowledgeBase />} />
-                  <Route path="admin/rag/juridisk" element={<ProtectedRoute><LegalRelationsAdmin /></ProtectedRoute>} />
-                  <Route path="academy" element={<Academy />} />
+                   <Route path="admin/rag/juridisk" element={<ProtectedRoute><LegalRelationsAdmin /></ProtectedRoute>} />
+                   <Route path="admin/embeddings" element={<ProtectedRoute><AdminEmbeddingsManager /></ProtectedRoute>} />
+                   <Route path="academy" element={<Academy />} />
                    <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
                    <Route path="ai/multi-agent-studio" element={<ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute>} />
                    <Route path="clients/:clientId/ai/multi-agent-studio" element={<ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute>} />
