@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
     console.log(`Optimized batch ${batchInfo.current} completed: ${imported} imported, ${errors} errors`)
 
     return new Response(JSON.stringify({
-      imported,
+      processedRows: imported,
       errors,
       batch: batchInfo,
       batchSize: LARGE_BATCH_SIZE
