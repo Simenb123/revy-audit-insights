@@ -55,12 +55,13 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
     const isAtTop = scrollTop < 100;
+    const isNearTop = scrollTop < 200; // Preload when user is getting close to top
     
     setShowScrollToBottom(!isAtBottom && messages.length > 5);
-    setIsNearTop(isAtTop);
+    setIsNearTop(isNearTop);
 
-    // Auto-load more messages when near top
-    if (isAtTop && hasMoreMessages && !isLoadingMore && onLoadMore) {
+    // Smart preloading - load when user is 5 messages from top
+    if (isNearTop && hasMoreMessages && !isLoadingMore && onLoadMore) {
       onLoadMore();
     }
   }, [hasMoreMessages, isLoadingMore, onLoadMore, messages.length]);
@@ -136,7 +137,7 @@ export const RevyMessageList: React.FC<RevyMessageListProps> = ({
           onScroll={handleScroll}
         >
           <div className="p-2">
-            {messages.length > 100 ? (
+            {messages.length > 25 ? (
               <VirtualScrollArea
                 items={messages}
                 height={600}

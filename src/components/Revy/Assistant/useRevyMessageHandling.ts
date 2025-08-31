@@ -32,7 +32,7 @@ export const useRevyMessageHandling = ({
   const { session } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   
-  const MESSAGES_PER_PAGE = 50;
+  const MESSAGES_PER_PAGE = 10;
   
   // Get client documents for AI context
   const { documents: clientDocuments } = useClientDocuments(clientData?.id);
