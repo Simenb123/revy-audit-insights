@@ -6,6 +6,7 @@ import EmbeddedRevyAssistant from './Assistant/EmbeddedRevyAssistant';
 import StandaloneRevyAssistant from './Assistant/StandaloneRevyAssistant';
 import { useRevyMessageHandling } from './Assistant/useRevyMessageHandling';
 import { useAIRevyVariants } from '@/hooks/useAIRevyVariants';
+import MultiAgentIntegration from '@/components/AI/MultiAgentIntegration';
 
 interface SmartReviAssistantProps {
   embedded?: boolean;
@@ -82,17 +83,24 @@ const SmartReviAssistant = ({
 
   if (embedded) {
     return (
-      <div className="h-full">
-        <EmbeddedRevyAssistant
-          messages={messages}
-          input={input}
-          isLoading={isLoading}
-          selectedVariant={activeVariant}
-          contextDisplayName={contextDisplayName}
-          onInputChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onSendMessage={handleSendMessage}
+      <div className="h-full space-y-4">
+        <MultiAgentIntegration 
+          context={currentContext} 
+          clientId={clientData?.id}
+          documentContext={undefined}
         />
+        <div className="flex-1">
+          <EmbeddedRevyAssistant
+            messages={messages}
+            input={input}
+            isLoading={isLoading}
+            selectedVariant={activeVariant}
+            contextDisplayName={contextDisplayName}
+            onInputChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onSendMessage={handleSendMessage}
+          />
+        </div>
       </div>
     );
   }

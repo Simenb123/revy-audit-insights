@@ -1,8 +1,8 @@
 import { logger } from '@/utils/logger';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AIRevyVariantName } from '@/constants/aiRevyVariants';
+import { getSmartAIVariantRecommendation, type SmartContextSwitchingConfig } from '@/services/enhancedAIVariantService';
 
 export interface AIRevyVariant {
   id: string;
@@ -16,14 +16,15 @@ export interface AIRevyVariant {
   sort_order: number;
 }
 
-export const useAIRevyVariants = (context?: string) => {
+export const useAIRevyVariants = (context?: string, userRole?: string, documentContext?: any) => {
   const [variants, setVariants] = useState<AIRevyVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<AIRevyVariant | null>(null);
+  const [smartRecommendation, setSmartRecommendation] = useState<any>(null);
 
   useEffect(() => {
     loadVariants();
-  }, [context]);
+  }, [context, userRole, documentContext]);
 
   const loadVariants = async () => {
     try {
@@ -58,8 +59,39 @@ export const useAIRevyVariants = (context?: string) => {
       
       // Auto-select most appropriate variant based on context
       if (transformedData && transformedData.length > 0 && !selectedVariant) {
-        const defaultVariant = selectDefaultVariant(transformedData, context);
-        setSelectedVariant(defaultVariant);
+        // First try smart recommendation
+        const smartConfig: Partial<SmartContextSwitchingConfig> = {
+          userRole: userRole || 'employee',
+          documentTypes: documentContext ? detectDocumentTypes(documentContext) : [],
+          complexity: detectComplexity(context),
+          riskLevel: detectRiskLevel(context)
+        };
+
+        try {
+          const recommendation = await getSmartAIVariantRecommendation(
+            context || 'general', 
+            smartConfig, 
+            documentContext
+          );
+          
+          if (recommendation && recommendation.confidence > 0.6) {
+            setSmartRecommendation(recommendation);
+            setSelectedVariant(recommendation.variant);
+            logger.info('Smart AI variant selected:', {
+              variant: recommendation.variant.name,
+              confidence: recommendation.confidence,
+              reasoning: recommendation.reasoning
+            });
+          } else {
+            // Fallback to legacy selection
+            const defaultVariant = selectDefaultVariant(transformedData, context);
+            setSelectedVariant(defaultVariant);
+          }
+        } catch (error) {
+          logger.error('Smart variant selection failed, using fallback:', error);
+          const defaultVariant = selectDefaultVariant(transformedData, context);
+          setSelectedVariant(defaultVariant);
+        }
       }
     } catch (error) {
       logger.error('Error loading AI-Revy variants:', error);
@@ -90,6 +122,29 @@ export const useAIRevyVariants = (context?: string) => {
     return preferred || availableVariants[0];
   };
 
+  // Helper functions for smart context analysis
+  const detectDocumentTypes = (documentContext: any): string[] => {
+    if (!documentContext) return [];
+    const text = JSON.stringify(documentContext).toLowerCase();
+    const types = [];
+    if (text.includes('regnskap') || text.includes('financial')) types.push('financial');
+    if (text.includes('juridisk') || text.includes('legal')) types.push('legal');
+    if (text.includes('revisjon') || text.includes('audit')) types.push('audit');
+    return types;
+  };
+
+  const detectComplexity = (context?: string): 'simple' | 'medium' | 'complex' => {
+    if (!context) return 'medium';
+    const complexContexts = ['audit-actions', 'risk-assessment', 'planning'];
+    return complexContexts.includes(context) ? 'complex' : 'medium';
+  };
+
+  const detectRiskLevel = (context?: string): 'low' | 'medium' | 'high' => {
+    if (!context) return 'medium';
+    const highRiskContexts = ['risk-assessment', 'client-detail'];
+    return highRiskContexts.includes(context) ? 'high' : 'medium';
+  };
+
   const switchVariant = (variant: AIRevyVariant) => {
     setSelectedVariant(variant);
   };
@@ -104,6 +159,7 @@ export const useAIRevyVariants = (context?: string) => {
     isLoading,
     switchVariant,
     handleVariantChange,
-    loadVariants
+    loadVariants,
+    smartRecommendation
   };
 };
