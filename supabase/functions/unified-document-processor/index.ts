@@ -81,7 +81,6 @@ async function performAIAnalysis(text: string, options: any = {}): Promise<any> 
         max_tokens: 1500,
         temperature: 0.6
       }),
-      }),
     });
 
     if (!response.ok) {
