@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import PageLayout from '@/components/Layout/PageLayout';
-import MultiAgentStudio from '@/components/AI/MultiAgentStudio/MultiAgentStudio';
+import EnhancedMultiAgentStudio from '@/components/AI/MultiAgentStudio/EnhancedMultiAgentStudio';
 
 const AIMultiAgentStudio: React.FC = () => {
   const { clientId } = useParams<{ clientId?: string }>();
@@ -12,12 +12,13 @@ const AIMultiAgentStudio: React.FC = () => {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">AI Multi-Agent Studio</h1>
           <p className="text-muted-foreground">
-            Organiser diskusjoner med spesialiserte AI-roller som moderator, advokat, revisor og flere.
+            Intelligent agent-samarbeid med avansert kontekstanalyse og samtalestyring.
           </p>
         </div>
-        <MultiAgentStudio 
+        <EnhancedMultiAgentStudio 
           clientId={clientId}
           documentContext={undefined}
+          context="general"
         />
       </div>
     </PageLayout>
