@@ -544,7 +544,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           clientId={clientId}
           fiscalYear={fiscalYear}
           selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
-          versionId={versionString}
+          versionString={versionString}
         />
 
         {/* Drill-down modal for detailed transaction analysis */}
@@ -556,7 +556,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
           selectedAccountNumbers={analysisData.accounts.map(acc => acc.account_number)}
           counterAccountNumber={selectedCounterAccount?.counterAccount || ''}
           counterAccountName={selectedCounterAccount?.counterAccountName || ''}
-          versionId={versionString}
+          versionString={versionString}
         />
       </div>
     </ErrorBoundary>

@@ -18,7 +18,7 @@ interface DrillDownModalProps {
   selectedAccountNumbers: string[];
   counterAccountNumber: string;
   counterAccountName: string;
-  versionId?: string;
+  versionString?: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -37,12 +37,12 @@ const DrillDownModal: React.FC<DrillDownModalProps> = ({
   selectedAccountNumbers,
   counterAccountNumber,
   counterAccountName,
-  versionId
+  versionString
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const ITEMS_PER_PAGE = 50;
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['drill-down-transactions', clientId, fiscalYear, selectedAccountNumbers, counterAccountNumber, versionId],
+    queryKey: ['drill-down-transactions', clientId, fiscalYear, selectedAccountNumbers, counterAccountNumber, versionString],
     queryFn: async () => {
       // Get voucher numbers that contain both selected accounts and counter account
       let voucherQuery = supabase
@@ -53,8 +53,8 @@ const DrillDownModal: React.FC<DrillDownModalProps> = ({
         .lte('transaction_date', `${fiscalYear}-12-31`)
         .in('account_number', [...selectedAccountNumbers, counterAccountNumber]);
 
-      if (versionId) {
-        voucherQuery = voucherQuery.eq('version_id', versionId);
+      if (versionString) {
+        voucherQuery = voucherQuery.eq('version_id', versionString);
       }
 
       const { data: voucherData } = await voucherQuery;
@@ -79,8 +79,8 @@ const DrillDownModal: React.FC<DrillDownModalProps> = ({
         .in('voucher_number', voucherNumbers)
         .order('transaction_date', { ascending: false });
 
-      if (versionId) {
-        transactionQuery = transactionQuery.eq('version_id', versionId);
+      if (versionString) {
+        transactionQuery = transactionQuery.eq('version_id', versionString);
       }
 
       const { data: allTransactions } = await transactionQuery;

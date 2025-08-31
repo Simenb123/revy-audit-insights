@@ -12,7 +12,7 @@ interface AdvancedAnomalyDetectionProps {
   clientId: string;
   fiscalYear: number;
   selectedAccountNumbers: string[];
-  versionId?: string;
+  versionString?: string;
 }
 
 interface BenfordAnalysis {
@@ -50,10 +50,10 @@ const AdvancedAnomalyDetection: React.FC<AdvancedAnomalyDetectionProps> = ({
   clientId,
   fiscalYear,
   selectedAccountNumbers,
-  versionId
+  versionString
 }) => {
   const { data: anomalies, isLoading } = useQuery({
-    queryKey: ['advanced-anomalies', clientId, fiscalYear, selectedAccountNumbers, versionId],
+    queryKey: ['advanced-anomalies', clientId, fiscalYear, selectedAccountNumbers, versionString],
     queryFn: async () => {
       if (selectedAccountNumbers.length === 0) return null;
 
@@ -73,8 +73,8 @@ const AdvancedAnomalyDetection: React.FC<AdvancedAnomalyDetectionProps> = ({
         .lte('transaction_date', `${fiscalYear}-12-31`)
         .in('account_number', selectedAccountNumbers);
 
-      if (versionId) {
-        query = query.eq('version_id', versionId);
+      if (versionString) {
+        query = query.eq('version_id', versionString);
       }
 
       const { data: transactions } = await query;
