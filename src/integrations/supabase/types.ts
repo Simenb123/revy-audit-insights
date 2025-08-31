@@ -12923,24 +12923,9 @@ export type Database = {
         Args: { p_checklist_id: string }
         Returns: undefined
       }
-      update_total_shares_batch: {
-        Args: {
-          p_batch_size?: number
-          p_offset?: number
-          p_user_id?: string
-          p_year: number
-        }
-        Returns: Json
-      }
-      update_total_shares_batch_optimized: {
-        Args: {
-          p_batch_size?: number
-          p_max_execution_time_seconds?: number
-          p_offset?: number
-          p_user_id?: string
-          p_year: number
-        }
-        Returns: Json
+      update_company_total_shares: {
+        Args: { p_orgnr: string; p_user_id?: string; p_year: number }
+        Returns: number
       }
       update_total_shares_for_year: {
         Args: { p_orgnr?: string; p_user_id?: string; p_year: number }
