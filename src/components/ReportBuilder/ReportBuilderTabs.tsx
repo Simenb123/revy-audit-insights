@@ -19,8 +19,14 @@ export const ReportBuilderTabs = React.memo(({
   hasData 
 }: ReportBuilderTabsProps) => {
   const isGlobal = clientId === 'global';
+  
+  // Always render the component, but show empty state when no data
   if (!hasData || (!selectedVersion && !isGlobal)) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-[200px] text-muted-foreground">
+        <p>Ingen data tilgjengelig for rapportbygging</p>
+      </div>
+    );
   }
 
   return (
