@@ -189,13 +189,11 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 </Card>
               )}
 
-              {hasGLData && hasTBData && activeGLVersion && selectedTBVersion && (
-                <ValidationPanel 
-                  clientId={clientId} 
-                  selectedGLVersion={activeGLVersion.id} 
-                  selectedTBVersion={selectedTBVersion.version} 
-                />
-              )}
+              <ValidationPanel 
+                clientId={clientId} 
+                selectedGLVersion={activeGLVersion?.id} 
+                selectedTBVersion={selectedTBVersion?.version} 
+              />
             </div>
           )}
           

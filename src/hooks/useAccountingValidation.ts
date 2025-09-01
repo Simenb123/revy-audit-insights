@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useGeneralLedgerData } from './useGeneralLedgerData';
 import { useTrialBalanceData } from './useTrialBalanceData';
 import { useActiveTrialBalanceVersion, useActiveVersionInfo } from './useActiveTrialBalanceVersion';
@@ -23,23 +24,37 @@ export const useAccountingValidation = (
   selectedGLVersion?: string,
   selectedTBVersion?: string
 ) => {
-  // Get active version info for consistent data access
+  // ALWAYS call hooks in the same order - move conditional logic to query function
   const { data: activeVersionInfo } = useActiveVersionInfo(clientId);
   const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId);
   
-  // Use provided versions or fallback to active versions
-  const effectiveGLVersion = selectedGLVersion || activeVersionInfo?.id;
-  const effectiveTBVersion = selectedTBVersion || activeTrialBalanceVersion?.version;
+  // Stabilize version selection with useMemo
+  const effectiveGLVersion = useMemo(() => 
+    selectedGLVersion || activeVersionInfo?.id, 
+    [selectedGLVersion, activeVersionInfo?.id]
+  );
   
+  const effectiveTBVersion = useMemo(() => 
+    selectedTBVersion || activeTrialBalanceVersion?.version, 
+    [selectedTBVersion, activeTrialBalanceVersion?.version]
+  );
+  
+  // ALWAYS call these hooks - let them handle empty/null versions
   const { data: generalLedgerData } = useGeneralLedgerData(clientId, effectiveGLVersion);
   const { data: trialBalanceData } = useTrialBalanceData(clientId, effectiveTBVersion);
+
+  // Stabilize query key with useMemo
+  const queryKey = useMemo(() => 
+    ['accounting-validation', clientId, effectiveGLVersion, effectiveTBVersion],
+    [clientId, effectiveGLVersion, effectiveTBVersion]
+  );
 
   console.log('[Validation Hook] GL Data:', generalLedgerData?.length || 0, 'entries');
   console.log('[Validation Hook] TB Data:', trialBalanceData?.length || 0, 'entries');
   console.log('[Validation Hook] Parameters:', { clientId, effectiveGLVersion, effectiveTBVersion });
 
   return useQuery({
-    queryKey: ['accounting-validation', clientId, effectiveGLVersion, effectiveTBVersion],
+    queryKey,
     queryFn: async () => {
       console.log('[Validation Query] Running with:', { 
         hasGL: !!generalLedgerData, 
@@ -116,6 +131,6 @@ export const useAccountingValidation = (
         accountValidations
       };
     },
-    enabled: !!clientId && (!!effectiveGLVersion || !!effectiveTBVersion),
+    enabled: !!clientId, // Always enabled, let queryFn handle missing data
   });
 };
