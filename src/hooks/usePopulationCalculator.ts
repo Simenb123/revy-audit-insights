@@ -27,8 +27,18 @@ export function usePopulationCalculator(
   excludedAccountNumbers: string[],
   versionId?: string
 ) {
+  // Create stable query key to prevent infinite re-renders
+  const stableQueryKey = [
+    'population-calculator',
+    clientId,
+    fiscalYear,
+    selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
+    excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
+    versionId || 'latest'
+  ];
+
   return useQuery({
-    queryKey: ['population-calculator', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionId],
+    queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationData> => {
       // If no standard accounts selected, return empty population
       if (selectedStandardNumbers.length === 0) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,51 +40,72 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     activeTrialBalanceVersion?.version
   );
 
-  // Create stable reference to account numbers to prevent infinite re-renders
+  // Create stable reference to account numbers using string comparison
   const populationAccountNumbers = useMemo(() => 
     populationData?.accounts?.map(acc => acc.account_number) || [],
-    [populationData?.accounts?.length] // Only depend on length for stability
+    [populationData?.accounts?.length]
   );
 
-  // Auto-include accounts when standard accounts are selected
+  // Create stable string representation for useEffect dependency
+  const populationAccountNumbersString = useMemo(() => 
+    populationAccountNumbers.join(','),
+    [populationAccountNumbers.length, populationData?.accounts?.[0]?.account_number]
+  );
+
+  const selectedStandardNumbersString = useMemo(() => 
+    selectedStandardNumbers.join(','),
+    [selectedStandardNumbers.length]
+  );
+
+  // Auto-include accounts when standard accounts are selected - with stable dependencies
   useEffect(() => {
     if (selectedStandardNumbers.length > 0 && populationAccountNumbers.length > 0) {
       setExcludedAccountNumbers(prev => {
         // Remove any accounts from exclusion list that are now part of the population
         const newExcluded = prev.filter(accountNumber => !populationAccountNumbers.includes(accountNumber));
-        return newExcluded;
+        // Only update if there's actually a change
+        if (newExcluded.length !== prev.length) {
+          return newExcluded;
+        }
+        return prev;
       });
     } else if (selectedStandardNumbers.length === 0) {
       setExcludedAccountNumbers([]);
     }
-  }, [selectedStandardNumbers, populationAccountNumbers]);
+  }, [selectedStandardNumbersString, populationAccountNumbersString]); // Use stable string dependencies
 
-  const handleStandardAccountToggle = (accountNumber: string) => {
+  // Stabilize event handlers with useCallback to prevent unnecessary re-renders
+  const handleStandardAccountToggle = useCallback((accountNumber: string) => {
     setSelectedStandardNumbers(prev => 
       prev.includes(accountNumber)
         ? prev.filter(n => n !== accountNumber)
         : [...prev, accountNumber]
     );
-  };
+  }, []);
 
-  const handleAccountExclusionToggle = (accountNumber: string) => {
+  const handleAccountExclusionToggle = useCallback((accountNumber: string) => {
     setExcludedAccountNumbers(prev =>
       prev.includes(accountNumber)
         ? prev.filter(n => n !== accountNumber)
         : [...prev, accountNumber]
     );
-  };
+  }, []);
 
-  const filteredAccounts = populationData?.accounts?.filter(account => {
-    const matchesSearch = !searchTerm || 
-      account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Stabilize filtered accounts with proper dependencies
+  const filteredAccounts = useMemo(() => {
+    if (!populationData?.accounts) return [];
     
-    const matchesFilter = !showOnlyExcluded || 
-      excludedAccountNumbers.includes(account.account_number);
-    
-    return matchesSearch && matchesFilter;
-  }) || [];
+    return populationData.accounts.filter(account => {
+      const matchesSearch = !searchTerm || 
+        account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.account_name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesFilter = !showOnlyExcluded || 
+        excludedAccountNumbers.includes(account.account_number);
+      
+      return matchesSearch && matchesFilter;
+    });
+  }, [populationData?.accounts?.length, searchTerm, showOnlyExcluded, excludedAccountNumbers.length]);
 
   // Common standard accounts for quick selection
   const commonStandardAccounts = [
@@ -97,13 +118,24 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     { number: '81', name: 'Finanskostnader', category: 'Finans' }
   ];
 
-  const includedSum = populationData?.accounts
-    ?.filter(acc => !excludedAccountNumbers.includes(acc.account_number))
-    .reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0) || 0;
-
-  const excludedSum = populationData?.accounts
-    ?.filter(acc => excludedAccountNumbers.includes(acc.account_number))
-    .reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0) || 0;
+  // Stabilize sum calculations with useMemo
+  const { includedSum, excludedSum } = useMemo(() => {
+    if (!populationData?.accounts) return { includedSum: 0, excludedSum: 0 };
+    
+    let included = 0;
+    let excluded = 0;
+    
+    populationData.accounts.forEach(acc => {
+      const absBalance = Math.abs(acc.closing_balance);
+      if (excludedAccountNumbers.includes(acc.account_number)) {
+        excluded += absBalance;
+      } else {
+        included += absBalance;
+      }
+    });
+    
+    return { includedSum: included, excludedSum: excluded };
+  }, [populationData?.accounts?.length, excludedAccountNumbers.length]);
 
   return (
     <Card>

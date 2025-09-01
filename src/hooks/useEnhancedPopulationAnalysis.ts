@@ -36,8 +36,18 @@ export function useEnhancedPopulationAnalysis(
     })).slice(0, 16)
   };
 
+  // Create stable query key to prevent infinite re-renders
+  const stableQueryKey = [
+    'enhanced-population-analysis',
+    clientId,
+    fiscalYear,
+    selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
+    excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
+    versionString || 'latest'
+  ];
+
   return useQuery({
-    queryKey: ['enhanced-population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionString],
+    queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationAnalysisData> => {
       // Check cache first if enabled
       if (enableLocalCache) {

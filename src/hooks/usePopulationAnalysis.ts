@@ -87,8 +87,18 @@ export function usePopulationAnalysis(
   excludedAccountNumbers: string[],
   versionString?: string
 ) {
+  // Create stable query key using string-based approach to prevent infinite re-renders
+  const stableQueryKey = [
+    'population-analysis',
+    clientId,
+    fiscalYear,
+    selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
+    excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
+    versionString || 'latest'
+  ];
+
   return useQuery({
-    queryKey: ['population-analysis', clientId, fiscalYear, [...selectedStandardNumbers].sort(), [...excludedAccountNumbers].sort(), versionString],
+    queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationAnalysisData> => {
       // Use the new comprehensive SQL function
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
