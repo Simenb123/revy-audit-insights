@@ -208,7 +208,25 @@ const AdvancedAnomalyDetection: React.FC<AdvancedAnomalyDetectionProps> = ({
   }
 
   if (!anomalies) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Avansert anomalideteksjon
+          </CardTitle>
+          <CardDescription>
+            Ingen anomalier funnet eller ikke nok data for analyse
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-8">
+            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Ingen data tilgjengelig for analyse</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const { benfordAnalysis, duplicates, timeAnomalies } = anomalies;

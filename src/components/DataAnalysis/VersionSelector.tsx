@@ -32,9 +32,18 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
     }
   };
 
-  // Don't render if no versions or no selected version
-  if (!versions.length || !selectedVersion) {
-    return null;
+  // Always render component, but show placeholder if no data - prevents React error #310
+  const shouldShowContent = versions.length > 0 && selectedVersion;
+  
+  if (!shouldShowContent) {
+    return (
+      <div className="flex justify-between items-center border-b pb-4 mb-4">
+        <div className="flex items-center gap-2">
+          <Clock size={16} className="text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Ingen versjoner tilgjengelig</span>
+        </div>
+      </div>
+    );
   }
   
   return (
@@ -77,4 +86,4 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
   );
 };
 
-export default VersionSelector;
+export default React.memo(VersionSelector);

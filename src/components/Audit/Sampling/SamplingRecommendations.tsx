@@ -21,8 +21,27 @@ const SamplingRecommendations: React.FC<SamplingRecommendationsProps> = ({
   params,
   onApplyRecommendation
 }) => {
+  // Always render component, but show placeholder if no data - prevents React error #310
   if (transactions.length === 0) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Risikoanalyse og anbefalinger
+          </CardTitle>
+          <CardDescription>
+            Ingen transaksjoner å analysere
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Velg populasjon for å få risikoanalyse</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const riskAssessment = assessPopulationRisk(transactions, params);
@@ -162,4 +181,4 @@ const SamplingRecommendations: React.FC<SamplingRecommendationsProps> = ({
   );
 };
 
-export default SamplingRecommendations;
+export default React.memo(SamplingRecommendations);

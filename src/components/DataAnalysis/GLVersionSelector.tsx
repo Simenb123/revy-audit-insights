@@ -14,6 +14,7 @@ export interface GLVersionSelectorProps {
   onSelectVersion?: (version: GLVersionOption) => void;
 }
 
+// Wrap in React.memo to prevent unnecessary re-renders
 const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({ 
   versions,
   selectedVersion,
@@ -42,10 +43,18 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
     }
   };
 
-  // Don't render if no versions or no selected version
-  if (!versions.length || !selectedVersion) {
-    console.log('[GL Version Selector] Not rendering - versions:', versions.length, 'selected:', !!selectedVersion);
-    return null;
+  // Always render component, but show placeholder if no data - prevents React error #310
+  const shouldShowContent = versions.length > 0 && selectedVersion;
+  
+  if (!shouldShowContent) {
+    return (
+      <div className="border-b pb-4 mb-4">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Clock size={16} />
+          <span className="text-sm">Ingen versjoner tilgjengelig</span>
+        </div>
+      </div>
+    );
   }
   
   return (
@@ -127,4 +136,4 @@ const GLVersionSelector: React.FC<GLVersionSelectorProps> = ({
   );
 };
 
-export default GLVersionSelector;
+export default React.memo(GLVersionSelector);

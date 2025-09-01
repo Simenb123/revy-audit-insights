@@ -95,9 +95,16 @@ const TBVersionSelector: React.FC<TBVersionSelectorProps> = ({
     );
   }
 
-  // Don't render if no selected version
+  // Always render component, but show placeholder if no data - prevents React error #310
   if (!selectedVersion) {
-    return null;
+    return (
+      <div className="flex justify-between items-center border-b pb-4 mb-4">
+        <div className="flex items-center gap-2">
+          <Clock size={16} className="text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Ingen versjon valgt</span>
+        </div>
+      </div>
+    );
   }
   
   return (
@@ -195,4 +202,4 @@ const TBVersionSelector: React.FC<TBVersionSelectorProps> = ({
   );
 };
 
-export default TBVersionSelector;
+export default React.memo(TBVersionSelector);

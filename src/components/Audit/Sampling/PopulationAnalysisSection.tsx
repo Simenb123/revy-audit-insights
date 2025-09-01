@@ -61,9 +61,22 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
     };
   }, [analysisData?.anomalyDetection?.anomalies?.length]);
 
-  // Return null if no data to prevent rendering empty analysis
+  // Always render component, but show placeholder if no data - prevents React error #310
   if (!analysisData) {
-    return null;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold text-muted-foreground">Populasjonsanalyse</h3>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-muted-foreground">Velg populasjon for å starte analysen</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
