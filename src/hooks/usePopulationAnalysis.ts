@@ -88,7 +88,7 @@ export function usePopulationAnalysis(
   versionString?: string
 ) {
   return useQuery({
-    queryKey: ['population-analysis', clientId, fiscalYear, selectedStandardNumbers, excludedAccountNumbers, versionString],
+    queryKey: ['population-analysis', clientId, fiscalYear, [...selectedStandardNumbers].sort(), [...excludedAccountNumbers].sort(), versionString],
     queryFn: async (): Promise<PopulationAnalysisData> => {
       // Use the new comprehensive SQL function
       const { data, error } = await supabase.rpc('calculate_population_analysis', {

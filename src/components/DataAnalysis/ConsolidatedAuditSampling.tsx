@@ -205,6 +205,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     enabled: !!clientId
   });
 
+  // Create stable reference for population accounts to prevent infinite re-renders
+  const populationAccountsLength = useMemo(() => 
+    populationData?.accounts?.length || 0, 
+    [populationData?.accounts?.length]
+  );
+
   // Get accounts for the exclusion manager
   const accountsForExclusion = useMemo(() => {
     if (!populationData?.accounts) return [];
@@ -226,7 +232,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     }
     
     return filtered.sort((a, b) => a.account_number.localeCompare(b.account_number));
-  }, [populationData?.accounts, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
+  }, [populationAccountsLength, populationData?.accounts?.[0]?.account_number, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
 
   // Fetch working materiality on component mount and when fiscal year changes
   useEffect(() => {
@@ -268,16 +274,20 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     }
   }, [selectedFiscalYear, params.fiscalYear]);
 
+  // Create stable reference for population data properties to prevent infinite re-renders
+  const populationSize = useMemo(() => populationData?.size || 0, [populationData?.size]);
+  const populationSum = useMemo(() => populationData?.sum || 0, [populationData?.sum]);
+
   // Update population size and sum when population data changes
   useEffect(() => {
-    if (populationData) {
+    if (populationSize > 0 || populationSum > 0) {
       setParams(prev => ({
         ...prev,
-        populationSize: populationData.size,
-        populationSum: populationData.sum
+        populationSize,
+        populationSum
       }));
     }
-  }, [populationData]);
+  }, [populationSize, populationSum]);
 
   const handleParamChange = (key: keyof SamplingParams, value: any) => {
     setParams(prev => ({ ...prev, [key]: value }));

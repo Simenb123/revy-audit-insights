@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -18,32 +18,48 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
   analysisData, 
   excludedAccountNumbers 
 }) => {
-  // Filter counter accounts for included accounts only
-  const counterAccountData = analysisData.counterAccountAnalysis?.slice(0, 8).map((ca, index) => ({
-    name: ca.counterAccount,
-    fullName: ca.counterAccountName,
-    value: ca.transactionCount,
-    amount: ca.totalAmount,
-    percentage: ca.percentage,
-    fill: COLORS[index % COLORS.length]
-  })) || [];
+  // Memoize counter account data to prevent re-renders
+  const counterAccountData = useMemo(() => 
+    analysisData.counterAccountAnalysis?.slice(0, 8).map((ca, index) => ({
+      name: ca.counterAccount,
+      fullName: ca.counterAccountName,
+      value: ca.transactionCount,
+      amount: ca.totalAmount,
+      percentage: ca.percentage,
+      fill: COLORS[index % COLORS.length]
+    })) || [],
+    [analysisData.counterAccountAnalysis]
+  );
 
-  // Time series data for monthly trends
-  const timeSeriesData = analysisData.timeSeriesAnalysis?.monthlyData?.map(ts => ({
-    month: ts.month,
-    transaksjoner: ts.transactionCount,
-    beløp: ts.totalAmount / 1000 // Show in thousands
-  })) || [];
+  // Memoize time series data to prevent re-renders
+  const timeSeriesData = useMemo(() => 
+    analysisData.timeSeriesAnalysis?.monthlyData?.map(ts => ({
+      month: ts.month,
+      transaksjoner: ts.transactionCount,
+      beløp: ts.totalAmount / 1000 // Show in thousands
+    })) || [],
+    [analysisData.timeSeriesAnalysis?.monthlyData]
+  );
 
-  // Outliers grouped by type
-  const outliers = analysisData.outlierDetection?.outliers || [];
-  const highOutliers = outliers.filter(o => o.outlierType === 'high').slice(0, 5);
-  const lowOutliers = outliers.filter(o => o.outlierType === 'low').slice(0, 5);
+  // Memoize outliers data to prevent re-renders
+  const { outliers, highOutliers, lowOutliers } = useMemo(() => {
+    const allOutliers = analysisData.outlierDetection?.outliers || [];
+    return {
+      outliers: allOutliers,
+      highOutliers: allOutliers.filter(o => o.outlierType === 'high').slice(0, 5),
+      lowOutliers: allOutliers.filter(o => o.outlierType === 'low').slice(0, 5)
+    };
+  }, [analysisData.outlierDetection?.outliers]);
 
-  // Anomalies by severity
-  const anomalies = analysisData.anomalyDetection?.anomalies || [];
-  const highAnomalies = anomalies.filter(a => a.severity === 'high');
-  const mediumAnomalies = anomalies.filter(a => a.severity === 'medium');
+  // Memoize anomalies data to prevent re-renders
+  const { anomalies, highAnomalies, mediumAnomalies } = useMemo(() => {
+    const allAnomalies = analysisData.anomalyDetection?.anomalies || [];
+    return {
+      anomalies: allAnomalies,
+      highAnomalies: allAnomalies.filter(a => a.severity === 'high'),
+      mediumAnomalies: allAnomalies.filter(a => a.severity === 'medium')
+    };
+  }, [analysisData.anomalyDetection?.anomalies]);
 
   return (
     <div className="space-y-4">
