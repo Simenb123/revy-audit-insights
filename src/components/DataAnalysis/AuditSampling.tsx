@@ -23,11 +23,11 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="generate" className="mt-6">
+        <TabsContent value="generate" className="mt-6" forceMount>
           <ConsolidatedAuditSampling clientId={clientId} />
         </TabsContent>
         
-        <TabsContent value="review" className="mt-6">
+        <TabsContent value="review" className="mt-6" forceMount>
           <AuditSampleManager clientId={clientId} />
         </TabsContent>
       </Tabs>
@@ -35,4 +35,4 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
   );
 };
 
-export default AuditSampling;
+export default React.memo(AuditSampling);

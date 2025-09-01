@@ -277,10 +277,10 @@ const KnowledgeAdminPanel = ({ showAdvanced = false }: KnowledgeAdminPanelProps)
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="structure" className="space-y-4">
+            <TabsContent value="structure" className="space-y-4" forceMount>
               <OptimalCategoryStructure />
             </TabsContent>
-            <TabsContent value="analysis" className="space-y-4">
+            <TabsContent value="analysis" className="space-y-4" forceMount>
               <AnalysisPanel />
             </TabsContent>
           </>

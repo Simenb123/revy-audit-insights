@@ -102,7 +102,7 @@ const COMMON_STANDARD_ACCOUNTS = [
   { number: '81', name: 'Finanskostnader', category: 'Finans' },
 ];
 
-const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ clientId }) => {
+const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = React.memo(({ clientId }) => {
   const { toast } = useToast();
   const createAuditLog = useCreateAuditLog();
   const { selectedFiscalYear } = useFiscalYear();
@@ -1069,12 +1069,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
           </div>
         </TabsContent>
         
-        <TabsContent value="saved" className="mt-6">
+        <TabsContent value="saved" className="mt-6" forceMount>
           <SavedSamplesManager clientId={clientId} />
         </TabsContent>
       </Tabs>
     </div>
   );
-};
+});
 
 export default ConsolidatedAuditSampling;

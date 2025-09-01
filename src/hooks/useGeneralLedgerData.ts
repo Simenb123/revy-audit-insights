@@ -251,8 +251,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
 
         if (error) {
           console.error('❌ Error fetching general ledger chunk:', error);
-          // Stop the loop on first error to avoid cascading failures
-          throw error;
+          // Stop the loop on first error to avoid cascading failures and triggering React #310
+          hasMore = false;
+          break;
         }
 
         if (!data || data.length === 0) {
