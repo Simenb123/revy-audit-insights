@@ -46,10 +46,10 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     [populationData?.accounts?.length]
   );
 
-  // Create stable string representation for useEffect dependency
-  const populationAccountNumbersString = useMemo(() => 
-    populationAccountNumbers.join(','),
-    [populationAccountNumbers.length, populationData?.accounts?.[0]?.account_number]
+  // Create stable string representation for useEffect dependency - stabilized to prevent infinite re-renders
+  const populationAccountNumbersString = useMemo(
+    () => populationAccountNumbers.join('|'),
+    [populationAccountNumbers.length]
   );
 
   const selectedStandardNumbersString = useMemo(() => 
@@ -72,7 +72,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     } else if (selectedStandardNumbers.length === 0) {
       setExcludedAccountNumbers([]);
     }
-  }, [selectedStandardNumbersString, populationAccountNumbersString]); // Use stable string dependencies
+  }, [selectedStandardNumbersString, populationAccountNumbersString]); // Only depend on stable string representations
 
   // Stabilize event handlers with useCallback to prevent unnecessary re-renders
   const handleStandardAccountToggle = useCallback((accountNumber: string) => {

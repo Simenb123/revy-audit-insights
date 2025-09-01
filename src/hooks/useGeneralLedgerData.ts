@@ -158,6 +158,12 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
         return transformedData;
       }
 
+      // Don't start chunking if essential parameters are missing
+      if (!clientId) {
+        console.warn('⚠️ Client ID missing, aborting chunked loading');
+        return [];
+      }
+      
       // Otherwise, use chunked loading for full data (export, validation)
       console.log('🔍 Using chunked loading to fetch ALL transactions');
       
@@ -198,6 +204,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
 
       while (hasMore) {
         console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
+        
+        // Add 150ms pause between chunks to avoid 429 Too Many Requests
+        if (offset > 0) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
         
         let query = supabase
           .from('general_ledger_transactions')
@@ -240,6 +251,7 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
 
         if (error) {
           console.error('❌ Error fetching general ledger chunk:', error);
+          // Stop the loop on first error to avoid cascading failures
           throw error;
         }
 
