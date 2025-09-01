@@ -73,7 +73,7 @@ const formatNumber = (num: number) => {
 
 const generateColor = (index: number) => CHART_COLORS[index % CHART_COLORS.length];
 
-const PopulationInsights: React.FC<PopulationInsightsProps> = ({ 
+const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({ 
   clientId, 
   fiscalYear, 
   selectedStandardNumbers, 
@@ -82,6 +82,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
   analysisLevel = 'account', 
   onAnalysisLevelChange 
 }) => {
+  // Always call all hooks first - this prevents React error #310
   const [selectedCounterAccounts, setSelectedCounterAccounts] = useState<string[]>([]);
   const [drillDownAccount, setDrillDownAccount] = useState<{
     accountNumber: string;
@@ -105,6 +106,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
     versionString
   );
 
+  // Handle early returns after all hooks are called
   if (selectedStandardNumbers.length === 0) {
     return (
       <Card>
@@ -261,7 +263,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
         />
       </PieChart>
     );
-  }
+  };
 
   const renderRiskIndicators = () => {
     if (!analysisData?.anomalyDetection?.anomalies) return null;
@@ -296,7 +298,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
         })}
       </div>
     );
-  }
+  };
 
   const renderOutlierCards = () => {
     return analysisData?.outlierDetection?.outliers?.slice(0, 3).map((outlier, index) => (
@@ -310,7 +312,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
         </div>
       </div>
     ));
-  }
+  };
 
   const renderStatisticsCards = () => {
     return (
@@ -343,7 +345,7 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
         </div>
       </>
     );
-  }
+  };
 
   return (
     <ErrorBoundary>
@@ -561,6 +563,6 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = ({
       </div>
     </ErrorBoundary>
   );
-};
+});
 
 export default PopulationInsights;

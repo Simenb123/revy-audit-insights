@@ -516,20 +516,18 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section */}
-          {params.selectedStandardNumbers.length > 0 && (
-            <div className="mb-6">
-              <PopulationInsights
-                clientId={clientId}
-                fiscalYear={params.fiscalYear}
-                selectedStandardNumbers={params.selectedStandardNumbers}
-                excludedAccountNumbers={params.excludedAccountNumbers}
-                versionString={activeTrialBalanceVersion?.version}
-                analysisLevel={analysisLevel}
-                onAnalysisLevelChange={setAnalysisLevel}
-              />
-            </div>
-          )}
+          {/* Population Analysis Section - Always rendered to prevent React error #310 */}
+          <div className="mb-6">
+            <PopulationInsights
+              clientId={clientId}
+              fiscalYear={params.fiscalYear}
+              selectedStandardNumbers={params.selectedStandardNumbers}
+              excludedAccountNumbers={params.excludedAccountNumbers}
+              versionString={activeTrialBalanceVersion?.version}
+              analysisLevel={analysisLevel}
+              onAnalysisLevelChange={setAnalysisLevel}
+            />
+          </div>
           <div className="space-y-6">
 
       <div className="grid gap-6">

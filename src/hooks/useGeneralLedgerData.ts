@@ -205,9 +205,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       while (hasMore) {
         console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
         
-        // Add 150ms pause between chunks to avoid 429 Too Many Requests
+        // Add 200ms pause between chunks to avoid 429 Too Many Requests  
         if (offset > 0) {
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
         
         let query = supabase
