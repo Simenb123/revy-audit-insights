@@ -27,7 +27,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyExcluded, setShowOnlyExcluded] = useState(false);
 
-  // Get comprehensive population analysis data
+  // Get comprehensive population analysis data using trial balance version
   const { 
     data: populationData, 
     isLoading: isCalculatingPopulation,
@@ -37,7 +37,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
     selectedFiscalYear,
     selectedStandardNumbers,
     excludedAccountNumbers,
-    activeTrialBalanceVersion?.version
+    activeTrialBalanceVersion?.version // Pass TB version string directly
   );
 
   // Create stable reference to account numbers using string comparison

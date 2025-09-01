@@ -85,32 +85,46 @@ export function usePopulationAnalysis(
   fiscalYear: number,
   selectedStandardNumbers: string[],
   excludedAccountNumbers: string[],
-  versionString?: string
+  trialBalanceVersion?: string
 ) {
   // Create stable query key using string-based approach to prevent infinite re-renders
   const stableQueryKey = [
-    'population-analysis',
+    'population-analysis-v2',
     clientId,
     fiscalYear,
     selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
     excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
-    versionString || 'latest'
+    trialBalanceVersion || 'latest'
   ];
 
   return useQuery({
     queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationAnalysisData> => {
-      // Use the new comprehensive SQL function
+      console.log('[Population Analysis] Starting with TB version:', trialBalanceVersion);
+      
+      if (!trialBalanceVersion) {
+        console.warn('[Population Analysis] No trial balance version provided, using null');
+      }
+      
+      // Call the RPC function that expects a version string (trial balance version)
+      // This should match the signature: p_version_string text DEFAULT NULL::text
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
         p_client_id: clientId,
         p_fiscal_year: fiscalYear,
         p_selected_standard_numbers: selectedStandardNumbers,
         p_excluded_account_numbers: excludedAccountNumbers,
-        p_version_string: versionString || null
+        p_version_string: trialBalanceVersion || null
       });
+      
+      console.log('[Population Analysis] RPC response:', { data: !!data, error: error?.message });
 
       if (error) {
-        console.error('Error calculating population analysis:', error);
+        console.error('[Population Analysis] RPC Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
@@ -257,14 +271,25 @@ export function usePopulationAnalysis(
           fiscalYear,
           selectedStandardNumbers,
           excludedAccountNumbers,
-          versionString: responseData.versionId,
+          versionString: trialBalanceVersion,
           analysisTimestamp: new Date().toISOString(),
           totalRecords: responseData.totalRecords
         }
       };
     },
     enabled: !!clientId && selectedStandardNumbers.length > 0,
-    retry: 3,
+    retry: (failureCount, error: any) => {
+      // Don't retry on specific business logic errors
+      if (error?.message?.includes('invalid input syntax for type uuid')) {
+        console.error('[Population Analysis] UUID format error - not retrying');
+        return false;
+      }
+      if (error?.message?.includes('No data returned')) {
+        console.error('[Population Analysis] No data error - not retrying');
+        return false;
+      }
+      return failureCount < 2; // Only retry twice for other errors
+    },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 5 * 60 * 1000, // 5 minutes - matches backend cache
     gcTime: 15 * 60 * 1000, // 15 minutes
