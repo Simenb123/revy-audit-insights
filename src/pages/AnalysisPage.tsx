@@ -16,7 +16,7 @@ import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
 import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
 
-const AnalysisPage = () => {
+const AnalysisPage = React.memo(() => {
   const { clientId } = useParams<{ clientId: string }>();
   const { data: lookupResult, isLoading: lookupLoading } = useClientLookup(clientId);
   const actualClientId = lookupResult?.id || clientId;
@@ -91,26 +91,26 @@ const AnalysisPage = () => {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="data" className="mt-6">
+              <TabsContent value="data" className="mt-6" forceMount>
                 <AccountingExplorer clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="analysis" className="mt-6">
+              <TabsContent value="analysis" className="mt-6" forceMount>
                 <RegnskapsDashboard clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="sampling" className="mt-6">
+              <TabsContent value="sampling" className="mt-6" forceMount>
                 <div className="space-y-6">
                   <GeneralLedgerComparison clientId={client.id} />
                   <AuditSampling clientId={client.id} />
                 </div>
               </TabsContent>
               
-              <TabsContent value="reports" className="mt-6">
+              <TabsContent value="reports" className="mt-6" forceMount>
                 <ReportBuilder clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="utils" className="mt-6">
+              <TabsContent value="utils" className="mt-6" forceMount>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <NorwegianCharFixer />
                 </div>
@@ -121,6 +121,6 @@ const AnalysisPage = () => {
       </div>
     </StickyClientLayout>
   );
-};
+});
 
 export default AnalysisPage;

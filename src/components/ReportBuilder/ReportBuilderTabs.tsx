@@ -12,12 +12,12 @@ interface ReportBuilderTabsProps {
   hasData: boolean;
 }
 
-export function ReportBuilderTabs({ 
+export const ReportBuilderTabs = React.memo(({ 
   clientId, 
   selectedVersion, 
   selectedFiscalYear, 
   hasData 
-}: ReportBuilderTabsProps) {
+}: ReportBuilderTabsProps) => {
   const isGlobal = clientId === 'global';
   if (!hasData || (!selectedVersion && !isGlobal)) {
     return null;
@@ -42,14 +42,14 @@ export function ReportBuilderTabs({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="dashboard" className="space-y-4">
+      <TabsContent value="dashboard" className="space-y-4" forceMount>
         <div className="min-h-[600px]">
           <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
         </div>
       </TabsContent>
 
       {!isGlobal && (
-        <TabsContent value="classification" className="space-y-4">
+        <TabsContent value="classification" className="space-y-4" forceMount>
           <AccountClassificationView 
             clientId={clientId}
             selectedVersion={selectedVersion}
@@ -58,9 +58,9 @@ export function ReportBuilderTabs({
         </TabsContent>
       )}
 
-      <TabsContent value="theme" className="space-y-4">
+      <TabsContent value="theme" className="space-y-4" forceMount>
         <ThemePanel />
       </TabsContent>
     </Tabs>
   );
-}
+});
