@@ -43,7 +43,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
   // Create stable reference to account numbers to prevent infinite re-renders
   const populationAccountNumbers = useMemo(() => 
     populationData?.accounts?.map(acc => acc.account_number) || [],
-    [populationData?.accounts?.length, populationData?.accounts?.[0]?.account_number]
+    [populationData?.accounts?.length] // Only depend on length for stability
   );
 
   // Auto-include accounts when standard accounts are selected
@@ -194,13 +194,11 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
 
         <Separator />
 
-        {/* Population Analysis */}
-        {populationData && selectedStandardNumbers.length > 0 && (
-          <PopulationAnalysisSection 
-            analysisData={populationData}
-            excludedAccountNumbers={excludedAccountNumbers}
-          />
-        )}
+        {/* Population Analysis - Always render to avoid conditional hooks */}
+        <PopulationAnalysisSection 
+          analysisData={populationData && selectedStandardNumbers.length > 0 ? populationData : null}
+          excludedAccountNumbers={excludedAccountNumbers}
+        />
 
         <Separator />
 

@@ -8,7 +8,7 @@ import { formatCurrency, formatNumber } from '@/services/sampling/utils';
 import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, Pie } from 'recharts';
 
 interface PopulationAnalysisSectionProps {
-  analysisData: PopulationAnalysisData;
+  analysisData: PopulationAnalysisData | null;
   excludedAccountNumbers: string[];
 }
 
@@ -20,7 +20,7 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
 }) => {
   // Memoize counter account data to prevent re-renders
   const counterAccountData = useMemo(() => 
-    analysisData.counterAccountAnalysis?.slice(0, 8).map((ca, index) => ({
+    analysisData?.counterAccountAnalysis?.slice(0, 8).map((ca, index) => ({
       name: ca.counterAccount,
       fullName: ca.counterAccountName,
       value: ca.transactionCount,
@@ -28,38 +28,43 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
       percentage: ca.percentage,
       fill: COLORS[index % COLORS.length]
     })) || [],
-    [analysisData.counterAccountAnalysis]
+    [analysisData?.counterAccountAnalysis?.length]
   );
 
   // Memoize time series data to prevent re-renders
   const timeSeriesData = useMemo(() => 
-    analysisData.timeSeriesAnalysis?.monthlyData?.map(ts => ({
+    analysisData?.timeSeriesAnalysis?.monthlyData?.map(ts => ({
       month: ts.month,
       transaksjoner: ts.transactionCount,
       beløp: ts.totalAmount / 1000 // Show in thousands
     })) || [],
-    [analysisData.timeSeriesAnalysis?.monthlyData]
+    [analysisData?.timeSeriesAnalysis?.monthlyData?.length]
   );
 
   // Memoize outliers data to prevent re-renders
   const { outliers, highOutliers, lowOutliers } = useMemo(() => {
-    const allOutliers = analysisData.outlierDetection?.outliers || [];
+    const allOutliers = analysisData?.outlierDetection?.outliers || [];
     return {
       outliers: allOutliers,
       highOutliers: allOutliers.filter(o => o.outlierType === 'high').slice(0, 5),
       lowOutliers: allOutliers.filter(o => o.outlierType === 'low').slice(0, 5)
     };
-  }, [analysisData.outlierDetection?.outliers]);
+  }, [analysisData?.outlierDetection?.outliers?.length]);
 
   // Memoize anomalies data to prevent re-renders
   const { anomalies, highAnomalies, mediumAnomalies } = useMemo(() => {
-    const allAnomalies = analysisData.anomalyDetection?.anomalies || [];
+    const allAnomalies = analysisData?.anomalyDetection?.anomalies || [];
     return {
       anomalies: allAnomalies,
       highAnomalies: allAnomalies.filter(a => a.severity === 'high'),
       mediumAnomalies: allAnomalies.filter(a => a.severity === 'medium')
     };
-  }, [analysisData.anomalyDetection?.anomalies]);
+  }, [analysisData?.anomalyDetection?.anomalies?.length]);
+
+  // Return null if no data to prevent rendering empty analysis
+  if (!analysisData) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
