@@ -414,14 +414,12 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         )}
 
         {/* Dashboard Canvas */}
-        {hasData && (selectedVersion || isGlobal) && (
-          <ReportBuilderTabs 
-            clientId={clientId} 
-            selectedVersion={selectedVersion}
-            selectedFiscalYear={selectedFiscalYear}
-            hasData={hasData}
-          />
-        )}
+        <ReportBuilderTabs 
+          clientId={clientId} 
+          selectedVersion={selectedVersion}
+          selectedFiscalYear={selectedFiscalYear}
+          hasData={hasData && (!!selectedVersion || isGlobal)}
+        />
       </div>
 
       {/* Dialogs */}
