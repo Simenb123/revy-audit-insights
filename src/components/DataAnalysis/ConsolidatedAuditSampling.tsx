@@ -211,7 +211,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     [populationData?.accounts?.length]
   );
 
-  // Get accounts for the exclusion manager
+  // Get accounts for the exclusion manager - stabilized to prevent infinite re-renders
   const accountsForExclusion = useMemo(() => {
     if (!populationData?.accounts) return [];
     
@@ -232,7 +232,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = ({ c
     }
     
     return filtered.sort((a, b) => a.account_number.localeCompare(b.account_number));
-  }, [populationAccountsLength, populationData?.accounts?.[0]?.account_number, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
+  }, [populationAccountsLength, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
 
   // Fetch working materiality on component mount and when fiscal year changes
   useEffect(() => {
