@@ -228,7 +228,7 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
 
         {/* Population Analysis - Always render to avoid conditional hooks */}
         <PopulationAnalysisSection 
-          analysisData={populationData && selectedStandardNumbers.length > 0 ? populationData : null}
+          analysisData={populationData ?? null}
           excludedAccountNumbers={excludedAccountNumbers}
         />
 

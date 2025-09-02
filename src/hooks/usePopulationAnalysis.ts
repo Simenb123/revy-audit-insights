@@ -88,15 +88,15 @@ export function usePopulationAnalysis(
   excludedAccountNumbers: string[],
   trialBalanceVersion?: string
 ) {
-  // Debounce parameters to prevent race conditions during rapid state changes
-  const debouncedClientId = useDebounce(clientId, 300);
-  const debouncedSelectedStandardNumbers = useDebounce(selectedStandardNumbers, 500);
-  const debouncedExcludedAccountNumbers = useDebounce(excludedAccountNumbers, 500);
-  const debouncedTrialBalanceVersion = useDebounce(trialBalanceVersion, 300);
+  // Remove debouncing since we fixed conditional hook issues - no longer needed
+  const debouncedClientId = clientId;
+  const debouncedSelectedStandardNumbers = selectedStandardNumbers;
+  const debouncedExcludedAccountNumbers = excludedAccountNumbers;
+  const debouncedTrialBalanceVersion = trialBalanceVersion;
 
-  // Create stable query key using debounced values to prevent infinite re-renders
+  // Create stable query key - simplified since we removed debouncing
   const stableQueryKey = [
-    'population-analysis-v3', // Increment version to invalidate old cache
+    'population-analysis-v4', // Increment version for clean cache after fixes
     debouncedClientId,
     fiscalYear,
     debouncedSelectedStandardNumbers.length > 0 ? debouncedSelectedStandardNumbers.slice().sort().join(',') : 'none',
@@ -108,13 +108,13 @@ export function usePopulationAnalysis(
     queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationAnalysisData> => {
       console.log('[Population Analysis] Starting with TB version:', debouncedTrialBalanceVersion);
-      console.log('[Population Analysis] Using debounced parameters to prevent race conditions');
+      console.log('[Population Analysis] Fixed conditional hook issues - no more race conditions');
       
       if (!debouncedTrialBalanceVersion) {
         console.warn('[Population Analysis] No trial balance version provided, using null');
       }
       
-      // Call the RPC function using debounced parameters to prevent race conditions
+      // Call the RPC function - no longer need debouncing since conditional hooks are fixed
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
         p_client_id: debouncedClientId,
         p_fiscal_year: fiscalYear,
@@ -298,11 +298,11 @@ export function usePopulationAnalysis(
       return failureCount < 2; // Only retry twice for other errors
     },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 3 * 60 * 1000, // 3 minutes - reduced to prevent stale data during race conditions
-    gcTime: 10 * 60 * 1000, // 10 minutes - reduced for better memory management
+    staleTime: 5 * 60 * 1000, // 5 minutes - increased back since race conditions are fixed
+    gcTime: 15 * 60 * 1000, // 15 minutes - increased back for better caching
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent unnecessary re-fetching on mount
-    refetchInterval: false, // Disable background refetching to prevent race conditions
+    refetchOnMount: false, // Keep disabled as it's not needed
+    refetchInterval: false, // Keep disabled as it's not needed
     notifyOnChangeProps: ['data', 'error', 'isLoading'] // Only notify on essential prop changes
   });
 }

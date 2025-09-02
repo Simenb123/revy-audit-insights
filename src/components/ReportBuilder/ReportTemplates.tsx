@@ -15,9 +15,10 @@ interface ReportTemplatesProps {
   layouts: WidgetLayout[]
   onApplyTemplate: (widgets: Widget[], layouts: WidgetLayout[]) => void
   onClose: () => void
+  isVisible?: boolean
 }
 
-export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, onClose }: ReportTemplatesProps) {
+export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, onClose, isVisible = true }: ReportTemplatesProps) {
   const { listTemplates, createTemplate, updateTemplate, deleteTemplate } = useReportTemplates()
   const [templates, setTemplates] = useState<ReportTemplate[]>([])
   const [name, setName] = useState('')
@@ -77,6 +78,14 @@ export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, o
     } catch {
       toast.error('Kunne ikke oppdatere mal')
     }
+  }
+
+  if (!isVisible) {
+    return (
+      <div className="space-y-4 opacity-0 pointer-events-none">
+        <p className="text-muted-foreground">Rapport maler vil vises når data er tilgjengelig</p>
+      </div>
+    );
   }
 
   return (

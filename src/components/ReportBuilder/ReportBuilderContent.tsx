@@ -401,17 +401,16 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         )}
 
         {/* Report Templates */}
-        {showTemplates && hasData && (
-          <ModuleWrapper id="report-templates" title="Rapport maler">
-            <ReportTemplates
-              clientId={clientId}
-              widgets={widgets}
-              layouts={layouts}
-              onApplyTemplate={handleApplyTemplate}
-              onClose={() => setShowTemplates(false)}
-            />
-          </ModuleWrapper>
-        )}
+        <ModuleWrapper id="report-templates" title="Rapport maler">
+          <ReportTemplates
+            clientId={clientId}
+            widgets={widgets}
+            layouts={layouts}
+            onApplyTemplate={handleApplyTemplate}
+            onClose={() => setShowTemplates(false)}
+            isVisible={showTemplates && hasData}
+          />
+        </ModuleWrapper>
 
         {/* Dashboard Canvas */}
         <ReportBuilderTabs 
