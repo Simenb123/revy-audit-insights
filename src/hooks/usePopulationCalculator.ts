@@ -42,15 +42,12 @@ export function usePopulationCalculator(
     queryFn: async (): Promise<PopulationData> => {
       // If no standard accounts selected, return empty population
       if (selectedStandardNumbers.length === 0) {
-        console.log('No standard numbers selected, returning empty population');
         return {
           size: 0,
           sum: 0,
           accounts: []
         };
       }
-
-        // Remove console.log in production
 
       try {
         // Determine whether versionId is a UUID or a version string
@@ -70,7 +67,6 @@ export function usePopulationCalculator(
           }
         }
 
-        // Remove production logs
 
         // Call the correct RPC function based on version type
         let rpcCall;
@@ -96,7 +92,7 @@ export function usePopulationCalculator(
         const { data, error } = await rpcCall;
 
         if (error) {
-          // Return empty result on RPC error to prevent crashes
+          console.error('Population RPC error:', error);
           return {
             size: 0,
             sum: 0,
@@ -104,7 +100,8 @@ export function usePopulationCalculator(
           };
         }
 
-        if (!data || typeof data !== 'object') {
+        if (!data || typeof data !== 'object' || data === true) {
+          console.warn('Invalid RPC response data:', data);
           return {
             size: 0,
             sum: 0,
@@ -157,7 +154,7 @@ export function usePopulationCalculator(
         };
 
       } catch (error) {
-        // Return empty result on any error to prevent UI crashes
+        console.error('Population calculation error:', error);
         return {
           size: 0,
           sum: 0,
