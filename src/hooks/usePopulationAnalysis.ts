@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useDebounce } from './useDebounce';
 
 export interface CounterAccountDistribution {
   counterAccount: string;
@@ -87,33 +88,39 @@ export function usePopulationAnalysis(
   excludedAccountNumbers: string[],
   trialBalanceVersion?: string
 ) {
-  // Create stable query key using string-based approach to prevent infinite re-renders
+  // Debounce parameters to prevent race conditions during rapid state changes
+  const debouncedClientId = useDebounce(clientId, 300);
+  const debouncedSelectedStandardNumbers = useDebounce(selectedStandardNumbers, 500);
+  const debouncedExcludedAccountNumbers = useDebounce(excludedAccountNumbers, 500);
+  const debouncedTrialBalanceVersion = useDebounce(trialBalanceVersion, 300);
+
+  // Create stable query key using debounced values to prevent infinite re-renders
   const stableQueryKey = [
-    'population-analysis-v2',
-    clientId,
+    'population-analysis-v3', // Increment version to invalidate old cache
+    debouncedClientId,
     fiscalYear,
-    selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
-    excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
-    trialBalanceVersion || 'latest'
+    debouncedSelectedStandardNumbers.length > 0 ? debouncedSelectedStandardNumbers.slice().sort().join(',') : 'none',
+    debouncedExcludedAccountNumbers.length > 0 ? debouncedExcludedAccountNumbers.slice().sort().join(',') : 'none',
+    debouncedTrialBalanceVersion || 'latest'
   ];
 
   return useQuery({
     queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationAnalysisData> => {
-      console.log('[Population Analysis] Starting with TB version:', trialBalanceVersion);
+      console.log('[Population Analysis] Starting with TB version:', debouncedTrialBalanceVersion);
+      console.log('[Population Analysis] Using debounced parameters to prevent race conditions');
       
-      if (!trialBalanceVersion) {
+      if (!debouncedTrialBalanceVersion) {
         console.warn('[Population Analysis] No trial balance version provided, using null');
       }
       
-      // Call the RPC function that expects a version string (trial balance version)
-      // This should match the signature: p_version_string text DEFAULT NULL::text
+      // Call the RPC function using debounced parameters to prevent race conditions
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
-        p_client_id: clientId,
+        p_client_id: debouncedClientId,
         p_fiscal_year: fiscalYear,
-        p_selected_standard_numbers: selectedStandardNumbers,
-        p_excluded_account_numbers: excludedAccountNumbers,
-        p_version_string: trialBalanceVersion || null
+        p_selected_standard_numbers: debouncedSelectedStandardNumbers,
+        p_excluded_account_numbers: debouncedExcludedAccountNumbers,
+        p_version_string: debouncedTrialBalanceVersion || null
       });
       
       console.log('[Population Analysis] RPC response:', { data: !!data, error: error?.message });
@@ -267,17 +274,17 @@ export function usePopulationAnalysis(
         })),
         executionTime,
         metadata: {
-          clientId,
+          clientId: debouncedClientId,
           fiscalYear,
-          selectedStandardNumbers,
-          excludedAccountNumbers,
-          versionString: trialBalanceVersion,
+          selectedStandardNumbers: debouncedSelectedStandardNumbers,
+          excludedAccountNumbers: debouncedExcludedAccountNumbers,
+          versionString: debouncedTrialBalanceVersion,
           analysisTimestamp: new Date().toISOString(),
           totalRecords: responseData.totalRecords
         }
       };
     },
-    enabled: !!clientId && selectedStandardNumbers.length > 0,
+    enabled: !!debouncedClientId && debouncedSelectedStandardNumbers.length > 0,
     retry: (failureCount, error: any) => {
       // Don't retry on specific business logic errors
       if (error?.message?.includes('invalid input syntax for type uuid')) {
@@ -291,9 +298,11 @@ export function usePopulationAnalysis(
       return failureCount < 2; // Only retry twice for other errors
     },
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 5 * 60 * 1000, // 5 minutes - matches backend cache
-    gcTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes - reduced to prevent stale data during race conditions
+    gcTime: 10 * 60 * 1000, // 10 minutes - reduced for better memory management
     refetchOnWindowFocus: false,
-    refetchOnMount: true
+    refetchOnMount: false, // Prevent unnecessary re-fetching on mount
+    refetchInterval: false, // Disable background refetching to prevent race conditions
+    notifyOnChangeProps: ['data', 'error', 'isLoading'] // Only notify on essential prop changes
   });
 }

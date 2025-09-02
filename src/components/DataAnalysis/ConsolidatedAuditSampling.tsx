@@ -41,6 +41,7 @@ import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersi
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
 import PopulationInsights from './PopulationInsights';
+import StableErrorBoundary from '@/components/ui/stable-error-boundary';
 
 interface ConsolidatedAuditSamplingProps {
   clientId: string;
@@ -516,17 +517,25 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section - Always rendered to prevent React error #310 */}
+          {/* Population Analysis Section - Wrapped in StableErrorBoundary to prevent React error #310 */}
           <div className="mb-6">
-            <PopulationInsights
-              clientId={clientId}
-              fiscalYear={params.fiscalYear}
-              selectedStandardNumbers={params.selectedStandardNumbers}
-              excludedAccountNumbers={params.excludedAccountNumbers}
-              versionString={activeTrialBalanceVersion?.version}
-              analysisLevel={analysisLevel}
-              onAnalysisLevelChange={setAnalysisLevel}
-            />
+            <StableErrorBoundary
+              title="Populasjonsanalyse feil"
+              description="Populasjonsanalysen kunne ikke lastes. Dette kan skyldes hurtige endringer i dataene."
+              onError={(error) => {
+                console.error('[ConsolidatedAuditSampling] PopulationInsights error:', error);
+              }}
+            >
+              <PopulationInsights
+                clientId={clientId}
+                fiscalYear={params.fiscalYear}
+                selectedStandardNumbers={params.selectedStandardNumbers}
+                excludedAccountNumbers={params.excludedAccountNumbers}
+                versionString={activeTrialBalanceVersion?.version}
+                analysisLevel={analysisLevel}
+                onAnalysisLevelChange={setAnalysisLevel}
+              />
+            </StableErrorBoundary>
           </div>
           <div className="space-y-6">
 
