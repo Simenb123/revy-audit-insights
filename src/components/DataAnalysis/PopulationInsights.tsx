@@ -473,13 +473,11 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({
             <CardContent>
               {analysisData.counterAccountAnalysis.length > 0 ? (
                 <>
-                  <div 
-                    className="h-64" 
-                    role="img" 
-                    aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
-                    tabIndex={0}
-                    onKeyDown={(e) => handleKeyDown(e, () => {})}
-                  >
+                   <div 
+                     className="h-64" 
+                     role="img" 
+                     aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
+                   >
                     <ResponsiveContainer width="100%" height="100%">
                       {renderPieChart()}
                     </ResponsiveContainer>

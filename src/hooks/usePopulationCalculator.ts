@@ -74,7 +74,18 @@ export function usePopulationCalculator(
             p_version_id = versionId;
             console.log(`Version UUID "${versionId}" detected`);
           }
+        } else {
+          console.log('No versionId provided, using latest/active version');
         }
+
+        console.log('Calling RPC with parameters:', {
+          p_client_id: clientId,
+          p_fiscal_year: fiscalYear,
+          p_selected_standard_numbers: selectedStandardNumbers,
+          p_excluded_account_numbers: excludedAccountNumbers,
+          p_version_id,
+          p_version_string
+        });
 
         // Call the RPC function with proper version parameters
         const { data, error } = await supabase.rpc('calculate_population_analysis', {
