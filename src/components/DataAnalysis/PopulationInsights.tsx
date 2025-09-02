@@ -449,51 +449,88 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({
           </CardContent>
         </Card>
 
-        {/* Counter Account Distribution */}
-        {analysisData.counterAccountAnalysis.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4" />
-                  Motkontofordeling
+        {/* Counter Account Distribution - Always rendered to avoid hook ordering issues */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChartIcon className="h-4 w-4" />
+                Motkontofordeling
+                {selectedCounterAccounts.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Filter className="h-3 w-3 mr-1" />
+                    {selectedCounterAccounts.length} filtrert
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {analysisData.counterAccountAnalysis.length > 0 
+                  ? "Klikk på segmenter for drill-down analyse"
+                  : "Venter på analysedata..."
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysisData.counterAccountAnalysis.length > 0 ? (
+                <>
+                  <div 
+                    className="h-64" 
+                    role="img" 
+                    aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
+                    tabIndex={0}
+                    onKeyDown={(e) => handleKeyDown(e, () => {})}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      {renderPieChart()}
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Counter Account Filter Controls */}
                   {selectedCounterAccounts.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      <Filter className="h-3 w-3 mr-1" />
-                      {selectedCounterAccounts.length} filtrert
-                    </Badge>
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Filtrerer på {selectedCounterAccounts.length} motkonto(er)
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={clearFilters}
+                          className="flex items-center gap-1"
+                        >
+                          <FilterX className="h-3 w-3" />
+                          Fjern filter
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                </CardTitle>
-                <CardDescription>
-                  Klikk på segmenter for drill-down analyse
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div 
-                  className="h-64" 
-                  role="img" 
-                  aria-label="Kakediagram som viser motkontofordeling. Klikk på segmenter for detaljert analyse."
-                  tabIndex={0}
-                  onKeyDown={(e) => handleKeyDown(e, () => {})}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    {renderPieChart()}
-                  </ResponsiveContainer>
+                </>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <PieChartIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Ingen motkontodata tilgjengelig</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Transaksjonsvolum
-                </CardTitle>
-                <CardDescription>
-                  Antall transaksjoner per motkonto (topp 10)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Transaksjonsvolum
+              </CardTitle>
+              <CardDescription>
+                {analysisData.counterAccountAnalysis.length > 0 
+                  ? "Antall transaksjoner per motkonto (topp 10)"
+                  : "Venter på analysedata..."
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysisData.counterAccountAnalysis.length > 0 ? (
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -513,28 +550,45 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Risk Indicators */}
-        {analysisData.anomalyDetection.anomalies.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                Anomalier og avvik
-              </CardTitle>
-              <CardDescription>
-                Automatisk identifiserte avvik og potensielle risikoområder
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderRiskIndicators()}
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Ingen transaksjonsdata tilgjengelig</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
+        </div>
+
+        {/* Risk Indicators - Always rendered to avoid hook ordering issues */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Anomalier og avvik
+            </CardTitle>
+            <CardDescription>
+              {analysisData.anomalyDetection.anomalies.length > 0 
+                ? "Automatisk identifiserte avvik og potensielle risikoområder"
+                : "Ingen anomalier funnet"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {analysisData.anomalyDetection.anomalies.length > 0 ? (
+              renderRiskIndicators()
+            ) : (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <div className="text-center">
+                  <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Ingen anomalier funnet i populasjonen</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
