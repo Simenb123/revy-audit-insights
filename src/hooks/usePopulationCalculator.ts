@@ -68,14 +68,13 @@ export function usePopulationCalculator(
           if (versionId.startsWith('v')) {
             // It's a version string like "v10"
             p_version_string = versionId;
-            console.log(`Version string "${versionId}" detected`);
-          } else {
-            // Assume it's a UUID
+          } else if (versionId.length === 36 && versionId.includes('-')) {
+            // It's a UUID
             p_version_id = versionId;
-            console.log(`Version UUID "${versionId}" detected`);
+          } else {
+            // Try as version string if it's not clearly a UUID
+            p_version_string = versionId;
           }
-        } else {
-          console.log('No versionId provided, using latest/active version');
         }
 
         console.log('Calling RPC with parameters:', {
@@ -214,28 +213,18 @@ export function usePopulationCalculator(
           transaction_count: acc.transactionCount
         }));
 
-        // Use basicStats from RPC response for population size and sum
+        // Use basicStats directly from RPC response - it should handle exclusions server-side
         let size: number;
         let sum: number;
         
         if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
-          // The RPC function should already handle exclusions, but we need to verify this
-          // For now, we'll use the totals and manually subtract excluded accounts to be safe
-          const excludedAccounts = accounts.filter((account) => 
-            excludedAccountNumbers.includes(account.account_number)
-          );
-          const excludedSum = excludedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+          // Trust the RPC function to handle exclusions properly
+          size = responseData.basicStats.totalAccounts;
+          sum = responseData.basicStats.totalSum;
           
-          size = Math.max(0, responseData.basicStats.totalAccounts - excludedAccounts.length);
-          sum = Math.max(0, responseData.basicStats.totalSum - excludedSum);
-          
-          console.log('✅ Using RPC basicStats with manual exclusion verification:', {
-            rpcTotalAccounts: responseData.basicStats.totalAccounts,
-            rpcTotalSum: responseData.basicStats.totalSum,
-            excludedAccounts: excludedAccounts.length,
-            excludedSum,
-            finalSize: size,
-            finalSum: sum
+          console.log('✅ Using RPC basicStats (with server-side exclusions):', {
+            populationSize: size,
+            populationSum: sum
           });
         } else {
           // Fallback to client-side calculation with manual exclusions
@@ -260,19 +249,9 @@ export function usePopulationCalculator(
         };
 
       } catch (error) {
-        console.error('💥 Population calculator critical error:', error);
-        console.error('Error details:', {
-          message: error?.message,
-          code: error?.code,
-          details: error?.details,
-          hint: error?.hint,
-          clientId,
-          fiscalYear,
-          selectedStandardNumbers,
-          versionId
-        });
+        console.error('Population calculator error:', error);
         
-        // Return empty result instead of throwing to prevent crashes and allow UI to show fallback
+        // Return empty result instead of throwing to prevent crashes
         return {
           size: 0,
           sum: 0,

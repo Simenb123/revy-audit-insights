@@ -485,6 +485,31 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
   const totalSum = includedSum + excludedSum;
 
   return (
+    <LightweightErrorBoundary 
+      fallback={
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Feil i populasjonsanalyse
+            </CardTitle>
+            <CardDescription>
+              Det oppstod en feil under populasjonsanalysen. Dette kan skyldes store datamengder eller feil versjonsinformasjon.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Prøv igjen
+            </Button>
+          </CardContent>
+        </Card>
+      }
+    >
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -1219,6 +1244,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </TabsContent>
       </Tabs>
     </div>
+    </LightweightErrorBoundary>
   );
 });
 

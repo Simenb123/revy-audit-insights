@@ -199,15 +199,15 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       
       let allTransactions: any[] = [];
       let offset = 0;
-      const chunkSize = 1000;
+      const chunkSize = 2000; // Increased chunk size for better performance
       let hasMore = true;
 
       while (hasMore) {
         console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
         
-        // Add 200ms pause between chunks to avoid 429 Too Many Requests  
+        // Reduced pause between chunks for better performance 
         if (offset > 0) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
         
         let query = supabase
@@ -319,9 +319,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       return transformedData;
     },
     enabled: !!clientId,
-    staleTime: 0, // Force fresh data to show latest transactions
-    gcTime: 0, // No caching to ensure we see new data immediately
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    staleTime: 60_000, // Cache for 60 seconds
+    gcTime: 300_000, // Keep in cache for 5 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 };
