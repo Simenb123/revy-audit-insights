@@ -19,15 +19,7 @@ export const ReportBuilderTabs = React.memo(({
   hasData 
 }: ReportBuilderTabsProps) => {
   const isGlobal = clientId === 'global';
-  
-  // Always render the component, but show empty state when no data
-  if (!hasData || (!selectedVersion && !isGlobal)) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px] text-muted-foreground">
-        <p>Ingen data tilgjengelig for rapportbygging</p>
-      </div>
-    );
-  }
+  const showEmptyState = !hasData || (!selectedVersion && !isGlobal);
 
   return (
     <Tabs defaultValue="dashboard" className="w-full">
@@ -50,17 +42,29 @@ export const ReportBuilderTabs = React.memo(({
 
       <TabsContent value="dashboard" className="space-y-4" forceMount>
         <div className="min-h-[600px]">
-          <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
+          {showEmptyState ? (
+            <div className="flex items-center justify-center min-h-[200px] text-muted-foreground">
+              <p>Ingen data tilgjengelig for rapportbygging</p>
+            </div>
+          ) : (
+            <DashboardCanvas clientId={clientId} selectedVersion={selectedVersion} />
+          )}
         </div>
       </TabsContent>
 
       {!isGlobal && (
         <TabsContent value="classification" className="space-y-4" forceMount>
-          <AccountClassificationView 
-            clientId={clientId}
-            selectedVersion={selectedVersion}
-            selectedFiscalYear={selectedFiscalYear}
-          />
+          {showEmptyState ? (
+            <div className="flex items-center justify-center min-h-[200px] text-muted-foreground">
+              <p>Ingen data tilgjengelig for klassifisering</p>
+            </div>
+          ) : (
+            <AccountClassificationView 
+              clientId={clientId}
+              selectedVersion={selectedVersion}
+              selectedFiscalYear={selectedFiscalYear}
+            />
+          )}
         </TabsContent>
       )}
 
