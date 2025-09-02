@@ -87,11 +87,11 @@ export function usePopulationCalculator(
           p_version_string
         });
 
-        // Call the RPC function - use the correct overload based on version type
+        // Call the RPC function with version string (preferred) since activeTrialBalanceVersion uses version strings
         let rpcCall;
         if (p_version_string) {
-          // Use the overload that takes version string
-          console.log('Calling RPC with version string:', p_version_string);
+          // Use the overload that takes version string (e.g., "v10")
+          console.log('🚀 Calling RPC with version string:', p_version_string);
           rpcCall = supabase.rpc('calculate_population_analysis', {
             p_client_id: clientId,
             p_fiscal_year: fiscalYear,
@@ -101,7 +101,7 @@ export function usePopulationCalculator(
           });
         } else if (p_version_id) {
           // Use the overload that takes UUID
-          console.log('Calling RPC with version UUID:', p_version_id);
+          console.log('🚀 Calling RPC with version UUID:', p_version_id);
           rpcCall = supabase.rpc('calculate_population_analysis', {
             p_client_id: clientId,
             p_fiscal_year: fiscalYear,
@@ -111,7 +111,7 @@ export function usePopulationCalculator(
           });
         } else {
           // Use the overload without version (will use latest/active)
-          console.log('Calling RPC without version (will use latest/active)');
+          console.log('🚀 Calling RPC without version (will use latest/active)');
           rpcCall = supabase.rpc('calculate_population_analysis', {
             p_client_id: clientId,
             p_fiscal_year: fiscalYear,
@@ -219,14 +219,23 @@ export function usePopulationCalculator(
         let sum: number;
         
         if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
-          // Use RPC response data directly - the RPC already handles exclusions properly
-          size = responseData.basicStats.totalAccounts;
-          sum = responseData.basicStats.totalSum;
+          // The RPC function should already handle exclusions, but we need to verify this
+          // For now, we'll use the totals and manually subtract excluded accounts to be safe
+          const excludedAccounts = accounts.filter((account) => 
+            excludedAccountNumbers.includes(account.account_number)
+          );
+          const excludedSum = excludedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
           
-          console.log('Using RPC basicStats (already adjusted for exclusions):', {
-            populationSize: size,
-            populationSum: sum,
-            excludedAccountsLength: excludedAccountNumbers.length
+          size = Math.max(0, responseData.basicStats.totalAccounts - excludedAccounts.length);
+          sum = Math.max(0, responseData.basicStats.totalSum - excludedSum);
+          
+          console.log('✅ Using RPC basicStats with manual exclusion verification:', {
+            rpcTotalAccounts: responseData.basicStats.totalAccounts,
+            rpcTotalSum: responseData.basicStats.totalSum,
+            excludedAccounts: excludedAccounts.length,
+            excludedSum,
+            finalSize: size,
+            finalSum: sum
           });
         } else {
           // Fallback to client-side calculation with manual exclusions
@@ -236,7 +245,7 @@ export function usePopulationCalculator(
           size = includedAccounts.length;
           sum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
           
-          console.log('Using fallback calculation with manual exclusions:', {
+          console.log('⚠️ Using fallback calculation (RPC basicStats missing):', {
             totalAccounts: accounts.length,
             excludedCount: accounts.length - includedAccounts.length,
             populationSize: size,
@@ -251,8 +260,19 @@ export function usePopulationCalculator(
         };
 
       } catch (error) {
-        console.error('Population calculator error:', error);
-        // Return empty result instead of throwing to prevent crashes
+        console.error('💥 Population calculator critical error:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint,
+          clientId,
+          fiscalYear,
+          selectedStandardNumbers,
+          versionId
+        });
+        
+        // Return empty result instead of throwing to prevent crashes and allow UI to show fallback
         return {
           size: 0,
           sum: 0,

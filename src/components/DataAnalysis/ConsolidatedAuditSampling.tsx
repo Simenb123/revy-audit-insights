@@ -519,27 +519,71 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section - Wrapped in error boundary with retry functionality */}
+          {/* Population Analysis Section - Enhanced Error Boundary with detailed troubleshooting */}
           <LightweightErrorBoundary
             fallback={
               <Card>
-                <CardContent className="p-8 text-center">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
-                  <p className="text-muted-foreground mb-4">Det oppstod en feil under populasjonsanalysen</p>
-                  <p className="text-sm text-muted-foreground mb-6">Prøv å endre populasjonsvalget eller last siden på nytt</p>
-                  <Button 
-                    onClick={() => window.location.reload()}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Last siden på nytt
-                  </Button>
+                <CardHeader>
+                  <CardTitle className="text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Feil i populasjonsanalyse
+                  </CardTitle>
+                  <CardDescription>
+                    Populasjonsanalysen kunne ikke fullføres
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive-foreground mb-2">
+                      <strong>Mulige årsaker:</strong>
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Ingen data for valgte regnskapslinjer</li>
+                      <li>Problemer med dataversjonering</li>
+                      <li>Manglende kobling mellom standardkonti og regnskapsdata</li>
+                      <li>Teknisk feil i beregning</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-2">Prøv følgende:</p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Velg andre regnskapslinjer (f.eks. kun "Salgsinntekter")</li>
+                      <li>Sjekk at regnskapsdata er lastet opp korrekt</li>
+                      <li>Kontroller at kontokartet er konfigurert</li>
+                      <li>Last siden på nytt</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => window.location.reload()}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Last siden på nytt
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setParams(prev => ({ ...prev, selectedStandardNumbers: [] }))}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Tøm valg
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             }
             onError={(error, errorInfo) => {
-              console.error('PopulationInsights error in ConsolidatedAuditSampling:', error, errorInfo);
+              console.error('💥 PopulationInsights error in ConsolidatedAuditSampling:', error, errorInfo);
+              console.error('Error context:', {
+                clientId,
+                fiscalYear: params.fiscalYear,
+                selectedStandardNumbers: params.selectedStandardNumbers,
+                activeVersion: activeTrialBalanceVersion?.version
+              });
             }}
           >
             <div className="mb-6">
@@ -978,27 +1022,80 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Generation Controls - Wrapped in error boundary */}
+            {/* Generation Controls - Enhanced Error Boundary with detailed debugging info */}
             <LightweightErrorBoundary
               fallback={
-                <Card className="border-destructive">
-                  <CardContent className="p-8 text-center">
-                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
-                    <p className="text-muted-foreground mb-4">Det oppstod en feil under genereringen av revisjonsutvalget</p>
-                    <p className="text-sm text-muted-foreground mb-6">Sjekk at populasjonsvalget er korrekt og prøv igjen</p>
-                    <Button 
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Last siden på nytt
-                    </Button>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-destructive flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      Feil ved utvalgsgenerering
+                    </CardTitle>
+                    <CardDescription>
+                      Kunne ikke generere revisjonsutvalg
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-sm text-destructive-foreground mb-2">
+                        <strong>Mulige årsaker til feil:</strong>
+                      </p>
+                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                        <li>Tom populasjon (ingen data for valgte regnskapslinjer)</li>
+                        <li>Ugyldig konfigurering av utvalgingsparametere</li>
+                        <li>Problemer med server-forbindelse</li>
+                        <li>Feil i Edge Function for utvalgsberegning</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-2">Debugging-informasjon:</p>
+                      <div className="text-xs font-mono text-muted-foreground space-y-1">
+                        <div>Populasjonsstørrelse: {params.populationSize}</div>
+                        <div>Populasjonssum: {formatCurrency(params.populationSum)}</div>
+                        <div>Valgte standarder: {params.selectedStandardNumbers.join(', ') || 'Ingen'}</div>
+                        <div>Ekskluderte konti: {params.excludedAccountNumbers.length}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => window.location.reload()}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Last siden på nytt
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setParams(prev => ({ 
+                            ...prev, 
+                            selectedStandardNumbers: [],
+                            excludedAccountNumbers: [] 
+                          }));
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Nullstill valg
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               }
               onError={(error, errorInfo) => {
-                console.error('Sample generation error in ConsolidatedAuditSampling:', error, errorInfo);
+                console.error('💥 Sample generation error in ConsolidatedAuditSampling:', error, errorInfo);
+                console.error('Sample generation context:', {
+                  clientId,
+                  populationSize: params.populationSize,
+                  populationSum: params.populationSum,
+                  selectedStandards: params.selectedStandardNumbers,
+                  excludedAccounts: params.excludedAccountNumbers,
+                  method: params.method,
+                  activeVersion: activeTrialBalanceVersion?.version
+                });
               }}
             >
               <div className="flex gap-2">

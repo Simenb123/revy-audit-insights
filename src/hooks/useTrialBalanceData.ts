@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
+import { calculateAccountBalance } from '@/utils/transactionMapping';
 
 export interface TrialBalanceEntry {
   id: string;
@@ -87,23 +88,23 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
         return deduplicatedData;
       }
 
-      // Fallback: Calculate from general ledger and chart of accounts
-      console.log('No direct trial balance data found, calculating from general ledger...');
+      // Fallback: Calculate from general ledger and chart of accounts using server-side aggregation
+      console.log('No direct trial balance data found, calculating from general ledger with server-side aggregation...');
       
+      // Get accounts first
       const { data: accounts, error: accountsError } = await supabase
         .from('client_chart_of_accounts')
-        .select('*')
+        .select('id, account_number, account_name')
         .eq('client_id', clientId);
 
       if (accountsError) throw accountsError;
+      
+      if (!accounts || accounts.length === 0) {
+        console.log('No chart of accounts found');
+        return [];
+      }
 
-      // Get general ledger transactions for the client with version filtering
-      let transactionsQuery = supabase
-        .from('general_ledger_transactions')
-        .select('*')
-        .eq('client_id', clientId);
-
-      // Apply version filtering - use same logic as useGeneralLedgerData
+      // Determine target version ID for aggregation
       let targetVersionId = effectiveVersion;
       if (!targetVersionId) {
         console.log('🔍 No trial balance version, finding active accounting version...');
@@ -133,157 +134,82 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
         }
       }
 
-      // Apply version filter if we have a version
+      // Perform server-side aggregation of general ledger transactions
+      let aggregationQuery = supabase
+        .from('general_ledger_transactions')
+        .select(`
+          client_account_id,
+          sum(debit_amount)::numeric as total_debit,
+          sum(credit_amount)::numeric as total_credit
+        `)
+        .eq('client_id', clientId)
+        .not('client_account_id', 'is', null); // Only include transactions with valid account IDs
+
+      // Apply version filter if available
       if (targetVersionId) {
-        console.log('🔍 Filtering GL transactions by version:', targetVersionId);
-        
-        // Use server-side aggregation instead of fetching all transactions
-        const { data: glAggregated, error: glAggError } = await supabase
-          .from('general_ledger_transactions')
-          .select('client_account_id, sum(debit_amount) as total_debit, sum(credit_amount) as total_credit')
-          .eq('client_id', clientId)
-          .eq('version_id', targetVersionId);
-
-        if (glAggError) throw glAggError;
-        
-        console.log('Found accounts:', accounts?.length, 'aggregated GL data:', glAggregated?.length);
-        
-        if (!accounts || accounts.length === 0) {
-          console.log('No chart of accounts found');
-          return [];
-        }
-
-        // Create lookup map for aggregated data
-        const aggregationMap = new Map();
-        glAggregated?.forEach((agg: any) => {
-          aggregationMap.set(agg.client_account_id, {
-            total_debit: Number(agg.total_debit) || 0,
-            total_credit: Number(agg.total_credit) || 0
-          });
-        });
-
-        // Calculate trial balance for each account using aggregated data
-        const calculatedTrialBalance: TrialBalanceEntry[] = accounts.map(account => {
-          const aggregated = aggregationMap.get(account.id) || { total_debit: 0, total_credit: 0 };
-          
-          const debit_turnover = aggregated.total_debit;
-          const credit_turnover = aggregated.total_credit;
-          
-          console.log(`Account ${account.account_number} (${account.account_name}): debit=${debit_turnover}, credit=${credit_turnover}`);
-          
-          // Calculate opening and closing balance based on account type
-          // For assets and expenses: debit increases balance
-          // For liabilities, equity, and income: credit increases balance
-          const isDebitAccount = account.account_number.startsWith('1') || account.account_number.startsWith('2') || account.account_number.startsWith('6') || account.account_number.startsWith('7');
-          
-          let opening_balance = 0; // Assuming no opening balance for now
-          let closing_balance = 0;
-          
-          if (isDebitAccount) {
-            closing_balance = opening_balance + debit_turnover - credit_turnover;
-          } else {
-            closing_balance = opening_balance + credit_turnover - debit_turnover;
-          }
-
-          const entry = {
-            id: account.id,
-            account_number: account.account_number,
-            account_name: account.account_name,
-            closing_balance,
-            credit_turnover,
-            debit_turnover,
-            opening_balance,
-            period_start_date: `${new Date().getFullYear()}-01-01`,
-            period_end_date: new Date().toISOString().split('T')[0],
-            period_year: new Date().getFullYear(),
-          };
-          
-          return entry;
-        });
-
-        console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts`);
-        
-        // Don't filter out accounts - show ALL accounts including those with zero balances
-        // This is important for trial balance completeness
-        console.log(`Returning all ${calculatedTrialBalance.length} accounts`);
-        console.log('Sample entries:', calculatedTrialBalance.slice(0, 5));
-        
-        return calculatedTrialBalance;
+        console.log('🔍 Filtering GL aggregation by version:', targetVersionId);
+        aggregationQuery = aggregationQuery.eq('version_id', targetVersionId);
       } else {
-        // Use server-side aggregation even without version for better performance
-        console.log('⚠️ No version available, using server-side aggregation without version filter');
-        
-        const { data: glAggregated, error: glAggError } = await supabase
-          .from('general_ledger_transactions')
-          .select('client_account_id, sum(debit_amount) as total_debit, sum(credit_amount) as total_credit')
-          .eq('client_id', clientId);
-
-        if (glAggError) throw glAggError;
-        
-        console.log('Found accounts:', accounts?.length, 'aggregated GL data without version:', glAggregated?.length);
-        
-        if (!accounts || accounts.length === 0) {
-          console.log('No chart of accounts found');
-          return [];
-        }
-
-        // Create lookup map for aggregated data
-        const aggregationMap = new Map();
-        glAggregated?.forEach((agg: any) => {
-          aggregationMap.set(agg.client_account_id, {
-            total_debit: Number(agg.total_debit) || 0,
-            total_credit: Number(agg.total_credit) || 0
-          });
-        });
-
-        // Calculate trial balance for each account using aggregated data
-        const calculatedTrialBalance: TrialBalanceEntry[] = accounts.map(account => {
-          const aggregated = aggregationMap.get(account.id) || { total_debit: 0, total_credit: 0 };
-          
-          const debit_turnover = aggregated.total_debit;
-          const credit_turnover = aggregated.total_credit;
-          
-          console.log(`Account ${account.account_number} (${account.account_name}): debit=${debit_turnover}, credit=${credit_turnover}`);
-          
-          // Calculate opening and closing balance based on account type
-          // For assets and expenses: debit increases balance
-          // For liabilities, equity, and income: credit increases balance
-          const isDebitAccount = account.account_number.startsWith('1') || account.account_number.startsWith('2') || account.account_number.startsWith('6') || account.account_number.startsWith('7');
-          
-          let opening_balance = 0; // Assuming no opening balance for now
-          let closing_balance = 0;
-          
-          if (isDebitAccount) {
-            closing_balance = opening_balance + debit_turnover - credit_turnover;
-          } else {
-            closing_balance = opening_balance + credit_turnover - debit_turnover;
-          }
-
-          const entry = {
-            id: account.id,
-            account_number: account.account_number,
-            account_name: account.account_name,
-            closing_balance,
-            credit_turnover,
-            debit_turnover,
-            opening_balance,
-            period_start_date: `${new Date().getFullYear()}-01-01`,
-            period_end_date: new Date().toISOString().split('T')[0],
-            period_year: new Date().getFullYear(),
-          };
-          
-          return entry;
-        });
-
-        console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts using server-side aggregation`);
-        
-        // Don't filter out accounts - show ALL accounts including those with zero balances
-        // This is important for trial balance completeness
-        console.log(`Returning all ${calculatedTrialBalance.length} accounts`);
-        console.log('Sample entries:', calculatedTrialBalance.slice(0, 5));
-        
-        return calculatedTrialBalance;
+        console.log('⚠️ No version available for GL aggregation filter');
       }
+
+      // Group by client_account_id to get totals per account
+      const { data: glAggregated, error: glAggError } = await aggregationQuery
+        .not('client_account_id', 'is', null)
+        .order('client_account_id');
+
+      if (glAggError) {
+        console.error('❌ Error in GL aggregation query:', glAggError);
+        throw glAggError;
+      }
+        
+      console.log(`Found ${accounts.length} accounts, ${glAggregated?.length || 0} aggregated GL records`);
+
+      // Create lookup map for aggregated transaction data
+      const aggregationMap = new Map<string, { total_debit: number; total_credit: number }>();
+      glAggregated?.forEach((agg: any) => {
+        aggregationMap.set(agg.client_account_id, {
+          total_debit: Number(agg.total_debit) || 0,
+          total_credit: Number(agg.total_credit) || 0
+        });
+      });
+
+      // Calculate trial balance for each account using server-aggregated data
+      const calculatedTrialBalance: TrialBalanceEntry[] = accounts.map(account => {
+        const aggregated = aggregationMap.get(account.id) || { total_debit: 0, total_credit: 0 };
+        
+        const debit_turnover = aggregated.total_debit;
+        const credit_turnover = aggregated.total_credit;
+        
+        // Calculate closing balance using the shared utility function
+        const opening_balance = 0; // No opening balance data available
+        const closing_balance = calculateAccountBalance(
+          account.account_number,
+          debit_turnover,
+          credit_turnover,
+          opening_balance
+        );
+
+        return {
+          id: account.id,
+          account_number: account.account_number,
+          account_name: account.account_name,
+          closing_balance,
+          credit_turnover,
+          debit_turnover,
+          opening_balance,
+          period_start_date: `${effectiveYear || new Date().getFullYear()}-01-01`,
+          period_end_date: new Date().toISOString().split('T')[0],
+          period_year: effectiveYear || new Date().getFullYear(),
+        };
+      });
+
+      console.log(`✅ Calculated trial balance for ${calculatedTrialBalance.length} accounts using server-side aggregation`);
+      console.log('Sample calculated entries:', calculatedTrialBalance.slice(0, 3).map(e => 
+        `${e.account_number}: debit=${e.debit_turnover}, credit=${e.credit_turnover}, balance=${e.closing_balance}`
+      ));
+      
+      return calculatedTrialBalance;
     },
     enabled: !!clientId, // Only require clientId - version resolution happens in queryFn
   });

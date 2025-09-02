@@ -58,9 +58,9 @@ export const useGeneralLedgerCount = (clientId: string, versionId?: string, filt
 
       return count || 0;
     },
-    enabled: !!clientId, // Only require clientId
-    staleTime: 60 * 1000, // 60 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!clientId, // Only require clientId - version resolution happens in queryFn
+    staleTime: 60 * 1000, // Cache for 60 seconds to reduce repeated fetches
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false
   });
