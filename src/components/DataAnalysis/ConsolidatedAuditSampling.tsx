@@ -978,76 +978,98 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Generation Controls */}
-            <div className="flex gap-2">
-              <Button 
-                onClick={generateSample} 
-                disabled={isLoading || params.selectedStandardNumbers.length === 0}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <Calculator className="mr-2 h-4 w-4 animate-spin" />
-                    Genererer...
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-2 h-4 w-4" />
-                    Generer utvalg
-                  </>
-                )}
-              </Button>
-              
-              {result && (
-                <Button onClick={savePlan} disabled={isSaving} variant="outline">
-                  {isSaving ? (
+            {/* Generation Controls - Wrapped in error boundary */}
+            <LightweightErrorBoundary
+              fallback={
+                <Card className="border-destructive">
+                  <CardContent className="p-8 text-center">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
+                    <p className="text-muted-foreground mb-4">Det oppstod en feil under genereringen av revisjonsutvalget</p>
+                    <p className="text-sm text-muted-foreground mb-6">Sjekk at populasjonsvalget er korrekt og prøv igjen</p>
+                    <Button 
+                      onClick={() => window.location.reload()}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Last siden på nytt
+                    </Button>
+                  </CardContent>
+                </Card>
+              }
+              onError={(error, errorInfo) => {
+                console.error('Sample generation error in ConsolidatedAuditSampling:', error, errorInfo);
+              }}
+            >
+              <div className="flex gap-2">
+                <Button 
+                  onClick={generateSample} 
+                  disabled={isLoading || params.selectedStandardNumbers.length === 0}
+                  className="flex-1"
+                >
+                  {isLoading ? (
                     <>
                       <Calculator className="mr-2 h-4 w-4 animate-spin" />
-                      Lagrer...
+                      Genererer...
                     </>
                   ) : (
                     <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Lagre plan
+                      <Play className="mr-2 h-4 w-4" />
+                      Generer utvalg
                     </>
                   )}
                 </Button>
-              )}
-            </div>
-
-            {/* Help Text */}
-            {params.selectedStandardNumbers.length === 0 && (
-              <div className="p-3 bg-muted/50 border border-dashed border-muted-foreground/20 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Info className="h-4 w-4" />
-                  <span>Velg minst én regnskapslinje for å generere utvalg</span>
-                </div>
+                
+                {result && (
+                  <Button onClick={savePlan} disabled={isSaving} variant="outline">
+                    {isSaving ? (
+                      <>
+                        <Calculator className="mr-2 h-4 w-4 animate-spin" />
+                        Lagrer...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Lagre plan
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
-            )}
 
-            {/* Results Display */}
-            {result && (
-              <div className="space-y-4">
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <h4 className="font-semibold mb-2">Utvalgsplan</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <div className="text-muted-foreground">Metode</div>
-                      <div className="font-medium">{result.plan.method}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Utvalg størrelse</div>
-                      <div className="font-medium">{result.plan.actualSampleSize}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Dekning</div>
-                      <div className="font-medium">{result.plan.coveragePercentage.toFixed(1)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Generert</div>
-                      <div className="font-medium">{formatDate(result.plan.generatedAt)}</div>
-                    </div>
+              {/* Help Text */}
+              {params.selectedStandardNumbers.length === 0 && (
+                <div className="p-3 bg-muted/50 border border-dashed border-muted-foreground/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Info className="h-4 w-4" />
+                    <span>Velg minst én regnskapslinje for å generere utvalg</span>
                   </div>
+                </div>
+              )}
+
+              {/* Results Display */}
+              {result && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <h4 className="font-semibold mb-2">Utvalgsplan</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Metode</div>
+                        <div className="font-medium">{result.plan.method}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Utvalg størrelse</div>
+                        <div className="font-medium">{result.plan.actualSampleSize}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Dekning</div>
+                        <div className="font-medium">{result.plan.coveragePercentage.toFixed(1)}%</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Generert</div>
+                        <div className="font-medium">{formatDate(result.plan.generatedAt)}</div>
+                      </div>
+                    </div>
                 </div>
 
                 {/* Sample Preview */}
@@ -1079,6 +1101,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
                 )}
               </div>
             )}
+            </LightweightErrorBoundary>
 
             {/* Error Display */}
             {populationError && (

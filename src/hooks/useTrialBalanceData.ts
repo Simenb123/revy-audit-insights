@@ -210,36 +210,40 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
         
         return calculatedTrialBalance;
       } else {
-        // Fallback to old method if no version
-        const { data: transactions, error: transactionsError } = await transactionsQuery;
-
-        if (transactionsError) throw transactionsError;
+        // Use server-side aggregation even without version for better performance
+        console.log('⚠️ No version available, using server-side aggregation without version filter');
         
-        console.log('Found accounts:', accounts?.length, 'transactions:', transactions?.length);
+        const { data: glAggregated, error: glAggError } = await supabase
+          .from('general_ledger_transactions')
+          .select('client_account_id, sum(debit_amount) as total_debit, sum(credit_amount) as total_credit')
+          .eq('client_id', clientId);
+
+        if (glAggError) throw glAggError;
+        
+        console.log('Found accounts:', accounts?.length, 'aggregated GL data without version:', glAggregated?.length);
         
         if (!accounts || accounts.length === 0) {
           console.log('No chart of accounts found');
           return [];
         }
 
-        // Calculate trial balance for each account
+        // Create lookup map for aggregated data
+        const aggregationMap = new Map();
+        glAggregated?.forEach((agg: any) => {
+          aggregationMap.set(agg.client_account_id, {
+            total_debit: Number(agg.total_debit) || 0,
+            total_credit: Number(agg.total_credit) || 0
+          });
+        });
+
+        // Calculate trial balance for each account using aggregated data
         const calculatedTrialBalance: TrialBalanceEntry[] = accounts.map(account => {
-          const accountTransactions = transactions?.filter(t => t.client_account_id === account.id) || [];
+          const aggregated = aggregationMap.get(account.id) || { total_debit: 0, total_credit: 0 };
           
-          console.log(`Account ${account.account_number} (${account.account_name}): ${accountTransactions.length} transactions`);
+          const debit_turnover = aggregated.total_debit;
+          const credit_turnover = aggregated.total_credit;
           
-          // Handle both debit/credit amounts and balance amounts
-          const debit_turnover = accountTransactions.reduce((sum, t) => {
-            if (t.debit_amount !== null && t.debit_amount !== undefined) return sum + t.debit_amount;
-            if (t.balance_amount !== null && t.balance_amount > 0) return sum + t.balance_amount;
-            return sum;
-          }, 0);
-          
-          const credit_turnover = accountTransactions.reduce((sum, t) => {
-            if (t.credit_amount !== null && t.credit_amount !== undefined) return sum + t.credit_amount;
-            if (t.balance_amount !== null && t.balance_amount < 0) return sum + Math.abs(t.balance_amount);
-            return sum;
-          }, 0);
+          console.log(`Account ${account.account_number} (${account.account_name}): debit=${debit_turnover}, credit=${credit_turnover}`);
           
           // Calculate opening and closing balance based on account type
           // For assets and expenses: debit increases balance
@@ -268,12 +272,10 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
             period_year: new Date().getFullYear(),
           };
           
-          console.log(`Account ${account.account_number}: debit=${debit_turnover}, credit=${credit_turnover}, closing=${closing_balance}`);
-          
           return entry;
         });
 
-        console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts`);
+        console.log(`Calculated trial balance for ${calculatedTrialBalance.length} accounts using server-side aggregation`);
         
         // Don't filter out accounts - show ALL accounts including those with zero balances
         // This is important for trial balance completeness

@@ -91,36 +91,55 @@ export function usePopulationCalculator(
           
           // Fallback to edge function if RPC fails
           console.log('Falling back to edge function...');
-          const fallbackResponse = await supabase.functions.invoke('calculate-population-from-accounts', {
-            body: {
-              clientId,
-              fiscalYear,
-              selectedStandardNumbers,
-              excludedAccountNumbers,
-              version: versionId
+          try {
+            const fallbackResponse = await supabase.functions.invoke('calculate-population-from-accounts', {
+              body: {
+                clientId,
+                fiscalYear,
+                selectedStandardNumbers,
+                excludedAccountNumbers,
+                version: versionId
+              }
+            });
+
+            if (fallbackResponse.error) {
+              console.error('Edge function also failed:', fallbackResponse.error);
+              // Return empty result instead of throwing
+              return {
+                size: 0,
+                sum: 0,
+                accounts: []
+              };
             }
-          });
 
-          if (fallbackResponse.error) {
-            console.error('Edge function also failed:', fallbackResponse.error);
-            throw new Error(`Population calculation failed: ${error.message}`);
+            const fallbackData = fallbackResponse.data;
+            if (!fallbackData || typeof fallbackData !== 'object') {
+              console.warn('Invalid response from fallback function');
+              return {
+                size: 0,
+                sum: 0,
+                accounts: []
+              };
+            }
+
+            return {
+              size: fallbackData.size || 0,
+              sum: fallbackData.sum || 0,
+              accounts: (fallbackData.accounts || []).map((acc: any) => ({
+                account_number: acc.account_number,
+                account_name: acc.account_name,
+                closing_balance: acc.closing_balance,
+                transaction_count: acc.transaction_count || 0
+              }))
+            };
+          } catch (fallbackError) {
+            console.error('Both RPC and fallback failed:', fallbackError);
+            return {
+              size: 0,
+              sum: 0,
+              accounts: []
+            };
           }
-
-          const fallbackData = fallbackResponse.data;
-          if (!fallbackData || typeof fallbackData !== 'object') {
-            throw new Error('Invalid response from fallback function');
-          }
-
-          return {
-            size: fallbackData.size || 0,
-            sum: fallbackData.sum || 0,
-            accounts: (fallbackData.accounts || []).map((acc: any) => ({
-              account_number: acc.account_number,
-              account_name: acc.account_name,
-              closing_balance: acc.closing_balance,
-              transaction_count: acc.transaction_count || 0
-            }))
-          };
         }
 
         if (!data || typeof data !== 'object') {
