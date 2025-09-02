@@ -74,9 +74,9 @@ export const useGeneralLedgerCount = (clientId: string, versionId?: string, filt
       console.log('📊 General ledger count:', count);
       return count || 0;
     },
-    enabled: !!clientId && !!versionId, // Only run when both clientId and versionId are provided
-    staleTime: 0, // Force fresh data to show latest count
-    gcTime: 0, // No caching to ensure we see new data immediately
+    enabled: !!clientId, // Only require clientId - version resolution happens in queryFn
+    staleTime: 60_000, // Cache for 60 seconds to reduce repeated fetches
+    gcTime: 300_000, // Keep in cache for 5 minutes
     refetchOnMount: true, // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refetch when user returns to tab
   });

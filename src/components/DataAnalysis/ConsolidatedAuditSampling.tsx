@@ -29,6 +29,7 @@ import {
   Calculator,
   FileSpreadsheet,
   Info,
+  RefreshCw,
   Search,
   Filter,
   Archive,
@@ -518,14 +519,22 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section - Wrapped in lightweight error boundary for safety */}
+          {/* Population Analysis Section - Wrapped in error boundary with retry functionality */}
           <LightweightErrorBoundary
             fallback={
               <Card>
                 <CardContent className="p-8 text-center">
                   <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
-                  <p className="text-muted-foreground">Det oppstod en feil under populasjonsanalysen</p>
-                  <p className="text-sm text-muted-foreground mt-2">Prøv å endre populasjonsvalget eller last siden på nytt</p>
+                  <p className="text-muted-foreground mb-4">Det oppstod en feil under populasjonsanalysen</p>
+                  <p className="text-sm text-muted-foreground mb-6">Prøv å endre populasjonsvalget eller last siden på nytt</p>
+                  <Button 
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Last siden på nytt
+                  </Button>
                 </CardContent>
               </Card>
             }

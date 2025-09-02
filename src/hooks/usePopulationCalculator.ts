@@ -60,27 +60,30 @@ export function usePopulationCalculator(
       });
 
       try {
-        // Convert versionId to UUID if it's a string like "v10"
-        let uuid_version_id: string | null = null;
+        // Determine whether versionId is a UUID or a version string
+        let p_version_id: string | null = null;
+        let p_version_string: string | null = null;
+        
         if (versionId) {
-          // If versionId looks like "vXX", try to find corresponding UUID
           if (versionId.startsWith('v')) {
-            // For now, pass null and let the function handle version detection
-            uuid_version_id = null;
-            console.log(`Version string "${versionId}" detected, letting function auto-detect version`);
+            // It's a version string like "v10"
+            p_version_string = versionId;
+            console.log(`Version string "${versionId}" detected`);
           } else {
-            // Assume it's already a UUID
-            uuid_version_id = versionId;
+            // Assume it's a UUID
+            p_version_id = versionId;
+            console.log(`Version UUID "${versionId}" detected`);
           }
         }
 
-        // Use the fixed SQL function with correct parameter name
+        // Call the RPC function with proper version parameters
         const { data, error } = await supabase.rpc('calculate_population_analysis', {
           p_client_id: clientId,
           p_fiscal_year: fiscalYear,
           p_selected_standard_numbers: selectedStandardNumbers,
           p_excluded_account_numbers: excludedAccountNumbers,
-          p_version_string: versionId // Now correctly using version string parameter
+          p_version_id,
+          p_version_string
         });
 
         if (error) {
@@ -150,27 +153,57 @@ export function usePopulationCalculator(
           transaction_count: acc.transactionCount
         }));
 
-        // Calculate included statistics (excluding specified accounts)
-        const includedAccounts = accounts.filter((account) => 
-          !excludedAccountNumbers.includes(account.account_number)
-        );
-        const includedSum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
-
-        console.log('Population calculation successful:', {
-          totalAccounts: accounts.length,
-          includedAccounts: includedAccounts.length,
-          includedSum
-        });
+        // Use basicStats from RPC response if available, otherwise calculate manually
+        let size: number;
+        let sum: number;
+        
+        if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
+          // Use RPC response data and adjust for excluded accounts
+          const excludedAccounts = accounts.filter((account) => 
+            excludedAccountNumbers.includes(account.account_number)
+          );
+          const excludedSum = excludedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+          
+          size = responseData.basicStats.totalAccounts - excludedAccounts.length;
+          sum = responseData.basicStats.totalSum - excludedSum;
+          
+          console.log('Using RPC basicStats with exclusion adjustments:', {
+            totalAccounts: responseData.basicStats.totalAccounts,
+            totalSum: responseData.basicStats.totalSum,
+            excludedCount: excludedAccounts.length,
+            excludedSum,
+            finalSize: size,
+            finalSum: sum
+          });
+        } else {
+          // Fallback to client-side calculation
+          const includedAccounts = accounts.filter((account) => 
+            !excludedAccountNumbers.includes(account.account_number)
+          );
+          size = includedAccounts.length;
+          sum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+          
+          console.log('Using fallback calculation:', {
+            totalAccounts: accounts.length,
+            includedAccounts: size,
+            includedSum: sum
+          });
+        }
 
         return {
-          size: includedAccounts.length,
-          sum: includedSum,
+          size,
+          sum,
           accounts: accounts // Return all accounts, UI handles inclusion/exclusion display
         };
 
       } catch (error) {
         console.error('Population calculator error:', error);
-        throw error;
+        // Return empty result instead of throwing to prevent crashes
+        return {
+          size: 0,
+          sum: 0,
+          accounts: []
+        };
       }
     },
     enabled: !!clientId && selectedStandardNumbers.length > 0,
