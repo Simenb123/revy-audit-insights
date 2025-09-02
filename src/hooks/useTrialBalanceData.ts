@@ -58,7 +58,6 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
       const { data: directTrialBalance, error: trialBalanceError } = await query;
 
       if (!trialBalanceError && directTrialBalance && directTrialBalance.length > 0) {
-        console.log('✅ Found trial balance data:', directTrialBalance.length, 'accounts');
         const mappedData = directTrialBalance.map(tb => ({
           id: tb.id,
           account_number: tb.client_chart_of_accounts?.account_number || 'Ukjent',
@@ -83,13 +82,10 @@ export const useTrialBalanceData = (clientId: string, version?: string, year?: n
         });
         
         const deduplicatedData = Array.from(uniqueAccounts.values());
-        console.log('📊 Trial Balance Summary: Opening=', deduplicatedData.reduce((sum, item) => sum + item.opening_balance, 0), 'Closing=', deduplicatedData.reduce((sum, item) => sum + item.closing_balance, 0));
-        console.log(`🔧 Deduplicated from ${mappedData.length} to ${deduplicatedData.length} accounts`);
         return deduplicatedData;
       }
 
-      // Create empty trial balance to avoid crashing - do not attempt fallback calculation
-      console.log('No direct trial balance data found, returning empty array');
+      // Return empty trial balance if no data found
       return [];
     },
     enabled: !!clientId, // Only require clientId - version resolution happens in queryFn

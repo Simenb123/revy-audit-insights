@@ -50,14 +50,7 @@ export function usePopulationCalculator(
         };
       }
 
-      // Log parameters for debugging
-      console.log('Population calculator parameters:', {
-        clientId,
-        fiscalYear,
-        selectedStandardNumbers,
-        excludedAccountNumbers,
-        versionId
-      });
+        // Remove console.log in production
 
       try {
         // Determine whether versionId is a UUID or a version string
@@ -77,20 +70,12 @@ export function usePopulationCalculator(
           }
         }
 
-        console.log('Calling RPC with parameters:', {
-          p_client_id: clientId,
-          p_fiscal_year: fiscalYear,
-          p_selected_standard_numbers: selectedStandardNumbers,
-          p_excluded_account_numbers: excludedAccountNumbers,
-          p_version_id,
-          p_version_string
-        });
+        // Remove production logs
 
-        // Call the RPC function with version string (preferred) since activeTrialBalanceVersion uses version strings
+        // Call the correct RPC function based on version type
         let rpcCall;
         if (p_version_string) {
-          // Use the overload that takes version string (e.g., "v10")
-          console.log('🚀 Calling RPC with version string:', p_version_string);
+          // Call with version string parameter (v10, v28, etc.)
           rpcCall = supabase.rpc('calculate_population_analysis', {
             p_client_id: clientId,
             p_fiscal_year: fiscalYear,
@@ -98,19 +83,8 @@ export function usePopulationCalculator(
             p_excluded_account_numbers: excludedAccountNumbers,
             p_version_string
           });
-        } else if (p_version_id) {
-          // Use the overload that takes UUID
-          console.log('🚀 Calling RPC with version UUID:', p_version_id);
-          rpcCall = supabase.rpc('calculate_population_analysis', {
-            p_client_id: clientId,
-            p_fiscal_year: fiscalYear,
-            p_selected_standard_numbers: selectedStandardNumbers,
-            p_excluded_account_numbers: excludedAccountNumbers,
-            p_version_id
-          });
         } else {
-          // Use the overload without version (will use latest/active)
-          console.log('🚀 Calling RPC without version (will use latest/active)');
+          // Call without version (will find latest/active automatically)
           rpcCall = supabase.rpc('calculate_population_analysis', {
             p_client_id: clientId,
             p_fiscal_year: fiscalYear,
@@ -122,69 +96,15 @@ export function usePopulationCalculator(
         const { data, error } = await rpcCall;
 
         if (error) {
-          console.error('RPC Error calculating population:', error);
-          console.error('RPC Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          
-          // Fallback to edge function if RPC fails
-          console.log('Falling back to edge function...');
-          try {
-            const fallbackResponse = await supabase.functions.invoke('calculate-population-from-accounts', {
-              body: {
-                clientId,
-                fiscalYear,
-                selectedStandardNumbers,
-                excludedAccountNumbers,
-                version: versionId
-              }
-            });
-
-            if (fallbackResponse.error) {
-              console.error('Edge function also failed:', fallbackResponse.error);
-              // Return empty result instead of throwing
-              return {
-                size: 0,
-                sum: 0,
-                accounts: []
-              };
-            }
-
-            const fallbackData = fallbackResponse.data;
-            if (!fallbackData || typeof fallbackData !== 'object') {
-              console.warn('Invalid response from fallback function');
-              return {
-                size: 0,
-                sum: 0,
-                accounts: []
-              };
-            }
-
-            return {
-              size: fallbackData.size || 0,
-              sum: fallbackData.sum || 0,
-              accounts: (fallbackData.accounts || []).map((acc: any) => ({
-                account_number: acc.account_number,
-                account_name: acc.account_name,
-                closing_balance: acc.closing_balance,
-                transaction_count: acc.transaction_count || 0
-              }))
-            };
-          } catch (fallbackError) {
-            console.error('Both RPC and fallback failed:', fallbackError);
-            return {
-              size: 0,
-              sum: 0,
-              accounts: []
-            };
-          }
+          // Return empty result on RPC error to prevent crashes
+          return {
+            size: 0,
+            sum: 0,
+            accounts: []
+          };
         }
 
         if (!data || typeof data !== 'object') {
-          console.warn('Empty or invalid data returned from RPC');
           return {
             size: 0,
             sum: 0,
@@ -213,33 +133,21 @@ export function usePopulationCalculator(
           transaction_count: acc.transactionCount
         }));
 
-        // Use basicStats directly from RPC response - it should handle exclusions server-side
-        let size: number;
-        let sum: number;
+        // Use basicStats from RPC response - it should handle exclusions server-side
+        let size = 0;
+        let sum = 0;
         
         if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
-          // Trust the RPC function to handle exclusions properly
+          // Use RPC calculated values (server-side exclusions handled)
           size = responseData.basicStats.totalAccounts;
           sum = responseData.basicStats.totalSum;
-          
-          console.log('✅ Using RPC basicStats (with server-side exclusions):', {
-            populationSize: size,
-            populationSum: sum
-          });
         } else {
-          // Fallback to client-side calculation with manual exclusions
+          // Fallback to client-side calculation if RPC basicStats missing
           const includedAccounts = accounts.filter((account) => 
             !excludedAccountNumbers.includes(account.account_number)
           );
           size = includedAccounts.length;
           sum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
-          
-          console.log('⚠️ Using fallback calculation (RPC basicStats missing):', {
-            totalAccounts: accounts.length,
-            excludedCount: accounts.length - includedAccounts.length,
-            populationSize: size,
-            populationSum: sum
-          });
         }
 
         return {
@@ -249,9 +157,7 @@ export function usePopulationCalculator(
         };
 
       } catch (error) {
-        console.error('Population calculator error:', error);
-        
-        // Return empty result instead of throwing to prevent crashes
+        // Return empty result on any error to prevent UI crashes
         return {
           size: 0,
           sum: 0,

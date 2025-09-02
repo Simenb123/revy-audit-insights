@@ -29,15 +29,14 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
   return useQuery({
     queryKey: ['general-ledger-v7', clientId, versionId, pagination, filters?.accountNumber, filters?.sortBy, filters?.sortOrder, filters?.forceLoadAll],
     queryFn: async () => {
-      console.log('🔍 Fetching general ledger data for client:', clientId, 'version:', versionId);
-      console.log('🔐 Auth user ID:', (await supabase.auth.getUser()).data.user?.id);
+      // Remove production logging
       
       // If pagination is specified and not forcing full load, fetch only that page
       if (pagination && !filters?.forceLoadAll) {
         const { page, pageSize } = pagination;
         const offset = (page - 1) * pageSize;
         
-        console.log(`📦 Fetching page ${page}, ${pageSize} records, offset: ${offset}`);
+        // Paginated query
         
         let query = supabase
           .from('general_ledger_transactions')
@@ -74,7 +73,6 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           query = query.eq('version_id', versionId);
         } else {
           // If no version specified, get active version data
-          console.log('🔍 No version specified, finding active version...');
           const { data: activeVersion, error: versionError } = await supabase
             .from('accounting_data_versions')
             .select('id')
@@ -83,7 +81,6 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             .maybeSingle();
           
           if (versionError) {
-            console.error('❌ Error finding active version:', versionError);
             // Try to get the latest version instead
             const { data: latestVersion } = await supabase
               .from('accounting_data_versions')
@@ -94,14 +91,12 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
               .maybeSingle();
             
             if (latestVersion) {
-              console.log('🔄 Using latest version instead:', latestVersion.id);
               query = query.eq('version_id', latestVersion.id);
             }
           } else if (activeVersion) {
-            console.log('✅ Found active version:', activeVersion.id);
             query = query.eq('version_id', activeVersion.id);
           } else {
-            console.log('⚠️ No active version found, trying latest version...');
+            // Try latest version
             const { data: latestVersion } = await supabase
               .from('accounting_data_versions')
               .select('id')
@@ -111,7 +106,6 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
               .maybeSingle();
             
             if (latestVersion) {
-              console.log('🔄 Using latest version:', latestVersion.id);
               query = query.eq('version_id', latestVersion.id);
             }
           }
@@ -160,17 +154,14 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
 
       // Don't start chunking if essential parameters are missing
       if (!clientId) {
-        console.warn('⚠️ Client ID missing, aborting chunked loading');
         return [];
       }
       
-      // Otherwise, use chunked loading for full data (export, validation)
-      console.log('🔍 Using chunked loading to fetch ALL transactions');
+      // Use chunked loading for full data (export, validation)
       
       // Determine the version ID to use for all chunks
       let targetVersionId = versionId;
       if (!targetVersionId) {
-        console.log('🔍 No version specified, finding active version for chunked loading...');
         const { data: activeVersion, error: versionError } = await supabase
           .from('accounting_data_versions')
           .select('id')
@@ -179,7 +170,6 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           .maybeSingle();
         
         if (versionError) {
-          console.error('❌ Error finding active version:', versionError);
           // Try to get the latest version instead
           const { data: latestVersion } = await supabase
             .from('accounting_data_versions')
@@ -190,10 +180,8 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
             .maybeSingle();
           
           targetVersionId = latestVersion?.id;
-          console.log('🔄 Using latest version for chunked loading:', targetVersionId);
         } else {
           targetVersionId = activeVersion?.id;
-          console.log('✅ Using active version ID for chunked loading:', targetVersionId);
         }
       }
       
@@ -203,11 +191,9 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       let hasMore = true;
 
       while (hasMore) {
-        console.log(`📦 Fetching chunk ${Math.floor(offset / chunkSize) + 1}, offset: ${offset}`);
-        
         // Reduced pause between chunks for better performance 
         if (offset > 0) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
         
         let query = supabase
@@ -250,19 +236,15 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
           .range(offset, offset + chunkSize - 1);
 
         if (error) {
-          console.error('❌ Error fetching general ledger chunk:', error);
-          // Stop the loop on first error to avoid cascading failures and triggering React #310
+          // Stop the loop on first error to avoid cascading failures
           hasMore = false;
           break;
         }
 
         if (!data || data.length === 0) {
-          console.log(`⚠️ No more transactions found at offset ${offset}`);
           hasMore = false;
           break;
         }
-
-        console.log(`✅ Loaded chunk with ${data.length} transactions`);
         allTransactions = [...allTransactions, ...data];
         
         // If we got less than chunkSize, we've reached the end
