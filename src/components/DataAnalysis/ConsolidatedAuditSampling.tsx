@@ -41,7 +41,7 @@ import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersi
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
 import PopulationInsights from './PopulationInsights';
-import StableErrorBoundary from '@/components/ui/stable-error-boundary';
+import { LightweightErrorBoundary } from '@/components/ErrorBoundary/LightweightErrorBoundary';
 
 interface ConsolidatedAuditSamplingProps {
   clientId: string;
@@ -517,18 +517,20 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </TabsList>
         
         <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section - Root cause fixed, no longer need error boundary */}
-          <div className="mb-6">
-            <PopulationInsights
-              clientId={clientId}
-              fiscalYear={params.fiscalYear}
-              selectedStandardNumbers={params.selectedStandardNumbers}
-              excludedAccountNumbers={params.excludedAccountNumbers}
-              versionString={activeTrialBalanceVersion?.version}
-              analysisLevel={analysisLevel}
-              onAnalysisLevelChange={setAnalysisLevel}
-            />
-          </div>
+          {/* Population Analysis Section - Wrapped in lightweight error boundary for safety */}
+          <LightweightErrorBoundary>
+            <div className="mb-6">
+              <PopulationInsights
+                clientId={clientId}
+                fiscalYear={params.fiscalYear}
+                selectedStandardNumbers={params.selectedStandardNumbers}
+                excludedAccountNumbers={params.excludedAccountNumbers}
+                versionString={activeTrialBalanceVersion?.version}
+                analysisLevel={analysisLevel}
+                onAnalysisLevelChange={setAnalysisLevel}
+              />
+            </div>
+          </LightweightErrorBoundary>
           <div className="space-y-6">
 
       <div className="grid gap-6">
@@ -695,146 +697,144 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </Card>
 
         {/* Account Exclusion Section */}
-        {params.selectedStandardNumbers.length > 0 && populationData?.accounts && (
-          <Card>
-            <Collapsible open={expandedSections.has('accounts')} onOpenChange={() => toggleSection('accounts')}>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50">
-                  <CardTitle className="flex items-center gap-2">
-                    {expandedSections.has('accounts') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    <Filter className="h-4 w-4" />
-                    Kontobehandling
-                    {params.excludedAccountNumbers.length > 0 && (
-                      <Badge variant="destructive" className="ml-2">
-                        {params.excludedAccountNumbers.length} ekskludert
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    Administrer hvilke kontoer som skal inkluderes i utvalget
-                  </CardDescription>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  {/* Impact Summary */}
-                  <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
-                    <div className="text-center">
-                      <div className="text-xs text-muted-foreground">Inkludert</div>
-                      <div className="font-semibold">{includedAccounts.length} kontoer</div>
-                      <div className="text-sm">{formatCurrency(includedSum)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-muted-foreground">Ekskludert</div>
-                      <div className="font-semibold text-muted-foreground">{excludedAccounts.length} kontoer</div>
-                      <div className="text-sm text-muted-foreground">{formatCurrency(excludedSum)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-muted-foreground">Dekning</div>
-                      <div className="font-semibold">
-                        {totalSum > 0 ? ((includedSum / totalSum) * 100).toFixed(1) : 0}%
+        <Card>
+          <Collapsible open={expandedSections.has('accounts')} onOpenChange={() => toggleSection('accounts')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50">
+                <CardTitle className="flex items-center gap-2">
+                  {expandedSections.has('accounts') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <Filter className="h-4 w-4" />
+                  Kontobehandling
+                  {params.excludedAccountNumbers.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {params.excludedAccountNumbers.length} ekskludert
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Administrer hvilke kontoer som skal inkluderes i utvalget
+                </CardDescription>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                {params.selectedStandardNumbers.length > 0 && populationData?.accounts ? (
+                  <>
+                    {/* Impact Summary */}
+                    <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Inkludert</div>
+                        <div className="font-semibold">{includedAccounts.length} kontoer</div>
+                        <div className="text-sm">{formatCurrency(includedSum)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Ekskludert</div>
+                        <div className="font-semibold text-muted-foreground">{excludedAccounts.length} kontoer</div>
+                        <div className="text-sm text-muted-foreground">{formatCurrency(excludedSum)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Dekning</div>
+                        <div className="font-semibold">
+                          {totalSum > 0 ? ((includedSum / totalSum) * 100).toFixed(1) : 0}%
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Search and Filter Controls */}
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Søk etter kontonummer eller navn..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Button
-                      variant={showOnlyExcluded ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setShowOnlyExcluded(!showOnlyExcluded)}
-                    >
-                      {showOnlyExcluded ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                      {showOnlyExcluded ? 'Alle' : 'Kun eksklud.'}
-                    </Button>
-                  </div>
-
-                  {/* Batch Actions */}
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleSelectAllFilteredAccounts}>
-                      Velg alle ({accountsForExclusion.length})
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleDeselectAllFilteredAccounts}>
-                      Fjern valgte
-                    </Button>
-                    {params.excludedAccountNumbers.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={handleClearAllExclusions}>
-                        Nullstill alle
+                    {/* Search and Filter Controls */}
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Søk etter kontonummer eller navn..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowOnlyExcluded(!showOnlyExcluded)}
+                        className={showOnlyExcluded ? 'bg-muted' : ''}
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        {showOnlyExcluded ? 'Vis alle' : 'Kun ekskluderte'}
                       </Button>
-                    )}
-                  </div>
-
-                  {/* Accounts List */}
-                  <div>
-                    <div className="text-sm font-medium mb-2">
-                      Kontoer ({accountsForExclusion.length} av {populationData.accounts.length})
                     </div>
-                    
-                    <ScrollArea className="h-64 border rounded-md">
-                      <div className="p-2 space-y-2">
-                        {accountsForExclusion.map((account) => {
-                          const isExcluded = params.excludedAccountNumbers.includes(account.account_number);
+
+                    {/* Account List */}
+                    <div className="border rounded-lg">
+                      <ScrollArea className="h-64">
+                        <div className="divide-y">
+                          {accountsForExclusion.map((account) => {
+                            const isExcluded = params.excludedAccountNumbers.includes(account.account_number);
+                            
+                            return (
+                              <div
+                                key={account.account_number}
+                                className={`flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer ${isExcluded ? 'opacity-60' : ''}`}
+                                onClick={() => handleAccountExclusionToggle(account.account_number)}
+                              >
+                                <div className="flex items-center gap-3 flex-1">
+                                  <Checkbox
+                                    checked={!isExcluded}
+                                    onChange={(checked) => {
+                                      if (!checked) {
+                                        handleAccountExclusionToggle(account.account_number);
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-sm font-medium">
+                                        {account.account_number}
+                                      </span>
+                                      <span className={`text-sm truncate ${isExcluded ? 'text-muted-foreground line-through' : ''}`}>
+                                        {account.account_name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className={`text-sm font-medium ${isExcluded ? 'text-muted-foreground' : ''}`}>
+                                    {formatCurrency(Math.abs(account.closing_balance))}
+                                  </div>
+                                  {isExcluded && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Ekskludert
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                           
-                          return (
-                            <div
-                              key={account.account_number}
-                              className={`flex items-center space-x-3 p-3 rounded-md transition-all duration-200 cursor-pointer hover:bg-muted/50 ${
-                                isExcluded ? 'bg-destructive/10 border border-destructive/20' : 'hover:border-border border border-transparent'
-                              }`}
-                              onClick={() => handleAccountExclusionToggle(account.account_number)}
-                            >
-                              <Checkbox
-                                checked={isExcluded}
-                                onCheckedChange={() => handleAccountExclusionToggle(account.account_number)}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-sm font-medium">
-                                    {account.account_number}
-                                  </span>
-                                  <span className={`text-sm truncate ${isExcluded ? 'text-muted-foreground line-through' : ''}`}>
-                                    {account.account_name}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className={`text-sm font-medium ${isExcluded ? 'text-muted-foreground' : ''}`}>
-                                  {formatCurrency(Math.abs(account.closing_balance))}
-                                </div>
-                                {isExcluded && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    Ekskludert
-                                  </Badge>
-                                )}
-                              </div>
+                          {accountsForExclusion.length === 0 && (
+                            <div className="text-center py-8 text-muted-foreground">
+                              {searchTerm || showOnlyExcluded 
+                                ? 'Ingen kontoer matcher filteret' 
+                                : 'Ingen kontoer tilgjengelig'}
                             </div>
-                          );
-                        })}
-                        
-                        {accountsForExclusion.length === 0 && (
-                          <div className="text-center py-8 text-muted-foreground">
-                            {searchTerm || showOnlyExcluded 
-                              ? 'Ingen kontoer matcher filteret' 
-                              : 'Ingen kontoer tilgjengelig'}
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Filter className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">
+                      {params.selectedStandardNumbers.length === 0 
+                        ? 'Velg regnskapslinjer for å administrere kontoer'
+                        : 'Laster kontodata...'}
+                    </p>
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-        )}
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
 
         {/* Parameters Section */}
         <Card>
