@@ -7,12 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, TrendingUp, Filter, X } from 'lucide-react';
+import { Search, TrendingUp, Filter, X, AlertTriangle } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationAnalysis } from '@/hooks/usePopulationAnalysis';
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import { formatCurrency, formatNumber } from '@/services/sampling/utils';
 import PopulationAnalysisSection from './PopulationAnalysisSection';
+import { LightweightErrorBoundary } from '@/components/ErrorBoundary/LightweightErrorBoundary';
 
 interface PopulationSelectorProps {
   clientId: string;
@@ -227,10 +228,25 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
         <Separator />
 
         {/* Population Analysis - Always render to avoid conditional hooks */}
-        <PopulationAnalysisSection 
-          analysisData={populationData ?? null}
-          excludedAccountNumbers={excludedAccountNumbers}
-        />
+        <LightweightErrorBoundary 
+          fallback={
+            <Card>
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
+                <p className="text-muted-foreground">Det oppstod en feil under populasjonsanalysen</p>
+                <p className="text-sm text-muted-foreground mt-2">Prøv å endre populasjonsvalget eller last siden på nytt</p>
+              </CardContent>
+            </Card>
+          }
+          onError={(error, errorInfo) => {
+            console.error('PopulationAnalysisSection error:', error, errorInfo);
+          }}
+        >
+          <PopulationAnalysisSection 
+            analysisData={populationData ?? null}
+            excludedAccountNumbers={excludedAccountNumbers}
+          />
+        </LightweightErrorBoundary>
 
         <Separator />
 

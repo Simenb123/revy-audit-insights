@@ -32,7 +32,8 @@ import {
   Search,
   Filter,
   Archive,
-  History
+  History,
+  AlertTriangle
 } from 'lucide-react';
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
@@ -518,7 +519,20 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         
         <TabsContent value="generate" className="mt-6">
           {/* Population Analysis Section - Wrapped in lightweight error boundary for safety */}
-          <LightweightErrorBoundary>
+          <LightweightErrorBoundary
+            fallback={
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive opacity-50" />
+                  <p className="text-muted-foreground">Det oppstod en feil under populasjonsanalysen</p>
+                  <p className="text-sm text-muted-foreground mt-2">Prøv å endre populasjonsvalget eller last siden på nytt</p>
+                </CardContent>
+              </Card>
+            }
+            onError={(error, errorInfo) => {
+              console.error('PopulationInsights error in ConsolidatedAuditSampling:', error, errorInfo);
+            }}
+          >
             <div className="mb-6">
               <PopulationInsights
                 clientId={clientId}
@@ -531,6 +545,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
               />
             </div>
           </LightweightErrorBoundary>
+          
           <div className="space-y-6">
 
       <div className="grid gap-6">
