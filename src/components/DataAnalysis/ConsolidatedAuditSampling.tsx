@@ -43,7 +43,7 @@ import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersi
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
 import PopulationInsights from './PopulationInsights';
-import { LightweightErrorBoundary } from '@/components/ErrorBoundary/LightweightErrorBoundary';
+import { PopulationAnalysisErrorBoundary } from '@/components/ErrorBoundary/PopulationAnalysisErrorBoundary';
 
 interface ConsolidatedAuditSamplingProps {
   clientId: string;
@@ -132,7 +132,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
   const [params, setParams] = useState<SamplingParams>({
     fiscalYear: selectedFiscalYear || new Date().getFullYear(),
     testType: 'SUBSTANTIVE',
-    method: 'SRS', // Changed default from MUS to SRS
+    method: 'SRS',
     populationSize: 1000,
     populationSum: 1000000,
     selectedStandardNumbers: [],
@@ -150,48 +150,17 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
   const { 
     data: populationData, 
     isLoading: isCalculatingPopulation,
-    error: populationError 
+    error: populationError,
+    refetch: refetchPopulation
   } = usePopulationCalculator(
     clientId,
     params.fiscalYear,
     params.selectedStandardNumbers,
     params.excludedAccountNumbers,
-    activeTrialBalanceVersion?.version // Use trial balance version string (v10, v28, etc.)
+    activeTrialBalanceVersion?.version
   );
 
-  // Auto-select trial balance accounts when standard accounts are selected
-  // Improved: Accounts are included by default, user excludes what they don't want
-  useEffect(() => {
-    if (params.selectedStandardNumbers.length > 0 && trialBalanceData?.standardAccountBalances) {
-      // Find all trial balance accounts that belong to selected standard accounts
-      const accountsToAutoInclude: string[] = [];
-      
-      params.selectedStandardNumbers.forEach(standardNumber => {
-        const standardAccount = trialBalanceData.standardAccountBalances.find(
-          balance => balance.standard_number === standardNumber
-        );
-        
-        if (standardAccount) {
-          standardAccount.mapped_accounts.forEach(account => {
-            if (!accountsToAutoInclude.includes(account.account_number)) {
-              accountsToAutoInclude.push(account.account_number);
-            }
-          });
-        }
-      });
-      
-      // IMPROVED: Remove auto-selected accounts from excluded list 
-      // This means all accounts are INCLUDED by default, user must actively exclude
-      setParams(prev => ({
-        ...prev,
-        excludedAccountNumbers: prev.excludedAccountNumbers.filter(
-          accountNumber => !accountsToAutoInclude.includes(accountNumber)
-        )
-      }));
-    }
-  }, [params.selectedStandardNumbers, trialBalanceData?.standardAccountBalances]);
-
-  // Query for saved samples to refresh the SavedSamplesManager
+  // Query for saved samples
   const { data: savedSamples, refetch: refetchSavedSamples } = useQuery({
     queryKey: ['saved-audit-samples', clientId, params.fiscalYear],
     queryFn: async () => {
@@ -208,34 +177,34 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     enabled: !!clientId
   });
 
-  // Create stable reference for population accounts to prevent infinite re-renders
-  const populationAccountsLength = useMemo(() => 
-    populationData?.accounts?.length || 0, 
-    [populationData?.accounts?.length]
-  );
-
-  // Get accounts for the exclusion manager - stabilized to prevent infinite re-renders
-  const accountsForExclusion = useMemo(() => {
-    if (!populationData?.accounts) return [];
-    
-    // Filter accounts based on search and exclusion status
-    let filtered = populationData.accounts;
-    
-    if (searchTerm) {
-      filtered = filtered.filter(account => 
-        account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.account_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  // Auto-select trial balance accounts when standard accounts are selected
+  useEffect(() => {
+    if (params.selectedStandardNumbers.length > 0 && trialBalanceData?.standardAccountBalances) {
+      const accountsToAutoInclude: string[] = [];
+      
+      params.selectedStandardNumbers.forEach(standardNumber => {
+        const standardAccount = trialBalanceData.standardAccountBalances.find(
+          balance => balance.standard_number === standardNumber
+        );
+        
+        if (standardAccount) {
+          standardAccount.mapped_accounts.forEach(account => {
+            if (!accountsToAutoInclude.includes(account.account_number)) {
+              accountsToAutoInclude.push(account.account_number);
+            }
+          });
+        }
+      });
+      
+      // Remove auto-selected accounts from excluded list
+      setParams(prev => ({
+        ...prev,
+        excludedAccountNumbers: prev.excludedAccountNumbers.filter(
+          accountNumber => !accountsToAutoInclude.includes(accountNumber)
+        )
+      }));
     }
-    
-    if (showOnlyExcluded) {
-      filtered = filtered.filter(account => 
-        params.excludedAccountNumbers.includes(account.account_number)
-      );
-    }
-    
-    return filtered.sort((a, b) => a.account_number.localeCompare(b.account_number));
-  }, [populationAccountsLength, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
+  }, [params.selectedStandardNumbers, trialBalanceData?.standardAccountBalances]);
 
   // Fetch working materiality on component mount and when fiscal year changes
   useEffect(() => {
@@ -251,7 +220,6 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           .maybeSingle();
 
         if (error) {
-          console.warn('Could not fetch materiality settings:', error);
           return;
         }
 
@@ -263,7 +231,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           }));
         }
       } catch (error) {
-        console.error('Error fetching materiality:', error);
+        // Silent error handling for materiality fetch
       }
     };
 
@@ -277,11 +245,10 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     }
   }, [selectedFiscalYear, params.fiscalYear]);
 
-  // Create stable reference for population data properties to prevent infinite re-renders
+  // Update population size and sum when population data changes
   const populationSize = useMemo(() => populationData?.size || 0, [populationData?.size]);
   const populationSum = useMemo(() => populationData?.sum || 0, [populationData?.sum]);
 
-  // Update population size and sum when population data changes
   useEffect(() => {
     if (populationSize > 0 || populationSum > 0) {
       setParams(prev => ({
@@ -314,43 +281,9 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     }
   };
 
-  const handleSelectAllFilteredAccounts = () => {
-    const allFilteredAccountNumbers = accountsForExclusion.map(acc => acc.account_number);
-    const newExcluded = [...new Set([...params.excludedAccountNumbers, ...allFilteredAccountNumbers])];
-    handleParamChange('excludedAccountNumbers', newExcluded);
-  };
-
-  const handleDeselectAllFilteredAccounts = () => {
-    const filteredAccountNumbers = accountsForExclusion.map(acc => acc.account_number);
-    const newExcluded = params.excludedAccountNumbers.filter(n => !filteredAccountNumbers.includes(n));
-    handleParamChange('excludedAccountNumbers', newExcluded);
-  };
-
-  const handleClearAllExclusions = () => {
-    handleParamChange('excludedAccountNumbers', []);
-  };
-
-  const addQuickCombination = (numbers: string[]) => {
-    const newSelection = [...new Set([...params.selectedStandardNumbers, ...numbers])];
-    handleParamChange('selectedStandardNumbers', newSelection);
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
-
   const generateSample = async () => {
     setIsLoading(true);
     try {
-      // Generate automatic name for the sample
       const timestamp = new Date().toLocaleString('nb-NO', { 
         month: 'short', 
         day: '2-digit', 
@@ -366,12 +299,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
       const payload = {
         clientId,
         ...params,
-        versionId: activeTrialBalanceVersion?.version, // Use trial balance version string
-        planName: autoName, // Add automatic naming
+        versionId: activeTrialBalanceVersion?.version,
+        planName: autoName,
         strataBounds: params.strataBounds ? 
           params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
           undefined,
-        save: true // IMPORTANT: Automatically save when generating
+        save: true
       };
 
       const { data, error } = await supabase.functions.invoke('audit-sampling', {
@@ -382,7 +315,6 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
 
       setResult(data);
       
-      // Log the audit action
       createAuditLog.mutate({
         clientId,
         actionType: 'analysis_performed',
@@ -402,8 +334,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         description: `${data.plan.actualSampleSize} transaksjoner valgt med ${data.plan.coveragePercentage.toFixed(1)}% dekning`,
       });
 
-    } catch (error) {
-      console.error('Sampling error:', error);
+    } catch (error: any) {
       toast({
         title: "Feil ved generering",
         description: error.message || "Kunne ikke generere utvalg",
@@ -411,57 +342,6 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const savePlan = async () => {
-    if (!result) return;
-    
-    setIsSaving(true);
-    try {
-      const payload = {
-        clientId,
-        ...params,
-        versionId: activeTrialBalanceVersion?.version, // Use trial balance version string
-        strataBounds: params.strataBounds ? 
-          params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
-          undefined,
-        save: true
-      };
-
-      const { error } = await supabase.functions.invoke('audit-sampling', {
-        body: payload
-      });
-
-      if (error) throw error;
-
-      createAuditLog.mutate({
-        clientId,
-        actionType: 'analysis_performed',
-        areaName: 'sampling',
-        description: `Utvalgsplan lagret: ${result.plan.method} metode, ${result.plan.actualSampleSize} elementer`,
-        metadata: {
-          test_type: result.plan.testType,
-          method: result.plan.method,
-          sample_size: result.plan.actualSampleSize,
-          coverage_percentage: result.plan.coveragePercentage
-        }
-      });
-
-      toast({
-        title: "Plan lagret",
-        description: "Utvalgsplanen er lagret i databasen"
-      });
-
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        title: "Feil ved lagring",
-        description: error.message || "Kunne ikke lagre plan",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -477,141 +357,80 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     return new Date(dateString).toLocaleDateString('nb-NO');
   };
 
-  // Calculate impact statistics for excluded accounts
-  const includedAccounts = populationData?.accounts?.filter(acc => !params.excludedAccountNumbers.includes(acc.account_number)) || [];
-  const excludedAccounts = populationData?.accounts?.filter(acc => params.excludedAccountNumbers.includes(acc.account_number)) || [];
-  const includedSum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
-  const excludedSum = excludedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
-  const totalSum = includedSum + excludedSum;
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
+  };
+
+  // Get accounts for the exclusion manager
+  const accountsForExclusion = useMemo(() => {
+    if (!populationData?.accounts) return [];
+    
+    let filtered = populationData.accounts;
+    
+    if (searchTerm) {
+      filtered = filtered.filter(account => 
+        account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.account_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (showOnlyExcluded) {
+      filtered = filtered.filter(account => 
+        params.excludedAccountNumbers.includes(account.account_number)
+      );
+    }
+    
+    return filtered.sort((a, b) => a.account_number.localeCompare(b.account_number));
+  }, [populationData?.accounts, searchTerm, showOnlyExcluded, params.excludedAccountNumbers]);
 
   return (
-    <LightweightErrorBoundary 
-      fallback={
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Feil i populasjonsanalyse
-            </CardTitle>
-            <CardDescription>
-              Det oppstod en feil under populasjonsanalysen. Dette kan skyldes store datamengder eller feil versjonsinformasjon.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Prøv igjen
-            </Button>
-          </CardContent>
-        </Card>
-      }
-    >
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <FileSpreadsheet className="h-5 w-5 text-primary" />
-        <h2 className="text-2xl font-bold">Revisjonsutvalg</h2>
-        <div className="ml-auto flex items-center gap-4">
-          {workingMateriality && (
-            <Badge variant="outline">
-              Arbeidsvesentlighet: {formatCurrency(workingMateriality)}
-            </Badge>
-          )}
-          {populationData && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              {populationData.size} kontoer • {formatCurrency(populationData.sum)}
-            </div>
-          )}
+    <PopulationAnalysisErrorBoundary onRetry={() => {
+      refetchPopulation();
+      refetchSavedSamples();
+    }}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5 text-primary" />
+          <h2 className="text-2xl font-bold">Revisjonsutvalg</h2>
+          <div className="ml-auto flex items-center gap-4">
+            {workingMateriality && (
+              <Badge variant="outline">
+                Arbeidsvesentlighet: {formatCurrency(workingMateriality)}
+              </Badge>
+            )}
+            {populationData && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                {populationData.size} kontoer • {formatCurrency(populationData.sum)}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Main Content with Tabs */}
-      <Tabs defaultValue="generate" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="generate" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            Generer utvalg
-          </TabsTrigger>
-          <TabsTrigger value="saved" className="flex items-center gap-2">
-            <Archive className="h-4 w-4" />
-            Lagrede utvalg
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="generate" className="mt-6">
-          {/* Population Analysis Section - Enhanced Error Boundary with detailed troubleshooting */}
-          <LightweightErrorBoundary
-            fallback={
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-destructive flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    Feil i populasjonsanalyse
-                  </CardTitle>
-                  <CardDescription>
-                    Populasjonsanalysen kunne ikke fullføres
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <p className="text-sm text-destructive-foreground mb-2">
-                      <strong>Mulige årsaker:</strong>
-                    </p>
-                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                      <li>Ingen data for valgte regnskapslinjer</li>
-                      <li>Problemer med dataversjonering</li>
-                      <li>Manglende kobling mellom standardkonti og regnskapsdata</li>
-                      <li>Teknisk feil i beregning</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium mb-2">Prøv følgende:</p>
-                    <ul className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                      <li>Velg andre regnskapslinjer (f.eks. kun "Salgsinntekter")</li>
-                      <li>Sjekk at regnskapsdata er lastet opp korrekt</li>
-                      <li>Kontroller at kontokartet er konfigurert</li>
-                      <li>Last siden på nytt</li>
-                    </ul>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => window.location.reload()}
-                      className="flex items-center gap-2"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Last siden på nytt
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setParams(prev => ({ ...prev, selectedStandardNumbers: [] }))}
-                      className="flex items-center gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Tøm valg
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            }
-            onError={(error, errorInfo) => {
-              console.error('💥 PopulationInsights error in ConsolidatedAuditSampling:', error, errorInfo);
-              console.error('Error context:', {
-                clientId,
-                fiscalYear: params.fiscalYear,
-                selectedStandardNumbers: params.selectedStandardNumbers,
-                activeVersion: activeTrialBalanceVersion?.version
-              });
-            }}
-          >
-            <div className="mb-6">
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="generate" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="generate" className="flex items-center gap-2">
+              <Calculator className="h-4 w-4" />
+              Generer utvalg
+            </TabsTrigger>
+            <TabsTrigger value="saved" className="flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Lagrede utvalg
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="generate" className="mt-6">
+            <div className="space-y-6">
               <PopulationInsights
                 clientId={clientId}
                 fiscalYear={params.fiscalYear}
@@ -621,630 +440,309 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
                 analysisLevel={analysisLevel}
                 onAnalysisLevelChange={setAnalysisLevel}
               />
-            </div>
-          </LightweightErrorBoundary>
-          
-          <div className="space-y-6">
 
-      <div className="grid gap-6">
-        {/* Population Section */}
-        <Card>
-          <Collapsible open={expandedSections.has('population')} onOpenChange={() => toggleSection('population')}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50">
-                <CardTitle className="flex items-center gap-2">
-                  {expandedSections.has('population') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  <Database className="h-4 w-4" />
-                  Populasjonsvalg
-                  {params.selectedStandardNumbers.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {params.selectedStandardNumbers.length} valgt
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  Velg regnskapslinjer - kontoer blir automatisk valgt
-                </CardDescription>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                {/* Quick Combinations */}
-                <div>
-                  <Label className="text-sm font-medium">Vanlige kombinasjoner</Label>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addQuickCombination(['10', '19'])}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Salgsinntekter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addQuickCombination(['20', '70'])}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Varekost + Annen drift
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addQuickCombination(['30'])}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Lønnskostnader
-                    </Button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Standard Account Selection */}
-                <div>
-                  <Label className="text-sm font-medium">Regnskapslinjer</Label>
-                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {COMMON_STANDARD_ACCOUNTS.map((account) => {
-                      const isSelected = params.selectedStandardNumbers.includes(account.number);
-                      const standardBalance = trialBalanceData?.standardAccountBalances.find(
-                        balance => balance.standard_number === account.number
-                      );
-                      
-                      return (
-                        <div 
-                          key={account.number} 
-                          className={`flex items-center space-x-2 p-3 rounded-lg border ${
-                            isSelected ? 'bg-primary/5 border-primary/20' : 'hover:bg-muted/50'
-                          }`}
+              {/* Standard Account Selection */}
+              <Card>
+                <Collapsible open={expandedSections.has('standardAccounts')} onOpenChange={() => toggleSection('standardAccounts')}>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50">
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Database className="h-4 w-4" />
+                          Regnskapslinjer ({params.selectedStandardNumbers.length} valgt)
+                        </span>
+                        {expandedSections.has('standardAccounts') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </CardTitle>
+                      <CardDescription>
+                        Velg hvilke regnskapslinjer som skal inngå i utvalget
+                      </CardDescription>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      {/* Quick Selection Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParamChange('selectedStandardNumbers', ['20'])}
                         >
-                          <Checkbox
-                            id={`account-${account.number}`}
-                            checked={isSelected}
-                            onCheckedChange={() => handleStandardAccountToggle(account.number)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <Label 
-                              htmlFor={`account-${account.number}`}
-                              className="text-sm cursor-pointer font-medium"
-                            >
-                              <span className="font-mono">{account.number}</span>
-                              <span className="ml-2">{account.name}</span>
-                            </Label>
-                            {standardBalance && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {standardBalance.mapped_accounts.length} kontoer • {formatCurrency(standardBalance.total_balance)}
+                          Kun Varekostnad
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParamChange('selectedStandardNumbers', ['20', '70'])}
+                        >
+                          Varekost + Annen drift
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParamChange('selectedStandardNumbers', ['10', '19'])}
+                        >
+                          Salgsinntekter
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParamChange('selectedStandardNumbers', [])}
+                        >
+                          Nullstill
+                        </Button>
+                      </div>
+
+                      <Separator />
+
+                      {/* Standard Account Grid */}
+                      <div className="grid gap-2">
+                        {COMMON_STANDARD_ACCOUNTS.map((account) => (
+                          <div
+                            key={account.number}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <Checkbox
+                                id={`standard-${account.number}`}
+                                checked={params.selectedStandardNumbers.includes(account.number)}
+                                onCheckedChange={() => handleStandardAccountToggle(account.number)}
+                              />
+                              <div>
+                                <label
+                                  htmlFor={`standard-${account.number}`}
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  {account.number} - {account.name}
+                                </label>
                               </div>
-                            )}
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {account.category}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Selected Accounts Summary */}
-                {params.selectedStandardNumbers.length > 0 && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-sm font-medium mb-2">Valgte regnskapslinjer</div>
-                    <div className="flex gap-1 flex-wrap">
-                      {params.selectedStandardNumbers.map((number) => {
-                        const account = COMMON_STANDARD_ACCOUNTS.find(a => a.number === number);
-                        return (
-                          <Badge key={number} variant="secondary" className="gap-1">
-                            <span className="font-mono">{number}</span>
-                            {account && <span>{account.name}</span>}
-                            <X 
-                              className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                              onClick={() => handleStandardAccountToggle(number)}
-                            />
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Population Statistics */}
-                {isCalculatingPopulation ? (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calculator className="h-4 w-4 animate-spin" />
-                      <span>Beregner populasjon...</span>
-                    </div>
-                  </div>
-                ) : populationData && (
-                  <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="text-sm font-medium mb-2">Populasjonsstatistikk</div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Inkluderte kontoer</div>
-                        <div className="text-lg font-semibold text-primary">{includedAccounts.length}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Total beløp</div>
-                        <div className="text-lg font-semibold">{formatCurrency(includedSum)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Dekning</div>
-                        <div className="text-lg font-semibold">
-                          {totalSum > 0 ? ((includedSum / totalSum) * 100).toFixed(1) : 0}%
-                        </div>
-                      </div>
-                    </div>
-                    {params.excludedAccountNumbers.length > 0 && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        <span className="text-destructive font-medium">{params.excludedAccountNumbers.length} kontoer ekskludert</span>
-                        <span className="ml-2">({formatCurrency(excludedSum)})</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-
-        {/* Account Exclusion Section */}
-        <Card>
-          <Collapsible open={expandedSections.has('accounts')} onOpenChange={() => toggleSection('accounts')}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50">
-                <CardTitle className="flex items-center gap-2">
-                  {expandedSections.has('accounts') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  <Filter className="h-4 w-4" />
-                  Kontobehandling
-                  {params.excludedAccountNumbers.length > 0 && (
-                    <Badge variant="destructive" className="ml-2">
-                      {params.excludedAccountNumbers.length} ekskludert
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  Administrer hvilke kontoer som skal inkluderes i utvalget
-                </CardDescription>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                {params.selectedStandardNumbers.length > 0 && populationData?.accounts ? (
-                  <>
-                    {/* Impact Summary */}
-                    <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Inkludert</div>
-                        <div className="font-semibold">{includedAccounts.length} kontoer</div>
-                        <div className="text-sm">{formatCurrency(includedSum)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Ekskludert</div>
-                        <div className="font-semibold text-muted-foreground">{excludedAccounts.length} kontoer</div>
-                        <div className="text-sm text-muted-foreground">{formatCurrency(excludedSum)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Dekning</div>
-                        <div className="font-semibold">
-                          {totalSum > 0 ? ((includedSum / totalSum) * 100).toFixed(1) : 0}%
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Search and Filter Controls */}
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Søk etter kontonummer eller navn..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowOnlyExcluded(!showOnlyExcluded)}
-                        className={showOnlyExcluded ? 'bg-muted' : ''}
-                      >
-                        <Filter className="h-4 w-4 mr-2" />
-                        {showOnlyExcluded ? 'Vis alle' : 'Kun ekskluderte'}
-                      </Button>
-                    </div>
-
-                    {/* Account List */}
-                    <div className="border rounded-lg">
-                      <ScrollArea className="h-64">
-                        <div className="divide-y">
-                          {accountsForExclusion.map((account) => {
-                            const isExcluded = params.excludedAccountNumbers.includes(account.account_number);
-                            
-                            return (
-                              <div
-                                key={account.account_number}
-                                className={`flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer ${isExcluded ? 'opacity-60' : ''}`}
-                                onClick={() => handleAccountExclusionToggle(account.account_number)}
-                              >
-                                <div className="flex items-center gap-3 flex-1">
-                                  <Checkbox
-                                    checked={!isExcluded}
-                                    onChange={(checked) => {
-                                      if (!checked) {
-                                        handleAccountExclusionToggle(account.account_number);
-                                      }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-mono text-sm font-medium">
-                                        {account.account_number}
-                                      </span>
-                                      <span className={`text-sm truncate ${isExcluded ? 'text-muted-foreground line-through' : ''}`}>
-                                        {account.account_name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className={`text-sm font-medium ${isExcluded ? 'text-muted-foreground' : ''}`}>
-                                    {formatCurrency(Math.abs(account.closing_balance))}
-                                  </div>
-                                  {isExcluded && (
-                                    <Badge variant="destructive" className="text-xs">
-                                      Ekskludert
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          
-                          {accountsForExclusion.length === 0 && (
-                            <div className="text-center py-8 text-muted-foreground">
-                              {searchTerm || showOnlyExcluded 
-                                ? 'Ingen kontoer matcher filteret' 
-                                : 'Ingen kontoer tilgjengelig'}
                             </div>
-                          )}
-                        </div>
-                      </ScrollArea>
+                            <Badge variant="outline" className="text-xs">
+                              {account.category}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+
+              {/* Sampling Parameters */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Utvalgsparametere
+                  </CardTitle>
+                  <CardDescription>
+                    Konfigurer parametere for utvalgsgenereringen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="testType">Testtype</Label>
+                      <Select value={params.testType} onValueChange={(value: 'SUBSTANTIVE' | 'CONTROL') => handleParamChange('testType', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SUBSTANTIVE">Substanstest</SelectItem>
+                          <SelectItem value="CONTROL">Kontrolltest</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Filter className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">
-                      {params.selectedStandardNumbers.length === 0 
-                        ? 'Velg regnskapslinjer for å administrere kontoer'
-                        : 'Laster kontodata...'}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
 
-        {/* Parameters Section */}
-        <Card>
-          <Collapsible open={expandedSections.has('parameters')} onOpenChange={() => toggleSection('parameters')}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-muted/50">
-                <CardTitle className="flex items-center gap-2">
-                  {expandedSections.has('parameters') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  <Settings className="h-4 w-4" />
-                  Utvalgsparametere
-                </CardTitle>
-                <CardDescription>
-                  Konfigurer parametere for generering av revisjonsutvalg
-                </CardDescription>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="testType">Testtype</Label>
-                    <Select value={params.testType} onValueChange={(value) => handleParamChange('testType', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SUBSTANTIVE">Substans (Detaljkontroll)</SelectItem>
-                        <SelectItem value="CONTROL">Test av kontroll</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="method">Utvalgsmetode</Label>
-                    <Select value={params.method} onValueChange={(value) => handleParamChange('method', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SRS">Tilfeldig utvalg (SRS)</SelectItem>
-                        <SelectItem value="SYSTEMATIC">Systematisk utvalg</SelectItem>
-                        <SelectItem value="MUS">Pengeenhetsutvalg (MUS)</SelectItem>
-                        <SelectItem value="STRATIFIED">Stratifisert utvalg</SelectItem>
-                        <SelectItem value="THRESHOLD">Terskelutvalg</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="method">Utvalgsmetode</Label>
+                      <Select value={params.method} onValueChange={(value: any) => handleParamChange('method', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SRS">Tilfeldig utvalg (SRS)</SelectItem>
+                          <SelectItem value="SYSTEMATIC">Systematisk utvalg</SelectItem>
+                          <SelectItem value="MUS">Monetær enhetsutvalg (MUS)</SelectItem>
+                          <SelectItem value="STRATIFIED">Stratifisert utvalg</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="confidenceLevel">Konfidensnivå (%)</Label>
-                    <Select value={params.confidenceLevel.toString()} onValueChange={(value) => handleParamChange('confidenceLevel', parseInt(value))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="90">90%</SelectItem>
-                        <SelectItem value="95">95%</SelectItem>
-                        <SelectItem value="99">99%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="riskLevel">Risikonivå</Label>
-                    <Select value={params.riskLevel} onValueChange={(value) => handleParamChange('riskLevel', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="lav">Lav</SelectItem>
-                        <SelectItem value="moderat">Moderat</SelectItem>
-                        <SelectItem value="hoy">Høy</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confidenceLevel">Konfidensnivå (%)</Label>
+                      <Select value={params.confidenceLevel.toString()} onValueChange={(value) => handleParamChange('confidenceLevel', parseInt(value))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="90">90%</SelectItem>
+                          <SelectItem value="95">95%</SelectItem>
+                          <SelectItem value="99">99%</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {params.testType === 'SUBSTANTIVE' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="materiality">Arbeidsvesentlighet (NOK)</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="materiality">Vesentlighet (NOK)</Label>
                       <Input
                         id="materiality"
                         type="number"
                         value={params.materiality || ''}
-                        onChange={(e) => handleParamChange('materiality', parseFloat(e.target.value))}
-                        className={workingMateriality ? "bg-muted" : ""}
+                        onChange={(e) => handleParamChange('materiality', parseFloat(e.target.value) || 0)}
+                        placeholder="50000"
                       />
-                      {workingMateriality && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Hentet fra klientens materialitetsinnstillinger
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="riskLevel">Risikonivå</Label>
+                      <Select value={params.riskLevel} onValueChange={(value: 'lav' | 'moderat' | 'hoy') => handleParamChange('riskLevel', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lav">Lav</SelectItem>
+                          <SelectItem value="moderat">Moderat</SelectItem>
+                          <SelectItem value="hoy">Høy</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {params.testType === 'CONTROL' && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="tolerableDeviationRate">Tolerabel avvikssats (%)</Label>
+                          <Input
+                            id="tolerableDeviationRate"
+                            type="number"
+                            value={params.tolerableDeviationRate || ''}
+                            onChange={(e) => handleParamChange('tolerableDeviationRate', parseFloat(e.target.value) || 0)}
+                            placeholder="5"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="expectedDeviationRate">Forventet avvikssats (%)</Label>
+                          <Input
+                            id="expectedDeviationRate"
+                            type="number"
+                            value={params.expectedDeviationRate || ''}
+                            onChange={(e) => handleParamChange('expectedDeviationRate', parseFloat(e.target.value) || 0)}
+                            placeholder="1"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Generation and Results */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Generering og Resultat
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={generateSample}
+                      disabled={isLoading || params.selectedStandardNumbers.length === 0}
+                      size="lg"
+                    >
+                      {isLoading ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Genererer...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="mr-2 h-4 w-4" />
+                          Generer utvalg
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Info className="h-4 w-4" />
+                      Populasjon: {formatCurrency(populationSum)} ({populationSize} kontoer)
+                    </div>
+                  </div>
+
+                  {result && (
+                    <div className="space-y-4">
+                      <Separator />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold">{result.plan.actualSampleSize}</div>
+                          <div className="text-sm text-muted-foreground">Utvalgte transaksjoner</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold">{result.plan.coveragePercentage.toFixed(1)}%</div>
+                          <div className="text-sm text-muted-foreground">Dekningsgrad</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold">{result.plan.method}</div>
+                          <div className="text-sm text-muted-foreground">Metode</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold">{formatDate(result.plan.generatedAt)}</div>
+                          <div className="text-sm text-muted-foreground">Generert</div>
+                        </Card>
+                      </div>
+
+                      {result.sample.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Utvalgte transaksjoner (viser første 10):</h4>
+                          <ScrollArea className="h-64 w-full border rounded">
+                            <div className="space-y-1 p-2">
+                              {result.sample.slice(0, 10).map((transaction, index) => (
+                                <div key={transaction.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded text-sm">
+                                  <div>
+                                    <span className="font-mono">{transaction.account_no}</span> - {transaction.account_name}
+                                  </div>
+                                  <div className="text-right">
+                                    <div>{formatCurrency(transaction.amount)}</div>
+                                    <div className="text-xs text-muted-foreground">{formatDate(transaction.transaction_date)}</div>
+                                  </div>
+                                </div>
+                              ))}
+                              {result.sample.length > 10 && (
+                                <div className="text-center text-sm text-muted-foreground py-2">
+                                  ... og {result.sample.length - 10} flere transaksjoner
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
                         </div>
                       )}
                     </div>
-                    <div>
-                      <Label htmlFor="expectedMisstatement">Forventet feil (NOK)</Label>
-                      <Input
-                        id="expectedMisstatement"
-                        type="number"
-                        value={params.expectedMisstatement || ''}
-                        onChange={(e) => handleParamChange('expectedMisstatement', parseFloat(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-
-        {/* Generation and Results Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Generering og Resultat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Generation Controls - Enhanced Error Boundary with detailed debugging info */}
-            <LightweightErrorBoundary
-              fallback={
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-destructive flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      Feil ved utvalgsgenerering
-                    </CardTitle>
-                    <CardDescription>
-                      Kunne ikke generere revisjonsutvalg
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                      <p className="text-sm text-destructive-foreground mb-2">
-                        <strong>Mulige årsaker til feil:</strong>
-                      </p>
-                      <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                        <li>Tom populasjon (ingen data for valgte regnskapslinjer)</li>
-                        <li>Ugyldig konfigurering av utvalgingsparametere</li>
-                        <li>Problemer med server-forbindelse</li>
-                        <li>Feil i Edge Function for utvalgsberegning</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-2">Debugging-informasjon:</p>
-                      <div className="text-xs font-mono text-muted-foreground space-y-1">
-                        <div>Populasjonsstørrelse: {params.populationSize}</div>
-                        <div>Populasjonssum: {formatCurrency(params.populationSum)}</div>
-                        <div>Valgte standarder: {params.selectedStandardNumbers.join(', ') || 'Ingen'}</div>
-                        <div>Ekskluderte konti: {params.excludedAccountNumbers.length}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => window.location.reload()}
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        Last siden på nytt
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setParams(prev => ({ 
-                            ...prev, 
-                            selectedStandardNumbers: [],
-                            excludedAccountNumbers: [] 
-                          }));
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <X className="h-4 w-4" />
-                        Nullstill valg
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              }
-              onError={(error, errorInfo) => {
-                console.error('💥 Sample generation error in ConsolidatedAuditSampling:', error, errorInfo);
-                console.error('Sample generation context:', {
-                  clientId,
-                  populationSize: params.populationSize,
-                  populationSum: params.populationSum,
-                  selectedStandards: params.selectedStandardNumbers,
-                  excludedAccounts: params.excludedAccountNumbers,
-                  method: params.method,
-                  activeVersion: activeTrialBalanceVersion?.version
-                });
-              }}
-            >
-              <div className="flex gap-2">
-                <Button 
-                  onClick={generateSample} 
-                  disabled={isLoading || params.selectedStandardNumbers.length === 0}
-                  className="flex-1"
-                >
-                  {isLoading ? (
-                    <>
-                      <Calculator className="mr-2 h-4 w-4 animate-spin" />
-                      Genererer...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Generer utvalg
-                    </>
                   )}
-                </Button>
-                
-                {result && (
-                  <Button onClick={savePlan} disabled={isSaving} variant="outline">
-                    {isSaving ? (
-                      <>
-                        <Calculator className="mr-2 h-4 w-4 animate-spin" />
-                        Lagrer...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Lagre plan
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
 
-              {/* Help Text */}
-              {params.selectedStandardNumbers.length === 0 && (
-                <div className="p-3 bg-muted/50 border border-dashed border-muted-foreground/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Info className="h-4 w-4" />
-                    <span>Velg minst én regnskapslinje for å generere utvalg</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Results Display */}
-              {result && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <h4 className="font-semibold mb-2">Utvalgsplan</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <div className="text-muted-foreground">Metode</div>
-                        <div className="font-medium">{result.plan.method}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Utvalg størrelse</div>
-                        <div className="font-medium">{result.plan.actualSampleSize}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Dekning</div>
-                        <div className="font-medium">{result.plan.coveragePercentage.toFixed(1)}%</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Generert</div>
-                        <div className="font-medium">{formatDate(result.plan.generatedAt)}</div>
+                  {/* Error Display */}
+                  {populationError && (
+                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <div className="text-sm text-destructive">
+                        Feil ved beregning av populasjon: {populationError.message}
                       </div>
                     </div>
-                </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-                {/* Sample Preview */}
-                {result.sample && result.sample.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Utvalgte transaksjoner (første 10)</h4>
-                    <ScrollArea className="h-64 border rounded-md">
-                      <div className="p-2">
-                        {result.sample.slice(0, 10).map((transaction, index) => (
-                          <div key={transaction.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
-                            <div className="flex-1">
-                              <div className="font-mono text-sm">{transaction.account_no}</div>
-                              <div className="text-sm text-muted-foreground">{transaction.description}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-medium">{formatCurrency(transaction.amount)}</div>
-                              <div className="text-xs text-muted-foreground">{formatDate(transaction.transaction_date)}</div>
-                            </div>
-                          </div>
-                        ))}
-                        {result.sample.length > 10 && (
-                          <div className="text-center p-2 text-sm text-muted-foreground">
-                            ... og {result.sample.length - 10} flere transaksjoner
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-              </div>
-            )}
-            </LightweightErrorBoundary>
-
-            {/* Error Display */}
-            {populationError && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <div className="text-sm text-destructive">
-                  Feil ved beregning av populasjon: {populationError.message}
-                </div>
-              </div>
-            )}
-          </CardContent>
-          </Card>
-        </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="saved" className="mt-6" forceMount>
-          <SavedSamplesManager clientId={clientId} />
-        </TabsContent>
-      </Tabs>
-    </div>
-    </LightweightErrorBoundary>
+          <TabsContent value="saved" className="mt-6">
+            <SavedSamplesManager clientId={clientId} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PopulationAnalysisErrorBoundary>
   );
 });
 
