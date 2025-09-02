@@ -87,18 +87,49 @@ export function usePopulationCalculator(
           p_version_string
         });
 
-        // Call the RPC function with proper version parameters
-        const { data, error } = await supabase.rpc('calculate_population_analysis', {
-          p_client_id: clientId,
-          p_fiscal_year: fiscalYear,
-          p_selected_standard_numbers: selectedStandardNumbers,
-          p_excluded_account_numbers: excludedAccountNumbers,
-          p_version_id,
-          p_version_string
-        });
+        // Call the RPC function - use the correct overload based on version type
+        let rpcCall;
+        if (p_version_string) {
+          // Use the overload that takes version string
+          console.log('Calling RPC with version string:', p_version_string);
+          rpcCall = supabase.rpc('calculate_population_analysis', {
+            p_client_id: clientId,
+            p_fiscal_year: fiscalYear,
+            p_selected_standard_numbers: selectedStandardNumbers,
+            p_excluded_account_numbers: excludedAccountNumbers,
+            p_version_string
+          });
+        } else if (p_version_id) {
+          // Use the overload that takes UUID
+          console.log('Calling RPC with version UUID:', p_version_id);
+          rpcCall = supabase.rpc('calculate_population_analysis', {
+            p_client_id: clientId,
+            p_fiscal_year: fiscalYear,
+            p_selected_standard_numbers: selectedStandardNumbers,
+            p_excluded_account_numbers: excludedAccountNumbers,
+            p_version_id
+          });
+        } else {
+          // Use the overload without version (will use latest/active)
+          console.log('Calling RPC without version (will use latest/active)');
+          rpcCall = supabase.rpc('calculate_population_analysis', {
+            p_client_id: clientId,
+            p_fiscal_year: fiscalYear,
+            p_selected_standard_numbers: selectedStandardNumbers,
+            p_excluded_account_numbers: excludedAccountNumbers
+          });
+        }
+
+        const { data, error } = await rpcCall;
 
         if (error) {
           console.error('RPC Error calculating population:', error);
+          console.error('RPC Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
           
           // Fallback to edge function if RPC fails
           console.log('Falling back to edge function...');
@@ -183,40 +214,33 @@ export function usePopulationCalculator(
           transaction_count: acc.transactionCount
         }));
 
-        // Use basicStats from RPC response if available, otherwise calculate manually
+        // Use basicStats from RPC response for population size and sum
         let size: number;
         let sum: number;
         
         if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
-          // Use RPC response data and adjust for excluded accounts
-          const excludedAccounts = accounts.filter((account) => 
-            excludedAccountNumbers.includes(account.account_number)
-          );
-          const excludedSum = excludedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+          // Use RPC response data directly - the RPC already handles exclusions properly
+          size = responseData.basicStats.totalAccounts;
+          sum = responseData.basicStats.totalSum;
           
-          size = responseData.basicStats.totalAccounts - excludedAccounts.length;
-          sum = responseData.basicStats.totalSum - excludedSum;
-          
-          console.log('Using RPC basicStats with exclusion adjustments:', {
-            totalAccounts: responseData.basicStats.totalAccounts,
-            totalSum: responseData.basicStats.totalSum,
-            excludedCount: excludedAccounts.length,
-            excludedSum,
-            finalSize: size,
-            finalSum: sum
+          console.log('Using RPC basicStats (already adjusted for exclusions):', {
+            populationSize: size,
+            populationSum: sum,
+            excludedAccountsLength: excludedAccountNumbers.length
           });
         } else {
-          // Fallback to client-side calculation
+          // Fallback to client-side calculation with manual exclusions
           const includedAccounts = accounts.filter((account) => 
             !excludedAccountNumbers.includes(account.account_number)
           );
           size = includedAccounts.length;
           sum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
           
-          console.log('Using fallback calculation:', {
+          console.log('Using fallback calculation with manual exclusions:', {
             totalAccounts: accounts.length,
-            includedAccounts: size,
-            includedSum: sum
+            excludedCount: accounts.length - includedAccounts.length,
+            populationSize: size,
+            populationSum: sum
           });
         }
 
