@@ -99,9 +99,9 @@ export function usePopulationAnalysis(
     'population-analysis-v4', // Increment version for clean cache after fixes
     debouncedClientId,
     fiscalYear,
-    debouncedSelectedStandardNumbers.length > 0 ? debouncedSelectedStandardNumbers.slice().sort().join(',') : 'none',
-    debouncedExcludedAccountNumbers.length > 0 ? debouncedExcludedAccountNumbers.slice().sort().join(',') : 'none',
-    debouncedTrialBalanceVersion || 'latest'
+    debouncedSelectedStandardNumbers.slice().sort().join('|'),
+    debouncedExcludedAccountNumbers.slice().sort().join('|'),
+    debouncedTrialBalanceVersion || 'auto'
   ];
 
   return useQuery({

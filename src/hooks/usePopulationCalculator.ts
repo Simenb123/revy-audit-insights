@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface PopulationData {
+export interface PopulationData {
   size: number;
   sum: number;
   accounts: Array<{
@@ -38,17 +38,17 @@ export function usePopulationCalculator(
   versionId?: string
 ) {
   // Create stable query key to prevent infinite re-renders
-  const stableQueryKey = [
+  const queryKey = [
     'population-calculator',
     clientId,
     fiscalYear,
-    selectedStandardNumbers.length > 0 ? selectedStandardNumbers.slice().sort().join(',') : 'none',
-    excludedAccountNumbers.length > 0 ? excludedAccountNumbers.slice().sort().join(',') : 'none',
-    versionId || 'latest'
+    selectedStandardNumbers.slice().sort().join('|'),
+    excludedAccountNumbers.slice().sort().join('|'),
+    versionId || 'auto'
   ];
 
   return useQuery({
-    queryKey: stableQueryKey,
+    queryKey: queryKey,
     queryFn: async (): Promise<PopulationData> => {
       // If no standard accounts selected, return empty population with reason
       if (selectedStandardNumbers.length === 0) {

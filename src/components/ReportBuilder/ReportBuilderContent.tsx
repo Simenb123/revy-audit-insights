@@ -388,17 +388,23 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
         )}
 
         {/* Widget Library */}
-        {showWidgetLibrary && canUse && (
-          <ModuleWrapper id="widget-library" title="Widget bibliotek">
-            <p className="text-sm text-muted-foreground mb-2">
-              Velg widgets for å legge til i rapporten
-            </p>
-            <WidgetLibrary
-              clientId={clientId}
-              onClose={() => setShowWidgetLibrary(false)}
-            />
-          </ModuleWrapper>
-        )}
+        <ModuleWrapper id="widget-library" title="Widget bibliotek">
+          {canUse ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-2">
+                Velg widgets for å legge til i rapporten
+              </p>
+              <WidgetLibrary
+                clientId={clientId}
+                onClose={() => setShowWidgetLibrary(false)}
+              />
+            </>
+          ) : (
+            <div className="p-4 text-sm text-muted-foreground">
+              Widget bibliotek vil være tilgjengelig når data er lastet
+            </div>
+          )}
+        </ModuleWrapper>
 
         {/* Report Templates */}
         <ModuleWrapper id="report-templates" title="Rapport maler">
@@ -408,7 +414,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
             layouts={layouts}
             onApplyTemplate={handleApplyTemplate}
             onClose={() => setShowTemplates(false)}
-            isVisible={showTemplates && hasData}
+            isVisible={showTemplates && canUse}
           />
         </ModuleWrapper>
 

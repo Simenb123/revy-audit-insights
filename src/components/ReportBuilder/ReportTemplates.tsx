@@ -27,8 +27,9 @@ export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, o
   const [editingName, setEditingName] = useState('')
 
   useEffect(() => {
+    if (!isVisible) return
     listTemplates().then(setTemplates).catch(() => setTemplates([]))
-  }, [listTemplates])
+  }, [listTemplates, isVisible])
 
   const handleSave = async () => {
     if (!name.trim()) return

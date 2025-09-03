@@ -472,13 +472,11 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           <TabsContent value="generate" className="mt-6">
             <div className="space-y-6">
               <PopulationInsights
+                populationData={populationData}
+                selectedStandardNumbers={debouncedSelectedStandardNumbers}
                 clientId={clientId}
                 fiscalYear={params.fiscalYear}
-                selectedStandardNumbers={debouncedSelectedStandardNumbers}
-                excludedAccountNumbers={debouncedExcludedAccountNumbers}
-                versionString={activeTrialBalanceVersion?.version}
-                analysisLevel={analysisLevel}
-                onAnalysisLevelChange={setAnalysisLevel}
+                hasData={!!populationData}
               />
 
               {/* Standard Account Selection */}
