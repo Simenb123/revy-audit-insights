@@ -43,7 +43,13 @@ export function ModuleWrapper({ id, title, children }: ModuleWrapperProps) {
           </Button>
         )}
       </div>
-      {!collapsed && <div className="p-2 space-y-2">{children}</div>}
+      <div 
+        className={`p-2 space-y-2 transition-all duration-200 ${
+          collapsed ? 'h-0 overflow-hidden opacity-0' : 'h-auto opacity-100'
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 }

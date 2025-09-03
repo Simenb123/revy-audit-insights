@@ -15,9 +15,15 @@ export interface ReportTemplate {
 
 export function useReportTemplates() {
   const listTemplates = useCallback(async (): Promise<ReportTemplate[]> => {
-    const { data, error } = await supabase.functions.invoke('report-templates')
-    if (error) throw error
-    return data as ReportTemplate[]
+    try {
+      const { data, error } = await supabase.functions.invoke('report-templates')
+      if (error) throw error
+      return data as ReportTemplate[]
+    } catch (error) {
+      console.warn('Failed to load report templates:', error);
+      // Return empty array as fallback instead of crashing
+      return []
+    }
   }, [])
 
   const createTemplate = useCallback(

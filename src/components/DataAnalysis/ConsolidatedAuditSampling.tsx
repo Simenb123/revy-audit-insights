@@ -422,7 +422,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         </div>
 
         {/* Population Status and Warnings - Always rendered to avoid hook ordering issues */}
-        <Card className={populationData && (populationData.isEmpty || populationData.size === 0) ? "border-amber-200 bg-amber-50" : "hidden"}>
+        <Card 
+          className="border-amber-200 bg-amber-50 transition-all duration-200"
+          style={{
+            display: populationData && (populationData.isEmpty || populationData.size === 0) ? 'block' : 'none'
+          }}
+        >
           <CardHeader>
             <CardTitle className="text-amber-700 flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />

@@ -81,10 +81,11 @@ export function ReportTemplates({ clientId, widgets, layouts, onApplyTemplate, o
     }
   }
 
+  // Always render component to avoid hook ordering issues
   if (!isVisible) {
     return (
-      <div className="space-y-4 opacity-0 pointer-events-none">
-        <p className="text-muted-foreground">Rapport maler vil vises når data er tilgjengelig</p>
+      <div className="p-4 text-sm text-muted-foreground">
+        Rapport maler vil være tilgjengelige når "Start fra mal" blir klikket
       </div>
     );
   }

@@ -387,7 +387,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           </Card>
         )}
 
-        {/* Widget Library */}
+        {/* Widget Library - Always rendered to avoid hook ordering issues */}
         <ModuleWrapper id="widget-library" title="Widget bibliotek">
           {canUse ? (
             <>
@@ -406,7 +406,7 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           )}
         </ModuleWrapper>
 
-        {/* Report Templates */}
+        {/* Report Templates - Always rendered to avoid hook ordering issues */}
         <ModuleWrapper id="report-templates" title="Rapport maler">
           <ReportTemplates
             clientId={clientId}
