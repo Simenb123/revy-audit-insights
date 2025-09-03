@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Info, Calendar } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -50,15 +50,39 @@ export class PopulationAnalysisErrorBoundary extends Component<Props, State> {
               Feil i populasjonsanalyse
             </CardTitle>
             <CardDescription>
-              Det oppstod en feil under populasjonsanalysen. Dette kan skyldes store datamengder eller nettverksproblemer.
+              Det oppstod en teknisk feil under populasjonsanalysen. Dette kan skyldes store datamengder, nettverksproblemer eller serverkonfigurasjon.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Button onClick={this.handleRetry} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Prøv igjen
-              </Button>
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium mb-1">Mulige årsaker:</p>
+                    <ul className="text-muted-foreground space-y-1 text-xs">
+                      <li>• Manglende regnskapsdata for det valgte året</li>
+                      <li>• Nettverksproblemer eller tidsavbrudd</li>
+                      <li>• Alle kontoer har nullsaldo</li>
+                      <li>• Ingen kontoer matcher de valgte regnskapslinjene</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button onClick={this.handleRetry} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Prøv igjen
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Last siden på nytt
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

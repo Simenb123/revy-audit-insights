@@ -12576,6 +12576,14 @@ export type Database = {
               p_excluded_account_numbers?: string[]
               p_fiscal_year: number
               p_selected_standard_numbers: string[]
+              p_version_id?: string
+              p_version_string?: string
+            }
+          | {
+              p_client_id: string
+              p_excluded_account_numbers?: string[]
+              p_fiscal_year: number
+              p_selected_standard_numbers: string[]
               p_version_string?: string
             }
         Returns: Json

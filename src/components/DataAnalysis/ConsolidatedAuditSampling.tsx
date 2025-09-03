@@ -416,6 +416,43 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           </div>
         </div>
 
+        {/* Population Status and Warnings */}
+        {populationData && (populationData.isEmpty || populationData.size === 0) && (
+          <Card className="border-amber-200 bg-amber-50">
+            <CardHeader>
+              <CardTitle className="text-amber-700 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Tom populasjon
+              </CardTitle>
+              <CardDescription className="text-amber-600">
+                {populationData.emptyReason === 'no_standard_accounts' && "Ingen regnskapslinjer er valgt."}
+                {populationData.emptyReason === 'no_matching_accounts' && "Ingen kontoer matcher de valgte regnskapslinjene."}
+                {populationData.emptyReason === 'zero_balances' && "Alle kontoer har nullsaldo for det valgte året."}
+                {populationData.emptyReason === 'all_excluded' && "Alle relevante kontoer er ekskludert fra utvalget."}
+                {populationData.metadata?.hasDataForYear === false && "Ingen regnskapsdata funnet for det valgte året."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                {populationData.metadata?.availableYears && populationData.metadata.availableYears.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Tilgjengelige år: {populationData.metadata.availableYears.join(', ')}
+                  </div>
+                )}
+                <Button 
+                  onClick={() => refetchPopulation()} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isCalculatingPopulation}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Oppdater
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Main Content with Tabs */}
         <Tabs defaultValue="generate" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

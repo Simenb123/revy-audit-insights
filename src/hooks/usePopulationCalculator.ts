@@ -11,12 +11,14 @@ interface PopulationData {
     transaction_count: number;
   }>;
   isEmpty?: boolean;
-  emptyReason?: 'no_standard_accounts' | 'no_matching_accounts' | 'zero_balances' | 'all_excluded' | 'no_data_returned' | 'system_error';
+  emptyReason?: string;
   error?: string;
   metadata?: {
     versionString?: string;
     executionTimeMs?: number;
     totalRecords?: number;
+    hasDataForYear?: boolean;
+    availableYears?: number[];
   };
 }
 
