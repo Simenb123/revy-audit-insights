@@ -106,15 +106,8 @@ export function usePopulationAnalysis(
 
   return useQuery({
     queryKey: stableQueryKey,
-    queryFn: async (): Promise<PopulationAnalysisData> => {
-      console.log('[Population Analysis] Starting with TB version:', debouncedTrialBalanceVersion);
-      console.log('[Population Analysis] Fixed conditional hook issues - no more race conditions');
-      
-      if (!debouncedTrialBalanceVersion) {
-        console.warn('[Population Analysis] No trial balance version provided, using null');
-      }
-      
-      // Call the RPC function - no longer need debouncing since conditional hooks are fixed
+    queryFn: async (): Promise<PopulationAnalysisData> => {      
+      // Call the RPC function
       const { data, error } = await supabase.rpc('calculate_population_analysis', {
         p_client_id: debouncedClientId,
         p_fiscal_year: fiscalYear,
@@ -122,16 +115,8 @@ export function usePopulationAnalysis(
         p_excluded_account_numbers: debouncedExcludedAccountNumbers,
         p_version_string: debouncedTrialBalanceVersion || null
       });
-      
-      console.log('[Population Analysis] RPC response:', { data: !!data, error: error?.message });
 
       if (error) {
-        console.error('[Population Analysis] RPC Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw error;
       }
 
@@ -288,11 +273,9 @@ export function usePopulationAnalysis(
     retry: (failureCount, error: any) => {
       // Don't retry on specific business logic errors
       if (error?.message?.includes('invalid input syntax for type uuid')) {
-        console.error('[Population Analysis] UUID format error - not retrying');
         return false;
       }
       if (error?.message?.includes('No data returned')) {
-        console.error('[Population Analysis] No data error - not retrying');
         return false;
       }
       return failureCount < 2; // Only retry twice for other errors

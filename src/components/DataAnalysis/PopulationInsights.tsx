@@ -29,6 +29,7 @@ import {
   FilterX
 } from 'lucide-react';
 import { usePopulationAnalysis, PopulationAnalysisData } from '@/hooks/usePopulationAnalysis';
+import { useDebounce } from '@/hooks/useDebounce';
 import DrillDownModal from './DrillDownModal';
 import ExportControls from './ExportControls';
 import AdvancedAnomalyDetection from './AdvancedAnomalyDetection';
@@ -94,6 +95,10 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({
     counterAccountName: string;
   } | null>(null);
 
+  // Debounce inputs to prevent race conditions - now consistent with parent
+  const debouncedSelectedStandardNumbers = useDebounce(selectedStandardNumbers, 200);
+  const debouncedExcludedAccountNumbers = useDebounce(excludedAccountNumbers, 200);
+
   const { 
     data: analysisData, 
     isLoading, 
@@ -101,13 +106,13 @@ const PopulationInsights: React.FC<PopulationInsightsProps> = React.memo(({
   } = usePopulationAnalysis(
     clientId,
     fiscalYear,
-    selectedStandardNumbers,
-    excludedAccountNumbers,
+    debouncedSelectedStandardNumbers,
+    debouncedExcludedAccountNumbers,
     versionString
   );
 
   // Handle early returns after all hooks are called
-  if (selectedStandardNumbers.length === 0) {
+  if (debouncedSelectedStandardNumbers.length === 0) {
     return (
       <Card>
         <CardHeader>

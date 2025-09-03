@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ import {
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator, PopulationAccount } from '@/hooks/usePopulationCalculator';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
@@ -146,6 +147,10 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     useHighRiskInclusion: true
   });
 
+  // Debounce inputs to prevent race conditions and React #310
+  const debouncedSelectedStandardNumbers = useDebounce(params.selectedStandardNumbers, 200);
+  const debouncedExcludedAccountNumbers = useDebounce(params.excludedAccountNumbers, 200);
+
   // Hook for calculating population from accounting data
   const { 
     data: populationData, 
@@ -155,8 +160,8 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
   } = usePopulationCalculator(
     clientId,
     params.fiscalYear,
-    params.selectedStandardNumbers,
-    params.excludedAccountNumbers,
+    debouncedSelectedStandardNumbers,
+    debouncedExcludedAccountNumbers,
     activeTrialBalanceVersion?.version
   );
 
@@ -263,23 +268,23 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     setParams(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleStandardAccountToggle = (accountNumber: string) => {
+  const handleStandardAccountToggle = useCallback((accountNumber: string) => {
     const isSelected = params.selectedStandardNumbers.includes(accountNumber);
     if (isSelected) {
       handleParamChange('selectedStandardNumbers', params.selectedStandardNumbers.filter(n => n !== accountNumber));
     } else {
       handleParamChange('selectedStandardNumbers', [...params.selectedStandardNumbers, accountNumber]);
     }
-  };
+  }, [params.selectedStandardNumbers]);
 
-  const handleAccountExclusionToggle = (accountNumber: string) => {
+  const handleAccountExclusionToggle = useCallback((accountNumber: string) => {
     const isExcluded = params.excludedAccountNumbers.includes(accountNumber);
     if (isExcluded) {
       handleParamChange('excludedAccountNumbers', params.excludedAccountNumbers.filter(n => n !== accountNumber));
     } else {
       handleParamChange('excludedAccountNumbers', [...params.excludedAccountNumbers, accountNumber]);
     }
-  };
+  }, [params.excludedAccountNumbers]);
 
   const generateSample = async () => {
     setIsLoading(true);
@@ -416,42 +421,40 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           </div>
         </div>
 
-        {/* Population Status and Warnings */}
-        {populationData && (populationData.isEmpty || populationData.size === 0) && (
-          <Card className="border-amber-200 bg-amber-50">
-            <CardHeader>
-              <CardTitle className="text-amber-700 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Tom populasjon
-              </CardTitle>
-              <CardDescription className="text-amber-600">
-                {populationData.emptyReason === 'no_standard_accounts' && "Ingen regnskapslinjer er valgt."}
-                {populationData.emptyReason === 'no_matching_accounts' && "Ingen kontoer matcher de valgte regnskapslinjene."}
-                {populationData.emptyReason === 'zero_balances' && "Alle kontoer har nullsaldo for det valgte året."}
-                {populationData.emptyReason === 'all_excluded' && "Alle relevante kontoer er ekskludert fra utvalget."}
-                {populationData.metadata?.hasDataForYear === false && "Ingen regnskapsdata funnet for det valgte året."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                {populationData.metadata?.availableYears && populationData.metadata.availableYears.length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Tilgjengelige år: {populationData.metadata.availableYears.join(', ')}
-                  </div>
-                )}
-                <Button 
-                  onClick={() => refetchPopulation()} 
-                  variant="outline" 
-                  size="sm"
-                  disabled={isCalculatingPopulation}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Oppdater
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Population Status and Warnings - Always rendered to avoid hook ordering issues */}
+        <Card className={populationData && (populationData.isEmpty || populationData.size === 0) ? "border-amber-200 bg-amber-50" : "hidden"}>
+          <CardHeader>
+            <CardTitle className="text-amber-700 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Tom populasjon
+            </CardTitle>
+            <CardDescription className="text-amber-600">
+              {populationData?.emptyReason === 'no_standard_accounts' && "Ingen regnskapslinjer er valgt."}
+              {populationData?.emptyReason === 'no_matching_accounts' && "Ingen kontoer matcher de valgte regnskapslinjene."}
+              {populationData?.emptyReason === 'zero_balances' && "Alle kontoer har nullsaldo for det valgte året."}
+              {populationData?.emptyReason === 'all_excluded' && "Alle relevante kontoer er ekskludert fra utvalget."}
+              {populationData?.metadata?.hasDataForYear === false && "Ingen regnskapsdata funnet for det valgte året."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              {populationData?.metadata?.availableYears && populationData.metadata.availableYears.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Tilgjengelige år: {populationData.metadata.availableYears.join(', ')}
+                </div>
+              )}
+              <Button 
+                onClick={() => refetchPopulation()} 
+                variant="outline" 
+                size="sm"
+                disabled={isCalculatingPopulation}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Oppdater
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="generate" className="w-full">
@@ -471,8 +474,8 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
               <PopulationInsights
                 clientId={clientId}
                 fiscalYear={params.fiscalYear}
-                selectedStandardNumbers={params.selectedStandardNumbers}
-                excludedAccountNumbers={params.excludedAccountNumbers}
+                selectedStandardNumbers={debouncedSelectedStandardNumbers}
+                excludedAccountNumbers={debouncedExcludedAccountNumbers}
                 versionString={activeTrialBalanceVersion?.version}
                 analysisLevel={analysisLevel}
                 onAnalysisLevelChange={setAnalysisLevel}
@@ -688,7 +691,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
                   <div className="flex items-center gap-4">
                     <Button
                       onClick={generateSample}
-                      disabled={isLoading || params.selectedStandardNumbers.length === 0}
+                      disabled={isLoading || isCalculatingPopulation || params.selectedStandardNumbers.length === 0}
                       size="lg"
                     >
                       {isLoading ? (
