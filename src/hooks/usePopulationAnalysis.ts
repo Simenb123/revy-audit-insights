@@ -78,6 +78,7 @@ export interface PopulationAnalysisData {
     versionString?: string;
     analysisTimestamp: string;
     totalRecords: number;
+    isEmpty?: boolean; // Add isEmpty property to fix type errors
   };
 }
 
@@ -86,20 +87,29 @@ export function usePopulationAnalysis(
   fiscalYear: number,
   selectedStandardNumbers: string[],
   excludedAccountNumbers: string[],
-  trialBalanceVersion?: string
+  trialBalanceVersion?: string,
+  populationAccountNumbers?: string[] // Add mapped account numbers parameter
 ) {
   // Remove debouncing since we fixed conditional hook issues - no longer needed
   const debouncedClientId = clientId;
   const debouncedSelectedStandardNumbers = selectedStandardNumbers;
   const debouncedExcludedAccountNumbers = excludedAccountNumbers;
   const debouncedTrialBalanceVersion = trialBalanceVersion;
+  const debouncedPopulationAccountNumbers = populationAccountNumbers || [];
 
-  // Create stable query key - simplified since we removed debouncing
+  // Debug logging
+  console.debug('[PopulationAnalysis] Input parameters:');
+  console.debug('- Standards:', debouncedSelectedStandardNumbers);
+  console.debug('- Mapped accounts:', debouncedPopulationAccountNumbers.length);
+  console.debug('- Version:', debouncedTrialBalanceVersion);
+
+  // Create stable query key - include mapped accounts for better caching
   const stableQueryKey = [
-    'population-analysis-v4', // Increment version for clean cache after fixes
+    'population-analysis-v5', // Increment version for mapping changes
     debouncedClientId,
     fiscalYear,
     debouncedSelectedStandardNumbers.slice().sort().join('|'),
+    debouncedPopulationAccountNumbers.slice().sort().join('|'), // Use mapped accounts
     debouncedExcludedAccountNumbers.slice().sort().join('|'),
     debouncedTrialBalanceVersion || 'auto'
   ];
@@ -265,11 +275,16 @@ export function usePopulationAnalysis(
           excludedAccountNumbers: debouncedExcludedAccountNumbers,
           versionString: debouncedTrialBalanceVersion,
           analysisTimestamp: new Date().toISOString(),
-          totalRecords: responseData.totalRecords
+          totalRecords: responseData.totalRecords,
+          isEmpty: responseData.totalRecords === 0 // Add isEmpty based on data
         }
       };
     },
-    enabled: !!debouncedClientId && debouncedSelectedStandardNumbers.length > 0,
+    // 3) Gate: kjør først når mappingen har gitt minst én konto
+    enabled: 
+      !!debouncedClientId && 
+      debouncedSelectedStandardNumbers.length > 0 &&
+      debouncedPopulationAccountNumbers.length > 0, // Wait for mapping
     retry: (failureCount, error: any) => {
       // Don't retry on specific business logic errors
       if (error?.message?.includes('invalid input syntax for type uuid')) {

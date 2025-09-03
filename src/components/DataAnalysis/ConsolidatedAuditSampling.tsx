@@ -44,7 +44,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
-import PopulationAnalysisSection from '@/components/Audit/Sampling/PopulationAnalysisSection';
+import PopulationAnalysisWithMapping from '@/components/DataAnalysis/PopulationAnalysisWithMapping';
 import { PopulationAnalysisErrorBoundary } from '@/components/ErrorBoundary/PopulationAnalysisErrorBoundary';
 
 interface ConsolidatedAuditSamplingProps {
@@ -490,9 +490,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           
           <TabsContent value="generate" className="mt-6">
             <div className="space-y-6">
-              <PopulationAnalysisSection
-                analysisData={populationAnalysisData}
+              <PopulationAnalysisWithMapping
+                clientId={clientId}
+                fiscalYear={params.fiscalYear}
+                selectedStandardNumbers={debouncedSelectedStandardNumbers}
                 excludedAccountNumbers={debouncedExcludedAccountNumbers}
+                versionKey={activeTrialBalanceVersion?.version}
               />
 
               {/* Standard Account Selection */}

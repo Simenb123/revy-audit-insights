@@ -61,7 +61,9 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
     };
   }, [analysisData?.anomalyDetection?.anomalies?.length]);
 
-  // Always render component, but show placeholder if no data - prevents React error #310
+  const isEmpty = !analysisData || analysisData.metadata?.isEmpty;
+
+  // Always render tabs, but show empty content when no data
   if (!analysisData) {
     return (
       <div className="space-y-4">
@@ -69,12 +71,48 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
           <BarChart3 className="h-5 w-5 text-muted-foreground" />
           <h3 className="text-lg font-semibold text-muted-foreground">Populasjonsanalyse</h3>
         </div>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground">Velg populasjon for å starte analysen</p>
-          </CardContent>
-        </Card>
+        
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Oversikt</TabsTrigger>
+            <TabsTrigger value="counteraccounts">Motkontoer</TabsTrigger>
+            <TabsTrigger value="outliers">Outliers</TabsTrigger>
+            <TabsTrigger value="trends">Trender</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">Velg populasjon for å starte analysen</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="counteraccounts" className="space-y-4">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Ingen motkontodata (tom populasjon)</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="outliers" className="space-y-4">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Ingen outliers</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="trends" className="space-y-4">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Ingen tidsseriedata</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
@@ -160,7 +198,7 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {counterAccountData.length > 0 ? (
+              {!isEmpty && counterAccountData.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -224,7 +262,7 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
                 <CardTitle className="text-base text-red-600">Høye outliers</CardTitle>
               </CardHeader>
               <CardContent>
-                {highOutliers.length > 0 ? (
+                {!isEmpty && highOutliers.length > 0 ? (
                   <div className="space-y-2">
                     {highOutliers.map((outlier) => (
                       <div key={outlier.accountNumber} className="border rounded p-2">
@@ -251,7 +289,7 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
                 <CardTitle className="text-base text-blue-600">Lave outliers</CardTitle>
               </CardHeader>
               <CardContent>
-                {lowOutliers.length > 0 ? (
+                {!isEmpty && lowOutliers.length > 0 ? (
                   <div className="space-y-2">
                     {lowOutliers.map((outlier) => (
                       <div key={outlier.accountNumber} className="border rounded p-2">
@@ -322,7 +360,7 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {timeSeriesData.length > 0 ? (
+              {!isEmpty && timeSeriesData.length > 0 ? (
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={timeSeriesData}>

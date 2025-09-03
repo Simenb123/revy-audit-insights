@@ -12,7 +12,7 @@ import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationAnalysis } from '@/hooks/usePopulationAnalysis';
 import { useActiveTrialBalanceVersion } from '@/hooks/useTrialBalanceVersions';
 import { formatCurrency, formatNumber } from '@/services/sampling/utils';
-import PopulationAnalysisSection from './PopulationAnalysisSection';
+import PopulationAnalysisWithMapping from '@/components/DataAnalysis/PopulationAnalysisWithMapping';
 import { LightweightErrorBoundary } from '@/components/ErrorBoundary/LightweightErrorBoundary';
 
 interface PopulationSelectorProps {
@@ -242,9 +242,12 @@ const PopulationSelector: React.FC<PopulationSelectorProps> = ({ clientId }) => 
             console.error('PopulationAnalysisSection error:', error, errorInfo);
           }}
         >
-          <PopulationAnalysisSection 
-            analysisData={populationData ?? null}
+          <PopulationAnalysisWithMapping 
+            clientId={clientId}
+            fiscalYear={selectedFiscalYear}
+            selectedStandardNumbers={selectedStandardNumbers}
             excludedAccountNumbers={excludedAccountNumbers}
+            versionKey={activeTrialBalanceVersion?.version}
           />
         </LightweightErrorBoundary>
 
