@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/utils/logger';
+import { mapTransaction } from '@/utils/transactionMapping';
 
 export interface GeneralLedgerTransaction {
   id: string;
@@ -125,29 +125,8 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
 
         if (error) throw error;
 
-        // Transform data
-        const transformedData = (data || []).map((transaction: any) => ({
-          id: transaction.id,
-          transaction_date: transaction.transaction_date,
-          client_account_id: transaction.client_account_id,
-          account_number: transaction.account_number || 'Ukjent',
-          account_name: transaction.account_name || 'Ukjent konto',
-          description: transaction.description,
-          debit_amount: transaction.debit_amount,
-          credit_amount: transaction.credit_amount,
-          balance_amount: transaction.balance_amount,
-          // VAT fields
-          vat_code: transaction.vat_code || null,
-          vat_rate: transaction.vat_rate ?? null,
-          vat_base: transaction.vat_base ?? null,
-          vat_debit: transaction.vat_debit ?? null,
-          vat_credit: transaction.vat_credit ?? null,
-          vat_amount: ((transaction.vat_debit || 0) as number) - ((transaction.vat_credit || 0) as number),
-          reference_number: transaction.reference_number || '',
-          voucher_number: transaction.voucher_number || '',
-          period_year: transaction.period_year,
-          period_month: transaction.period_month,
-        })) as GeneralLedgerTransaction[];
+        // Transform data using shared mapping function
+        const transformedData = (data || []).map(mapTransaction);
 
         return transformedData;
       }
@@ -256,47 +235,11 @@ export const useGeneralLedgerData = (clientId: string, versionId?: string, pagin
       }
 
       if (allTransactions.length === 0) {
-        logger.warn('No general ledger transactions found for client:', clientId);
         return [];
       }
-
-      logger.info('Loaded general ledger transactions:', {
-        total: allTransactions.length,
-        firstDate: allTransactions[0]?.transaction_date,
-        lastDate: allTransactions[allTransactions.length - 1]?.transaction_date
-      });
       
-      // Transform the data to include account details
-      const transformedData = allTransactions.map((transaction: any) => ({
-        id: transaction.id,
-        transaction_date: transaction.transaction_date,
-        client_account_id: transaction.client_account_id,
-        account_number: transaction.account_number || 'Ukjent',
-        account_name: transaction.account_name || 'Ukjent konto',
-        description: transaction.description,
-        debit_amount: transaction.debit_amount,
-        credit_amount: transaction.credit_amount,
-        balance_amount: transaction.balance_amount,
-        // VAT fields
-        vat_code: transaction.vat_code || null,
-        vat_rate: transaction.vat_rate ?? null,
-        vat_base: transaction.vat_base ?? null,
-        vat_debit: transaction.vat_debit ?? null,
-        vat_credit: transaction.vat_credit ?? null,
-        vat_amount: ((transaction.vat_debit || 0) as number) - ((transaction.vat_credit || 0) as number),
-        reference_number: transaction.reference_number || '',
-        voucher_number: transaction.voucher_number || '',
-        period_year: transaction.period_year,
-        period_month: transaction.period_month,
-      })) as GeneralLedgerTransaction[];
-
-      logger.debug('General Ledger processed:', {
-        totalTransactions: transformedData.length,
-        dateRange: transformedData.length > 0 ? {
-          from: transformedData[transformedData.length - 1]?.transaction_date,
-          to: transformedData[0]?.transaction_date
-        } : null
-      });
+      // Transform the data using shared mapping function
+      const transformedData = allTransactions.map(mapTransaction);
       
       return transformedData;
     },

@@ -100,7 +100,7 @@ export function usePopulationCalculator(
           };
         }
 
-        if (!data || typeof data !== 'object' || data === true) {
+        if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
           console.warn('Invalid RPC response data:', data);
           return {
             size: 0,
