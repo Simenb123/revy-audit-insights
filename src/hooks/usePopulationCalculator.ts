@@ -10,6 +10,14 @@ interface PopulationData {
     closing_balance: number;
     transaction_count: number;
   }>;
+  isEmpty?: boolean;
+  emptyReason?: 'no_standard_accounts' | 'no_matching_accounts' | 'zero_balances' | 'all_excluded' | 'no_data_returned' | 'system_error';
+  error?: string;
+  metadata?: {
+    versionString?: string;
+    executionTimeMs?: number;
+    totalRecords?: number;
+  };
 }
 
 export interface PopulationAccount {
@@ -40,76 +48,57 @@ export function usePopulationCalculator(
   return useQuery({
     queryKey: stableQueryKey,
     queryFn: async (): Promise<PopulationData> => {
-      // If no standard accounts selected, return empty population
+      // If no standard accounts selected, return empty population with reason
       if (selectedStandardNumbers.length === 0) {
         return {
           size: 0,
           sum: 0,
-          accounts: []
+          accounts: [],
+          isEmpty: true,
+          emptyReason: 'no_standard_accounts'
         };
       }
 
       try {
-        // Determine whether versionId is a UUID or a version string
-        let p_version_id: string | null = null;
-        let p_version_string: string | null = null;
-        
+        // Improved version parameter handling
+        const rpcParams: any = {
+          p_client_id: clientId,
+          p_fiscal_year: fiscalYear,
+          p_selected_standard_numbers: selectedStandardNumbers,
+          p_excluded_account_numbers: excludedAccountNumbers
+        };
+
+        // Handle version parameter correctly
         if (versionId) {
           if (versionId.startsWith('v')) {
             // It's a version string like "v10"
-            p_version_string = versionId;
+            rpcParams.p_version_string = versionId;
           } else if (versionId.length === 36 && versionId.includes('-')) {
             // It's a UUID
-            p_version_id = versionId;
+            rpcParams.p_version_id = versionId;
           } else {
-            // Try as version string if it's not clearly a UUID
-            p_version_string = versionId;
+            // Default to version string for any other format
+            rpcParams.p_version_string = versionId;
           }
         }
 
-
-        // Call the correct RPC function based on version type
-        let rpcCall;
-        if (p_version_string) {
-          // Call with version string parameter (v10, v28, etc.)
-          rpcCall = supabase.rpc('calculate_population_analysis', {
-            p_client_id: clientId,
-            p_fiscal_year: fiscalYear,
-            p_selected_standard_numbers: selectedStandardNumbers,
-            p_excluded_account_numbers: excludedAccountNumbers,
-            p_version_string
-          });
-        } else {
-          // Call without version (will find latest/active automatically)
-          rpcCall = supabase.rpc('calculate_population_analysis', {
-            p_client_id: clientId,
-            p_fiscal_year: fiscalYear,
-            p_selected_standard_numbers: selectedStandardNumbers,
-            p_excluded_account_numbers: excludedAccountNumbers
-          });
-        }
-
-        const { data, error } = await rpcCall;
+        const { data, error } = await supabase.rpc('calculate_population_analysis', rpcParams);
 
         if (error) {
-          console.error('Population RPC error:', error);
+          throw new Error(`RPC error: ${error.message}`);
+        }
+
+        if (!data) {
           return {
             size: 0,
             sum: 0,
-            accounts: []
+            accounts: [],
+            isEmpty: true,
+            emptyReason: 'no_data_returned'
           };
         }
 
-        if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-          console.warn('Invalid RPC response data:', data);
-          return {
-            size: 0,
-            sum: 0,
-            accounts: []
-          };
-        }
-
-        // Type the response data properly from the fixed SQL function
+        // Parse the JSONB response properly
         const responseData = data as {
           accounts?: Array<{
             accountNumber: string;
@@ -121,6 +110,11 @@ export function usePopulationCalculator(
             totalAccounts: number;
             totalSum: number;
           };
+          metadata?: {
+            versionString?: string;
+            executionTimeMs?: number;
+            totalRecords?: number;
+          };
         };
 
         const accounts = (responseData.accounts || []).map((acc) => ({
@@ -130,42 +124,75 @@ export function usePopulationCalculator(
           transaction_count: acc.transactionCount
         }));
 
-        // Use basicStats from RPC response - it should handle exclusions server-side
+        // Use basicStats from RPC response (server-side calculation with exclusions)
         let size = 0;
         let sum = 0;
         
         if (responseData.basicStats?.totalAccounts !== undefined && responseData.basicStats?.totalSum !== undefined) {
-          // Use RPC calculated values (server-side exclusions handled)
+          // Use RPC calculated values
           size = responseData.basicStats.totalAccounts;
           sum = responseData.basicStats.totalSum;
         } else {
-          // Fallback to client-side calculation if RPC basicStats missing
+          // Fallback calculation (shouldn't be needed with improved RPC)
           const includedAccounts = accounts.filter((account) => 
             !excludedAccountNumbers.includes(account.account_number)
           );
           size = includedAccounts.length;
-          sum = includedAccounts.reduce((sum, acc) => sum + Math.abs(acc.closing_balance), 0);
+          sum = includedAccounts.reduce((total, acc) => total + Math.abs(acc.closing_balance), 0);
+        }
+
+        // Determine if population is legitimately empty and why
+        const isEmpty = size === 0 && sum === 0;
+        let emptyReason: string | undefined;
+        
+        if (isEmpty) {
+          if (accounts.length === 0) {
+            emptyReason = 'no_matching_accounts';
+          } else if (accounts.every(acc => Math.abs(acc.closing_balance) === 0)) {
+            emptyReason = 'zero_balances';
+          } else {
+            emptyReason = 'all_excluded';
+          }
         }
 
         return {
           size,
           sum,
-          accounts: accounts // Return all accounts, UI handles inclusion/exclusion display
+          accounts,
+          isEmpty,
+          emptyReason,
+          metadata: responseData.metadata
         };
 
       } catch (error) {
-        console.error('Population calculation error:', error);
+        // Distinguish between network errors and legitimate empty results
+        const isNetworkError = error instanceof Error && 
+          (error.message.includes('fetch') || error.message.includes('network'));
+        
+        if (isNetworkError) {
+          throw error; // Let react-query handle retries for network errors
+        }
+
+        // For other errors, return empty result with error info
         return {
           size: 0,
           sum: 0,
-          accounts: []
+          accounts: [],
+          isEmpty: true,
+          emptyReason: 'system_error',
+          error: error instanceof Error ? error.message : 'Unknown error'
         };
       }
     },
     enabled: !!clientId && selectedStandardNumbers.length > 0,
+    staleTime: 60_000, // Cache for 60 seconds
+    gcTime: 300_000,   // Keep in cache for 5 minutes
     retry: (failureCount: number, error: any) => {
       // Only retry on network errors, not on business logic errors
-      return failureCount < 2 && !error?.message?.includes('not found');
+      const isNetworkError = error?.message?.includes('fetch') || 
+                            error?.message?.includes('network') || 
+                            error?.message?.includes('timeout');
+      return failureCount < 2 && isNetworkError;
     }
   });
 }
