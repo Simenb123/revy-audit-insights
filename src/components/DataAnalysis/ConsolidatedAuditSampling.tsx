@@ -39,11 +39,12 @@ import {
 import { useCreateAuditLog } from '@/hooks/useCreateAuditLog';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { usePopulationCalculator, PopulationAccount } from '@/hooks/usePopulationCalculator';
+import { usePopulationAnalysis } from '@/hooks/usePopulationAnalysis';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
 import SavedSamplesManager from './SavedSamplesManager';
-import PopulationInsights from './PopulationInsights';
+import PopulationAnalysisSection from '@/components/Audit/Sampling/PopulationAnalysisSection';
 import { PopulationAnalysisErrorBoundary } from '@/components/ErrorBoundary/PopulationAnalysisErrorBoundary';
 
 interface ConsolidatedAuditSamplingProps {
@@ -158,6 +159,19 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     error: populationError,
     refetch: refetchPopulation
   } = usePopulationCalculator(
+    clientId,
+    params.fiscalYear,
+    debouncedSelectedStandardNumbers,
+    debouncedExcludedAccountNumbers,
+    activeTrialBalanceVersion?.version
+  );
+
+  // Hook for detailed population analysis with charts and insights
+  const { 
+    data: populationAnalysisData,
+    isLoading: isLoadingAnalysis,
+    error: analysisError
+  } = usePopulationAnalysis(
     clientId,
     params.fiscalYear,
     debouncedSelectedStandardNumbers,
@@ -476,12 +490,9 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
           
           <TabsContent value="generate" className="mt-6">
             <div className="space-y-6">
-              <PopulationInsights
-                populationData={populationData}
-                selectedStandardNumbers={debouncedSelectedStandardNumbers}
-                clientId={clientId}
-                fiscalYear={params.fiscalYear}
-                hasData={!!populationData}
+              <PopulationAnalysisSection
+                analysisData={populationAnalysisData}
+                excludedAccountNumbers={debouncedExcludedAccountNumbers}
               />
 
               {/* Standard Account Selection */}
