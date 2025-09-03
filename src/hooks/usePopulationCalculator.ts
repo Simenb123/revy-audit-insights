@@ -62,27 +62,21 @@ export function usePopulationCalculator(
       }
 
       try {
-        // Improved version parameter handling
-        const rpcParams: any = {
+        // Ensure arrays are always passed as proper arrays, never null/undefined
+        const rpcParams = {
           p_client_id: clientId,
           p_fiscal_year: fiscalYear,
-          p_selected_standard_numbers: selectedStandardNumbers,
-          p_excluded_account_numbers: excludedAccountNumbers
+          p_selected_standard_numbers: selectedStandardNumbers || [],
+          p_excluded_account_numbers: excludedAccountNumbers || [],
+          // Handle version parameter correctly
+          ...(versionId ? (
+            versionId.startsWith('v') ? 
+              { p_version_string: versionId } : 
+              versionId.length === 36 && versionId.includes('-') ?
+                { p_version_id: versionId } :
+                { p_version_string: versionId }
+          ) : {})
         };
-
-        // Handle version parameter correctly
-        if (versionId) {
-          if (versionId.startsWith('v')) {
-            // It's a version string like "v10"
-            rpcParams.p_version_string = versionId;
-          } else if (versionId.length === 36 && versionId.includes('-')) {
-            // It's a UUID
-            rpcParams.p_version_id = versionId;
-          } else {
-            // Default to version string for any other format
-            rpcParams.p_version_string = versionId;
-          }
-        }
 
         const { data, error } = await supabase.rpc('calculate_population_analysis', rpcParams);
 
@@ -116,6 +110,9 @@ export function usePopulationCalculator(
             versionString?: string;
             executionTimeMs?: number;
             totalRecords?: number;
+            hasDataForYear?: boolean;
+            availableYears?: number[];
+            error?: string;
           };
         };
 
@@ -143,12 +140,19 @@ export function usePopulationCalculator(
           sum = includedAccounts.reduce((total, acc) => total + Math.abs(acc.closing_balance), 0);
         }
 
+        // Check for system errors in metadata
+        if (responseData.metadata?.error) {
+          throw new Error(`Database error: ${responseData.metadata.error}`);
+        }
+
         // Determine if population is legitimately empty and why
         const isEmpty = size === 0 && sum === 0;
         let emptyReason: string | undefined;
         
         if (isEmpty) {
-          if (accounts.length === 0) {
+          if (responseData.metadata?.hasDataForYear === false) {
+            emptyReason = 'no_data_for_year';
+          } else if (accounts.length === 0) {
             emptyReason = 'no_matching_accounts';
           } else if (accounts.every(acc => Math.abs(acc.closing_balance) === 0)) {
             emptyReason = 'zero_balances';

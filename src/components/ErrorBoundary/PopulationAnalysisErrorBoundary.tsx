@@ -50,39 +50,46 @@ export class PopulationAnalysisErrorBoundary extends Component<Props, State> {
               Feil i populasjonsanalyse
             </CardTitle>
             <CardDescription>
-              Det oppstod en teknisk feil under populasjonsanalysen. Dette kan skyldes store datamengder, nettverksproblemer eller serverkonfigurasjon.
+              Det oppstod en feil under populasjonsanalysen. Dette kan skyldes:
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-muted">
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Mulige årsaker:</p>
-                    <ul className="text-muted-foreground space-y-1 text-xs">
-                      <li>• Manglende regnskapsdata for det valgte året</li>
-                      <li>• Nettverksproblemer eller tidsavbrudd</li>
-                      <li>• Alle kontoer har nullsaldo</li>
-                      <li>• Ingen kontoer matcher de valgte regnskapslinjene</li>
-                    </ul>
-                  </div>
-                </div>
+            <ul className="list-disc pl-6 mb-4 text-sm text-muted-foreground space-y-1">
+              <li>Nettverksproblemer eller database-tilgang</li>
+              <li>Manglende regnskapsdata for valgt periode</li>
+              <li>Konfigurasjonsfeil med regnskapslinjer eller kontoer</li>
+              <li>Database-funksjonsfeil (overloading eller parameterfeil)</li>
+            </ul>
+            
+            {this.state.error && (
+              <div className="bg-muted p-3 rounded text-sm font-mono mb-4 max-h-32 overflow-y-auto">
+                <strong>Teknisk feilmelding:</strong><br />
+                {this.state.error.message}
+                {this.state.error.stack && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs">Stack trace</summary>
+                    <pre className="text-xs mt-1 whitespace-pre-wrap">{this.state.error.stack}</pre>
+                  </details>
+                )}
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Button onClick={this.handleRetry} variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Prøv igjen
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => window.location.reload()}
-                >
-                  Last siden på nytt
-                </Button>
-              </div>
+            )}
+            
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                onClick={this.handleRetry}
+                variant="default"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Prøv igjen
+              </Button>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+              >
+                Last siden på nytt
+              </Button>
             </div>
           </CardContent>
         </Card>

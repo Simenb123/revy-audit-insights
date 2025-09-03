@@ -62,6 +62,13 @@ export const useGeneralLedgerCount = (clientId: string, versionId?: string, filt
     staleTime: 60_000, // Cache for 60 seconds
     gcTime: 300_000, // Keep in cache for 5 minutes
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: (failureCount: number, error: any) => {
+      // Only retry on network errors, not on business logic errors
+      const isNetworkError = error?.message?.includes('fetch') || 
+                            error?.message?.includes('network') || 
+                            error?.message?.includes('timeout');
+      return failureCount < 2 && isNetworkError;
+    }
   });
 };
