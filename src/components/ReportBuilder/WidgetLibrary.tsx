@@ -31,7 +31,7 @@ interface WidgetLibraryProps {
 
 export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
   const { addWidget } = useWidgetManager();
-  const { data: dbTemplates } = useWidgetTemplates();
+  const { data: dbTemplates, isError: templatesError, isLoading: templatesLoading } = useWidgetTemplates();
   const [selectedSection, setSelectedSection] = React.useState<
     'trial_balance' | 'budget' | 'transactions' | null
   >(null);
@@ -483,6 +483,22 @@ export function WidgetLibrary({ clientId, onClose }: WidgetLibraryProps) {
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      {templatesError && (
+        <div className="p-3 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            Maler er ikke tilgjengelig akkurat nå. Standard widgets er tilgjengelig.
+          </p>
+        </div>
+      )}
+
+      {templatesLoading && (
+        <div className="p-3 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            Laster widget-maler...
+          </p>
+        </div>
+      )}
 
       {selectedSection ? (
         <div className="space-y-2">

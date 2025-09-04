@@ -13,21 +13,36 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('📋 Getting widget templates...');
     const supabase = getSupabase(req);
 
+    // Check if table exists by trying to query it
     const { data, error } = await supabase
       .from('widget_templates')
-      .select('type, description, default_config')
-      .order('type', { ascending: true });
+      .select('widget_type, name, description, default_config')
+      .eq('is_active', true)
+      .order('name', { ascending: true });
 
     if (error) {
-      console.error('Error fetching widget templates:', error);
+      console.warn('Widget templates table error:', error);
+      
+      // If table doesn't exist or other database error, return empty array instead of 500
+      if (error.code === '42703' || error.code === '42P01' || error.message.includes('does not exist')) {
+        console.log('Widget templates table not ready, returning empty array');
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // For other errors, return 500
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log(`✅ Found ${data?.length || 0} widget templates`);
     return new Response(JSON.stringify(data || []), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

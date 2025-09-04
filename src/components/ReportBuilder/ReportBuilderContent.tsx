@@ -387,24 +387,26 @@ export function ReportBuilderContent({ clientId, hasData, selectedFiscalYear }: 
           </Card>
         )}
 
-        {/* Widget Library - Always rendered to avoid hook ordering issues */}
-        <ModuleWrapper id="widget-library" title="Widget bibliotek">
-          {canUse ? (
-            <>
-              <p className="text-sm text-muted-foreground mb-2">
-                Velg widgets for å legge til i rapporten
-              </p>
-              <WidgetLibrary
-                clientId={clientId}
-                onClose={() => setShowWidgetLibrary(false)}
-              />
-            </>
-          ) : (
-            <div className="p-4 text-sm text-muted-foreground">
-              Widget bibliotek vil være tilgjengelig når data er lastet
-            </div>
-          )}
-        </ModuleWrapper>
+        {/* Widget Library - Only rendered when needed */}
+        {showWidgetLibrary && (
+          <ModuleWrapper id="widget-library" title="Widget bibliotek">
+            {canUse ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Velg widgets for å legge til i rapporten
+                </p>
+                <WidgetLibrary
+                  clientId={clientId}
+                  onClose={() => setShowWidgetLibrary(false)}
+                />
+              </>
+            ) : (
+              <div className="p-4 text-sm text-muted-foreground">
+                Widget bibliotek vil være tilgjengelig når data er lastet
+              </div>
+            )}
+          </ModuleWrapper>
+        )}
 
         {/* Report Templates - Always rendered to avoid hook ordering issues */}
         <ModuleWrapper id="report-templates" title="Rapport maler">
