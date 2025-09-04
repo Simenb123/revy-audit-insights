@@ -6,7 +6,7 @@ import { validateFile } from './fileValidation';
  * TODO: Consider moving XLSX parsing to Web Worker or server-side when SheetJS patches become available
  */
 
-const MAX_FILE_SIZE = 5_000_000; // 5MB limit
+const MAX_FILE_SIZE = 100_000_000; // 100MB limit
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
 
 export function validateXlsxFile(file: File): void {

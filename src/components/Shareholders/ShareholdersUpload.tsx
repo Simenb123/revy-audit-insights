@@ -184,12 +184,12 @@ export const ShareholdersUpload: React.FC = () => {
       if (!row || Object.values(row).every(v => !v || v === '')) continue
       
       try {
-        // Extract data using flexible field mapping and clean quotes
-        const companyOrgnr = cleanField(extractField(row, ['orgnr', 'organisasjonsnummer', 'company_orgnr', 'selskap_orgnr']))
-        const companyName = cleanField(extractField(row, ['selskap', 'company_name', 'navn', 'selskapsnavn']))
-        const holderName = cleanField(extractField(row, ['aksjonær', 'holder_name', 'eier', 'name', 'navn']))
-        const shareClass = cleanField(extractField(row, ['aksjeklasse', 'share_class', 'klasse'])) || 'Ordinære aksjer'
-        const sharesStr = cleanField(extractField(row, ['aksjer', 'shares', 'antall_aksjer', 'antall']))
+        // Extract data using enhanced field mapping for Skatteetaten format
+        const companyOrgnr = cleanField(extractField(row, ['"Orgnr', 'Orgnr', 'orgnr', 'organisasjonsnummer', 'company_orgnr', 'selskap_orgnr']))
+        const companyName = cleanField(extractField(row, ['Selskap', 'selskap', 'company_name', 'navn', 'selskapsnavn']))
+        const holderName = cleanField(extractField(row, ['Navn aksjonær', 'navn aksjonær', 'aksjonær', 'holder_name', 'eier', 'name', 'navn']))
+        const shareClass = cleanField(extractField(row, ['Aksjeklasse', 'aksjeklasse', 'share_class', 'klasse'])) || 'Ordinære aksjer'
+        const sharesStr = cleanField(extractField(row, ['Antall aksjer', 'antall aksjer', 'aksjer', 'shares', 'antall_aksjer', 'antall']))
         
         // Validate required fields
         if (!companyOrgnr || !holderName || !sharesStr) {
@@ -204,8 +204,8 @@ export const ShareholdersUpload: React.FC = () => {
           continue
         }
         
-        // Try to extract holder org number (if company holder)
-        const holderOrgnrRaw = extractField(row, ['eier_orgnr', 'holder_orgnr', 'organisasjonsnummer_eier', 'fødselsår/orgnr'])
+        // Try to extract holder org number (if company holder) - enhanced for Skatteetaten
+        const holderOrgnrRaw = extractField(row, ['Fødselsår/orgnr', 'fødselsår/orgnr', 'eier_orgnr', 'holder_orgnr', 'organisasjonsnummer_eier'])
         const holderOrgnr = holderOrgnrRaw && holderOrgnrRaw.length >= 8 ? cleanField(holderOrgnrRaw) : undefined
         
         // Try to extract birth year (if person holder and no org number)
@@ -218,8 +218,8 @@ export const ShareholdersUpload: React.FC = () => {
           }
         }
         
-        // Extract country
-        const country = cleanField(extractField(row, ['land', 'country', 'landkode'])) || 'NOR'
+        // Extract country - enhanced for Skatteetaten format
+        const country = cleanField(extractField(row, ['Landkode', 'landkode', 'land', 'country'])) || 'NOR'
         
         results.push({
           company_orgnr: companyOrgnr,

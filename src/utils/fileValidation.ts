@@ -1,4 +1,4 @@
-const DEFAULT_MAX_FILE_SIZE = 5_000_000; // 5MB
+const DEFAULT_MAX_FILE_SIZE = 100_000_000; // 100MB
 
 export function validateFile(
   file: File,
