@@ -292,6 +292,7 @@ export const ShareholdersImportForm: React.FC = () => {
             worker: false,
             header: true,
             skipEmptyLines: true,
+            delimiter: ';', // Support for Skatteetaten CSV format
             step: async (results, parser) => {
               if (isPaused) {
                 parser.pause()

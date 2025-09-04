@@ -187,6 +187,7 @@ async function parseCSVFile(file: File): Promise<ShareholderRow[]> {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      delimiter: ';', // Support for Skatteetaten CSV format
       complete: (results) => {
         try {
           const mapped = results.data.map((row: any) => mapRowToShareholderData(row))

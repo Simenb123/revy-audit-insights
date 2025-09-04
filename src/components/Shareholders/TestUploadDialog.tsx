@@ -122,7 +122,7 @@ export const TestUploadDialog: React.FC<TestUploadDialogProps> = ({
 
         // Parse just the sample rows
         const sampleText = lines.slice(0, Math.min(testRows + 1, lines.length)).join('\n')
-        const parsed = Papa.parse(sampleText, { header: true, skipEmptyLines: true })
+        const parsed = Papa.parse(sampleText, { header: true, skipEmptyLines: true, delimiter: ';' })
         sampleData = parsed.data as any[]
       }
 
