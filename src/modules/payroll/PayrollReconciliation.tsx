@@ -20,7 +20,7 @@ import * as XLSX from 'xlsx';
 // Import our custom hooks and utilities
 import { useAllCodes } from './hooks/useCodes';
 import { useMappingRules, useCreateMappingRule, useUpdateMappingRule, useDeleteMappingRule, useBulkCreateMappingRules } from './hooks/useMappingRules';
-import { parseA07, validateA07, type A07Row, type ValidationError } from './lib/a07';
+import { extractEmployeeIncomeRows, type A07Row, type A07ParseResult } from './lib/a07-parser';
 import { readSpreadsheet, tbToGL, filterPayrollEntries, getWorksheetPreview, type GLEntry, type TBWorksheet } from './lib/tb';
 import { findExactMatches, generateExclusiveRules, type ExactMatchResult } from './lib/exactMatch';
 
@@ -31,8 +31,8 @@ const PayrollReconciliation = () => {
 
   // State for A07 data
   const [a07Json, setA07Json] = useState('');
-  const [a07Data, setA07Data] = useState<{ rows: A07Row[]; totals: Record<string, number> } | null>(null);
-  const [a07Errors, setA07Errors] = useState<ValidationError[]>([]);
+  const [a07Data, setA07Data] = useState<A07ParseResult | null>(null);
+  const [a07Errors, setA07Errors] = useState<string[]>([]);
 
   // State for TB data
   const [tbFile, setTbFile] = useState<File | null>(null);
@@ -65,13 +65,12 @@ const PayrollReconciliation = () => {
   const handleA07Import = () => {
     try {
       const jsonData = JSON.parse(a07Json);
-      const parsed = parseA07(jsonData, ameldingCodeMap);
-      const errors = validateA07(parsed.rows, ameldingCodes);
+      const parsed = extractEmployeeIncomeRows(jsonData);
       
       setA07Data(parsed);
-      setA07Errors(errors);
+      setA07Errors(parsed.errors || []);
       
-      if (errors.length === 0) {
+      if ((parsed.errors || []).length === 0) {
         toast({
           title: 'A07 importert',
           description: `${parsed.rows.length} linjer importert uten feil.`,
@@ -79,7 +78,7 @@ const PayrollReconciliation = () => {
       } else {
         toast({
           title: 'A07 importert med advarsler',
-          description: `${parsed.rows.length} linjer importert, ${errors.length} advarsler.`,
+          description: `${parsed.rows.length} linjer importert, ${(parsed.errors || []).length} advarsler.`,
           variant: 'destructive',
         });
       }
@@ -368,11 +367,11 @@ const PayrollReconciliation = () => {
                         <div className="space-y-2">
                           <h4 className="font-medium text-destructive flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4" />
-                            Valideringsfeil ({a07Errors.length})
+                            Parseringsfeil ({a07Errors.length})
                           </h4>
                           {a07Errors.map((error, index) => (
                             <Badge key={index} variant="destructive">
-                              {error.beskrivelse}: {error.error}
+                              {error}
                             </Badge>
                           ))}
                         </div>
