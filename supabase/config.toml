@@ -34,33 +34,15 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.calculate-population-from-accounts]
     verify_jwt = true
-  [functions.shareholders-import]
-    verify_jwt = true
   [functions.shareholders-search]
     verify_jwt = true
   [functions.ownership-graph]
     verify_jwt = true
-  [functions.shareholders-import-start]
-    verify_jwt = true
-  [functions.shareholders-ingest-batch]
-    verify_jwt = true
-  [functions.shareholders-import-finish]
+  [functions.shareholders-simple-import]
     verify_jwt = true
   [functions.revy-multi-agent]
     verify_jwt = true
   [functions.revy-role-test]
     verify_jwt = true
   [functions.revy-model-test]
-    verify_jwt = true
-  [functions.shareholders-import-finish-batch]
-    verify_jwt = true
-  [functions.shareholders-import-recover]
-    verify_jwt = true
-  [functions.shareholders-bulk-import]
-    verify_jwt = true
-  [functions.shareholders-batch-processor]
-    verify_jwt = true
-  [functions.shareholders-optimized-import]
-    verify_jwt = true
-  [functions.shareholders-simple-import]
     verify_jwt = true
