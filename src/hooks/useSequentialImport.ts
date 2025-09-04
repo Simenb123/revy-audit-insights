@@ -256,9 +256,34 @@ async function parseExcelFile(file: File): Promise<any[]> {
         const workbook = XLSX.read(data, { type: 'array' })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet)
+        // Use first row as headers instead of column letters (A, B, C)
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1, // Use first row as headers
+          defval: '' // Default value for empty cells
+        })
         
-        const mapped = jsonData.map((row: any) => mapRowToShareholderData(row))
+        console.log('🔍 Excel parsing - first few rows:', jsonData.slice(0, 3))
+        console.log('🔍 Excel parsing - available keys in first data row:', jsonData.length > 1 ? Object.keys(jsonData[1]) : 'No data rows')
+        
+        // Convert array format to object format with first row as headers
+        if (jsonData.length < 2) {
+          throw new Error('Excel file must have at least a header row and one data row')
+        }
+        
+        const headers = jsonData[0] as string[]
+        const dataRows = jsonData.slice(1)
+        
+        console.log('🔍 Excel headers:', headers)
+        
+        const objectData = dataRows.map((row: any[]) => {
+          const obj: any = {}
+          headers.forEach((header, index) => {
+            obj[header] = row[index] || ''
+          })
+          return obj
+        })
+        
+        const mapped = objectData.map((row: any) => mapRowToShareholderData(row))
         resolve(mapped.filter(row => row !== null))
       } catch (error) {
         reject(new Error(`Excel parsing error: ${(error as Error).message}`))
