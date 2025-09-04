@@ -1,53 +1,47 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Search } from 'lucide-react';
-import { PayrollEmployee, usePayrollIncomeDetails } from '@/hooks/usePayrollDetailedData';
+import { usePayrollRawData } from '@/hooks/usePayrollDetailedData';
+import { extractEmployeeIncomeRows, A07Row } from '@/modules/payroll/lib/a07-parser';
 import { formatCurrency } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface PayrollEmployeesTabProps {
-  employees: PayrollEmployee[];
   importId: string;
 }
 
-function EmployeeIncomeDetails({ employeeId }: { employeeId: string }) {
-  const { data: incomeDetails, isLoading } = usePayrollIncomeDetails(employeeId);
+export function PayrollEmployeesTab({ importId }: PayrollEmployeesTabProps) {
+  const { data: rawData, isLoading } = usePayrollRawData(importId);
+
+  const incomeRows = useMemo((): A07Row[] => {
+    if (!rawData?.raw_json) return [];
+    const result = extractEmployeeIncomeRows(rawData.raw_json);
+    // extractEmployeeIncomeRows returns A07ParseResult, we need the rows
+    return result.rows || [];
+  }, [rawData]);
+
+  const summary = useMemo(() => {
+    const uniqueEmployees = new Set(incomeRows.map(row => row.ansattFnr)).size;
+    const totalAmount = incomeRows.reduce((sum, row) => sum + row.beloep, 0);
+    const uniqueIncomeTypes = new Set(incomeRows.map(row => row.beskrivelse)).size;
+    
+    return {
+      uniqueEmployees,
+      totalAmount,
+      uniqueIncomeTypes,
+      totalRows: incomeRows.length
+    };
+  }, [incomeRows]);
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground p-2">Laster inntektsdetaljer...</div>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Laster ansattdata...</p>
+      </div>
+    );
   }
 
-  if (!incomeDetails || incomeDetails.length === 0) {
-    return <div className="text-sm text-muted-foreground p-2">Ingen inntektsdetaljer funnet</div>;
-  }
-
-  return (
-    <div className="p-4 bg-muted/50 rounded">
-      <h5 className="font-semibold mb-2">Inntektsdetaljer</h5>
-      <div className="space-y-2">
-        {incomeDetails.map((detail) => (
-          <div key={detail.id} className="flex justify-between text-sm">
-            <span>{detail.income_type} ({detail.period_year}-{String(detail.period_month).padStart(2, '0')})</span>
-            <span className="font-medium">{formatCurrency(detail.amount)}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 pt-2 border-t">
-        <div className="flex justify-between font-semibold">
-          <span>Total:</span>
-          <span>{formatCurrency(incomeDetails.reduce((sum, d) => sum + d.amount, 0))}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function PayrollEmployeesTab({ employees, importId }: PayrollEmployeesTabProps) {
-  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
-
-  if (!employees || employees.length === 0) {
+  if (!rawData?.raw_json || incomeRows.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">Ingen ansattdata funnet</p>
@@ -55,101 +49,124 @@ export function PayrollEmployeesTab({ employees, importId }: PayrollEmployeesTab
     );
   }
 
-  const toggleEmployeeExpansion = (employeeId: string) => {
-    const newExpanded = new Set(expandedEmployees);
-    if (newExpanded.has(employeeId)) {
-      newExpanded.delete(employeeId);
-    } else {
-      newExpanded.add(employeeId);
-    }
-    setExpandedEmployees(newExpanded);
-  };
-
-  const payrollColumns: StandardDataTableColumn<PayrollEmployee>[] = [
+  const columns: StandardDataTableColumn<A07Row>[] = [
     {
-      key: 'expand',
-      header: '',
-      accessor: () => '',
-      format: (_, employee) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => toggleEmployeeExpansion(employee.id)}
-          className="p-0 h-6 w-6"
-        >
-          {expandedEmployees.has(employee.id) ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </Button>
-      )
+      key: 'orgnr',
+      header: 'Orgnr',
+      accessor: 'orgnr',
+      sortable: true,
+      searchable: true,
+      format: (value) => <span className="font-mono text-sm">{value}</span>
     },
     {
-      key: 'employee_id',
-      header: 'Ansatt ID',
-      accessor: 'employee_id',
+      key: 'ansattFnr',
+      header: 'Ansatt FNR',
+      accessor: 'ansattFnr',
+      sortable: true,
+      searchable: true,
+      format: (value) => <span className="font-mono text-sm">{value}</span>
+    },
+    {
+      key: 'navn',
+      header: 'Navn',
+      accessor: 'navn',
       sortable: true,
       searchable: true,
       format: (value) => <span className="font-medium">{value}</span>
     },
     {
-      key: 'name',
-      header: 'Navn',
-      accessor: (employee) => 
-        employee.employee_data?.navn || 
-        `${employee.employee_data?.fornavn || ''} ${employee.employee_data?.etternavn || ''}`.trim() ||
-        'Ikke oppgitt',
+      key: 'beskrivelse',
+      header: 'Beskrivelse',
+      accessor: 'beskrivelse',
       sortable: true,
-      searchable: true
+      searchable: true,
+      format: (value) => <span className="text-sm">{value}</span>
     },
     {
-      key: 'birth_date',
-      header: 'Fødselsdato',
-      accessor: (employee) => employee.employee_data?.foedselsdato || 'Ikke oppgitt',
-      align: 'center'
+      key: 'fordel',
+      header: 'Fordel',
+      accessor: 'fordel',
+      sortable: true,
+      searchable: true,
+      format: (value) => <span className="text-sm">{value}</span>
     },
     {
-      key: 'gender',
-      header: 'Kjønn',
-      accessor: (employee) => employee.employee_data?.kjoenn || 'Ikke oppgitt',
-      align: 'center'
+      key: 'beloep',
+      header: 'Beløp',
+      accessor: 'beloep',
+      sortable: true,
+      align: 'right',
+      format: (value) => <span className="font-medium">{formatCurrency(value)}</span>
     },
     {
-      key: 'work_relations',
-      header: 'Arbeidsforhold',
-      accessor: (employee) => employee.employee_data?.arbeidsforhold?.length || 0,
-      format: (value) => `${value} aktive`
+      key: 'antall',
+      header: 'Antall',
+      accessor: 'antall',
+      sortable: true,
+      align: 'center',
+      format: (value) => value || '-'
+    },
+    {
+      key: 'trekkpliktig',
+      header: 'Trekkpliktig',
+      accessor: 'trekkpliktig',
+      align: 'center',
+      format: (value) => (
+        <Badge variant={value ? 'default' : 'secondary'}>
+          {value ? 'Ja' : 'Nei'}
+        </Badge>
+      )
+    },
+    {
+      key: 'aga',
+      header: 'AGA',
+      accessor: 'aga',
+      align: 'center',
+      format: (value) => (
+        <Badge variant={value ? 'default' : 'secondary'}>
+          {value ? 'Ja' : 'Nei'}
+        </Badge>
+      )
     }
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ansattdata</h3>
+        <h3 className="text-lg font-semibold mb-4">A07 Inntektsdetaljer</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Detaljert informasjon om alle ansatte i A07-rapporten
+          Detaljert oversikt over alle inntektsposter per ansatt fra A07-rapporten
         </p>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <h4 className="font-semibold mb-2">Totalt antall ansatte</h4>
-          <p className="text-2xl font-bold">{employees.length}</p>
+          <h4 className="font-semibold mb-2">Antall ansatte</h4>
+          <p className="text-2xl font-bold">{summary.uniqueEmployees}</p>
+        </Card>
+        <Card className="p-4">
+          <h4 className="font-semibold mb-2">Totalt beløp</h4>
+          <p className="text-2xl font-bold">{formatCurrency(summary.totalAmount)}</p>
+        </Card>
+        <Card className="p-4">
+          <h4 className="font-semibold mb-2">Inntektstyper</h4>
+          <p className="text-2xl font-bold">{summary.uniqueIncomeTypes}</p>
+        </Card>
+        <Card className="p-4">
+          <h4 className="font-semibold mb-2">Totalt antall poster</h4>
+          <p className="text-2xl font-bold">{summary.totalRows}</p>
         </Card>
       </div>
 
       <StandardDataTable
-        title="Ansatte"
-        description="Oversikt over alle ansatte i A07-rapporten"
-        data={employees}
-        columns={payrollColumns}
-        tableName="payroll-employees"
-        exportFileName="ansatte"
+        title="A07 Inntektsposter"
+        description="Alle inntektsposter per ansatt fra A07-rapporten"
+        data={incomeRows}
+        columns={columns}
+        tableName="a07-income-details"
+        exportFileName="a07-inntektsdetaljer"
         maxBodyHeight="600px"
-        // Custom row expansion logic would need to be handled differently
-        // This is a simplified version - full expansion would require custom implementation
       />
     </div>
   );

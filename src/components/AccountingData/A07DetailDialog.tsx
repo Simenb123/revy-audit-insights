@@ -13,7 +13,6 @@ import { Building2, Users, DollarSign, Clock, BarChart3 } from 'lucide-react';
 import { usePayrollSummary } from '@/hooks/usePayrollImports';
 import { 
   usePayrollMonthlySubmissions, 
-  usePayrollEmployees, 
   usePayrollRawData 
 } from '@/hooks/usePayrollDetailedData';
 import { formatCurrency } from '@/lib/formatters';
@@ -33,7 +32,6 @@ interface A07DetailDialogProps {
 export function A07DetailDialog({ importId, open, onOpenChange }: A07DetailDialogProps) {
   const { data: summary } = usePayrollSummary(importId || undefined);
   const { data: monthlySubmissions } = usePayrollMonthlySubmissions(importId || '');
-  const { data: employees } = usePayrollEmployees(importId || '');
   const { data: rawData } = usePayrollRawData(importId || '');
 
   if (!importId) {
@@ -230,7 +228,7 @@ export function A07DetailDialog({ importId, open, onOpenChange }: A07DetailDialo
             </TabsContent>
 
             <TabsContent value="employees" className="p-4">
-              <PayrollEmployeesTab employees={employees || []} importId={importId} />
+              <PayrollEmployeesTab importId={importId} />
             </TabsContent>
 
             <TabsContent value="raw" className="p-4">
