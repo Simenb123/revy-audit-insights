@@ -20,6 +20,9 @@ import * as XLSX from 'xlsx';
 // Import our custom hooks and utilities
 import { useAllCodes } from './hooks/useCodes';
 import { useMappingRules, useCreateMappingRule, useUpdateMappingRule, useDeleteMappingRule, useBulkCreateMappingRules } from './hooks/useMappingRules';
+import { usePayrollImports, usePayrollSummary } from '@/hooks/usePayrollImports';
+import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
+import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { extractEmployeeIncomeRows, type A07Row, type A07ParseResult } from './lib/a07-parser';
 import { readSpreadsheet, tbToGL, filterPayrollEntries, getWorksheetPreview, type GLEntry, type TBWorksheet } from './lib/tb';
 import { findExactMatches, generateExclusiveRules, type ExactMatchResult } from './lib/exactMatch';
@@ -56,6 +59,57 @@ const PayrollReconciliation = () => {
   const updateRule = useUpdateMappingRule();
   const deleteRule = useDeleteMappingRule();
   const bulkCreateRules = useBulkCreateMappingRules();
+
+  // Fetch existing data from database
+  const { selectedFiscalYear } = useFiscalYear();
+  const { data: payrollImports = [] } = usePayrollImports(clientId || '');
+  const { data: activeTrialBalanceVersion } = useActiveTrialBalanceVersion(clientId || '', selectedFiscalYear);
+  const { data: trialBalanceData = [] } = useTrialBalanceData(clientId || '', activeTrialBalanceVersion?.version, selectedFiscalYear);
+  
+  // Get the most recent payroll import for summary data
+  const latestPayrollImport = payrollImports[0];
+  const { data: payrollSummary } = usePayrollSummary(latestPayrollImport?.id);
+
+  // Convert trial balance data to GL entries format for existing logic
+  const dbGlEntries = useMemo(() => {
+    if (!trialBalanceData.length) return [];
+    
+    return trialBalanceData.map(entry => ({
+      account: entry.account_number,
+      text: entry.account_name,
+      amount: entry.closing_balance,
+      date: entry.period_end_date ? new Date(entry.period_end_date) : undefined
+    }));
+  }, [trialBalanceData]);
+
+  // Auto-populate A07 data from database if available
+  const dbA07Data = useMemo(() => {
+    if (!payrollSummary) return null;
+    
+    const rows: A07Row[] = [];
+    const totals: Record<string, number> = {};
+    
+    // Convert payroll summary to A07 format for compatibility
+    if (payrollSummary.bruttolonn) {
+      totals['fastloenn'] = payrollSummary.bruttolonn;
+    }
+    if (payrollSummary.trekkPerson) {
+      totals['forskuddstrekk'] = payrollSummary.trekkPerson;
+    }
+    if (payrollSummary.agaInns) {
+      totals['arbeidsgiveravgift'] = payrollSummary.agaInns;
+    }
+    
+    return {
+      rows,
+      totals,
+      errors: []
+    } as A07ParseResult;
+  }, [payrollSummary]);
+
+  // Use database data if available, otherwise fall back to manual input
+  const effectiveA07Data = a07Data || dbA07Data;
+  const effectiveGlEntries = glEntries.length > 0 ? glEntries : dbGlEntries;
 
   React.useEffect(() => {
     if (client?.id) setSelectedClientId(client.id);
@@ -148,7 +202,7 @@ const PayrollReconciliation = () => {
 
   // Calculate reconciliation (A-E)
   const reconciliationData = useMemo(() => {
-    if (!a07Data || glEntries.length === 0) return [];
+    if (!effectiveA07Data || effectiveGlEntries.length === 0) return [];
 
     const results: Array<{
       code: string;
@@ -164,13 +218,13 @@ const PayrollReconciliation = () => {
     }> = [];
 
     internalCodes.forEach(internalCode => {
-      const A = a07Data.totals[internalCode.id] || 0;
+      const A = effectiveA07Data.totals[internalCode.id] || 0;
       
       // B/C calculation from accrual entries (294x/295x)
       let B = 0, C = 0;
       const accountsUsed = new Set<string>();
       
-      glEntries.forEach(entry => {
+      effectiveGlEntries.forEach(entry => {
         const accountNum = entry.account.replace(/\D/g, '');
         const first3Digits = accountNum.substring(0, 3);
         if (first3Digits === '294' || first3Digits === '295') {
@@ -207,20 +261,20 @@ const PayrollReconciliation = () => {
     });
 
     return results;
-  }, [a07Data, glEntries, internalCodes, mappingRules]);
+  }, [effectiveA07Data, effectiveGlEntries, internalCodes, mappingRules]);
 
   // Run exact match
   const handleExactMatch = () => {
-    if (!a07Data || glEntries.length === 0) {
+    if (!effectiveA07Data || effectiveGlEntries.length === 0) {
       toast({
         title: 'Manglende data',
-        description: 'Last inn både A07 og TB data først.',
+        description: 'Trenger både A07 og TB data for å kjøre eksakt match.',
         variant: 'destructive',
       });
       return;
     }
 
-    const matches = findExactMatches(glEntries, a07Data.totals, mappingRules, 5);
+    const matches = findExactMatches(effectiveGlEntries, effectiveA07Data.totals, mappingRules, 5);
     setExactMatches(matches);
     
     const exactCount = Object.values(matches).filter(m => m.exact !== null).length;
@@ -335,6 +389,74 @@ const PayrollReconciliation = () => {
 
               {/* Data Panel */}
               <TabsContent value="data" className="space-y-4">
+                {/* Data Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Datagrunnlag Status
+                    </CardTitle>
+                    <CardDescription>
+                      Oversikt over tilgjengelige data for avstemming
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* A07 Status */}
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-3 h-3 rounded-full ${effectiveA07Data ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          <span className="font-medium">A07 Lønnsdata</span>
+                        </div>
+                        {effectiveA07Data ? (
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {latestPayrollImport ? (
+                              <>
+                                <div>📊 Fra database: {latestPayrollImport.file_name}</div>
+                                <div>📅 Periode: {latestPayrollImport.period_key}</div>
+                                <div>👥 Antall mottakere: {payrollSummary?.antMott || 0}</div>
+                                <div>💰 Bruttolønn: {payrollSummary?.bruttolonn?.toLocaleString() || '0'} kr</div>
+                              </>
+                            ) : (
+                              <div>📝 Fra manuell input</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            Ingen A07 data tilgjengelig
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trial Balance Status */}
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-3 h-3 rounded-full ${effectiveGlEntries.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          <span className="font-medium">Trial Balance Data</span>
+                        </div>
+                        {effectiveGlEntries.length > 0 ? (
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {dbGlEntries.length > 0 ? (
+                              <>
+                                <div>🗄️ Fra database: {trialBalanceData.length} kontoer</div>
+                                <div>📋 Versjon: {activeTrialBalanceVersion?.version || 'N/A'}</div>
+                                <div>📅 År: {selectedFiscalYear}</div>
+                                <div>💹 Aktive poster: {effectiveGlEntries.length}</div>
+                              </>
+                            ) : (
+                              <div>📤 Fra manuell opplasting: {effectiveGlEntries.length} poster</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            Ingen trial balance data tilgjengelig
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* A07 Import */}
                   <Card>
@@ -541,7 +663,7 @@ const PayrollReconciliation = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex gap-2">
-                      <Button onClick={handleExactMatch} disabled={!a07Data || glEntries.length === 0}>
+                      <Button onClick={handleExactMatch} disabled={!effectiveA07Data || effectiveGlEntries.length === 0}>
                         <Calculator className="h-4 w-4 mr-2" />
                         Kjør eksakt match
                       </Button>
