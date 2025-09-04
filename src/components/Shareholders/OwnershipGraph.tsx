@@ -51,25 +51,36 @@ export const OwnershipGraph: React.FC<OwnershipGraphProps> = ({ rootOrgnr, onCom
       measured: { width: 200, height: 80 }
     }))
 
-    const initialEdges: Edge[] = graphData.edges.map(edge => ({
-      id: edge.id || `${edge.source}-${edge.target}`,
-      source: edge.source || edge.from,
-      target: edge.target || edge.to,
-      label: `${edge.percentage?.toFixed(1)}%` || edge.label,
-      type: 'smoothstep',
-      animated: false,
-      style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 },
-      labelStyle: { 
-        fill: 'hsl(var(--foreground))', 
-        fontSize: 12, 
-        fontWeight: 600 
-      },
-      labelBgStyle: { 
-        fill: 'hsl(var(--background))', 
-        stroke: 'hsl(var(--border))',
-        strokeWidth: 1
+    const initialEdges: Edge[] = graphData.edges.map(edge => {
+      // Access percentage from data object, with fallback to direct property
+      const percentage = edge.data?.percentage ?? edge.percentage ?? 0;
+      
+      console.log('[OwnershipGraph] Edge data:', { 
+        id: edge.id, 
+        percentage, 
+        rawEdge: edge 
+      });
+
+      return {
+        id: edge.id || `${edge.source}-${edge.target}`,
+        source: edge.source || edge.from,
+        target: edge.target || edge.to,
+        label: `${percentage.toFixed(1)}%`,
+        type: 'smoothstep',
+        animated: false,
+        style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 },
+        labelStyle: { 
+          fill: 'hsl(var(--foreground))', 
+          fontSize: 12, 
+          fontWeight: 600 
+        },
+        labelBgStyle: { 
+          fill: 'hsl(var(--background))', 
+          stroke: 'hsl(var(--border))',
+          strokeWidth: 1
+        }
       }
-    }))
+    })
 
     // Apply layout directly in the same useMemo to avoid extra re-renders
     if (initialNodes.length === 0) return { nodes: [], edges: [] }
