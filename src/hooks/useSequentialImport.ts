@@ -272,6 +272,11 @@ async function parseExcelFile(file: File): Promise<any[]> {
 
 function mapRowToShareholderData(row: any): any | null {
   try {
+    // Debug: Log the first few rows to understand the structure
+    const rowKeys = Object.keys(row)
+    console.log('🔍 Processing row with keys:', rowKeys)
+    console.log('🔍 Row data sample:', Object.fromEntries(Object.entries(row).slice(0, 5)))
+    
     // Helper function to extract field value with flexible matching
     const extractField = (row: any, possibleNames: string[]): string => {
       const keys = Object.keys(row)
@@ -279,28 +284,35 @@ function mapRowToShareholderData(row: any): any | null {
       for (const name of possibleNames) {
         // Try exact match first
         if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
-          return String(row[name]).trim()
+          const value = String(row[name]).trim()
+          console.log(`✅ Found field "${name}" = "${value}"`)
+          return value
         }
         
         // Try case-insensitive match
         const key = keys.find(k => k.toLowerCase() === name.toLowerCase())
         if (key && row[key] !== undefined && row[key] !== null && row[key] !== '') {
-          return String(row[key]).trim()
+          const value = String(row[key]).trim()
+          console.log(`✅ Found field "${key}" (case insensitive for "${name}") = "${value}"`)
+          return value
         }
         
         // Try partial match (contains)
         const partialKey = keys.find(k => k.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(k.toLowerCase()))
         if (partialKey && row[partialKey] !== undefined && row[partialKey] !== null && row[partialKey] !== '') {
-          return String(row[partialKey]).trim()
+          const value = String(row[partialKey]).trim()
+          console.log(`✅ Found field "${partialKey}" (partial match for "${name}") = "${value}"`)
+          return value
         }
       }
+      console.log(`❌ Field not found for names:`, possibleNames)
       return ''
     }
 
     // Extract company org number with enhanced support for Skatteetaten format
     const orgNrRaw = extractField(row, [
+      'Orgnr',     // Standard format (moved to top)
       '"Orgnr',    // Skatteetaten format with quote
-      'Orgnr',     // Standard format
       'orgnr',
       'organisasjonsnummer',
       'Organisasjonsnummer',
@@ -314,8 +326,10 @@ function mapRowToShareholderData(row: any): any | null {
       company_orgnr = '0' + company_orgnr
     }
     
+    console.log(`🏢 Org number: "${orgNrRaw}" -> "${company_orgnr}"`)
+    
     if (!company_orgnr || (company_orgnr.length !== 9 && company_orgnr.length !== 8)) {
-      console.warn(`Invalid org number: "${orgNrRaw}"`)
+      console.warn(`❌ Invalid org number: "${orgNrRaw}", length: ${company_orgnr.length}`)
       return null
     }
 
@@ -339,11 +353,15 @@ function mapRowToShareholderData(row: any): any | null {
       'Holder Name'
     ])
 
+    console.log(`📊 Extracted: company_name="${company_name}", holder_name="${holder_name}"`)
+
     if (!company_name || !holder_name) {
-      console.warn('Missing required fields:', { 
+      console.warn('❌ Missing required fields:', { 
         company_name: !!company_name, 
         holder_name: !!holder_name, 
-        availableFields: Object.keys(row)
+        orgNumber: !!company_orgnr,
+        availableFields: Object.keys(row),
+        sampleData: row
       })
       return null
     }
