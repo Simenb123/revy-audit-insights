@@ -108,30 +108,60 @@ Deno.serve(async (req) => {
       }
     })
 
-    // Bulk insert entities and get their IDs
+    // Process entities separately by type to avoid constraint conflicts
     const entityIdMap = new Map<string, string>()
     try {
       const entityData = Array.from(entities.values())
       
-      for (const entity of entityData) {
-        const { data: insertedEntity, error } = await supabase
-          .from('share_entities')
-          .upsert(entity, {
-            onConflict: entity.entity_type === 'company' ? 'orgnr,user_id' : 'name,birth_year,country_code,user_id,entity_type'
-          })
-          .select('id')
-          .single()
+      // Separate companies and persons for different upsert strategies
+      const companies = entityData.filter(e => e.entity_type === 'company')
+      const persons = entityData.filter(e => e.entity_type === 'person')
+      
+      // Process companies first
+      for (const company of companies) {
+        try {
+          const { data: insertedEntity, error } = await supabase
+            .from('share_entities')
+            .upsert(company)
+            .select('id')
+            .single()
 
-        if (error) {
-          console.error('Entity insert error:', error)
+          if (error) {
+            console.error('Company entity insert error:', error)
+            errors++
+          } else if (insertedEntity) {
+            const entityKey = company.orgnr
+            entityIdMap.set(entityKey!, insertedEntity.id)
+          }
+        } catch (companyError) {
+          console.error('Company processing error:', companyError)
           errors++
-        } else if (insertedEntity) {
-          const entityKey = entity.orgnr || `${entity.name}_${entity.birth_year || 'person'}`
-          entityIdMap.set(entityKey, insertedEntity.id)
         }
       }
       
-      console.log(`✅ Processed ${entityData.length} entities`)
+      // Process persons second
+      for (const person of persons) {
+        try {
+          const { data: insertedEntity, error } = await supabase
+            .from('share_entities')
+            .upsert(person)
+            .select('id')
+            .single()
+
+          if (error) {
+            console.error('Person entity insert error:', error)
+            errors++
+          } else if (insertedEntity) {
+            const entityKey = `${person.name}_${person.birth_year || 'person'}`
+            entityIdMap.set(entityKey, insertedEntity.id)
+          }
+        } catch (personError) {
+          console.error('Person processing error:', personError)
+          errors++
+        }
+      }
+      
+      console.log(`✅ Processed ${companies.length} companies and ${persons.length} persons`)
     } catch (error) {
       console.error('Entity bulk processing error:', error)
       errors += entities.size

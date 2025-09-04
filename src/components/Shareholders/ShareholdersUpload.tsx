@@ -240,9 +240,14 @@ export const ShareholdersUpload: React.FC = () => {
           const progress = Math.round(((batchIndex + 1) / batches) * 100)
           setUploadProgress(progress)
           
+          console.log(`Batch ${batchIndex + 1}/${batches} completed: ${result.imported} imported, ${result.errors} errors`)
+          
         } catch (error) {
           console.error(`Batch ${batchIndex + 1} failed:`, error)
           errors += batchData.length
+          
+          // Show specific error for failed batch
+          toast.error(`Batch ${batchIndex + 1} feilet: ${(error as Error).message}`)
         }
       }
       
@@ -271,10 +276,19 @@ export const ShareholdersUpload: React.FC = () => {
     })
 
     if (error) {
+      console.error(`Batch ${batchNum} failed:`, error)
       throw new Error(`Batch ${batchNum} failed: ${error.message}`)
     }
 
-    return data
+    if (!data) {
+      throw new Error(`Batch ${batchNum} returned no data`)
+    }
+
+    // Return the actual results from the edge function
+    return {
+      imported: data.processedRows || 0,
+      errors: data.errors || 0
+    }
   }
 
   const resetUpload = () => {
@@ -429,19 +443,45 @@ export const ShareholdersUpload: React.FC = () => {
             </div>
           )}
 
-          {step === 'success' && uploadStats && (
+              {step === 'success' && uploadStats && (
             <div className="space-y-4">
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
                   Import fullført! {uploadStats.imported.toLocaleString()} rader importert
-                  {uploadStats.errors > 0 && `, ${uploadStats.errors} feil`}.
+                  {uploadStats.errors > 0 && (
+                    <span className="block mt-1 text-destructive">
+                      {uploadStats.errors} rader ble hoppet over på grunn av feil
+                    </span>
+                  )}.
                 </AlertDescription>
               </Alert>
               
-              <Button onClick={resetUpload} className="w-full">
-                Last opp ny fil
-              </Button>
+              {uploadStats.errors > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {uploadStats.errors} rader kunne ikke importeres. Dette kan skyldes:
+                    <ul className="list-disc list-inside mt-2 ml-4">
+                      <li>Duplikat-data som allerede finnes</li>
+                      <li>Manglende eller ugyldig organisasjonsnummer</li>
+                      <li>Ugyldig aksjeantall eller format</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="flex gap-2">
+                <Button onClick={resetUpload} variant="outline" className="flex-1">
+                  Last opp ny fil
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="flex-1"
+                >
+                  Se importert data
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
