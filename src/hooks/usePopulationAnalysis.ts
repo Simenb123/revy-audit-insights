@@ -159,16 +159,20 @@ export function usePopulationAnalysis(
           totalAmount: number;
           percentage: number;
         }>;
-        outliers: Array<{
-          accountNumber: string;
-          accountName: string;
-          closingBalance: number;
-          absBalance: number;
-          outlierType: 'high' | 'low';
-          zScore?: number;
-          iqrScore?: number;
-          detectionMethod?: string;
-        }>;
+        outliers: {
+          high: Array<{
+            accountNumber: string;
+            accountName: string;
+            closingBalance: number;
+            deviation: number;
+          }>;
+          low: Array<{
+            accountNumber: string;
+            accountName: string;
+            closingBalance: number;
+            deviation: number;
+          }>;
+        };
         anomalies: Array<{
           accountNumber: string;
           accountName: string;
@@ -216,8 +220,7 @@ export function usePopulationAnalysis(
       };
       
       const counterAccounts = Array.isArray(responseData.counterAccounts) ? responseData.counterAccounts : [];
-      const outliers = Array.isArray(responseData.outliers?.high) ? responseData.outliers.high : 
-                       Array.isArray(responseData.outliers) ? responseData.outliers : [];
+      const outliersData = responseData.outliers || { high: [], low: [] };
       const anomalies = Array.isArray(responseData.anomalies) ? responseData.anomalies : [];
       const trendAnalysis = responseData.trendAnalysis || null;
       const timeSeries = Array.isArray(responseData.timeSeries) ? responseData.timeSeries : [];
@@ -247,13 +250,22 @@ export function usePopulationAnalysis(
           percentage: ca.percentage
         })),
         outlierDetection: {
-          outliers: outliers.map((outlier) => ({
-            accountNumber: outlier.accountNumber,
-            accountName: outlier.accountName,
-            closingBalance: outlier.closingBalance,
-            outlierType: outlier.outlierType,
-            deviationScore: outlier.zScore || Math.abs(outlier.absBalance - basicStats.medianBalance) / (basicStats.stdDev || 1)
-          })),
+          outliers: [
+            ...(Array.isArray(outliersData.high) ? outliersData.high.map((outlier) => ({
+              accountNumber: outlier.accountNumber,
+              accountName: outlier.accountName,
+              closingBalance: outlier.closingBalance,
+              outlierType: 'high' as const,
+              deviationScore: outlier.deviation || 0
+            })) : []),
+            ...(Array.isArray(outliersData.low) ? outliersData.low.map((outlier) => ({
+              accountNumber: outlier.accountNumber,
+              accountName: outlier.accountName,
+              closingBalance: outlier.closingBalance,
+              outlierType: 'low' as const,
+              deviationScore: outlier.deviation || 0
+            })) : [])
+          ],
           outlierThreshold: 1.5 * basicStats.iqr
         },
         timeSeriesAnalysis: {

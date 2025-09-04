@@ -74,6 +74,7 @@ const PopulationAnalysisWithMapping: React.FC<PopulationAnalysisWithMappingProps
 
   // Show error state
   if (analysisError) {
+    console.error('[PopulationAnalysisWithMapping] Analysis error:', analysisError);
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -85,9 +86,20 @@ const PopulationAnalysisWithMapping: React.FC<PopulationAnalysisWithMappingProps
             <CardTitle className="text-destructive">Analyse feil</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {analysisError.message || 'Ukjent feil under analyse'}
+            <p className="text-sm text-muted-foreground mb-4">
+              Det oppstod en feil under populasjonsanalysen.
             </p>
+            <details className="bg-muted p-3 rounded text-sm">
+              <summary className="cursor-pointer font-medium">Tekniske detaljer</summary>
+              <pre className="mt-2 text-xs overflow-x-auto">
+                {JSON.stringify({
+                  message: analysisError.message,
+                  standards: selectedStandardNumbers,
+                  mappedAccounts: populationAccountNumbers?.length || 0,
+                  version: versionKey
+                }, null, 2)}
+              </pre>
+            </details>
           </CardContent>
         </Card>
       </div>
