@@ -200,14 +200,29 @@ export function usePopulationAnalysis(
       };
 
       // Transform the enhanced backend response to match our frontend interface
-      const basicStats = responseData.basicStats;
-      const counterAccounts = responseData.counterAccounts || [];
-      const outliers = responseData.outliers || [];
-      const anomalies = responseData.anomalies || [];
-      const trendAnalysis = responseData.trendAnalysis;
-      const timeSeries = responseData.timeSeries || [];
-      const accounts = responseData.accounts || [];
-      const executionTime = responseData.executionTimeMs;
+      // Handle missing or null fields gracefully
+      const basicStats = responseData.basicStats || {
+        totalAccounts: 0,
+        accountsWithBalance: 0, 
+        totalSum: 0,
+        averageBalance: 0,
+        medianBalance: 0,
+        q1: 0,
+        q3: 0,
+        minBalance: 0,
+        maxBalance: 0,
+        stdDev: 0,
+        iqr: 0
+      };
+      
+      const counterAccounts = Array.isArray(responseData.counterAccounts) ? responseData.counterAccounts : [];
+      const outliers = Array.isArray(responseData.outliers?.high) ? responseData.outliers.high : 
+                       Array.isArray(responseData.outliers) ? responseData.outliers : [];
+      const anomalies = Array.isArray(responseData.anomalies) ? responseData.anomalies : [];
+      const trendAnalysis = responseData.trendAnalysis || null;
+      const timeSeries = Array.isArray(responseData.timeSeries) ? responseData.timeSeries : [];
+      const accounts = Array.isArray(responseData.accounts) ? responseData.accounts : [];
+      const executionTime = responseData.executionTimeMs || 0;
 
       // All calculations are now done on the backend with enhanced statistical analysis
       return {
