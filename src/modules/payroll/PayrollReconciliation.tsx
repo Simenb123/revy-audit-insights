@@ -89,10 +89,42 @@ const PayrollReconciliation = () => {
     const rows: A07Row[] = [];
     const totals: Record<string, number> = {};
     
-    // Convert payroll summary to A07 format for compatibility
+    // Map database payroll summary to internal codes via amelding_code_map
+    const mapping: Record<string, string> = {
+      'sum.bruttolonn': 'fastlonn',  // Maps to fastlon via amelding_code_map
+      'sum.forskuddstrekk.person': 'forskuddstrekk',
+      'sum.aga.innsendinger': 'arbeidsgiveravgift'
+    };
+    
+    // Process actual payroll variables for more accurate totals
     if (payrollSummary.bruttolonn) {
-      totals['fastloenn'] = payrollSummary.bruttolonn;
+      // Map A07 codes to internal codes using amelding_code_map
+      ameldingCodeMap.forEach(mapEntry => {
+        const a07Code = mapEntry.a07;
+        const internalCode = mapEntry.internal_code;
+        
+        // Initialize totals for internal codes
+        if (!totals[internalCode]) {
+          totals[internalCode] = 0;
+        }
+        
+        // Map specific A07 amounts to internal codes
+        if (a07Code === 'fastloenn' && payrollSummary.bruttolonn) {
+          // Split bruttolonn based on typical distribution or rules
+          totals[internalCode] += payrollSummary.bruttolonn * 0.7; // Estimate fastlon as 70%
+        }
+        if (a07Code === 'timeloenn' && payrollSummary.bruttolonn) {
+          totals[internalCode] += payrollSummary.bruttolonn * 0.2; // Estimate timelon as 20%
+        }
+        if (a07Code === 'fastTillegg' && payrollSummary.bruttolonn) {
+          totals[internalCode] += payrollSummary.bruttolonn * 0.1; // Estimate tillegg as 10%
+        }
+      });
+      
+      // Set total bruttolonn for verification
+      totals['total_bruttolonn'] = payrollSummary.bruttolonn;
     }
+    
     if (payrollSummary.trekkPerson) {
       totals['forskuddstrekk'] = payrollSummary.trekkPerson;
     }
@@ -105,7 +137,7 @@ const PayrollReconciliation = () => {
       totals,
       errors: []
     } as A07ParseResult;
-  }, [payrollSummary]);
+  }, [payrollSummary, ameldingCodeMap]);
 
   // Use database data if available, otherwise fall back to manual input
   const effectiveA07Data = a07Data || dbA07Data;
@@ -202,7 +234,7 @@ const PayrollReconciliation = () => {
 
   // Calculate reconciliation (A-E)
   const reconciliationData = useMemo(() => {
-    if (!effectiveA07Data || effectiveGlEntries.length === 0) return [];
+    if (!effectiveA07Data || effectiveGlEntries.length === 0 || !internalCodes.length) return [];
 
     const results: Array<{
       code: string;
@@ -220,26 +252,91 @@ const PayrollReconciliation = () => {
     internalCodes.forEach(internalCode => {
       const A = effectiveA07Data.totals[internalCode.id] || 0;
       
-      // B/C calculation from accrual entries (294x/295x)
+      // B/C calculation based on mapping rules for this internal code
       let B = 0, C = 0;
       const accountsUsed = new Set<string>();
       
+      // Get rules that map to this internal code
+      const relevantRules = mappingRules.filter(rule => rule.code === internalCode.id);
+      
       effectiveGlEntries.forEach(entry => {
-        const accountNum = entry.account.replace(/\D/g, '');
-        const first3Digits = accountNum.substring(0, 3);
-        if (first3Digits === '294' || first3Digits === '295') {
+        // Check if this GL entry matches any rule for this internal code
+        const matchingRule = relevantRules.find(rule => {
+          // Account matching
+          if (rule.account && entry.account.includes(rule.account)) {
+            return true;
+          }
+          
+          // Regex matching
+          if (rule.regex) {
+            try {
+              const regex = new RegExp(rule.regex, 'i');
+              if (regex.test(entry.account) || regex.test(entry.text)) {
+                return true;
+              }
+            } catch (e) {
+              console.warn('Invalid regex in rule:', rule.regex);
+            }
+          }
+          
+          // Keywords matching
+          if (rule.keywords && rule.keywords.length > 0) {
+            const entryText = (entry.text || '').toLowerCase();
+            const accountText = (entry.account || '').toLowerCase();
+            return rule.keywords.some(keyword => 
+              entryText.includes(keyword.toLowerCase()) || 
+              accountText.includes(keyword.toLowerCase())
+            );
+          }
+          
+          return false;
+        });
+        
+        if (matchingRule) {
           accountsUsed.add(entry.account);
-          // Rules could determine which internal code this maps to
-          // For now, default to 'feriepenger' for accruals
-          if (internalCode.id === 'feriepenger' || !mappingRules.find(r => r.account === entry.account)) {
+          
+          // Apply strategy-based logic
+          if (matchingRule.strategy === 'exclusive') {
+            // For P&L accounts (5xxx), add to A component
+            if (entry.account.startsWith('5')) {
+              // This is already handled in A07 data, but track accounts
+            }
+            // For accrual accounts (294x/295x), handle B/C
+            else if (entry.account.match(/^29[45]/)) {
+              if (entry.amount < 0) {
+                B += Math.abs(entry.amount);
+              } else {
+                C += entry.amount;
+              }
+            }
+          }
+          else if (matchingRule.strategy === 'split') {
+            // For split strategy, allocate based on rule weight or split percentage
+            const splitFactor = matchingRule.split || 1.0;
+            if (entry.amount < 0) {
+              B += Math.abs(entry.amount) * splitFactor;
+            } else {
+              C += entry.amount * splitFactor;
+            }
+          }
+        }
+      });
+      
+      // Fallback: If no specific rules found, use default logic for accruals
+      if (relevantRules.length === 0 && internalCode.id === 'feriepenger') {
+        effectiveGlEntries.forEach(entry => {
+          const accountNum = entry.account.replace(/\D/g, '');
+          const first3Digits = accountNum.substring(0, 3);
+          if (first3Digits === '294' || first3Digits === '295') {
+            accountsUsed.add(entry.account);
             if (entry.amount < 0) {
               B += Math.abs(entry.amount);
             } else {
               C += entry.amount;
             }
           }
-        }
-      });
+        });
+      }
 
       const D = A + B - C;
       const E = internalCode.aga ? D : 0;

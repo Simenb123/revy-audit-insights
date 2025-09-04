@@ -4,6 +4,7 @@ import type { GLEntry } from '../tb';
 
 export interface MappingRule {
   id: string;
+  client_id: string;
   account: string;
   code: string;
   strategy: 'exclusive' | 'split' | 'score';
@@ -12,7 +13,7 @@ export interface MappingRule {
   keywords: string[];
   regex: string;
   priority: number;
-  month_hints: number[];
+  month_hints?: number[];
 }
 
 describe('exactMatch', () => {
@@ -29,6 +30,7 @@ describe('exactMatch', () => {
   const mockRules: MappingRule[] = [
     {
       id: '1',
+      client_id: 'test-client',
       account: '5000',
       code: 'fastlon',
       strategy: 'score',
@@ -40,6 +42,7 @@ describe('exactMatch', () => {
     },
     {
       id: '2', 
+      client_id: 'test-client',
       account: '5010',
       code: 'timelon',
       strategy: 'score',
@@ -51,6 +54,7 @@ describe('exactMatch', () => {
     },
     {
       id: '3',
+      client_id: 'test-client',
       account: '5020', 
       code: 'bonus',
       strategy: 'score',
@@ -123,9 +127,9 @@ describe('exactMatch', () => {
     ];
 
     const testRules: MappingRule[] = [
-      { id: '1', account: '5000', code: 'fastlon', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
-      { id: '2', account: '5010', code: 'timelon', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
-      { id: '3', account: '5020', code: 'fasttillegg', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
+      { id: '1', client_id: 'test-client', account: '5000', code: 'fastlon', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
+      { id: '2', client_id: 'test-client', account: '5010', code: 'timelon', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
+      { id: '3', client_id: 'test-client', account: '5020', code: 'fasttillegg', strategy: 'exclusive', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
     ];
 
     const results = findExactMatches(testEntries, a07Totals, testRules, 5);
@@ -171,8 +175,8 @@ describe('exactMatch', () => {
     ];
 
     const testRules: MappingRule[] = [
-      { id: '1', account: '5000', code: 'fastlon', strategy: 'score', weight: 10, keywords: [], regex: '', priority: 1, month_hints: [] },
-      { id: '2', account: '5999', code: 'fastlon', strategy: 'score', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
+      { id: '1', client_id: 'test-client', account: '5000', code: 'fastlon', strategy: 'score', weight: 10, keywords: [], regex: '', priority: 1, month_hints: [] },
+      { id: '2', client_id: 'test-client', account: '5999', code: 'fastlon', strategy: 'score', weight: 1, keywords: [], regex: '', priority: 1, month_hints: [] },
     ];
 
     const targets = { fastlon: 50000 };

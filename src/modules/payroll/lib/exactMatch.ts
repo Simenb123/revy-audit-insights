@@ -2,6 +2,7 @@ import { GLEntry } from './tb';
 
 export interface MappingRule {
   id: string;
+  client_id: string;
   account: string;
   code: string;
   strategy: 'exclusive' | 'split' | 'score';
@@ -10,7 +11,7 @@ export interface MappingRule {
   keywords: string[];
   regex: string;
   priority: number;
-  month_hints: number[];
+  month_hints?: number[];
 }
 
 export interface ExactMatchResult {
@@ -117,31 +118,43 @@ function getCandidatesForCode(
   
   glEntries.forEach(entry => {
     const isCandidate = relevantRules.some(rule => {
-      // Check account match
-      if (rule.account && !entry.account.includes(rule.account)) {
-        return false;
+      // Check exact account match first
+      if (rule.account && entry.account === rule.account) {
+        return true;
       }
       
-      // Check keywords
-      if (rule.keywords.length > 0) {
+      // Check account pattern (for partial matches like account contains rule.account)
+      if (rule.account && entry.account.includes(rule.account)) {
+        return true;
+      }
+      
+      // Check keywords (handle both array and string formats)
+      if (rule.keywords && rule.keywords.length > 0) {
         const entryText = entry.text.toLowerCase();
-        const hasKeyword = rule.keywords.some(keyword => 
-          entryText.includes(keyword.toLowerCase())
-        );
-        if (!hasKeyword) return false;
+        const accountText = entry.account.toLowerCase();
+        
+        const hasKeyword = rule.keywords.some(keyword => {
+          const keywordLower = keyword.toLowerCase();
+          return entryText.includes(keywordLower) || accountText.includes(keywordLower);
+        });
+        
+        if (hasKeyword) return true;
       }
       
       // Check regex
-      if (rule.regex) {
+      if (rule.regex && rule.regex.trim() !== '') {
         try {
           const regex = new RegExp(rule.regex, 'i');
-          if (!regex.test(entry.text)) return false;
+          if (regex.test(entry.account) || regex.test(entry.text)) {
+            return true;
+          }
         } catch {
-          // Invalid regex, ignore
+          // Invalid regex, ignore this rule
+          console.warn('Invalid regex in mapping rule:', rule.regex);
         }
       }
       
-      return true;
+      return false;
     });
     
     if (isCandidate) {
