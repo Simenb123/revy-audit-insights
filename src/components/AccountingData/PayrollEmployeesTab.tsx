@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/standard-data-table';
 import { usePayrollRawData } from '@/hooks/usePayrollDetailedData';
-import { extractEmployeeIncomeRows, A07Row } from '@/modules/payroll/lib/a07-parser';
+import { extractEmployeeIncomeRows } from '@/modules/payroll/lib/a07-parser';
 import { formatCurrency } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { EmployeeAccordionView } from './EmployeeAccordionView';
+import * as XLSX from 'xlsx';
 
 interface PayrollEmployeesTabProps {
   importId: string;
@@ -13,10 +13,9 @@ interface PayrollEmployeesTabProps {
 export function PayrollEmployeesTab({ importId }: PayrollEmployeesTabProps) {
   const { data: rawData, isLoading } = usePayrollRawData(importId);
 
-  const incomeRows = useMemo((): A07Row[] => {
+  const incomeRows = useMemo(() => {
     if (!rawData?.raw_json) return [];
     const result = extractEmployeeIncomeRows(rawData.raw_json);
-    // extractEmployeeIncomeRows returns A07ParseResult, we need the rows
     return result.rows || [];
   }, [rawData]);
 
@@ -49,86 +48,26 @@ export function PayrollEmployeesTab({ importId }: PayrollEmployeesTabProps) {
     );
   }
 
-  const columns: StandardDataTableColumn<A07Row>[] = [
-    {
-      key: 'orgnr',
-      header: 'Orgnr',
-      accessor: 'orgnr',
-      sortable: true,
-      searchable: true,
-      format: (value) => <span className="font-mono text-sm">{value}</span>
-    },
-    {
-      key: 'ansattFnr',
-      header: 'Ansatt FNR',
-      accessor: 'ansattFnr',
-      sortable: true,
-      searchable: true,
-      format: (value) => <span className="font-mono text-sm">{value}</span>
-    },
-    {
-      key: 'navn',
-      header: 'Navn',
-      accessor: 'navn',
-      sortable: true,
-      searchable: true,
-      format: (value) => <span className="font-medium">{value}</span>
-    },
-    {
-      key: 'beskrivelse',
-      header: 'Beskrivelse',
-      accessor: 'beskrivelse',
-      sortable: true,
-      searchable: true,
-      format: (value) => <span className="text-sm">{value}</span>
-    },
-    {
-      key: 'fordel',
-      header: 'Fordel',
-      accessor: 'fordel',
-      sortable: true,
-      searchable: true,
-      format: (value) => <span className="text-sm">{value}</span>
-    },
-    {
-      key: 'beloep',
-      header: 'Beløp',
-      accessor: 'beloep',
-      sortable: true,
-      align: 'right',
-      format: (value) => <span className="font-medium">{formatCurrency(value)}</span>
-    },
-    {
-      key: 'antall',
-      header: 'Antall',
-      accessor: 'antall',
-      sortable: true,
-      align: 'center',
-      format: (value) => value || '-'
-    },
-    {
-      key: 'trekkpliktig',
-      header: 'Trekkpliktig',
-      accessor: 'trekkpliktig',
-      align: 'center',
-      format: (value) => (
-        <Badge variant={value ? 'default' : 'secondary'}>
-          {value ? 'Ja' : 'Nei'}
-        </Badge>
-      )
-    },
-    {
-      key: 'aga',
-      header: 'AGA',
-      accessor: 'aga',
-      align: 'center',
-      format: (value) => (
-        <Badge variant={value ? 'default' : 'secondary'}>
-          {value ? 'Ja' : 'Nei'}
-        </Badge>
-      )
-    }
-  ];
+  const handleExport = () => {
+    if (!incomeRows.length) return;
+
+    const exportData = incomeRows.map(row => ({
+      'Orgnr': row.orgnr,
+      'Ansatt FNR': row.ansattFnr,
+      'Navn': row.navn,
+      'Beskrivelse': row.beskrivelse,
+      'Fordel': row.fordel,
+      'Beløp': row.beloep,
+      'Antall': row.antall || '',
+      'Trekkpliktig': row.trekkpliktig ? 'Ja' : 'Nei',
+      'AGA': row.aga ? 'Ja' : 'Nei'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'A07 Inntektsdetaljer');
+    XLSX.writeFile(wb, 'a07-inntektsdetaljer.xlsx');
+  };
 
   return (
     <div className="space-y-6">
@@ -159,14 +98,9 @@ export function PayrollEmployeesTab({ importId }: PayrollEmployeesTabProps) {
         </Card>
       </div>
 
-      <StandardDataTable
-        title="A07 Inntektsposter"
-        description="Alle inntektsposter per ansatt fra A07-rapporten"
-        data={incomeRows}
-        columns={columns}
-        tableName="a07-income-details"
-        exportFileName="a07-inntektsdetaljer"
-        maxBodyHeight="600px"
+      <EmployeeAccordionView
+        incomeRows={incomeRows}
+        onExport={handleExport}
       />
     </div>
   );
