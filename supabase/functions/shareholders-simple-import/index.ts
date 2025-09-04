@@ -50,6 +50,11 @@ Deno.serve(async (req) => {
     const { data, year, batchInfo } = await req.json()
     
     console.log(`Processing optimized batch ${batchInfo.current}/${batchInfo.total} with ${data.length} rows for year ${year}`)
+    
+    // Log sample data for debugging
+    if (data.length > 0) {
+      console.log('Sample row:', JSON.stringify(data[0], null, 2))
+    }
 
     let imported = 0
     let errors = 0
@@ -57,6 +62,13 @@ Deno.serve(async (req) => {
     // Process companies first with bulk operations
     const companies = new Map<string, { orgnr: string, name: string }>()
     data.forEach((row: ParsedRow) => {
+      // Validate required fields before processing
+      if (!row.company_orgnr || !row.company_name || !row.holder_name || !row.shares) {
+        console.warn('Skipping invalid row:', row)
+        errors++
+        return
+      }
+      
       if (!companies.has(row.company_orgnr)) {
         companies.set(row.company_orgnr, {
           orgnr: row.company_orgnr,
@@ -95,6 +107,11 @@ Deno.serve(async (req) => {
     // Process entities in bulk
     const entities = new Map<string, any>()
     data.forEach((row: ParsedRow) => {
+      // Skip already invalid rows
+      if (!row.company_orgnr || !row.company_name || !row.holder_name || !row.shares) {
+        return
+      }
+      
       const entityKey = row.holder_orgnr || `${row.holder_name}_${row.holder_birth_year || 'person'}`
       if (!entities.has(entityKey)) {
         entities.set(entityKey, {
@@ -102,7 +119,7 @@ Deno.serve(async (req) => {
           name: row.holder_name,
           orgnr: row.holder_orgnr,
           birth_year: row.holder_birth_year,
-          country_code: row.holder_country || 'NO',
+          country_code: row.holder_country || 'NOR',
           user_id: user.id
         })
       }
@@ -172,11 +189,16 @@ Deno.serve(async (req) => {
       const holdingsData = []
       
       for (const row of data) {
+        // Skip already invalid rows
+        if (!row.company_orgnr || !row.company_name || !row.holder_name || !row.shares) {
+          continue
+        }
+        
         const entityKey = row.holder_orgnr || `${row.holder_name}_${row.holder_birth_year || 'person'}`
         const holderId = entityIdMap.get(entityKey)
         
         if (!holderId) {
-          console.warn('No entity ID found for:', entityKey)
+          console.warn('No entity ID found for:', entityKey, 'Available keys:', Array.from(entityIdMap.keys()).slice(0, 5))
           errors++
           continue
         }

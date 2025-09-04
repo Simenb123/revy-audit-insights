@@ -9,7 +9,6 @@ import { toast } from 'sonner'
 import { Upload, FileText, CheckCircle, AlertCircle, Eye, Database, X } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { parseXlsxSafely, getWorksheetDataSafely } from '@/utils/secureXlsx'
-import * as XLSX from 'xlsx'
 
 interface ParsedRow {
   company_orgnr: string
@@ -43,6 +42,31 @@ export const ShareholdersUpload: React.FC = () => {
   const [processing, setProcessing] = useState(false)
   const [uploadStats, setUploadStats] = useState<{imported: number, errors: number} | null>(null)
 
+  // Helper function to clean fields by removing quotes and trimming
+  const cleanField = (value: string | null): string => {
+    if (!value) return ''
+    return value.toString()
+      .replace(/^["'\\]+|["'\\]+$/g, '') // Remove leading/trailing quotes and backslashes
+      .trim()
+  }
+
+  const extractField = (row: any, fieldNames: string[]): string | null => {
+    for (const fieldName of fieldNames) {
+      // Try exact match first
+      if (row[fieldName]) return row[fieldName].toString().trim()
+      
+      // Try case-insensitive match
+      const keys = Object.keys(row)
+      const matchedKey = keys.find(key => key.toLowerCase() === fieldName.toLowerCase())
+      if (matchedKey && row[matchedKey]) return row[matchedKey].toString().trim()
+      
+      // Try partial match
+      const partialKey = keys.find(key => key.toLowerCase().includes(fieldName.toLowerCase()))
+      if (partialKey && row[partialKey]) return row[partialKey].toString().trim()
+    }
+    return null
+  }
+
   const handleFileSelect = async (selectedFile: File) => {
     // Validate file type
     const extension = selectedFile.name.toLowerCase().split('.').pop()
@@ -75,24 +99,52 @@ export const ShareholdersUpload: React.FC = () => {
     const extension = file.name.toLowerCase().split('.').pop()
     
     if (extension === 'csv') {
-      // Parse CSV
+      // Parse CSV with proper quote handling
       const text = await file.text()
-      const lines = text.split('\n')
-      const headers = lines[0].split(';').map(h => h.trim())
+      const lines = text.split('\n').filter(line => line.trim())
       
-      rawData = lines.slice(1).filter(line => line.trim()).map(line => {
-        const values = line.split(';')
+      if (lines.length < 2) {
+        throw new Error('CSV-filen må inneholde minst en header-rad og en data-rad')
+      }
+      
+      const headers = lines[0].split(';').map(h => h.replace(/^["'\\]+|["'\\]+$/g, '').trim())
+      console.log('CSV Headers:', headers)
+      
+      rawData = lines.slice(1).map(line => {
+        const values: string[] = []
+        let currentValue = ''
+        let insideQuotes = false
+        
+        // Parse CSV line respecting quotes
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i]
+          
+          if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
+            insideQuotes = !insideQuotes
+          } else if (char === ';' && !insideQuotes) {
+            values.push(currentValue.replace(/^["'\\]+|["'\\]+$/g, '').trim())
+            currentValue = ''
+          } else {
+            currentValue += char
+          }
+        }
+        
+        // Push the last value
+        values.push(currentValue.replace(/^["'\\]+|["'\\]+$/g, '').trim())
+        
         const row: any = {}
         headers.forEach((header, index) => {
-          row[header] = values[index]?.trim() || ''
+          row[header] = values[index] || ''
         })
         return row
-      })
+      }).filter(row => Object.values(row).some(v => v && v !== ''))
     } else {
       // Parse Excel
       const workbook = await parseXlsxSafely(file)
       rawData = getWorksheetDataSafely(workbook)
     }
+
+    console.log(`Raw data parsed: ${rawData.length} rows`, rawData.slice(0, 3))
 
     if (rawData.length === 0) {
       throw new Error('Ingen data funnet i filen')
@@ -132,35 +184,48 @@ export const ShareholdersUpload: React.FC = () => {
       if (!row || Object.values(row).every(v => !v || v === '')) continue
       
       try {
-        // Extract data using flexible field mapping
-        const companyOrgnr = extractField(row, ['orgnr', 'organisasjonsnummer', 'company_orgnr', 'selskap_orgnr'])
-        const companyName = extractField(row, ['selskap', 'company_name', 'navn', 'selskapsnavn'])
-        const holderName = extractField(row, ['aksjonær', 'holder_name', 'eier', 'name', 'navn'])
-        const shareClass = extractField(row, ['aksjeklasse', 'share_class', 'klasse']) || 'Ordinære'
-        const sharesStr = extractField(row, ['aksjer', 'shares', 'antall_aksjer', 'antall'])
+        // Extract data using flexible field mapping and clean quotes
+        const companyOrgnr = cleanField(extractField(row, ['orgnr', 'organisasjonsnummer', 'company_orgnr', 'selskap_orgnr']))
+        const companyName = cleanField(extractField(row, ['selskap', 'company_name', 'navn', 'selskapsnavn']))
+        const holderName = cleanField(extractField(row, ['aksjonær', 'holder_name', 'eier', 'name', 'navn']))
+        const shareClass = cleanField(extractField(row, ['aksjeklasse', 'share_class', 'klasse'])) || 'Ordinære aksjer'
+        const sharesStr = cleanField(extractField(row, ['aksjer', 'shares', 'antall_aksjer', 'antall']))
         
         // Validate required fields
-        if (!companyOrgnr || !holderName || !sharesStr) continue
+        if (!companyOrgnr || !holderName || !sharesStr) {
+          console.warn(`Skipping row ${i}: missing required fields`, { companyOrgnr, holderName, sharesStr })
+          continue
+        }
         
         // Parse shares as integer
         const shares = parseInt(sharesStr.toString().replace(/[^0-9]/g, ''))
-        if (isNaN(shares) || shares <= 0) continue
+        if (isNaN(shares) || shares <= 0) {
+          console.warn(`Skipping row ${i}: invalid shares`, sharesStr)
+          continue
+        }
         
         // Try to extract holder org number (if company holder)
-        const holderOrgnr = extractField(row, ['eier_orgnr', 'holder_orgnr', 'organisasjonsnummer_eier'])
+        const holderOrgnrRaw = extractField(row, ['eier_orgnr', 'holder_orgnr', 'organisasjonsnummer_eier', 'fødselsår/orgnr'])
+        const holderOrgnr = holderOrgnrRaw && holderOrgnrRaw.length >= 8 ? cleanField(holderOrgnrRaw) : undefined
         
-        // Try to extract birth year (if person holder)
-        const birthYearStr = extractField(row, ['fødselstall', 'birth_year', 'fødselsår'])
-        const birthYear = birthYearStr ? parseInt(birthYearStr.toString().substring(0, 4)) : undefined
+        // Try to extract birth year (if person holder and no org number)
+        let birthYear: number | undefined = undefined
+        if (!holderOrgnr && holderOrgnrRaw) {
+          const yearStr = holderOrgnrRaw.toString().replace(/[^0-9]/g, '').substring(0, 4)
+          const year = parseInt(yearStr)
+          if (year >= 1900 && year <= new Date().getFullYear()) {
+            birthYear = year
+          }
+        }
         
         // Extract country
-        const country = extractField(row, ['land', 'country', 'landkode']) || 'NO'
+        const country = cleanField(extractField(row, ['land', 'country', 'landkode'])) || 'NOR'
         
         results.push({
           company_orgnr: companyOrgnr,
           company_name: companyName || `Selskap ${companyOrgnr}`,
           holder_name: holderName,
-          holder_orgnr: holderOrgnr || undefined,
+          holder_orgnr: holderOrgnr,
           holder_birth_year: birthYear,
           holder_country: country,
           share_class: shareClass,
@@ -173,24 +238,8 @@ export const ShareholdersUpload: React.FC = () => {
       }
     }
     
+    console.log(`Parsed ${results.length} valid rows from ${rawData.length} total rows`)
     return results
-  }
-
-  const extractField = (row: any, fieldNames: string[]): string | null => {
-    for (const fieldName of fieldNames) {
-      // Try exact match first
-      if (row[fieldName]) return row[fieldName].toString().trim()
-      
-      // Try case-insensitive match
-      const keys = Object.keys(row)
-      const matchedKey = keys.find(key => key.toLowerCase() === fieldName.toLowerCase())
-      if (matchedKey && row[matchedKey]) return row[matchedKey].toString().trim()
-      
-      // Try partial match
-      const partialKey = keys.find(key => key.toLowerCase().includes(fieldName.toLowerCase()))
-      if (partialKey && row[partialKey]) return row[partialKey].toString().trim()
-    }
-    return null
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -443,7 +492,7 @@ export const ShareholdersUpload: React.FC = () => {
             </div>
           )}
 
-              {step === 'success' && uploadStats && (
+          {step === 'success' && uploadStats && (
             <div className="space-y-4">
               <Alert>
                 <CheckCircle className="h-4 w-4" />
