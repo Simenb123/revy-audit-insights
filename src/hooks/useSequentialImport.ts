@@ -271,11 +271,41 @@ async function parseExcelFile(file: File): Promise<any[]> {
 
 function mapRowToShareholderData(row: any): any | null {
   try {
-    // Extract company org number - support various formats
-    const orgNrRaw = String(
-      row.Orgnr || row.orgnr || row.organisasjonsnummer || row.Organisasjonsnummer || 
-      row.org_nr || row['org-nr'] || row['"Orgnr'] || ''
-    ).trim().replace(/[^\d]/g, '')
+    // Helper function to extract field value with flexible matching
+    const extractField = (row: any, possibleNames: string[]): string => {
+      const keys = Object.keys(row)
+      
+      for (const name of possibleNames) {
+        // Try exact match first
+        if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
+          return String(row[name]).trim()
+        }
+        
+        // Try case-insensitive match
+        const key = keys.find(k => k.toLowerCase() === name.toLowerCase())
+        if (key && row[key] !== undefined && row[key] !== null && row[key] !== '') {
+          return String(row[key]).trim()
+        }
+        
+        // Try partial match (contains)
+        const partialKey = keys.find(k => k.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(k.toLowerCase()))
+        if (partialKey && row[partialKey] !== undefined && row[partialKey] !== null && row[partialKey] !== '') {
+          return String(row[partialKey]).trim()
+        }
+      }
+      return ''
+    }
+
+    // Extract company org number with enhanced support for Skatteetaten format
+    const orgNrRaw = extractField(row, [
+      '"Orgnr',    // Skatteetaten format with quote
+      'Orgnr',     // Standard format
+      'orgnr',
+      'organisasjonsnummer',
+      'Organisasjonsnummer',
+      'org_nr',
+      'org-nr'
+    ]).replace(/[^\d]/g, '') // Remove all non-digits including quotes
     
     // Normalize org number
     let company_orgnr = orgNrRaw
@@ -284,37 +314,65 @@ function mapRowToShareholderData(row: any): any | null {
     }
     
     if (!company_orgnr || (company_orgnr.length !== 9 && company_orgnr.length !== 8)) {
-      console.warn(`Invalid org number: ${orgNrRaw}`)
+      console.warn(`Invalid org number: "${orgNrRaw}"`)
       return null
     }
 
-    const company_name = String(
-      row.Selskap || row.selskap || row.selskapsnavn || row.navn || row.company_name || ''
-    ).trim()
+    const company_name = extractField(row, [
+      'Selskap',        // Skatteetaten format
+      'selskap',
+      'selskapsnavn',
+      'navn',
+      'company_name',
+      'Company Name'
+    ])
 
-    const holder_name = String(
-      row['Navn aksjonær'] || row['navn aksjonær'] || row.navn_aksjonaer || 
-      row.aksjonaer || row.eier || row.holder || row.eier_navn || ''
-    ).trim()
+    const holder_name = extractField(row, [
+      'Navn aksjonær',  // Skatteetaten format
+      'navn aksjonær',
+      'navn_aksjonaer',
+      'aksjonaer',
+      'eier',
+      'holder',
+      'eier_navn',
+      'Holder Name'
+    ])
 
-    if (!company_name && !holder_name) {
-      console.warn('Missing both company name and holder name')
+    if (!company_name || !holder_name) {
+      console.warn('Missing required fields:', { 
+        company_name: !!company_name, 
+        holder_name: !!holder_name, 
+        availableFields: Object.keys(row)
+      })
       return null
     }
 
-    // Parse share amount
-    const sharesStr = String(
-      row['Antall aksjer'] || row['antall aksjer'] || row.antall_aksjer || 
-      row.aksjer || row.shares || row.andeler || '0'
-    ).replace(/[^\d]/g, '')
+    // Parse share amount with enhanced extraction
+    const sharesStr = extractField(row, [
+      'Antall aksjer',           // Skatteetaten format
+      'antall aksjer',
+      'Antall aksjer selskap"',  // With trailing quote and text
+      'antall_aksjer',
+      'aksjer',
+      'shares',
+      'andeler'
+    ]).replace(/[^\d]/g, '') // Remove all non-digits
     
     const shares = parseInt(sharesStr) || 0
+    
+    if (shares === 0) {
+      console.warn('Zero or invalid shares:', sharesStr)
+    }
 
-    // Extract holder details
-    const holder_orgnr_raw = String(
-      row['Fødselsår/orgnr'] || row['fødselsår/orgnr'] || row.fodselsar_orgnr || 
-      row.eier_orgnr || row.holder_orgnr || ''
-    ).trim().replace(/[^\d]/g, '')
+    // Extract holder details (birth year or org number)
+    const holder_orgnr_raw = extractField(row, [
+      'Fødselsår/orgnr',  // Skatteetaten format
+      'fødselsår/orgnr',
+      'fodselsar_orgnr',
+      'eier_orgnr',
+      'holder_orgnr',
+      'Birth Year/Org'
+    ]).replace(/[^\d]/g, '')
 
     let holder_orgnr: string | undefined
     let holder_birth_year: number | undefined
@@ -325,18 +383,24 @@ function mapRowToShareholderData(row: any): any | null {
       holder_birth_year = parseInt(holder_orgnr_raw)
     }
 
-    const holder_country = String(
-      row.Landkode || row.landkode || row.country_code || 'NO'
-    ).trim().toUpperCase() || 'NO'
+    const holder_country = extractField(row, [
+      'Landkode',     // Skatteetaten format
+      'landkode',
+      'country_code',
+      'Country Code'
+    ]).toUpperCase() || 'NOR'
 
-    const share_class = String(
-      row.Aksjeklasse || row.aksjeklasse || row.share_class || 'Ordinære aksjer'
-    ).trim() || 'Ordinære aksjer'
+    const share_class = extractField(row, [
+      'Aksjeklasse',  // Skatteetaten format
+      'aksjeklasse',
+      'share_class',
+      'Share Class'
+    ]) || 'Ordinære aksjer'
 
     return {
       company_orgnr,
-      company_name: company_name || `Ukjent selskap (${company_orgnr})`,
-      holder_name: holder_name || 'Ukjent eier',
+      company_name,
+      holder_name,
       holder_orgnr,
       holder_birth_year,
       holder_country,
@@ -346,7 +410,7 @@ function mapRowToShareholderData(row: any): any | null {
     }
 
   } catch (error) {
-    console.error('Error mapping row:', error, row)
+    console.error('Error mapping row:', error, 'Row keys:', Object.keys(row))
     return null
   }
 }

@@ -233,15 +233,12 @@ Deno.serve(async (req) => {
       errors += data.length
     }
 
-    // Update company total shares using optimized batch function
+    // Update company total shares using the correct function
     try {
-      for (const company of companies.values()) {
-        await supabase.rpc('update_company_total_shares', {
-          p_orgnr: company.orgnr,
-          p_year: year,
-          p_user_id: user.id
-        })
-      }
+      await supabase.rpc('update_total_shares_for_year', {
+        p_year: year,
+        p_user_id: user.id
+      })
       console.log(`✅ Updated total shares for ${companies.size} companies`)
     } catch (error) {
       console.error('Total shares update error:', error)
