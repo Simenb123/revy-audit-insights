@@ -287,6 +287,9 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
   const softwareCompany = byLocal(headerNode, 'SoftwareCompanyName');
   const softwareProduct = byLocal(headerNode, 'SoftwareProductName');
   const softwareCombined = [softwareCompany, softwareProduct].filter(Boolean).join(' ');
+  
+  // Extract contact information from header
+  const contactNode = byLocal(headerNode, 'Contact') || byLocal(headerNode, 'ContactPerson');
 
   const header: HeaderInfo | null = headerNode
     ? {
@@ -300,6 +303,13 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
         start: byLocal(headerNode, 'StartDate') || byLocal(headerNode, 'PeriodStart') || byLocal(headerNode, 'SelectionStartDate') || byLocal(headerNode, 'FromDate'),
         end: byLocal(headerNode, 'EndDate') || byLocal(headerNode, 'PeriodEnd') || byLocal(headerNode, 'SelectionEndDate') || byLocal(headerNode, 'ToDate'),
         default_currency: byLocal(headerNode, 'DefaultCurrencyCode') || byLocal(headerNode, 'CurrencyCode'),
+        // SAF-T 1.3 extended header fields
+        contact_person: byLocal(contactNode, 'ContactPerson') || byLocal(contactNode, 'Name'),
+        contact_email: byLocal(contactNode, 'Email') || byLocal(contactNode, 'EmailAddress'),
+        contact_phone: byLocal(contactNode, 'Phone') || byLocal(contactNode, 'Telephone'),
+        software_company: softwareCompany,
+        product_id: byLocal(headerNode, 'ProductID') || byLocal(headerNode, 'SoftwareProductID'),
+        company_id: byLocal(headerNode, 'CompanyID') || byLocal(headerNode, 'EntityID'),
       }
     : null;
 
@@ -321,6 +331,11 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
         email: byLocal(companyNode, 'Email') || byLocal(companyNode, 'EmailAddress'),
         telephone: byLocal(companyNode, 'Telephone') || byLocal(companyNode, 'Phone'),
         currency_code: byLocal(headerNode, 'DefaultCurrencyCode') || byLocal(companyNode, 'CurrencyCode'),
+        // SAF-T 1.3 extended address fields
+        region: byLocal(compAddr, 'Region') || byLocal(compAddr, 'State'),
+        county: byLocal(compAddr, 'County') || byLocal(compAddr, 'Province'),
+        building_number: byLocal(compAddr, 'BuildingNumber') || byLocal(compAddr, 'HouseNumber'),
+        additional_address_detail: byLocal(compAddr, 'AdditionalAddressDetail') || byLocal(compAddr, 'AddressLine2'),
       }
     : null;
 
@@ -376,6 +391,10 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
       description: byLocal(a, 'AccountDescription') || byLocal(a, 'Description') || byLocal(a, 'Name'),
       account_type: byLocal(a, 'AccountType') || byLocal(a, 'Type'),
       type: byLocal(a, 'AccountType') || byLocal(a, 'Type'), // Legacy field
+      // SAF-T 1.3 required fields
+      grouping_category: byLocal(a, 'GroupingCategory'),
+      grouping_code: byLocal(a, 'GroupingCode') || byLocal(a, 'StandardAccountCode'),
+      standard_account_code: byLocal(a, 'GroupingCode') || byLocal(a, 'StandardAccountCode'),
       // Extended balance fields
       opening_debit_balance: openingDebit,
       opening_credit_balance: openingCredit,
@@ -617,14 +636,16 @@ export async function parseSaftFile(file: File | ArrayBuffer): Promise<SaftResul
           exchange_rate,
           debit,
           credit,
-          // Extended date fields
+          // Extended date fields - SAF-T 1.3
           transaction_date: transactionDate,
           system_entry_date: systemEntryDate,
           system_entry_time: systemEntryTime,
-          // Extended voucher fields
+          modification_date: byLocal(l, 'ModificationDate') || byLocal(t, 'ModificationDate'),
+          // Extended voucher fields - SAF-T 1.3
           voucher_type: voucherType,
           voucher_description: voucherDescription,
           source_id: sourceId,
+          source_system: byLocal(l, 'SourceSystem') || byLocal(t, 'SourceSystem'),
           vat_code: vat_code,
           vat_rate,
           vat_base,

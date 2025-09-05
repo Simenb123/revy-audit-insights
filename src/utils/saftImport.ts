@@ -288,6 +288,34 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
+  // Create SAF-T import session for tracking
+  const { data: importSession, error: sessionError } = await supabase
+    .from('saft_import_sessions')
+    .insert({
+      client_id: clientId,
+      file_name: fileName || 'SAF-T import',
+      file_size: 0, // Will be updated later if needed
+      import_status: 'processing',
+      saft_version: parsed.header?.file_version || 'unknown',
+      processing_started_at: new Date().toISOString(),
+      created_by: user.id,
+      metadata: {
+        header: parsed.header as any,
+        company: parsed.company as any,
+        total_accounts: parsed.accounts?.length || 0,
+        total_transactions: parsed.transactions?.length || 0,
+        total_customers: parsed.customers?.length || 0,
+        total_suppliers: parsed.suppliers?.length || 0,
+        total_analysis_types: parsed.analysis_types?.length || 0,
+        total_journals: parsed.journals?.length || 0
+      } as any
+    })
+    .select('id')
+    .single();
+
+  if (sessionError) throw sessionError;
+  const importSessionId = importSession.id;
+
   // Create upload batch for tracking this SAF-T import
   const { data: uploadBatch, error: batchError } = await supabase
     .from('upload_batches')
@@ -305,6 +333,12 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
 
   if (batchError) throw batchError;
   const uploadBatchId = uploadBatch.id;
+
+  // Update import session with batch ID
+  await supabase
+    .from('saft_import_sessions')
+    .update({ upload_batch_id: uploadBatchId })
+    .eq('id', importSessionId);
 
   // Upsert accounts into client_chart_of_accounts
   const accountRows = parsed.accounts.map(a => {
@@ -451,6 +485,66 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       .select();
     if (txError) throw txError;
     insertedTransactions = data?.length || 0;
+  }
+
+  // Persist SAF-T Analysis Types
+  if (parsed.analysis_types && parsed.analysis_types.length > 0) {
+    const analysisTypeRows = parsed.analysis_types.map(at => ({
+      client_id: clientId,
+      upload_batch_id: uploadBatchId,
+      analysis_type: at.analysis_type || null,
+      analysis_type_description: at.analysis_type_description || at.description || null,
+      analysis_id: at.analysis_id || null,
+      analysis_id_description: at.analysis_id_description || null,
+      start_date: at.start_date ? new Date(at.start_date).toISOString().split('T')[0] : null,
+      end_date: at.end_date ? new Date(at.end_date).toISOString().split('T')[0] : null,
+      status: at.status || null
+    }));
+    
+    const { error: analysisTypeError } = await supabase
+      .from('saft_analysis_types')
+      .insert(analysisTypeRows);
+    if (analysisTypeError) throw analysisTypeError;
+  }
+
+  // Persist SAF-T Analysis Lines
+  if (parsed.analysis_lines && parsed.analysis_lines.length > 0) {
+    const analysisLineRows = parsed.analysis_lines.map(al => ({
+      client_id: clientId,
+      upload_batch_id: uploadBatchId,
+      journal_id: al.journal_id || null,
+      record_id: al.record_id || null,
+      analysis_type: al.analysis_type || null,
+      analysis_id: al.analysis_id || null,
+      debit_amount: al.debit_amt !== undefined ? Number(al.debit_amt) : null,
+      credit_amount: al.credit_amt !== undefined ? Number(al.credit_amt) : null
+    }));
+    
+    const { error: analysisLineError } = await supabase
+      .from('saft_analysis_lines')
+      .insert(analysisLineRows);
+    if (analysisLineError) throw analysisLineError;
+  }
+
+  // Persist SAF-T Journals
+  if (parsed.journals && parsed.journals.length > 0) {
+    const journalRows = parsed.journals.map(j => ({
+      client_id: clientId,
+      upload_batch_id: uploadBatchId,
+      journal_id: j.journal_id || null,
+      description: j.description || null,
+      posting_date: j.posting_date ? new Date(j.posting_date).toISOString().split('T')[0] : null,
+      journal_type: j.journal_type || null,
+      batch_id: j.batch_id || null,
+      system_id: j.system_id || null,
+      period_start: j.period_start ? new Date(j.period_start).toISOString().split('T')[0] : null,
+      period_end: j.period_end ? new Date(j.period_end).toISOString().split('T')[0] : null
+    }));
+    
+    const { error: journalError } = await supabase
+      .from('saft_journals')
+      .insert(journalRows);
+    if (journalError) throw journalError;
   }
 
   // Aggregate debit/credit per account for TB
