@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertTriangle, FileSpreadsheet, Upload, CheckCircle, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import EnhancedPayrollReconciliation from '@/components/Payroll/EnhancedPayrollReconciliation';
 
 // Import our custom hooks and utilities
 import { useAllCodes } from './hooks/useCodes';
