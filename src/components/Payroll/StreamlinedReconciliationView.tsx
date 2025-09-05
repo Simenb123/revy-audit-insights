@@ -20,6 +20,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
+import { PDFExport } from './PDFExport';
+import { NotesManager } from './NotesManager';
+import { PerformanceAnalysis } from './PerformanceAnalysis';
 
 interface ReconciliationData {
   code: string;
@@ -162,13 +165,31 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
               <RefreshCw className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")} />
               Oppdater
             </Button>
+            <PDFExport
+              reconciliationData={{
+                items: reconciliationData.map(item => ({
+                  description: item.description,
+                  payrollAmount: item.amelding,
+                  glAmount: item.D,
+                  discrepancy: item.difference,
+                  status: item.difference <= 0.01 ? 'match' : 
+                          item.difference <= 5 ? 'minor_discrepancy' : 'major_discrepancy',
+                  accounts: item.accountDetails.map(acc => ({ 
+                    number: acc.account, 
+                    name: acc.name 
+                  }))
+                }))
+              }}
+              clientName="Klient" // This should be passed as prop
+              onExport={() => console.log('PDF exported')}
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={onExport}
             >
               <Download className="h-4 w-4 mr-1" />
-              Eksporter
+              CSV Eksport
             </Button>
           </div>
         </div>
@@ -223,6 +244,27 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
             </CardContent>
           </Card>
         </div>
+
+        {/* Performance Analysis */}
+        <PerformanceAnalysis
+          metrics={{
+            totalItems: reconciliationData.length,
+            perfectMatches: reconciliationData.filter(item => item.difference <= 0.01).length,
+            minorDiscrepancies: reconciliationData.filter(item => item.difference > 0.01 && item.difference <= 5).length,
+            majorDiscrepancies: reconciliationData.filter(item => item.difference > 5).length,
+            totalDiscrepancyAmount: reconciliationData.reduce((sum, item) => sum + Math.abs(item.difference), 0),
+            accountCoverage: (reconciliationData.filter(item => item.accountDetails.length > 0).length / reconciliationData.length) * 100,
+            dataQualityScore: Math.max(0, 100 - (reconciliationData.filter(item => item.difference > 1).length / reconciliationData.length) * 100)
+          }}
+          recommendations={[
+            ...(reconciliationData.filter(item => item.difference > 5).length > 0 ? 
+              [`Det er ${reconciliationData.filter(item => item.difference > 5).length} store avvik som bør undersøkes nærmere.`] : []),
+            ...(reconciliationData.filter(item => item.accountDetails.length === 0).length > 0 ? 
+              [`${reconciliationData.filter(item => item.accountDetails.length === 0).length} poster mangler kontomapping.`] : []),
+            ...((reconciliationData.filter(item => item.difference <= 0.01).length / reconciliationData.length) < 0.9 ? 
+              ['Vurder å justere mappingreglene for å forbedre treffraten.'] : [])
+          ]}
+        />
 
         {/* Search and Filter */}
         <div className="flex items-center gap-4">
@@ -344,22 +386,22 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                   {Math.abs(item.difference) > 0.01 && (
                     <>
                       <Separator />
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between">
+                        <NotesManager
+                          code={item.code}
+                          description={item.description}
+                          notes={[]} // Would come from database
+                          onUpdateNotes={onUpdateNotes}
+                          onAcceptDiscrepancy={onAcceptDiscrepancy}
+                          onRejectDiscrepancy={onRejectDiscrepancy}
+                        />
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onAcceptDiscrepancy?.(item.code)}
+                          onClick={() => console.log('View debug details for', item.code)}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Godkjenn avvik
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onRejectDiscrepancy?.(item.code)}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Juster mapping
+                          <Info className="h-4 w-4 mr-1" />
+                          Detaljer
                         </Button>
                       </div>
                     </>
