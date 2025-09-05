@@ -54,8 +54,8 @@ export const generateDataQualityIssues = (reconciliationData: any) => {
   if (totalRecords > 0) {
     // Add some realistic quality issues
     issues.push({
-      type: 'warning',
-      category: 'data_completeness',
+        type: 'warning' as const,
+        category: 'data_completeness' as const,
       title: 'Manglende kontonavn',
       description: 'Enkelte kontoer mangler beskrivende navn, kun kontonummer er tilgjengelig.',
       affectedRecords: Math.floor(totalRecords * 0.05),
@@ -64,8 +64,8 @@ export const generateDataQualityIssues = (reconciliationData: any) => {
 
     if (totalRecords > 100) {
       issues.push({
-        type: 'info',
-        category: 'format_validation',
+        type: 'info' as const,
+        category: 'format_validation' as const,
         title: 'Inkonsistent beløpsformatering',
         description: 'Noen beløp bruker forskjellige desimalformater.',
         affectedRecords: Math.floor(totalRecords * 0.02),
@@ -80,8 +80,8 @@ export const generateDataQualityIssues = (reconciliationData: any) => {
 
     if (majorDiscrepancies > 0) {
       issues.push({
-        type: 'critical',
-        category: 'business_rules',
+        type: 'critical' as const,
+        category: 'business_rules' as const,
         title: 'Store avvik funnet',
         description: 'Det er identifisert betydelige avvik mellom lønnssystem og regnskap som krever oppmerksomhet.',
         affectedRecords: majorDiscrepancies,
