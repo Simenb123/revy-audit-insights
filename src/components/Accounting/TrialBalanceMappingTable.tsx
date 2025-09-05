@@ -8,7 +8,8 @@ import { Upload, Zap, Check, X } from 'lucide-react';
 import { useStandardAccounts } from '@/hooks/useChartOfAccounts';
 import { useTrialBalanceMappings, useSaveTrialBalanceMapping, useBulkSaveTrialBalanceMappings } from '@/hooks/useTrialBalanceMappings';
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
-import { useAutoMapping, AutoMappingSuggestion } from '@/hooks/useAutoMapping';
+import { useEnhancedAutoMapping, EnhancedAutoMappingSuggestion } from '@/modules/payroll/hooks/useEnhancedAutoMapping';
+import MappingSuggestionCard from './mapping/MappingSuggestionCard';
 import { toast } from '@/hooks/use-toast';
 import { processExcelFile, processCSVFile } from '@/utils/fileProcessing';
 
@@ -28,10 +29,12 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
   const { data: trialBalanceData } = useTrialBalanceData(clientId);
   const saveMapping = useSaveTrialBalanceMapping();
   const bulkSaveMapping = useBulkSaveTrialBalanceMappings();
-  const { generateAutoMappingSuggestions, applyAutoMapping, isApplying } = useAutoMapping(clientId);
+  const { generateEnhancedSuggestions, applyEnhancedMapping, recordUserChoice, isApplying } = useEnhancedAutoMapping(clientId);
   const [bulkImportFile, setBulkImportFile] = useState<File | null>(null);
   const [showAutoMappingDialog, setShowAutoMappingDialog] = useState(false);
-  const [autoMappingSuggestions, setAutoMappingSuggestions] = useState<AutoMappingSuggestion[]>([]);
+  const [autoMappingSuggestions, setAutoMappingSuggestions] = useState<EnhancedAutoMappingSuggestion[]>([]);
+  const [enableFuzzyMatching, setEnableFuzzyMatching] = useState(false);
+  const [fuzzyThreshold, setFuzzyThreshold] = useState(0.6);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
 
   // Create a map of existing mappings for quick lookup
@@ -135,7 +138,7 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
   };
 
   const handleAutoMapping = () => {
-    const suggestions = generateAutoMappingSuggestions();
+    const suggestions = generateEnhancedSuggestions();
     if (suggestions.length === 0) {
       toast({
         title: "Ingen forslag",
@@ -146,7 +149,7 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
     }
     
     setAutoMappingSuggestions(suggestions);
-    setSelectedSuggestions(new Set(suggestions.map(s => s.accountNumber)));
+    setSelectedSuggestions(new Set(suggestions.map((s: EnhancedAutoMappingSuggestion) => s.accountNumber)));
     setShowAutoMappingDialog(true);
   };
 
@@ -164,7 +167,7 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
       return;
     }
 
-    applyAutoMapping.mutate(selectedSuggestionsArray, {
+    applyEnhancedMapping.mutate(selectedSuggestionsArray, {
       onSuccess: () => {
         setShowAutoMappingDialog(false);
         setAutoMappingSuggestions([]);
@@ -174,6 +177,28 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
           description: `${selectedSuggestionsArray.length} automatiske mappinger ble lagret. Mappingene er nå aktive.`,
         });
       }
+    });
+  };
+
+  const handleApproveSuggestion = (suggestion: EnhancedAutoMappingSuggestion) => {
+    recordUserChoice(suggestion, true);
+    applyEnhancedMapping.mutate([suggestion], {
+      onSuccess: () => {
+        setAutoMappingSuggestions(prev => prev.filter(s => s.accountNumber !== suggestion.accountNumber));
+        toast({
+          title: "Mapping godkjent!",
+          description: `Mapping for konto ${suggestion.accountNumber} er lagret.`,
+        });
+      }
+    });
+  };
+
+  const handleRejectSuggestion = (suggestion: EnhancedAutoMappingSuggestion) => {
+    recordUserChoice(suggestion, false);
+    setAutoMappingSuggestions(prev => prev.filter(s => s.accountNumber !== suggestion.accountNumber));
+    toast({
+      title: "Forslag avvist",
+      description: `Forslag for konto ${suggestion.accountNumber} ble avvist.`,
     });
   };
 
@@ -223,15 +248,20 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
               <Badge variant="outline">
                 {mappedCount}/{totalCount} mapped
               </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAutoMapping}
-                disabled={isApplying || unmappedCount === 0}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Automatisk mapping
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoMapping}
+                  disabled={isApplying || unmappedCount === 0}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Automatisk mapping
+                </Button>
+                <div className="text-xs text-muted-foreground">
+                  Fuzzy: {enableFuzzyMatching ? 'På' : 'Av'}
+                </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -343,22 +373,48 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
         </CardContent>
       </Card>
 
-      {/* Auto Mapping Suggestions Dialog */}
+      {/* Enhanced Auto Mapping Suggestions Dialog */}
       <Dialog open={showAutoMappingDialog} onOpenChange={setShowAutoMappingDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Automatiske Mapping-forslag</DialogTitle>
+            <DialogTitle>Forbedrede Mapping-forslag</DialogTitle>
             <DialogDescription asChild>
-              <div className="space-y-2">
-                <p>Gjennomgå og velg hvilke automatiske mappinger du vil anvende.</p>
+              <div className="space-y-3">
+                <p>Gjennomgå AI-drevne mapping-forslag med detaljert begrunnelse og historiske data.</p>
+                
+                {/* Controls for fuzzy matching */}
+                <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enableFuzzyMatching}
+                      onChange={(e) => setEnableFuzzyMatching(e.target.checked)}
+                      className="rounded border-muted-foreground"
+                    />
+                    <span className="text-sm">Aktiver fuzzy matching</span>
+                  </label>
+                  {enableFuzzyMatching && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-muted-foreground">Terskel:</label>
+                      <input
+                        type="range"
+                        min="0.3"
+                        max="0.9"
+                        step="0.1"
+                        value={fuzzyThreshold}
+                        onChange={(e) => setFuzzyThreshold(parseFloat(e.target.value))}
+                        className="w-20"
+                      />
+                      <span className="text-sm text-muted-foreground">{Math.round(fuzzyThreshold * 100)}%</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                    ⚠️ Viktig: Forslagene er ikke lagret ennå! Du må klikke "Anvend mappinger" for å lagre dem.
+                    ✨ Nye funksjoner: Nøkkelord-matching, fuzzy søk og læring fra historiske data
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Høyere confidence score indikerer mer pålitelige forslag.
-                </p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -366,96 +422,44 @@ const TrialBalanceMappingTable = ({ clientId, onComplete }: TrialBalanceMappingT
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="text-sm text-muted-foreground">
-                {selectedSuggestions.size} av {autoMappingSuggestions.length} forslag valgt
+                {autoMappingSuggestions.length} forslag funnet
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedSuggestions(new Set(autoMappingSuggestions.map(s => s.accountNumber)))}
-                >
-                  Velg alle
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedSuggestions(new Set())}
-                >
-                  Fjern alle
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newSuggestions = generateEnhancedSuggestions();
+                  setAutoMappingSuggestions(newSuggestions);
+                }}
+              >
+                🔄 Oppdater forslag
+              </Button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/50 border-b">
-                    <th className="text-left p-3 w-12"></th>
-                    <th className="text-left p-3">Konto</th>
-                    <th className="text-left p-3">Foreslått mapping</th>
-                    <th className="text-left p-3">Confidence</th>
-                    <th className="text-left p-3">Grunn</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {autoMappingSuggestions.map((suggestion) => {
-                    const isSelected = selectedSuggestions.has(suggestion.accountNumber);
-                    const standardAccount = standardAccounts?.find(acc => acc.standard_number === suggestion.suggestedMapping);
-                    
-                    return (
-                      <tr key={suggestion.accountNumber} className="border-b hover:bg-muted/30">
-                        <td className="p-3">
-                          <Button
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleSuggestionSelection(suggestion.accountNumber)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {isSelected ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                          </Button>
-                        </td>
-                        <td className="p-3">
-                          <div>
-                            <div className="font-mono text-sm">{suggestion.accountNumber}</div>
-                            <div className="text-sm text-muted-foreground">{suggestion.accountName}</div>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div>
-                            <div className="font-mono text-sm">{suggestion.suggestedMapping}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {standardAccount?.standard_name}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge className={getConfidenceColor(suggestion.confidence)}>
-                            {Math.round(suggestion.confidence * 100)}%
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-sm text-muted-foreground">
-                          {suggestion.reason}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="grid gap-4 max-h-[60vh] overflow-y-auto">
+              {autoMappingSuggestions.map((suggestion) => (
+                <MappingSuggestionCard
+                  key={suggestion.accountNumber}
+                  suggestion={suggestion}
+                  onApprove={handleApproveSuggestion}
+                  onReject={handleRejectSuggestion}
+                />
+              ))}
+              
+              {autoMappingSuggestions.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Ingen automatiske forslag tilgjengelig.</p>
+                  <p className="text-sm">Prøv å aktivere fuzzy matching eller sjekk om alle kontoer allerede er mappet.</p>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-4 border-t">
               <Button
                 variant="outline"
                 onClick={() => setShowAutoMappingDialog(false)}
               >
-                Avbryt
-              </Button>
-              <Button
-                onClick={handleApplySelectedSuggestions}
-                disabled={isApplying || selectedSuggestions.size === 0}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isApplying ? "Lagrer mappinger..." : `💾 Lagre ${selectedSuggestions.size} mappinger`}
+                Lukk
               </Button>
             </div>
           </div>

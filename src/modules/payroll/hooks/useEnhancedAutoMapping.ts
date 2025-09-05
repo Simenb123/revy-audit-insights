@@ -190,7 +190,7 @@ export const useEnhancedAutoMapping = (clientId: string, glEntries: GLEntry[] = 
         keywords: [suggestion.accountName.toLowerCase()],
         regex: '',
         priority: 1,
-        month_hints: []
+        month_hints: [] as number[]
       }));
 
       // Save mapping history for learning
