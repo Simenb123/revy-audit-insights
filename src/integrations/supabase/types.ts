@@ -8998,6 +8998,66 @@ export type Database = {
           },
         ]
       }
+      payroll_reconciliations: {
+        Row: {
+          account_coverage: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          data_quality_score: number
+          id: string
+          major_discrepancies: number
+          match_rate: number
+          minor_discrepancies: number
+          payroll_import_id: string | null
+          perfect_matches: number
+          reconciliation_date: string
+          status: string
+          total_discrepancy_amount: number
+          total_items: number
+          trial_balance_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_coverage?: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          data_quality_score?: number
+          id?: string
+          major_discrepancies?: number
+          match_rate?: number
+          minor_discrepancies?: number
+          payroll_import_id?: string | null
+          perfect_matches?: number
+          reconciliation_date?: string
+          status?: string
+          total_discrepancy_amount?: number
+          total_items?: number
+          trial_balance_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_coverage?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_quality_score?: number
+          id?: string
+          major_discrepancies?: number
+          match_rate?: number
+          minor_discrepancies?: number
+          payroll_import_id?: string | null
+          perfect_matches?: number
+          reconciliation_date?: string
+          status?: string
+          total_discrepancy_amount?: number
+          total_items?: number
+          trial_balance_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll_submission_details: {
         Row: {
           altinn_reference: string | null
@@ -9781,6 +9841,97 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      reconciliation_items: {
+        Row: {
+          accounts: Json
+          created_at: string
+          description: string
+          discrepancy: number | null
+          gl_amount: number | null
+          id: string
+          item_code: string
+          mapping_rules_applied: Json
+          payroll_amount: number | null
+          reconciliation_id: string
+          status: string
+        }
+        Insert: {
+          accounts?: Json
+          created_at?: string
+          description: string
+          discrepancy?: number | null
+          gl_amount?: number | null
+          id?: string
+          item_code: string
+          mapping_rules_applied?: Json
+          payroll_amount?: number | null
+          reconciliation_id: string
+          status: string
+        }
+        Update: {
+          accounts?: Json
+          created_at?: string
+          description?: string
+          discrepancy?: number | null
+          gl_amount?: number | null
+          id?: string
+          item_code?: string
+          mapping_rules_applied?: Json
+          payroll_amount?: number | null
+          reconciliation_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_items_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reconciliation_notes: {
+        Row: {
+          author_name: string
+          created_at: string
+          id: string
+          item_code: string
+          item_description: string
+          note_text: string
+          note_type: string
+          reconciliation_id: string
+        }
+        Insert: {
+          author_name?: string
+          created_at?: string
+          id?: string
+          item_code: string
+          item_description: string
+          note_text: string
+          note_type?: string
+          reconciliation_id: string
+        }
+        Update: {
+          author_name?: string
+          created_at?: string
+          id?: string
+          item_code?: string
+          item_description?: string
+          note_text?: string
+          note_type?: string
+          reconciliation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_notes_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reconciliation_suggestions: {
         Row: {
