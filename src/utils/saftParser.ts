@@ -6,6 +6,10 @@ export interface SaftAccount {
   description?: string;
   account_type?: string;
   type?: string;
+  // SAF-T 1.3 required fields
+  grouping_category?: string;
+  grouping_code?: string;
+  standard_account_code?: string;
   // Extended balance fields
   opening_debit_balance?: number;
   opening_credit_balance?: number;
@@ -44,14 +48,16 @@ export interface SaftTransaction {
   vat_debit?: number;
   vat_credit?: number;
   posting_date?: string;
-  // Extended date fields
+  // Extended date fields - SAF-T 1.3
   transaction_date?: string;
   system_entry_date?: string;
   system_entry_time?: string;
-  // Extended voucher fields
+  modification_date?: string;
+  // Extended voucher fields - SAF-T 1.3
   voucher_type?: string;
   voucher_description?: string;
   source_id?: string;
+  source_system?: string;
   vat_info_source?: 'line' | 'fallback' | undefined;
 }
 
@@ -63,6 +69,13 @@ export interface HeaderInfo {
   start?: string;
   end?: string;
   default_currency?: string;
+  // SAF-T 1.3 extended header fields
+  contact_person?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  software_company?: string;
+  product_id?: string;
+  company_id?: string;
 }
 
 export interface CompanyInfo {
@@ -75,6 +88,11 @@ export interface CompanyInfo {
   email?: string;
   telephone?: string;
   currency_code?: string;
+  // SAF-T 1.3 extended address fields
+  region?: string;
+  county?: string;
+  building_number?: string;
+  additional_address_detail?: string;
 }
 
 export interface BankAccountInfo {

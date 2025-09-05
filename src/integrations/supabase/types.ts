@@ -3479,9 +3479,12 @@ export type Database = {
           account_type: Database["public"]["Enums"]["account_type_enum"]
           client_id: string
           created_at: string
+          grouping_category: string | null
+          grouping_code: string | null
           id: string
           is_active: boolean
           parent_account_id: string | null
+          standard_account_code: string | null
           updated_at: string
         }
         Insert: {
@@ -3490,9 +3493,12 @@ export type Database = {
           account_type: Database["public"]["Enums"]["account_type_enum"]
           client_id: string
           created_at?: string
+          grouping_category?: string | null
+          grouping_code?: string | null
           id?: string
           is_active?: boolean
           parent_account_id?: string | null
+          standard_account_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -3501,9 +3507,12 @@ export type Database = {
           account_type?: Database["public"]["Enums"]["account_type_enum"]
           client_id?: string
           created_at?: string
+          grouping_category?: string | null
+          grouping_code?: string | null
           id?: string
           is_active?: boolean
           parent_account_id?: string | null
+          standard_account_code?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -6634,10 +6643,14 @@ export type Database = {
           due_date: string | null
           exchange_rate: number | null
           id: string
+          modification_date: string | null
           period_month: number
           period_year: number
           reference_number: string | null
+          source_system: string | null
           supplier_id: string | null
+          system_entry_date: string | null
+          system_entry_time: string | null
           transaction_date: string
           upload_batch_id: string | null
           value_date: string | null
@@ -6647,7 +6660,9 @@ export type Database = {
           vat_debit: number | null
           vat_rate: number | null
           version_id: string | null
+          voucher_description: string | null
           voucher_number: string | null
+          voucher_type: string | null
         }
         Insert: {
           account_name?: string | null
@@ -6667,10 +6682,14 @@ export type Database = {
           due_date?: string | null
           exchange_rate?: number | null
           id?: string
+          modification_date?: string | null
           period_month: number
           period_year: number
           reference_number?: string | null
+          source_system?: string | null
           supplier_id?: string | null
+          system_entry_date?: string | null
+          system_entry_time?: string | null
           transaction_date: string
           upload_batch_id?: string | null
           value_date?: string | null
@@ -6680,7 +6699,9 @@ export type Database = {
           vat_debit?: number | null
           vat_rate?: number | null
           version_id?: string | null
+          voucher_description?: string | null
           voucher_number?: string | null
+          voucher_type?: string | null
         }
         Update: {
           account_name?: string | null
@@ -6700,10 +6721,14 @@ export type Database = {
           due_date?: string | null
           exchange_rate?: number | null
           id?: string
+          modification_date?: string | null
           period_month?: number
           period_year?: number
           reference_number?: string | null
+          source_system?: string | null
           supplier_id?: string | null
+          system_entry_date?: string | null
+          system_entry_time?: string | null
           transaction_date?: string
           upload_batch_id?: string | null
           value_date?: string | null
@@ -6713,7 +6738,9 @@ export type Database = {
           vat_debit?: number | null
           vat_rate?: number | null
           version_id?: string | null
+          voucher_description?: string | null
           voucher_number?: string | null
+          voucher_type?: string | null
         }
         Relationships: [
           {
@@ -10420,6 +10447,195 @@ export type Database = {
           risk_number?: number
           sort_order?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saft_analysis_lines: {
+        Row: {
+          analysis_id: string | null
+          analysis_type: string | null
+          client_id: string
+          created_at: string
+          credit_amount: number | null
+          debit_amount: number | null
+          id: string
+          journal_id: string | null
+          record_id: string | null
+          updated_at: string
+          upload_batch_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          analysis_type?: string | null
+          client_id: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          id?: string
+          journal_id?: string | null
+          record_id?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          analysis_type?: string | null
+          client_id?: string
+          created_at?: string
+          credit_amount?: number | null
+          debit_amount?: number | null
+          id?: string
+          journal_id?: string | null
+          record_id?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+        }
+        Relationships: []
+      }
+      saft_analysis_types: {
+        Row: {
+          analysis_id: string | null
+          analysis_id_description: string | null
+          analysis_type: string | null
+          analysis_type_description: string | null
+          client_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string | null
+          updated_at: string
+          upload_batch_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          analysis_id_description?: string | null
+          analysis_type?: string | null
+          analysis_type_description?: string | null
+          client_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          analysis_id_description?: string | null
+          analysis_type?: string | null
+          analysis_type_description?: string | null
+          client_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+        }
+        Relationships: []
+      }
+      saft_import_sessions: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          error_details: string | null
+          file_name: string
+          file_size: number | null
+          id: string
+          import_status: string
+          metadata: Json | null
+          processing_completed_at: string | null
+          processing_started_at: string | null
+          saft_version: string | null
+          updated_at: string
+          upload_batch_id: string | null
+          validation_results: Json | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          error_details?: string | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          import_status?: string
+          metadata?: Json | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          saft_version?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+          validation_results?: Json | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          error_details?: string | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          import_status?: string
+          metadata?: Json | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          saft_version?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+          validation_results?: Json | null
+        }
+        Relationships: []
+      }
+      saft_journals: {
+        Row: {
+          batch_id: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          journal_id: string | null
+          journal_type: string | null
+          period_end: string | null
+          period_start: string | null
+          posting_date: string | null
+          system_id: string | null
+          updated_at: string
+          upload_batch_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          journal_id?: string | null
+          journal_type?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          posting_date?: string | null
+          system_id?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          journal_id?: string | null
+          journal_type?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          posting_date?: string | null
+          system_id?: string | null
+          updated_at?: string
+          upload_batch_id?: string | null
         }
         Relationships: []
       }
