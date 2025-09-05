@@ -52,22 +52,20 @@ const PayrollReconciliation = () => {
     
     const rows: any[] = [];
     const totals: Record<string, number> = {};
+    const errors: string[] = [];
     
-    // Map database payroll summary to internal codes via amelding_code_map
-    const mapping: Record<string, string> = {
-      'sum.bruttolonn': 'fastlonn',
-      'sum.forskuddstrekk.person': 'forskuddstrekk',
-      'sum.aga.innsendinger': 'arbeidsgiveravgift'
-    };
+    // Map database payroll summary to internal codes using proper property access
+    if (payrollSummary.bruttolonn !== undefined) {
+      totals['fastlonn'] = payrollSummary.bruttolonn;
+    }
+    if (payrollSummary.trekkPerson !== undefined) {
+      totals['forskuddstrekk'] = payrollSummary.trekkPerson;
+    }
+    if (payrollSummary.agaInns !== undefined) {
+      totals['arbeidsgiveravgift'] = payrollSummary.agaInns;
+    }
 
-    // Process totals
-    Object.entries(mapping).forEach(([dbKey, internalCode]) => {
-      if (payrollSummary[dbKey] !== undefined) {
-        totals[internalCode] = payrollSummary[dbKey];
-      }
-    });
-
-    return { rows, totals, errors: [] };
+    return { rows, totals, errors };
   }, [payrollSummary]);
 
   // Create account lookup for names and traceability
