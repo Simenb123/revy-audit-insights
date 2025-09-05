@@ -14,16 +14,38 @@ export interface AutoMappingSuggestion {
   reason: string;
 }
 
-// Name-based fallback mapping rules
+// Enhanced name-based fallback mapping rules with comprehensive Norwegian payroll terms
 const nameMappingRules = [
+  // Financial terms (existing)
   { keywords: ['bank', 'kasse'], confidence: 0.8 },
   { keywords: ['kunde', 'fordring'], confidence: 0.8 },
   { keywords: ['lager', 'vare'], confidence: 0.8 },
   { keywords: ['leverandør', 'kreditor'], confidence: 0.8 },
   { keywords: ['mva', 'merverdiavgift'], confidence: 0.8 },
-  { keywords: ['lønn', 'salary'], confidence: 0.8 },
   { keywords: ['salg', 'omsetning', 'inntekt'], confidence: 0.7 },
   { keywords: ['kostnad', 'expense'], confidence: 0.6 },
+  
+  // Enhanced payroll terms
+  { keywords: ['fastlønn', 'fast lønn', 'grunnlønn', 'månedslønn'], confidence: 0.9 },
+  { keywords: ['timelønn', 'time lønn', 'timerlønn', 'timebetaling'], confidence: 0.9 },
+  { keywords: ['overtid', 'overtidsbetaling', 'overtidstillegg', 'overtidslønn'], confidence: 0.85 },
+  { keywords: ['bonus', 'bonusutbetaling', 'provisjon', 'tantieme'], confidence: 0.8 },
+  { keywords: ['feriepenger', 'ferie penger', 'ferielønn', 'ferie lønn'], confidence: 0.9 },
+  { keywords: ['sykepenger', 'syke penger', 'sykelønn', 'syke lønn'], confidence: 0.9 },
+  { keywords: ['foreldrepenger', 'foreldre penger', 'foreldrelønn'], confidence: 0.9 },
+  { keywords: ['bilgodtgjørelse', 'bil godtgjørelse', 'kjøregodtgjørelse', 'kilometergodtgjørelse'], confidence: 0.85 },
+  { keywords: ['kostgodtgjørelse', 'kost godtgjørelse', 'kostpenger', 'kost penger'], confidence: 0.8 },
+  { keywords: ['telefongodtgjørelse', 'telefon godtgjørelse', 'telefondekning'], confidence: 0.8 },
+  { keywords: ['hjemmekontor', 'hjemme kontor', 'hjemmekontorgodtgjørelse'], confidence: 0.8 },
+  { keywords: ['skattetrekk', 'skatte trekk', 'forskuddsskatt', 'forskudds skatt'], confidence: 0.9 },
+  { keywords: ['pensjon', 'pensjonspremie', 'pensjonstrekk', 'tjenestepensjon'], confidence: 0.85 },
+  { keywords: ['fagforeningskontingent', 'fagforening kontingent', 'fagforeningsavgift'], confidence: 0.8 },
+  { keywords: ['helgetillegg', 'helge tillegg', 'søndagstillegg', 'helligdagstillegg'], confidence: 0.8 },
+  { keywords: ['kveldstillegg', 'kveld tillegg', 'natttillegg', 'natt tillegg'], confidence: 0.8 },
+  { keywords: ['skifttillegg', 'skift tillegg', 'turnustillegg', 'turnus tillegg'], confidence: 0.8 },
+  { keywords: ['sluttvederlag', 'sluttbonus', 'fratredelsesytelse'], confidence: 0.75 },
+  { keywords: ['gavekort', 'gave kort', 'naturalytelse', 'natural ytelse'], confidence: 0.7 },
+  { keywords: ['lønn', 'salary'], confidence: 0.8 }, // General fallback
 ];
 
 export const useAutoMapping = (clientId: string) => {
