@@ -13,6 +13,7 @@ import { parseSaftFile } from '@/utils/saftParser';
 import { createZipFromParsed, persistParsed, uploadZipToStorage } from '@/utils/saftImport';
 import { validateSaftData, quickValidation, type ValidationResults } from '@/utils/saftValidation';
 import { SaftValidationReport } from './SaftValidationReport';
+import SaftExportManager from './SaftExportManager';
 import SaftWorker from '@/workers/saft.worker?worker';
 import { useParams } from 'react-router-dom';
 import { useClientLookup } from '@/hooks/useClientLookup';
@@ -393,6 +394,11 @@ const EnhancedSaftImport = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+          )}
+
+          {/* Export Manager */}
+          {clientId && (
+            <SaftExportManager clientId={clientId} />
           )}
         </Tabs>
       )}

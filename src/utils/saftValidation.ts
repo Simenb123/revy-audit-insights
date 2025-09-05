@@ -263,6 +263,39 @@ export function validateSaftData(parsed: SaftResult): ValidationResults {
     });
   }
 
+  // Check for extended transaction fields (SAF-T 1.3)
+  if (parsed.transactions) {
+    const transactionsWithExtendedFields = parsed.transactions.filter(t => 
+      t.transaction_date || t.system_entry_date || t.modification_date || t.source_system
+    ).length;
+    
+    if (transactionsWithExtendedFields > 0) {
+      const coverage = (transactionsWithExtendedFields / parsed.transactions.length) * 100;
+      issues.push({
+        level: 'info',
+        field: 'TransactionFields',
+        message: `${coverage.toFixed(1)}% av transaksjonene har utvidede SAF-T 1.3 felt`,
+        suggestion: 'Utvidede felt gir bedre revisjonsspor og datakvalitet'
+      });
+    }
+  }
+
+  // Validate BalanceAccountStructure in customers/suppliers
+  if (parsed.customers) {
+    const customersWithBalanceStructure = parsed.customers.filter(c => 
+      c.opening_debit_balance !== undefined || c.opening_credit_balance !== undefined
+    ).length;
+    
+    if (customersWithBalanceStructure > 0 && customersWithBalanceStructure < parsed.customers.length) {
+      issues.push({
+        level: 'warning',
+        field: 'CustomerBalances',
+        message: `${customersWithBalanceStructure}/${parsed.customers.length} kunder har balanseinformasjon`,
+        suggestion: 'Inkluder BalanceAccountStructure for alle kunder for bedre SAF-T 1.3 kompatibilitet'
+      });
+    }
+  }
+
   // Summary
   const summary = {
     accounts: parsed.accounts?.length || 0,

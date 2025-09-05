@@ -340,7 +340,7 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     .update({ upload_batch_id: uploadBatchId })
     .eq('id', importSessionId);
 
-  // Upsert accounts into client_chart_of_accounts
+  // Upsert accounts into client_chart_of_accounts with SAF-T 1.3 fields
   const accountRows = parsed.accounts.map(a => {
     const derivedType = convertToNorwegian(String((a as any).account_type ?? (a as any).type ?? ''));
     return {
@@ -348,7 +348,18 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       account_number: a.account_id,
       account_name: a.description || a.account_id,
       account_type: derivedType,
-      is_active: true
+      is_active: true,
+      // SAF-T 1.3 fields
+      grouping_category: a.grouping_category,
+      grouping_code: a.grouping_code,
+      standard_account_code: a.standard_account_code,
+      opening_debit_balance: a.opening_debit_balance,
+      opening_credit_balance: a.opening_credit_balance,
+      closing_debit_balance: a.closing_debit_balance,
+      closing_credit_balance: a.closing_credit_balance,
+      opening_balance: a.opening_balance,
+      closing_balance: a.closing_balance,
+      vat_code: a.vat_code
     };
   });
 
@@ -436,6 +447,15 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
         vat_base,
         vat_debit,
         vat_credit,
+        // SAF-T 1.3 extended transaction fields
+        system_entry_date: toDateString(parseISO((t as any).system_entry_date)),
+        system_entry_time: (t as any).system_entry_time ?? null,
+        modification_date: toDateString(parseISO((t as any).modification_date)),
+        voucher_type: (t as any).voucher_type ?? null,
+        voucher_description: (t as any).voucher_description ?? null,
+        source_id: (t as any).source_id ?? null,
+        source_system: (t as any).source_system ?? null,
+        cross_reference: (t as any).cross_reference ?? null
       };
     })
     .filter(Boolean) as any[];
