@@ -426,11 +426,54 @@ const PayrollReconciliation = () => {
       <div className="flex flex-col h-full">
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
+            <EnhancedPayrollReconciliation
+              reconciliationData={reconciliationData}
+              trialBalanceData={trialBalanceData}
+              internalCodes={internalCodes}
+              isLoading={isLoading || codesLoading || rulesLoading}
+              onRefresh={() => window.location.reload()}
+              onExport={() => {
+                // TODO: Implement export functionality
+                toast({
+                  title: 'Eksport',
+                  description: 'Eksport funksjonalitet kommer snart...'
+                });
+              }}
+              onUpdateNotes={(code, notes) => {
+                // TODO: Implement notes update
+                console.log('Update notes for', code, ':', notes);
+              }}
+              onAcceptDiscrepancy={(code) => {
+                // TODO: Implement accept discrepancy
+                toast({
+                  title: 'Avvik godkjent',
+                  description: `Avvik for ${code} er godkjent.`
+                });
+              }}
+              onRejectDiscrepancy={(code) => {
+                // TODO: Implement reject discrepancy  
+                toast({
+                  title: 'Avvik avvist',
+                  description: `Avvik for ${code} er avvist.`
+                });
+              }}
+              onUpdateMapping={(accountId, codeId) => {
+                // TODO: Implement mapping update
+                console.log('Update mapping:', accountId, '->', codeId);
+              }}
+              onBulkUpdateMapping={(mappings) => {
+                // TODO: Implement bulk mapping update
+                console.log('Bulk update mappings:', mappings);
+              }}
+            />
+            
+            {/* Legacy tabs for debugging - can be hidden in production */}
+            {process.env.NODE_ENV === 'development' && (
             <Tabs defaultValue="rules" className="w-full">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="rules">Regler</TabsTrigger>
+                <TabsTrigger value="rules">Regler (Legacy)</TabsTrigger>
                 <TabsTrigger value="data">Datagrunnlag</TabsTrigger>
-                <TabsTrigger value="reconciliation">Avstemming</TabsTrigger>
+                <TabsTrigger value="reconciliation">Avstemming (Legacy)</TabsTrigger>
                 <TabsTrigger value="exact-match">Eksakt match</TabsTrigger>
                 <TabsTrigger value="ai-suggest">AI-forslag</TabsTrigger>
               </TabsList>
@@ -823,6 +866,7 @@ const PayrollReconciliation = () => {
                 </Card>
               </TabsContent>
             </Tabs>
+            )}
           </div>
         </div>
       </div>
