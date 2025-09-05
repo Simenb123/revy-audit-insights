@@ -24,7 +24,13 @@ interface ReconciliationData {
   code: string;
   description: string;
   accounts: string[];
-  accountNames?: string[];
+  accountNames: string[];
+  accountDetails: Array<{ 
+    account: string; 
+    name: string; 
+    amount: number; 
+    source: 'TB' | 'A07' | 'Rule' 
+  }>;
   A: number;
   B: number;
   C: number;
@@ -32,6 +38,7 @@ interface ReconciliationData {
   E: number;
   amelding: number;
   difference: number;
+  dataSource: { A07: boolean; TB: boolean; Rules: number };
   notes?: string;
 }
 
