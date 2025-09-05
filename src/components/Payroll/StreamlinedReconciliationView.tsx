@@ -19,6 +19,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatters';
 
 interface ReconciliationData {
   code: string;
@@ -29,7 +30,8 @@ interface ReconciliationData {
     account: string; 
     name: string; 
     amount: number; 
-    source: 'TB' | 'A07' | 'Rule' 
+    source: 'TB' | 'A07' | 'Rule';
+    matchedRule?: string;
   }>;
   A: number;
   B: number;
@@ -39,6 +41,24 @@ interface ReconciliationData {
   amelding: number;
   difference: number;
   dataSource: { A07: boolean; TB: boolean; Rules: number };
+  debugSteps?: Array<{
+    step: number;
+    description: string;
+    calculation?: string;
+    value: number;
+    accounts?: Array<{
+      account: string;
+      name: string;
+      amount: number;
+      operation: '+' | '-' | '=';
+    }>;
+    rules?: Array<{
+      id: string;
+      pattern: string;
+      matched: boolean;
+    }>;
+    status: 'success' | 'warning' | 'error' | 'info';
+  }>;
   notes?: string;
 }
 
@@ -196,7 +216,7 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Totalt avvik</p>
-                  <p className="text-2xl font-bold">{summary.totalDiscrepancy.toLocaleString('no-NO', { minimumFractionDigits: 2 })} kr</p>
+                  <p className="text-2xl font-bold">{formatCurrency(summary.totalDiscrepancy)}</p>
                 </div>
                 <Calculator className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -255,20 +275,13 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                     </div>
                     <div className="flex items-center gap-2">
                       {sources.map((source, idx) => (
-                        <Tooltip key={idx}>
-                          <TooltipTrigger>
-                            <Badge variant={source.variant} className="text-xs">
-                              {source.label}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Data fra: {source.label}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Badge key={idx} variant={source.variant} className="text-xs">
+                          {source.label}
+                        </Badge>
                       ))}
                       {Math.abs(item.difference) > 0.01 && (
                         <Badge variant={statusVariant}>
-                          Avvik: {item.difference.toLocaleString('no-NO', { minimumFractionDigits: 2 })} kr
+                          Avvik: {formatCurrency(item.difference)}
                         </Badge>
                       )}
                     </div>
@@ -276,42 +289,25 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Calculation breakdown */}
-                  <div className="grid grid-cols-6 gap-4 text-sm">
-                    <div className="text-center">
-                      <p className="text-muted-foreground">A (A07)</p>
-                      <p className="font-mono">{item.A.toLocaleString('no-NO')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">B (Forr.år)</p>
-                      <p className="font-mono">{item.B.toLocaleString('no-NO')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">C (Inneværende)</p>
-                      <p className="font-mono">{item.C.toLocaleString('no-NO')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">D (Beregnet)</p>
-                      <p className="font-mono font-bold">{item.D.toLocaleString('no-NO')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">E (Å melde)</p>
-                      <p className="font-mono">{item.E.toLocaleString('no-NO')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">Avvik</p>
-                      <p className={cn(
-                        "font-mono font-bold",
-                        statusVariant === 'success' && "text-success",
-                        statusVariant === 'warning' && "text-warning",
-                        statusVariant === 'destructive' && "text-destructive"
-                      )}>
-                        {item.difference.toLocaleString('no-NO', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
+                  {/* Simple calculation display */}
+                  <div className="bg-muted/50 rounded-md p-3">
+                    <p className="text-sm font-mono text-center">
+                      <span className="text-muted-foreground">A:</span> {item.A.toLocaleString('no-NO')} + 
+                      <span className="text-muted-foreground"> B:</span> {item.B.toLocaleString('no-NO')} - 
+                      <span className="text-muted-foreground"> C:</span> {item.C.toLocaleString('no-NO')} = 
+                      <span className="font-bold text-primary"> {item.D.toLocaleString('no-NO')}</span>
+                      {item.difference !== 0 && (
+                        <span className={cn(
+                          " → Avvik: ",
+                          statusVariant === 'success' && "text-success",
+                          statusVariant === 'warning' && "text-warning",
+                          statusVariant === 'destructive' && "text-destructive"
+                        )}>
+                          {formatCurrency(item.difference)}
+                        </span>
+                      )}
+                    </p>
                   </div>
-
-                  <Separator />
 
                   {/* Account details */}
                   {item.accountDetails.length > 0 && (
@@ -321,44 +317,52 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                         Berørte kontoer ({item.accountDetails.length})
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {item.accountDetails.map((detail, idx) => (
+                        {item.accountDetails.slice(0, 6).map((detail, idx) => (
                           <div key={idx} className="flex items-center justify-between bg-muted/30 rounded-md p-2 text-xs">
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="font-mono">{detail.account}</p>
-                              <p className="text-muted-foreground truncate max-w-32">{detail.name}</p>
+                              <p className="text-muted-foreground truncate">{detail.name}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right ml-2">
                               <p className="font-mono">{detail.amount.toLocaleString('no-NO')}</p>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs h-4">
                                 {detail.source}
                               </Badge>
                             </div>
                           </div>
                         ))}
                       </div>
+                      {item.accountDetails.length > 6 && (
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          +{item.accountDetails.length - 6} flere kontoer
+                        </p>
+                      )}
                     </div>
                   )}
 
                   {/* Actions for discrepancies */}
                   {Math.abs(item.difference) > 0.01 && (
-                    <div className="flex items-center gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onAcceptDiscrepancy?.(item.code)}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Godkjenn avvik
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRejectDiscrepancy?.(item.code)}
-                      >
-                        <Settings className="h-4 w-4 mr-1" />
-                        Juster mapping
-                      </Button>
-                    </div>
+                    <>
+                      <Separator />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onAcceptDiscrepancy?.(item.code)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Godkjenn avvik
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onRejectDiscrepancy?.(item.code)}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Juster mapping
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>

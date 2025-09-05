@@ -14,6 +14,7 @@ import { usePayrollImports, usePayrollSummary } from '@/hooks/usePayrollImports'
 import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { extractEmployeeIncomeRows, type A07ParseResult } from './lib/a07-parser';
+import { useEnhancedReconciliationCalculator } from '@/components/Payroll/EnhancedReconciliationCalculator';
 
 const PayrollReconciliation = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -93,135 +94,14 @@ const PayrollReconciliation = () => {
     return lookup;
   }, [trialBalanceData, effectiveGlEntries]);
 
-  // Calculate reconciliation (A-E)
-  const reconciliationData = useMemo(() => {
-    if (!effectiveA07Data || effectiveGlEntries.length === 0 || !internalCodes.length) return [];
-
-    const results: Array<{
-      code: string;
-      description: string;
-      accounts: string[];
-      accountNames: string[];
-      accountDetails: Array<{ account: string; name: string; amount: number; source: 'TB' | 'A07' | 'Rule' }>;
-      A: number;
-      B: number;
-      C: number;
-      D: number;
-      E: number;
-      amelding: number;
-      difference: number;
-      dataSource: { A07: boolean; TB: boolean; Rules: number };
-    }> = [];
-
-    internalCodes.forEach(internalCode => {
-      const A = effectiveA07Data.totals[internalCode.id] || 0;
-      
-      // B/C calculation based on mapping rules for this internal code
-      let B = 0, C = 0;
-      const accountsUsed = new Set<string>();
-      const accountDetails: Array<{ account: string; name: string; amount: number; source: 'TB' | 'A07' | 'Rule' }> = [];
-      
-      // Get rules that map to this internal code
-      const relevantRules = mappingRules.filter(rule => rule.code === internalCode.id);
-      
-      effectiveGlEntries.forEach(entry => {
-        // Check if this GL entry matches any rule for this internal code
-        const matchingRule = relevantRules.find(rule => {
-          // Account matching
-          if (rule.account && entry.account.includes(rule.account)) {
-            return true;
-          }
-          
-          // Regex matching
-          if (rule.regex) {
-            try {
-              const regex = new RegExp(rule.regex, 'i');
-              if (regex.test(entry.account) || regex.test(entry.text)) {
-                return true;
-              }
-            } catch (e) {
-              console.warn('Invalid regex in rule:', rule.regex);
-            }
-          }
-          
-          return false;
-        });
-        
-        if (matchingRule) {
-          accountsUsed.add(entry.account);
-          const accountInfo = accountLookup.get(entry.account);
-          
-          accountDetails.push({
-            account: entry.account,
-            name: accountInfo?.name || entry.text || entry.account,
-            amount: entry.amount,
-            source: 'Rule'
-          });
-          
-          // Apply strategy-based logic for accrual accounts (294x/295x)
-          if (entry.account.match(/^29[45]/)) {
-            if (entry.amount < 0) {
-              B += Math.abs(entry.amount);
-            } else {
-              C += entry.amount;
-            }
-          }
-        }
-      });
-      
-      // Fallback: If no specific rules found, use default logic for accruals
-      if (relevantRules.length === 0 && internalCode.id === 'feriepenger') {
-        effectiveGlEntries.forEach(entry => {
-          const accountNum = entry.account.replace(/\D/g, '');
-          const first3Digits = accountNum.substring(0, 3);
-          if (first3Digits === '294' || first3Digits === '295') {
-            accountsUsed.add(entry.account);
-            const accountInfo = accountLookup.get(entry.account);
-            
-            accountDetails.push({
-              account: entry.account,
-              name: accountInfo?.name || entry.text || entry.account,
-              amount: entry.amount,
-              source: 'TB'
-            });
-            
-            if (entry.amount < 0) {
-              B += Math.abs(entry.amount);
-            } else {
-              C += entry.amount;
-            }
-          }
-        });
-      }
-
-      const D = A + B - C;
-      const E = internalCode.aga ? D : 0;
-      const amelding = A; // A07 reported amount
-      const difference = Math.abs(D - amelding);
-
-      results.push({
-        code: internalCode.id,
-        description: internalCode.label,
-        accounts: Array.from(accountsUsed),
-        accountNames: Array.from(accountsUsed).map(account => accountLookup.get(account)?.name || account),
-        accountDetails,
-        A,
-        B,
-        C,
-        D,
-        E,
-        amelding,
-        difference,
-        dataSource: {
-          A07: A > 0,
-          TB: accountDetails.some(d => d.source === 'TB'),
-          Rules: relevantRules.length
-        }
-      });
-    });
-
-    return results;
-  }, [effectiveA07Data, effectiveGlEntries, internalCodes, mappingRules, accountLookup]);
+  // Use enhanced reconciliation calculator with debugging
+  const reconciliationData = useEnhancedReconciliationCalculator({
+    payrollSummary: payrollSummary || {},
+    glEntries: effectiveGlEntries,
+    internalCodes,
+    mappingRules,
+    accountLookup
+  });
 
   if (isLoading || codesLoading) {
     return (
