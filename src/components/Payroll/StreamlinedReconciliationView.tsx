@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
-import { useEnhancedReconciliationCalculator } from './EnhancedReconciliationCalculator';
 import { PDFExport } from './PDFExport';
 import { NotesManager } from './NotesManager';
 import { PerformanceAnalysis } from './PerformanceAnalysis';
@@ -591,12 +590,6 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                 Avansert kalkulator kommer snart. Bruk debug-fanen for detaljerte beregninger.
               </p>
             </div>
-          </TabsContent>
-
-          <TabsContent value="calculator">
-            <EnhancedReconciliationCalculator 
-              reconciliationData={reconciliationData}
-            />
           </TabsContent>
 
         </Tabs>
