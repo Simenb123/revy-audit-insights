@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import ReconciliationDashboard from './ReconciliationDashboard';
 import InteractiveReconciliationPanel from './InteractiveReconciliationPanel';
+import DragDropMappingInterface from './DragDropMappingInterface';
+import SmartGuidanceSystem from './SmartGuidanceSystem';
+import EnhancedSearchAndFilter, { FilterOptions } from './EnhancedSearchAndFilter';
 import { AccountListDisplay } from './AccountDisplay';
 
 interface ReconciliationData {
@@ -34,25 +37,54 @@ interface ReconciliationData {
 
 interface EnhancedPayrollReconciliationProps {
   reconciliationData: ReconciliationData[];
+  trialBalanceData?: Array<{
+    id: string;
+    account_number: string;
+    account_name: string;
+    closing_balance: number;
+  }>;
+  internalCodes?: Array<{
+    id: string;
+    label: string;
+    description?: string;
+  }>;
   isLoading?: boolean;
   onRefresh?: () => void;
   onExport?: () => void;
   onUpdateNotes?: (code: string, notes: string) => void;
   onAcceptDiscrepancy?: (code: string) => void;
   onRejectDiscrepancy?: (code: string) => void;
+  onUpdateMapping?: (accountId: string, codeId: string) => void;
+  onBulkUpdateMapping?: (mappings: Array<{ accountId: string; codeId: string }>) => void;
 }
 
 const EnhancedPayrollReconciliation: React.FC<EnhancedPayrollReconciliationProps> = ({
   reconciliationData,
+  trialBalanceData = [],
+  internalCodes = [],
   isLoading = false,
   onRefresh,
   onExport,
   onUpdateNotes,
   onAcceptDiscrepancy,
-  onRejectDiscrepancy
+  onRejectDiscrepancy,
+  onUpdateMapping,
+  onBulkUpdateMapping
 }) => {
+  const [selectedTab, setSelectedTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'discrepancies' | 'matches'>('all');
+  const [filters, setFilters] = useState<FilterOptions>({
+    searchTerm: '',
+    accountTypes: [],
+    mappingStatus: [],
+    discrepancyRange: [0, 100000],
+    sortBy: 'account_number',
+    sortOrder: 'asc',
+    showOnlyProblems: false
+  });
+  const [completedGuidanceSteps, setCompletedGuidanceSteps] = useState<string[]>([]);
+  const [showGuidance, setShowGuidance] = useState(true);
 
   // Calculate summary statistics
   const summary = useMemo(() => {
@@ -83,6 +115,48 @@ const EnhancedPayrollReconciliation: React.FC<EnhancedPayrollReconciliationProps
       totalAccounts
     };
   }, [reconciliationData]);
+
+  // Transform trial balance data for mapping interface
+  const mappingItems = useMemo(() => {
+    return trialBalanceData.map(item => ({
+      id: item.id,
+      accountNumber: item.account_number,
+      accountName: item.account_name,
+      amount: item.closing_balance,
+      currentMapping: '', // This would come from existing mappings
+      suggestedMapping: '', // This would come from AI suggestions
+      confidence: 0.8 // This would come from AI confidence scores
+    }));
+  }, [trialBalanceData]);
+
+  // Account types for filtering
+  const accountTypes = useMemo(() => {
+    const types = new Map<string, number>();
+    trialBalanceData.forEach(item => {
+      const type = item.account_number.charAt(0);
+      types.set(type, (types.get(type) || 0) + 1);
+    });
+    
+    return Array.from(types.entries()).map(([type, count]) => ({
+      value: type,
+      label: `${type}xxx kontoer`,
+      count
+    }));
+  }, [trialBalanceData]);
+
+  // Handle guidance system
+  const handleStepComplete = (stepId: string) => {
+    setCompletedGuidanceSteps(prev => [...prev, stepId]);
+  };
+
+  const getCurrentContext = () => {
+    switch (selectedTab) {
+      case 'mapping': return 'mapping';
+      case 'interactive': return 'reconciliation';
+      case 'details': return 'review';
+      default: return 'mapping';
+    }
+  };
 
   // Filter and search logic
   const filteredData = useMemo(() => {
@@ -115,14 +189,26 @@ const EnhancedPayrollReconciliation: React.FC<EnhancedPayrollReconciliationProps
 
   return (
     <div className="space-y-6">
+      {/* Smart Guidance System */}
+      {showGuidance && (
+        <SmartGuidanceSystem
+          currentContext={getCurrentContext() as any}
+          userLevel="intermediate"
+          completedSteps={completedGuidanceSteps}
+          onStepComplete={handleStepComplete}
+          onDismiss={() => setShowGuidance(false)}
+        />
+      )}
+
       {/* Dashboard Overview */}
       <ReconciliationDashboard summary={summary} isLoading={isLoading} />
 
       {/* Main Content */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="overview">Oversikt</TabsTrigger>
+            <TabsTrigger value="mapping">Mapping</TabsTrigger>
             <TabsTrigger value="interactive">Interaktiv Avstemming</TabsTrigger>
             <TabsTrigger value="details">Detaljer</TabsTrigger>
           </TabsList>
@@ -227,6 +313,26 @@ const EnhancedPayrollReconciliation: React.FC<EnhancedPayrollReconciliationProps
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Mapping Tab */}
+        <TabsContent value="mapping" className="space-y-4">
+          <EnhancedSearchAndFilter
+            filters={filters}
+            onFiltersChange={setFilters}
+            accountTypes={accountTypes}
+            totalRecords={mappingItems.length}
+            filteredRecords={mappingItems.length} // TODO: Apply actual filtering
+          />
+          
+          <DragDropMappingInterface
+            accounts={mappingItems}
+            internalCodes={internalCodes}
+            onUpdateMapping={onUpdateMapping || (() => {})}
+            onBulkUpdate={onBulkUpdateMapping || (() => {})}
+            searchTerm={filters.searchTerm}
+            onSearchChange={(term) => setFilters(prev => ({ ...prev, searchTerm: term }))}
+          />
         </TabsContent>
 
         {/* Interactive Reconciliation Tab */}
