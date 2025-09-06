@@ -14,6 +14,8 @@ import { createZipFromParsed, persistParsed, uploadZipToStorage } from '@/utils/
 import { validateSaftData, quickValidation, type ValidationResults } from '@/utils/saftValidation';
 import { SaftValidationReport } from './SaftValidationReport';
 import SaftExportManager from './SaftExportManager';
+import CustomerReport from '@/components/Reports/CustomerReport';
+import SupplierReport from '@/components/Reports/SupplierReport';
 import SaftWorker from '@/workers/saft.worker?worker';
 import { useParams } from 'react-router-dom';
 import { useClientLookup } from '@/hooks/useClientLookup';
@@ -348,6 +350,9 @@ const EnhancedSaftImport = () => {
           <TabsList>
             <TabsTrigger value="validation">Validering</TabsTrigger>
             {parsedData && <TabsTrigger value="summary">Sammendrag</TabsTrigger>}
+            {parsedData && (parsedData.customers?.length > 0 || parsedData.suppliers?.length > 0) && (
+              <TabsTrigger value="masterfiles">MasterFiles</TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="validation">
@@ -393,6 +398,39 @@ const EnhancedSaftImport = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+          )}
+
+          {/* Customer and Supplier Reports */}
+          {parsedData && (parsedData.customers?.length > 0 || parsedData.suppliers?.length > 0) && (
+            <TabsContent value="masterfiles">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold">MasterFiles rapporter</h3>
+                  <Badge variant="secondary">
+                    {parsedData.customers?.length || 0} kunder, {parsedData.suppliers?.length || 0} leverandører
+                  </Badge>
+                </div>
+                
+                <Tabs defaultValue="customers" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="customers">
+                      Kunder ({parsedData.customers?.length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="suppliers">
+                      Leverandører ({parsedData.suppliers?.length || 0})
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="customers">
+                    <CustomerReport clientId={clientId || ''} />
+                  </TabsContent>
+                  
+                  <TabsContent value="suppliers">
+                    <SupplierReport clientId={clientId || ''} />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </TabsContent>
           )}
 

@@ -10537,6 +10537,112 @@ export type Database = {
         }
         Relationships: []
       }
+      saft_customers: {
+        Row: {
+          balance_account: string | null
+          balance_account_id: string | null
+          city: string | null
+          client_id: string
+          closing_balance_netto: number | null
+          closing_credit_balance: number | null
+          closing_debit_balance: number | null
+          country: string | null
+          created_at: string | null
+          customer_id: string
+          customer_name: string | null
+          customer_status: string | null
+          customer_type: string | null
+          id: string
+          import_session_id: string | null
+          opening_balance_netto: number | null
+          opening_credit_balance: number | null
+          opening_debit_balance: number | null
+          payment_terms_days: number | null
+          payment_terms_months: number | null
+          postal_code: string | null
+          street_address: string | null
+          updated_at: string | null
+          upload_batch_id: string | null
+          vat_number: string | null
+        }
+        Insert: {
+          balance_account?: string | null
+          balance_account_id?: string | null
+          city?: string | null
+          client_id: string
+          closing_balance_netto?: number | null
+          closing_credit_balance?: number | null
+          closing_debit_balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          customer_id: string
+          customer_name?: string | null
+          customer_status?: string | null
+          customer_type?: string | null
+          id?: string
+          import_session_id?: string | null
+          opening_balance_netto?: number | null
+          opening_credit_balance?: number | null
+          opening_debit_balance?: number | null
+          payment_terms_days?: number | null
+          payment_terms_months?: number | null
+          postal_code?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          vat_number?: string | null
+        }
+        Update: {
+          balance_account?: string | null
+          balance_account_id?: string | null
+          city?: string | null
+          client_id?: string
+          closing_balance_netto?: number | null
+          closing_credit_balance?: number | null
+          closing_debit_balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          customer_id?: string
+          customer_name?: string | null
+          customer_status?: string | null
+          customer_type?: string | null
+          id?: string
+          import_session_id?: string | null
+          opening_balance_netto?: number | null
+          opening_credit_balance?: number | null
+          opening_debit_balance?: number | null
+          payment_terms_days?: number | null
+          payment_terms_months?: number | null
+          postal_code?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saft_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_customers_import_session_id_fkey"
+            columns: ["import_session_id"]
+            isOneToOne: false
+            referencedRelation: "saft_import_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_customers_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saft_import_sessions: {
         Row: {
           client_id: string
@@ -10638,6 +10744,191 @@ export type Database = {
           upload_batch_id?: string | null
         }
         Relationships: []
+      }
+      saft_suppliers: {
+        Row: {
+          balance_account: string | null
+          balance_account_id: string | null
+          city: string | null
+          client_id: string
+          closing_balance_netto: number | null
+          closing_credit_balance: number | null
+          closing_debit_balance: number | null
+          country: string | null
+          created_at: string | null
+          id: string
+          import_session_id: string | null
+          opening_balance_netto: number | null
+          opening_credit_balance: number | null
+          opening_debit_balance: number | null
+          payment_terms_days: number | null
+          payment_terms_months: number | null
+          postal_code: string | null
+          street_address: string | null
+          supplier_id: string
+          supplier_name: string | null
+          supplier_status: string | null
+          supplier_type: string | null
+          updated_at: string | null
+          upload_batch_id: string | null
+          vat_number: string | null
+        }
+        Insert: {
+          balance_account?: string | null
+          balance_account_id?: string | null
+          city?: string | null
+          client_id: string
+          closing_balance_netto?: number | null
+          closing_credit_balance?: number | null
+          closing_debit_balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          import_session_id?: string | null
+          opening_balance_netto?: number | null
+          opening_credit_balance?: number | null
+          opening_debit_balance?: number | null
+          payment_terms_days?: number | null
+          payment_terms_months?: number | null
+          postal_code?: string | null
+          street_address?: string | null
+          supplier_id: string
+          supplier_name?: string | null
+          supplier_status?: string | null
+          supplier_type?: string | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          vat_number?: string | null
+        }
+        Update: {
+          balance_account?: string | null
+          balance_account_id?: string | null
+          city?: string | null
+          client_id?: string
+          closing_balance_netto?: number | null
+          closing_credit_balance?: number | null
+          closing_debit_balance?: number | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          import_session_id?: string | null
+          opening_balance_netto?: number | null
+          opening_credit_balance?: number | null
+          opening_debit_balance?: number | null
+          payment_terms_days?: number | null
+          payment_terms_months?: number | null
+          postal_code?: string | null
+          street_address?: string | null
+          supplier_id?: string
+          supplier_name?: string | null
+          supplier_status?: string | null
+          supplier_type?: string | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saft_suppliers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_suppliers_import_session_id_fkey"
+            columns: ["import_session_id"]
+            isOneToOne: false
+            referencedRelation: "saft_import_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_suppliers_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saft_tax_table: {
+        Row: {
+          base_rate: number | null
+          client_id: string
+          country: string | null
+          created_at: string | null
+          declaration_period: string | null
+          description: string | null
+          exemption_reason: string | null
+          id: string
+          import_session_id: string | null
+          standard_tax_code: string | null
+          tax_code: string
+          tax_percentage: number | null
+          updated_at: string | null
+          upload_batch_id: string | null
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          base_rate?: number | null
+          client_id: string
+          country?: string | null
+          created_at?: string | null
+          declaration_period?: string | null
+          description?: string | null
+          exemption_reason?: string | null
+          id?: string
+          import_session_id?: string | null
+          standard_tax_code?: string | null
+          tax_code: string
+          tax_percentage?: number | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          base_rate?: number | null
+          client_id?: string
+          country?: string | null
+          created_at?: string | null
+          declaration_period?: string | null
+          description?: string | null
+          exemption_reason?: string | null
+          id?: string
+          import_session_id?: string | null
+          standard_tax_code?: string | null
+          tax_code?: string
+          tax_percentage?: number | null
+          updated_at?: string | null
+          upload_batch_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saft_tax_table_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_tax_table_import_session_id_fkey"
+            columns: ["import_session_id"]
+            isOneToOne: false
+            referencedRelation: "saft_import_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saft_tax_table_upload_batch_id_fkey"
+            columns: ["upload_batch_id"]
+            isOneToOne: false
+            referencedRelation: "upload_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sampling_results: {
         Row: {

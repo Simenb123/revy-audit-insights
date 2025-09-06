@@ -495,6 +495,101 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     versionId = version.id;
   }
 
+  // Store MasterFiles (Customers, Suppliers, Tax Table)
+  
+  // Insert customers if present
+  if (parsed.customers?.length) {
+    const customerRows = parsed.customers.map(c => ({
+      client_id: clientId,
+      import_session_id: importSessionId,
+      upload_batch_id: uploadBatchId,
+      customer_id: c.id || '',
+      customer_name: c.name || '',
+      vat_number: c.vat || '',
+      country: c.country || '',
+      city: c.city || '',
+      postal_code: c.postal || '',
+      street_address: c.street || '',
+      customer_type: c.type || '',
+      customer_status: c.status || '',
+      balance_account: c.balance_account || '',
+      balance_account_id: c.balance_account_id || '',
+      opening_debit_balance: c.opening_debit_balance || 0,
+      opening_credit_balance: c.opening_credit_balance || 0,
+      closing_debit_balance: c.closing_debit_balance || 0,
+      closing_credit_balance: c.closing_credit_balance || 0,
+      opening_balance_netto: c.opening_balance_netto || 0,
+      closing_balance_netto: c.closing_balance_netto || 0,
+      payment_terms_days: c.payment_terms_days || null,
+      payment_terms_months: c.payment_terms_months || null,
+    }));
+
+    const { error: customerError } = await supabase
+      .from('saft_customers')
+      .upsert(customerRows, { onConflict: 'client_id,import_session_id,customer_id' });
+    
+    if (customerError) throw customerError;
+  }
+
+  // Insert suppliers if present
+  if (parsed.suppliers?.length) {
+    const supplierRows = parsed.suppliers.map(s => ({
+      client_id: clientId,
+      import_session_id: importSessionId,
+      upload_batch_id: uploadBatchId,
+      supplier_id: s.id || '',
+      supplier_name: s.name || '',
+      vat_number: s.vat || '',
+      country: s.country || '',
+      city: s.city || '',
+      postal_code: s.postal || '',
+      street_address: s.street || '',
+      supplier_type: s.type || '',
+      supplier_status: s.status || '',
+      balance_account: s.balance_account || '',
+      balance_account_id: s.balance_account_id || '',
+      opening_debit_balance: s.opening_debit_balance || 0,
+      opening_credit_balance: s.opening_credit_balance || 0,
+      closing_debit_balance: s.closing_debit_balance || 0,
+      closing_credit_balance: s.closing_credit_balance || 0,
+      opening_balance_netto: s.opening_balance_netto || 0,
+      closing_balance_netto: s.closing_balance_netto || 0,
+      payment_terms_days: s.payment_terms_days || null,
+      payment_terms_months: s.payment_terms_months || null,
+    }));
+
+    const { error: supplierError } = await supabase
+      .from('saft_suppliers')
+      .upsert(supplierRows, { onConflict: 'client_id,import_session_id,supplier_id' });
+    
+    if (supplierError) throw supplierError;
+  }
+
+  // Insert tax table if present
+  if (parsed.tax_table?.length) {
+    const taxRows = parsed.tax_table.map(t => ({
+      client_id: clientId,
+      import_session_id: importSessionId,
+      upload_batch_id: uploadBatchId,
+      tax_code: t.tax_code || '',
+      description: t.description || '',
+      tax_percentage: t.tax_percentage !== undefined ? Number(t.tax_percentage) : (t.percentage !== undefined ? Number(t.percentage) : null),
+      standard_tax_code: t.standard_tax_code || '',
+      exemption_reason: t.exemption_reason || '',
+      declaration_period: t.declaration_period || '',
+      valid_from: t.valid_from ? new Date(t.valid_from).toISOString().split('T')[0] : null,
+      valid_to: t.valid_to ? new Date(t.valid_to).toISOString().split('T')[0] : null,
+      base_rate: t.base_rate || null,
+      country: t.country || '',
+    }));
+
+    const { error: taxError } = await supabase
+      .from('saft_tax_table')
+      .upsert(taxRows, { onConflict: 'client_id,import_session_id,tax_code' });
+    
+    if (taxError) throw taxError;
+  }
+
   // Insert GL with version_id and upload_batch_id
   let insertedTransactions = 0;
   if (txRows.length) {
