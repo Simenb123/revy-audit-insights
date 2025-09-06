@@ -20,6 +20,9 @@ import {
   RefreshCw,
   Save
 } from 'lucide-react';
+import { RealTimeReconciliationDashboard } from './RealTimeReconciliationDashboard';
+import { EnhancedReconciliationTable } from './EnhancedReconciliationTable';
+import { EnhancedDragDropMappingInterface } from './EnhancedDragDropMappingInterface';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { PDFExport } from './PDFExport';
@@ -238,10 +241,10 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Oversikt</TabsTrigger>
+            <TabsTrigger value="enhanced">Interaktiv Avstemming</TabsTrigger>
             <TabsTrigger value="mapping">Kontomapping</TabsTrigger>
             <TabsTrigger value="quality">Datakvalitet</TabsTrigger>
             <TabsTrigger value="debug">Debug</TabsTrigger>
-            <TabsTrigger value="calculator">Kalkulator</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -263,6 +266,26 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                 </Badge>
               )}
             </div>
+
+            {/* Real-time Dashboard */}
+            <RealTimeReconciliationDashboard
+              metrics={{
+                totalItems: reconciliationData.length,
+                perfectMatches: reconciliationData.filter(item => Math.abs(item.difference) <= 0.01).length,
+                minorDiscrepancies: reconciliationData.filter(item => Math.abs(item.difference) > 0.01 && Math.abs(item.difference) <= 5).length,
+                majorDiscrepancies: reconciliationData.filter(item => Math.abs(item.difference) > 5).length,
+                totalDiscrepancyAmount: reconciliationData.reduce((sum, item) => sum + Math.abs(item.difference), 0),
+                adjustedMatches: 0, // This would come from actual adjustments
+                mappingCompleteness: 85, // This would be calculated from actual mapping data
+                dataQualityScore: Math.max(0, 100 - (reconciliationData.filter(item => Math.abs(item.difference) > 1).length / Math.max(reconciliationData.length, 1)) * 100)
+              }}
+              targetAccuracy={95}
+              showAnimation={true}
+              onMetricClick={(metric) => {
+                // Handle metric click - could filter data or navigate
+                console.log('Metric clicked:', metric);
+              }}
+            />
             {/* Header with Actions */}
             <div className="flex items-center justify-between">
           <div>
@@ -546,19 +569,21 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
           </TabsContent>
 
           <TabsContent value="mapping">
-            <AccountMappingVisualizer 
-              mappings={generateMockMappings({ items: reconciliationData })}
-              onRuleEdit={(ruleId) => {
-                toast({
-                  title: "Redigeringsverktøy", 
-                  description: "Mapping-regel redigering vil bli implementert senere."
-                });
+            <EnhancedDragDropMappingInterface
+              accounts={[]} // Would be populated from actual account data
+              internalCodes={[]} // Would be populated from internal codes
+              onUpdateMapping={(accountId, codeId) => {
+                console.log('Update mapping:', accountId, codeId);
+                // Handle mapping updates
               }}
-              onConflictResolve={(mappingId) => {
-                toast({
-                  title: "Konfliktløsning",
-                  description: "Konfliktløsning vil bli implementert senere."
-                });
+              onBulkUpdate={(mappings) => {
+                console.log('Bulk update:', mappings);
+                // Handle bulk mapping updates
+              }}
+              searchTerm=""
+              onSearchChange={(term) => {
+                console.log('Search changed:', term);
+                // Handle search changes
               }}
             />
           </TabsContent>
@@ -572,6 +597,20 @@ const StreamlinedReconciliationView: React.FC<StreamlinedReconciliationViewProps
                   title: "Automatisk reparasjon",
                   description: "Problemløsning vil bli implementert senere."
                 });
+              }}
+            />
+          </TabsContent>
+
+          {/* Enhanced Interactive Reconciliation Tab */}
+          <TabsContent value="enhanced" className="space-y-6">
+            <EnhancedReconciliationTable
+              reconciliationData={reconciliationData}
+              onUpdateNotes={handleUpdateNotesEnhanced}
+              onAcceptDiscrepancy={handleAcceptDiscrepancyEnhanced}
+              onRejectDiscrepancy={handleRejectDiscrepancyEnhanced}
+              onManualAdjustment={(code, adjustment) => {
+                console.log('Manual adjustment for', code, adjustment);
+                // Handle manual adjustments - would update reconciliation data
               }}
             />
           </TabsContent>
