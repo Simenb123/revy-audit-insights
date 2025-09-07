@@ -13109,6 +13109,17 @@ export type Database = {
         }
         Relationships: []
       }
+      schema_status: {
+        Row: {
+          checked_at: string | null
+          has_client_id: boolean | null
+          has_customer_id: boolean | null
+          has_saldo: boolean | null
+          has_version_id: boolean | null
+          table_name: string | null
+        }
+        Relationships: []
+      }
       year_end_exchange_rates: {
         Row: {
           exchange_rate: number | null
@@ -13528,6 +13539,10 @@ export type Database = {
           id: string
           title: string
         }[]
+      }
+      refresh_postgrest_schema: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       reject_firm_access_request: {
         Args: { p_request_id: string }
