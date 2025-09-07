@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import TestDataFilter from './TestDataFilter';
+
 
 interface ClientsHeaderProps {
   title: string;
@@ -28,8 +28,6 @@ interface ClientsHeaderProps {
   isRefreshing: boolean;
   hasApiError: boolean;
   refreshProgress: number;
-  showTestData?: boolean;
-  onTestDataToggle?: (show: boolean) => void;
   onAddClient?: () => void;
   onBulkImport?: () => void;
 }
@@ -49,8 +47,6 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
   isRefreshing,
   hasApiError,
   refreshProgress,
-  showTestData = true,
-  onTestDataToggle,
   onAddClient,
   onBulkImport
 }) => {
@@ -63,13 +59,6 @@ const ClientsHeader: React.FC<ClientsHeaderProps> = ({
         </div>
         
         <div className="flex items-center gap-3">
-          {onTestDataToggle && (
-            <TestDataFilter 
-              showTestData={showTestData} 
-              onToggle={onTestDataToggle} 
-            />
-          )}
-
           {onAddClient && (
             <Button onClick={onAddClient} className="flex items-center gap-2">
               <UserPlus size={16} />

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRevyContext } from '@/components/RevyContext/RevyContextProvider';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Announcement, Client } from '@/types/revio';
-import ClientStatsGrid from '@/components/Clients/ClientStats/ClientStatsGrid';
+import { Client } from '@/types/revio';
+import RecentClientsCard from '@/components/Clients/RecentClientsCard';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 
 import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
@@ -24,8 +24,6 @@ import { Settings, Filter } from 'lucide-react';
 
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showAddClientDialog, setShowAddClientDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -50,33 +48,14 @@ const ClientsOverview = () => {
     groupFilter,
     setGroupFilter,
     groups,
-    filteredClients,
-    showTestData,
-    setShowTestData
+    filteredClients
   } = useClientFilters(clients);
-
-  // Handle row selection
-  const handleRowSelect = (client: Client) => {
-    setSelectedClientId(client.id);
-  };
 
   // Handle client added
   const handleClientAdded = () => {
     refetch();
   };
 
-  // Fetch announcements when component mounts
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        setAnnouncements([]);
-      } catch (error) {
-        console.error('Error fetching announcements:', error);
-      }
-    };
-    
-    fetchAnnouncements();
-  }, []);
 
   // Set context for Revy assistant
   React.useEffect(() => {
@@ -134,8 +113,6 @@ const ClientsOverview = () => {
         isRefreshing={isRefreshing}
         hasApiError={hasApiError}
         refreshProgress={refreshProgress}
-        showTestData={showTestData}
-        onTestDataToggle={setShowTestData}
         onAddClient={() => setShowAddClientDialog(true)}
         onBulkImport={() => setShowBulkImportDialog(true)}
       />
@@ -180,10 +157,8 @@ const ClientsOverview = () => {
       )}
 
 
-      {/* Stats Grid */}
-      <div className="mb-6">
-        <ClientStatsGrid clients={clients} announcements={announcements} />
-      </div>
+      {/* Recent Clients */}
+      <RecentClientsCard />
 
       {/* Main Content Grid - Mer plass til klienttabellen */}
       <FlexibleGrid>
@@ -195,8 +170,6 @@ const ClientsOverview = () => {
             <CardContent>
               <ClientsTable
                 clients={filteredClients}
-                onRowSelect={handleRowSelect}
-                selectedClientId={selectedClientId}
               />
             </CardContent>
           </Card>
