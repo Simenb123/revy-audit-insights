@@ -26,7 +26,8 @@ import {
   GraduationCap,
   BookOpen,
   UserCog,
-  Brain
+  Brain,
+  BarChart3
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
@@ -169,6 +170,18 @@ const GlobalHeader = () => {
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Verktøy & Ressurser</DropdownMenuLabel>
               
+              {/* Team */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/teams')}>
+                <Users className="mr-2 h-4 w-4" />
+                Team
+              </DropdownMenuItem>
+              
+              {/* Budsjett */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resource-planner')}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Budsjett
+              </DropdownMenuItem>
+              
               {/* PDF-filer */}
               <DropdownMenuItem onClick={() => handleSettingsItemClick('/admin/pdf-files')}>
                 <FileText className="mr-2 h-4 w-4" />
@@ -183,6 +196,12 @@ const GlobalHeader = () => {
               
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Læring & Utdanning</DropdownMenuLabel>
+              
+              {/* Revisorskolen */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/revisorskolen')}>
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Revisorskolen
+              </DropdownMenuItem>
               
               {/* Revisjons Akademiet */}
               <DropdownMenuItem onClick={() => handleSettingsItemClick('/learning/audit-academy')}>

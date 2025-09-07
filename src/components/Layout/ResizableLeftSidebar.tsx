@@ -71,24 +71,9 @@ const resourceItems = [
     icon: FileText,
   },
   {
-    title: 'Team',
-    url: '/teams',
-    icon: Users,
-  },
-  {
-    title: 'Budsjett',
-    url: '/resource-planner',
-    icon: BarChart3,
-  },
-  {
     title: 'Kunnskapsbase',
     url: '/fag',
     icon: BookOpen,
-  },
-  {
-    title: 'Revisorskolen',
-    url: '/revisorskolen',
-    icon: GraduationCap,
   },
   {
     title: 'Kommunikasjon',
