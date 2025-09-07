@@ -335,10 +335,19 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
   const uploadBatchId = uploadBatch.id;
 
   // Update import session with batch ID
-  await supabase
+  const { error: sessionUpdateError } = await supabase
     .from('saft_import_sessions')
-    .update({ upload_batch_id: uploadBatchId })
+    .update({ 
+      upload_batch_id: uploadBatchId,
+      processing_completed_at: new Date().toISOString(),
+      import_status: 'completed' 
+    })
     .eq('id', importSessionId);
+    
+  if (sessionUpdateError) {
+    console.error('❌ Error updating import session:', sessionUpdateError);
+    throw sessionUpdateError;
+  }
 
   // Upsert accounts into client_chart_of_accounts with SAF-T 1.3 fields
   const accountRows = parsed.accounts.map(a => {
@@ -499,6 +508,7 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
   
   // Insert customers if present
   if (parsed.customers?.length) {
+    console.log(`💼 Inserting ${parsed.customers.length} customers...`);
     const customerRows = parsed.customers.map(c => ({
       client_id: clientId,
       import_session_id: importSessionId,
@@ -524,15 +534,31 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       payment_terms_months: c.payment_terms_months || null,
     }));
 
-    const { error: customerError } = await supabase
+    console.log('Sample customer data:', customerRows.slice(0, 2));
+
+    const { data: insertedCustomers, error: customerError } = await supabase
       .from('saft_customers')
-      .upsert(customerRows, { onConflict: 'client_id,import_session_id,customer_id' });
+      .upsert(customerRows, { onConflict: 'client_id,import_session_id,customer_id' })
+      .select('customer_id, customer_name, closing_balance_netto');
     
-    if (customerError) throw customerError;
+    if (customerError) {
+      console.error('❌ Customer insert error:', customerError);
+      throw customerError;
+    }
+    console.log(`✅ Inserted ${insertedCustomers?.length || 0} customers successfully`);
+    
+    // Log customers with non-zero balances
+    const customersWithBalances = insertedCustomers?.filter(c => Math.abs(c.closing_balance_netto || 0) > 0.01) || [];
+    if (customersWithBalances.length > 0) {
+      console.log(`💰 Customers with balances:`, customersWithBalances);
+    }
+  } else {
+    console.log('⚠️ No customers found in parsed data');
   }
 
   // Insert suppliers if present
   if (parsed.suppliers?.length) {
+    console.log(`🏢 Inserting ${parsed.suppliers.length} suppliers...`);
     const supplierRows = parsed.suppliers.map(s => ({
       client_id: clientId,
       import_session_id: importSessionId,
@@ -558,11 +584,26 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       payment_terms_months: s.payment_terms_months || null,
     }));
 
-    const { error: supplierError } = await supabase
+    console.log('Sample supplier data:', supplierRows.slice(0, 2));
+
+    const { data: insertedSuppliers, error: supplierError } = await supabase
       .from('saft_suppliers')
-      .upsert(supplierRows, { onConflict: 'client_id,import_session_id,supplier_id' });
+      .upsert(supplierRows, { onConflict: 'client_id,import_session_id,supplier_id' })
+      .select('supplier_id, supplier_name, closing_balance_netto');
     
-    if (supplierError) throw supplierError;
+    if (supplierError) {
+      console.error('❌ Supplier insert error:', supplierError);
+      throw supplierError;
+    }
+    console.log(`✅ Inserted ${insertedSuppliers?.length || 0} suppliers successfully`);
+    
+    // Log suppliers with non-zero balances
+    const suppliersWithBalances = insertedSuppliers?.filter(s => Math.abs(s.closing_balance_netto || 0) > 0.01) || [];
+    if (suppliersWithBalances.length > 0) {
+      console.log(`💰 Suppliers with balances:`, suppliersWithBalances);
+    }
+  } else {
+    console.log('⚠️ No suppliers found in parsed data');
   }
 
   // Insert tax table if present

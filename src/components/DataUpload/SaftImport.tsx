@@ -44,11 +44,14 @@ const SaftImport = () => {
     const threshold = 5 * 1024 * 1024; // 5MB
 
     try {
+      console.log(`🚀 Starting SAF-T import for file: ${file.name} (${file.size} bytes)`);
+      
       // Parse + lag ZIP (CSV + XLSX) – bruk worker for store filer
       let parsed: Awaited<ReturnType<typeof parseSaftFile>>;
       let zip: Blob;
 
       if (file.size > threshold && typeof Worker !== 'undefined') {
+        console.log('📊 Using worker for large file processing');
         const worker = new SaftWorker();
         const result: { parsed: any; zip: Blob; error?: string } = await new Promise((resolve, reject) => {
           worker.onmessage = (e: MessageEvent<any>) => {
@@ -61,9 +64,19 @@ const SaftImport = () => {
         parsed = result.parsed;
         zip = result.zip;
       } else {
+        console.log('🔄 Processing file directly (main thread)');
         parsed = await parseSaftFile(file);
         zip = await createZipFromParsed(parsed);
       }
+
+      console.log('✅ Parsing completed:', {
+        accounts: parsed.accounts?.length || 0,
+        customers: parsed.customers?.length || 0,
+        suppliers: parsed.suppliers?.length || 0,
+        transactions: parsed.transactions?.length || 0,
+        hasCustomerBalances: parsed.customers?.some(c => c.closing_balance_netto !== undefined),
+        hasSupplierBalances: parsed.suppliers?.some(s => s.closing_balance_netto !== undefined)
+      });
 
       // Lokal nedlasting av CSV-filer (valgfri)
       if (generateCsv) {
@@ -83,16 +96,26 @@ const SaftImport = () => {
         if (!clientId) {
           toast.error('Ingen klient-kontekst: kan ikke lagre til database uten valgt klient.');
         } else {
-          await persistParsed(clientId, parsed, file.name);
+          console.log('💾 Starting database persistence...');
+          const result = await persistParsed(clientId, parsed, file.name);
+          console.log('✅ Persistence completed:', result);
+          
+          console.log('📦 Uploading ZIP to storage...');
           const storagePath = await uploadZipToStorage(clientId, zip, `${baseName}.zip`);
-          console.log('SAF-T ZIP lastet opp til:', storagePath);
+          console.log('✅ SAF-T ZIP uploaded to:', storagePath);
         }
       }
 
       toast.success('SAF-T fil behandlet' + (uploadToSupabase ? ' og lagret' : ''));
     } catch (err) {
-      console.error(err);
-      toast.error('Feil ved lesing/lagring av SAF-T fil');
+      console.error('❌ SAF-T import error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Ukjent feil';
+      toast.error(`Feil ved SAF-T import: ${errorMsg}`);
+      
+      // Log detailed error information for debugging
+      if (err instanceof Error && err.stack) {
+        console.error('Full error stack:', err.stack);
+      }
     } finally {
       setIsProcessing(false);
     }
