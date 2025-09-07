@@ -168,7 +168,7 @@ const ClientColumnsConfig: React.FC<ClientColumnsConfigProps> = ({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Settings className="mr-2 h-4 w-4" />
-          Kolonner ({visibleColumnsCount}/{totalColumnsCount})
+          Kolonner fjerne ({visibleColumnsCount}/{totalColumnsCount})
         </Button>
       </DialogTrigger>
       
