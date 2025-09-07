@@ -27,7 +27,8 @@ import {
   BookOpen,
   UserCog,
   Brain,
-  BarChart3
+  BarChart3,
+  LayoutDashboard
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
@@ -169,6 +170,12 @@ const GlobalHeader = () => {
               
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Verktøy & Ressurser</DropdownMenuLabel>
+              
+              {/* Dashboard */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/dashboard')}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </DropdownMenuItem>
               
               {/* Team */}
               <DropdownMenuItem onClick={() => handleSettingsItemClick('/teams')}>

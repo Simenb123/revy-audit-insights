@@ -56,11 +56,6 @@ const generalWorkItems = [
 // Ressurser - tilgjengelig for alle
 const resourceItems = [
   {
-    title: 'Dashboard',
-    url: '/',
-    icon: LayoutDashboard,
-  },
-  {
     title: 'Klienter',
     url: '/clients',
     icon: Users,

@@ -112,8 +112,8 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
                 <Route path="/" element={<RightSidebarProvider><AppLayout /></RightSidebarProvider>}>
-                  <Route index element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="dashboard" element={<ProtectedRoute><NavigationDashboard /></ProtectedRoute>} />
+                  <Route index element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
+                  <Route path="dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="clients" element={<ProtectedRoute><ClientsOverview /></ProtectedRoute>} />
                   <Route path="clients/:clientId" element={<ProtectedRoute><ClientRedirect /></ProtectedRoute>} />
                   <Route path="clients/:clientId/dashboard" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
