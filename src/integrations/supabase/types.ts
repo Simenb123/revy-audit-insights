@@ -1440,6 +1440,36 @@ export type Database = {
           },
         ]
       }
+      ap_supplier_balances: {
+        Row: {
+          client_id: string
+          saldo: number
+          supplier_id: string
+          supplier_name: string | null
+          tx_count: number
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          client_id: string
+          saldo?: number
+          supplier_id: string
+          supplier_name?: string | null
+          tx_count?: number
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          client_id?: string
+          saldo?: number
+          supplier_id?: string
+          supplier_name?: string | null
+          tx_count?: number
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: []
+      }
       ap_transactions: {
         Row: {
           account_id: string | null
@@ -1562,6 +1592,36 @@ export type Database = {
           created_at?: string
           note?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      ar_customer_balances: {
+        Row: {
+          client_id: string
+          customer_id: string
+          customer_name: string | null
+          saldo: number
+          tx_count: number
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          client_id: string
+          customer_id: string
+          customer_name?: string | null
+          saldo?: number
+          tx_count?: number
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          client_id?: string
+          customer_id?: string
+          customer_name?: string | null
+          saldo?: number
+          tx_count?: number
+          updated_at?: string
+          version_id?: string
         }
         Relationships: []
       }
@@ -13539,6 +13599,10 @@ export type Database = {
           id: string
           title: string
         }[]
+      }
+      refresh_ar_ap_aggregates: {
+        Args: { p_version_id: string }
+        Returns: Json
       }
       refresh_postgrest_schema: {
         Args: Record<PropertyKey, never>

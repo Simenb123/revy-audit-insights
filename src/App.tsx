@@ -92,6 +92,8 @@ import AIMultiAgentStudio from "./pages/AIMultiAgentStudio";
 import AdminEmbeddingsManager from "./pages/AdminEmbeddingsManager";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
+import ArBalances from "./pages/ArBalances";
+import ApBalances from "./pages/ApBalances";
 const queryClient = new QueryClient();
 
 function App() {
@@ -121,6 +123,8 @@ function App() {
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/ar" element={<ProtectedRoute><ArBalances /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/ap" element={<ProtectedRoute><ApBalances /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollOverview /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />
                   <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />

@@ -640,6 +640,24 @@ const handleMappingComplete = async (mapping: Record<string, string>, headerRowI
       if (successful > 0) {
         console.log('Activating version after successful transaction insertion:', version.id);
         await setActiveVersionMutation.mutateAsync(version.id);
+        
+        // Refresh AR/AP aggregates after version activation
+        console.log('Refreshing AR/AP aggregates for version:', version.id);
+        try {
+          const { data: arApAggregates, error: arApError } = await supabase.rpc('refresh_ar_ap_aggregates', {
+            p_version_id: version.id
+          });
+          
+          if (arApError) {
+            console.error('Error refreshing AR/AP aggregates:', arApError);
+          } else if (arApAggregates) {
+            const aggregates = arApAggregates as { ar_total: number; ar_count: number; ap_total: number; ap_count: number };
+            console.log(`AR/AP aggregated: AR=${aggregates.ar_total} (${aggregates.ar_count} customers), AP=${aggregates.ap_total} (${aggregates.ap_count} suppliers)`);
+          }
+        } catch (error) {
+          console.error('Failed to refresh AR/AP aggregates:', error);
+        }
+        
         setUploadProgress(90);
         
         // Verify transactions were inserted

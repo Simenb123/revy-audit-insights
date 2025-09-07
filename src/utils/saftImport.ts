@@ -738,6 +738,23 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
   // Only set version as active after successful data insertion
   if (insertedTransactions > 0 && versionId) {
     await supabase.rpc('set_active_version', { p_version_id: versionId });
+    
+    // Refresh AR/AP aggregates after version activation
+    console.log('Refreshing AR/AP aggregates for version:', versionId);
+    try {
+      const { data: arApAggregates, error: arApError } = await supabase.rpc('refresh_ar_ap_aggregates', {
+        p_version_id: versionId
+      });
+      
+      if (arApError) {
+        console.error('Error refreshing AR/AP aggregates:', arApError);
+      } else if (arApAggregates) {
+        const aggregates = arApAggregates as { ar_total: number; ar_count: number; ap_total: number; ap_count: number };
+        console.log(`AR/AP aggregated: AR=${aggregates.ar_total} (${aggregates.ar_count} customers), AP=${aggregates.ap_total} (${aggregates.ap_count} suppliers)`);
+      }
+    } catch (error) {
+      console.error('Failed to refresh AR/AP aggregates:', error);
+    }
   } else {
     throw new Error('No transactions were inserted successfully');
   }

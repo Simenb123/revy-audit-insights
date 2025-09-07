@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAccountingData } from '@/hooks/useAccountingData';
+import { useArApTotals } from '@/hooks/useArApBalances';
 import { Client } from '@/types/revio';
 
 interface ClientOverviewDashboardProps {
@@ -24,6 +25,7 @@ interface ClientOverviewDashboardProps {
 const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
   const navigate = useNavigate();
   const { data: accountingData, isLoading } = useAccountingData(client.id);
+  const { data: arApTotals } = useArApTotals(client.id);
 
   // Calculate completion status
   const hasTrialBalance = accountingData?.chartOfAccountsCount > 0;
@@ -170,6 +172,41 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
                   }
                 </p>
               </div>
+            </div>
+
+            {/* AR/AP Summary Cards */}
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow" 
+                    onClick={() => navigate(`/clients/${client.id}/ar`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Kundesaldo (AR)</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {arApTotals?.ar_total ? `${arApTotals.ar_total.toLocaleString('nb-NO')} kr` : '0 kr'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {arApTotals?.ar_count || 0} kunder
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate(`/clients/${client.id}/ap`)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Leverandørsaldo (AP)</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {arApTotals?.ap_total ? `${arApTotals.ap_total.toLocaleString('nb-NO')} kr` : '0 kr'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {arApTotals?.ap_count || 0} leverandører  
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="space-y-2">
