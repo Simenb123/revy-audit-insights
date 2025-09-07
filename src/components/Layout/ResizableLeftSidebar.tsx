@@ -52,27 +52,6 @@ const generalWorkItems = [
   },
 ]
 
-// Administrative områder - rollebasert tilgang
-const adminItems = [
-  {
-    title: 'Klientadmin',
-    url: '/client-admin',
-    icon: Building,
-    roles: ['admin', 'partner', 'manager'] as const,
-  },
-  {
-    title: 'Brukeradmin',
-    url: '/user-admin',
-    icon: Users,
-    roles: ['admin', 'partner', 'employee'] as const,
-  },
-  {
-    title: 'AI Admin',
-    url: '/ai-revy-admin',
-    icon: Brain,
-    roles: ['admin'] as const,
-  },
-]
 
 // Ressurser - tilgjengelig for alle
 const resourceItems = [
@@ -283,14 +262,6 @@ const ResizableLeftSidebar = () => {
       (url !== '/' && location.pathname.startsWith(url))
   }
 
-  const canAccessAdminItem = (roles: readonly string[]) => {
-    if (!userProfile?.userRole) return false
-    return roles.includes(userProfile.userRole)
-  }
-
-  const filteredAdminItems = adminItems.filter(item => 
-    !item.roles || canAccessAdminItem(item.roles)
-  )
 
   return (
       <ShadcnSidebar
@@ -591,54 +562,6 @@ const ResizableLeftSidebar = () => {
            </Collapsible>
          )}
 
-        {/* Administrasjon seksjon - kun hvis brukeren har tilgang til minst ett element */}
-        {filteredAdminItems.length > 0 && (
-          <Collapsible 
-            open={!collapsedSections['administration']} 
-            onOpenChange={() => toggleSection('administration')}
-          >
-            <SidebarGroup>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
-                  {!isCollapsed && (
-                    <>
-                      <span>Administrasjon</span>
-                      {collapsedSections['administration'] ? 
-                        <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
-                        <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
-                      }
-                    </>
-                  )}
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu className="space-y-1">
-                     {filteredAdminItems.map((item) => {
-                       const isItemActive = isActive(item.url)
-                       
-                       return (
-                         <SidebarMenuItem key={item.title}>
-                           <SidebarMenuButton 
-                             asChild 
-                             isActive={isItemActive}
-                             className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
-                             tooltip={isCollapsed ? item.title : undefined}
-                           >
-                             <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
-                               <item.icon className="h-4 w-4 flex-shrink-0" />
-                               {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
-                             </Link>
-                           </SidebarMenuButton>
-                         </SidebarMenuItem>
-                       )
-                     })}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        )}
 
         {/* Ressurser seksjon */}
         <Collapsible 

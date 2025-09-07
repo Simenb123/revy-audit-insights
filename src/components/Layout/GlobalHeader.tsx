@@ -25,7 +25,8 @@ import {
   Calculator,
   GraduationCap,
   BookOpen,
-  UserCog
+  UserCog,
+  Brain
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
@@ -62,6 +63,37 @@ const GlobalHeader = () => {
   };
 
   const { data: isSuperAdmin } = useIsSuperAdmin();
+
+  // Administrative areas - role-based access
+  const adminItems = [
+    {
+      title: 'Klientadmin',
+      url: '/client-admin',
+      icon: Building,
+      roles: ['admin', 'partner', 'manager'] as const,
+    },
+    {
+      title: 'Brukeradmin',
+      url: '/user-admin',
+      icon: Users,
+      roles: ['admin', 'partner', 'employee'] as const,
+    },
+    {
+      title: 'AI Admin',
+      url: '/ai-revy-admin',
+      icon: Brain,
+      roles: ['admin'] as const,
+    },
+  ];
+
+  const canAccessAdminItem = (roles: readonly string[]) => {
+    if (!userProfile?.userRole) return false;
+    return roles.includes(userProfile.userRole);
+  };
+
+  const filteredAdminItems = adminItems.filter(item => 
+    !item.roles || canAccessAdminItem(item.roles)
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-revio-500/95 backdrop-blur supports-[backdrop-filter]:bg-revio-500/60">
@@ -106,7 +138,7 @@ const GlobalHeader = () => {
               <DropdownMenuLabel>Innstillinger & Verktøy</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
-              {/* Organisasjon */}
+              {/* Organisasjon & Innstillinger */}
               <DropdownMenuItem onClick={() => handleSettingsItemClick('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Organisasjonsinnstillinger
@@ -119,6 +151,20 @@ const GlobalHeader = () => {
                 <Users className="mr-2 h-4 w-4" />
                 Rolleadministrasjon
               </DropdownMenuItem>
+
+              {/* Administrasjon - kun hvis brukeren har tilgang til minst ett element */}
+              {filteredAdminItems.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Administrasjon</DropdownMenuLabel>
+                  {filteredAdminItems.map((item) => (
+                    <DropdownMenuItem key={item.title} onClick={() => handleSettingsItemClick(item.url)}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.title}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
               
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Verktøy & Ressurser</DropdownMenuLabel>
