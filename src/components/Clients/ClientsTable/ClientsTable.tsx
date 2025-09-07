@@ -3,15 +3,38 @@ import StandardDataTable, { StandardDataTableColumn } from '@/components/ui/stan
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EquityBadge from "./EquityBadge";
 import TestDataBadge from "./TestDataBadge";
 import { Client } from "@/types/revio";
 import { useNavigate } from "react-router-dom";
+import { Search, Plus, Upload, RefreshCw, Settings, Filter } from 'lucide-react';
 
 interface ClientsTableProps {
   clients: Client[];
   onRowSelect?: (client: Client) => void;
   selectedClientId?: string | null;
+  // Search and filter props
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  departmentFilter: string;
+  onDepartmentChange: (value: string) => void;
+  departments: string[];
+  groupFilter: string;
+  onGroupChange: (value: string) => void;
+  groups: string[];
+  // Action props
+  onRefresh: () => void;
+  isRefreshing: boolean;
+  hasApiError: boolean;
+  refreshProgress?: number;
+  onAddClient: () => void;
+  onBulkImport: () => void;
+  // Advanced features
+  onShowAdvancedFilters: () => void;
+  onShowColumnsConfig: () => void;
 }
 
 const phaseOrder = {
@@ -44,7 +67,27 @@ const engagementTypeLabel = (t?: Client["engagement_type"]) => {
   return '—';
 };
 
-const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTableProps) => {
+const ClientsTable = ({ 
+  clients, 
+  onRowSelect, 
+  selectedClientId,
+  searchTerm,
+  onSearchChange,
+  departmentFilter,
+  onDepartmentChange,
+  departments,
+  groupFilter,
+  onGroupChange,
+  groups,
+  onRefresh,
+  isRefreshing,
+  hasApiError,
+  refreshProgress,
+  onAddClient,
+  onBulkImport,
+  onShowAdvancedFilters,
+  onShowColumnsConfig
+}: ClientsTableProps) => {
   const navigate = useNavigate();
 
   const columns: StandardDataTableColumn<Client>[] = [
@@ -210,48 +253,147 @@ const ClientsTable = ({ clients, onRowSelect, selectedClientId }: ClientsTablePr
   ];
 
   return (
-    <StandardDataTable
-      title="Klienter"
-      data={clients}
-      columns={columns}
-      exportFileName="klienter"
-      enablePdfExport={true}
-      pdfTitle="Klientoversikt"
-      preferencesKey="clients-table-columns"
-      defaultColumnState={[
-        { key: "client", visible: true, pinnedLeft: true },
-        { key: "phase", visible: true },
-        { key: "progress", visible: true },
-        { key: "org", visible: true },
-        { key: "municipality", visible: true },
-        { key: "mva_registered", visible: true },
-        { key: "nace_code", visible: false },
-        { key: "nace_description", visible: false },
-         { key: "accountant_name", visible: false },
-         { key: "partner", visible: false },
-         { key: "account_manager", visible: false },
-         { key: "accounting_system", visible: false },
-         { key: "engagement_type", visible: true },
-         { key: "capital", visible: true },
-         { key: "department", visible: true },
-         { key: "group", visible: true },
-         { key: "budget_amount", visible: false },
-         { key: "budget_hours", visible: false },
-         { key: "actual_industry", visible: false },
-         { key: "is_active", visible: true },
-      ]}
-      onRowClick={(row) => {
-        onRowSelect?.(row);
-        navigate(`/clients/${row.id}/dashboard`);
-      }}
-      getRowClassName={(row) => (selectedClientId === row.id ? "bg-muted" : "")}
-      stickyHeader
-      maxBodyHeight="70vh"
-      wrapInCard={false}
-      showSearch={false}
-      emptyMessage="Ingen klienter funnet"
-      tableName="Klienter"
-    />
+    <Card>
+      <CardHeader>
+        <CardTitle>Klientliste</CardTitle>
+        
+        {/* Search and Filters Toolbar */}
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+            <Input
+              placeholder="Søk etter klienter..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Filters and Actions */}
+          <div className="flex flex-wrap gap-2">
+            {/* Department Filter */}
+            <Select value={departmentFilter} onValueChange={onDepartmentChange}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Alle avdelinger" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle avdelinger</SelectItem>
+                {departments.map(dept => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Group Filter */}
+            <Select value={groupFilter} onValueChange={onGroupChange}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Alle grupper" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle grupper</SelectItem>
+                {groups.map(group => (
+                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 ml-auto">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onShowAdvancedFilters}
+              >
+                <Filter size={16} />
+                Avanserte filtre
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onShowColumnsConfig}
+              >
+                <Settings size={16} />
+                Kolonner
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                {isRefreshing ? `${refreshProgress || 0}%` : 'Refresh BRREG'}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onBulkImport}
+              >
+                <Upload size={16} />
+                Bulk import
+              </Button>
+              
+              <Button 
+                size="sm"
+                onClick={onAddClient}
+              >
+                <Plus size={16} />
+                Ny klient
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <StandardDataTable
+          title=""
+          data={clients}
+          columns={columns}
+          exportFileName="klienter"
+          enablePdfExport={true}
+          pdfTitle="Klientoversikt"
+          preferencesKey="clients-table-columns"
+          defaultColumnState={[
+            { key: "client", visible: true, pinnedLeft: true },
+            { key: "phase", visible: true },
+            { key: "progress", visible: true },
+            { key: "org", visible: true },
+            { key: "municipality", visible: true },
+            { key: "mva_registered", visible: true },
+            { key: "nace_code", visible: false },
+            { key: "nace_description", visible: false },
+             { key: "accountant_name", visible: false },
+             { key: "partner", visible: false },
+             { key: "account_manager", visible: false },
+             { key: "accounting_system", visible: false },
+             { key: "engagement_type", visible: true },
+             { key: "capital", visible: true },
+             { key: "department", visible: true },
+             { key: "group", visible: true },
+             { key: "budget_amount", visible: false },
+             { key: "budget_hours", visible: false },
+             { key: "actual_industry", visible: false },
+             { key: "is_active", visible: true },
+          ]}
+          onRowClick={(row) => {
+            onRowSelect?.(row);
+            navigate(`/clients/${row.id}/dashboard`);
+          }}
+          getRowClassName={(row) => (selectedClientId === row.id ? "bg-muted" : "")}
+          stickyHeader
+          maxBodyHeight="60vh"
+          wrapInCard={false}
+          showSearch={false}
+          emptyMessage="Ingen klienter funnet"
+          tableName="Klienter"
+        />
+      </CardContent>
+    </Card>
   );
 };
 

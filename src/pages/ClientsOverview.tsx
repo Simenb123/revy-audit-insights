@@ -6,21 +6,18 @@ import { Client } from '@/types/revio';
 import RecentClientsCard from '@/components/Clients/RecentClientsCard';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
 
-import ClientsHeader from '@/components/Clients/ClientsHeader/ClientsHeader';
+
 import AddClientDialog from '@/components/Clients/AddClientDialog';
 import ClientBulkImporter from '@/components/Clients/ClientBulkImporter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useClientData } from '@/components/Clients/ClientFetcher/useClientData';
 import { useClientFilters } from '@/components/Clients/ClientFilters/useClientFilters';
 import { useBrregRefresh } from '@/hooks/useBrregRefresh';
-import FlexibleGrid from '@/components/Layout/FlexibleGrid';
+
 import ClientFilters from '@/components/Clients/Advanced/ClientFilters';
 import ClientColumnsConfig from '@/components/Clients/Advanced/ClientColumnsConfig';
 
 import { ClientFilterField, ClientColumnConfig, DEFAULT_CLIENT_COLUMNS } from '@/types/client-extended';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Settings, Filter } from 'lucide-react';
 
 const ClientsOverview = () => {
   const { setContext } = useRevyContext();
@@ -72,50 +69,16 @@ const ClientsOverview = () => {
 
   return (
     <div className="space-y-[var(--content-gap)] w-full">
+      {/* Header with Recent Clients */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mine klienter</h1>
           <p className="text-muted-foreground">Oversikt over klienter og revisjonsstatus</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          >
-            <Filter size={16} />
-            Avanserte filtre
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowColumnsConfig(!showColumnsConfig)}
-          >
-            <Settings size={16} />
-            Kolonner
-          </Button>
-        </div>
+        {/* Recent Clients in top-right corner */}
+        <RecentClientsCard />
       </div>
-
-      <ClientsHeader
-        title=""
-        subtitle=""
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        departmentFilter={departmentFilter}
-        onDepartmentChange={setDepartmentFilter}
-        departments={departments}
-        groupFilter={groupFilter}
-        onGroupChange={setGroupFilter}
-        groups={groups}
-        onRefresh={handleRefreshBrregData}
-        isRefreshing={isRefreshing}
-        hasApiError={hasApiError}
-        refreshProgress={refreshProgress}
-        onAddClient={() => setShowAddClientDialog(true)}
-        onBulkImport={() => setShowBulkImportDialog(true)}
-      />
 
       {/* Advanced Filters */}
       {showAdvancedFilters && (
@@ -156,25 +119,26 @@ const ClientsOverview = () => {
         </Card>
       )}
 
-
-      {/* Recent Clients */}
-      <RecentClientsCard />
-
-      {/* Main Content Grid - Mer plass til klienttabellen */}
-      <FlexibleGrid>
-        <div className="col-span-full xl:col-span-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Klientliste</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientsTable
-                clients={filteredClients}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </FlexibleGrid>
+      {/* Main Clients Table - Full width */}
+      <ClientsTable
+        clients={filteredClients}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        departmentFilter={departmentFilter}
+        onDepartmentChange={setDepartmentFilter}
+        departments={departments}
+        groupFilter={groupFilter}
+        onGroupChange={setGroupFilter}
+        groups={groups}
+        onRefresh={handleRefreshBrregData}
+        isRefreshing={isRefreshing}
+        hasApiError={hasApiError}
+        refreshProgress={refreshProgress}
+        onAddClient={() => setShowAddClientDialog(true)}
+        onBulkImport={() => setShowBulkImportDialog(true)}
+        onShowAdvancedFilters={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        onShowColumnsConfig={() => setShowColumnsConfig(!showColumnsConfig)}
+      />
 
       {/* Add Client Dialog */}
       <AddClientDialog
