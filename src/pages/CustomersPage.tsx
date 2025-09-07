@@ -1,0 +1,119 @@
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useClientDetails } from '@/hooks/useClientDetails';
+import { useSaftCustomers } from '@/hooks/useSaftCustomers';
+import { useSaftImportSessions } from '@/hooks/useSaftImportSessions';
+import StickyClientLayout from '@/components/Layout/StickyClientLayout';
+import { SaftCustomersTable } from '@/components/DataUpload/reports/SaftCustomersTable';
+import { SaftCustomersAgedAnalysis } from '@/components/DataUpload/reports/SaftCustomersAgedAnalysis';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, FileText } from 'lucide-react';
+
+const CustomersPage = () => {
+  const { clientId } = useParams<{ clientId: string }>();
+  const { data: client, isLoading: clientLoading } = useClientDetails(clientId || '');
+  const { data: saftSessions, isLoading: sessionsLoading } = useSaftImportSessions(clientId);
+  const { data: customers, isLoading: customersLoading } = useSaftCustomers(clientId);
+
+  const totalCustomers = customers?.length || 0;
+  const totalBalance = customers?.reduce((sum, customer) => sum + customer.closing_balance_netto, 0) || 0;
+
+  if (clientLoading || !client) {
+    return (
+      <div className="p-6">
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <StickyClientLayout
+      clientName={client.company_name || client.name}
+      orgNumber={client.org_number}
+      pageTitle="Kundeanalyse"
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-6 p-6">
+            {/* Oversikt */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Totalt antall kunder</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {customersLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <div className="text-2xl font-bold">{totalCustomers}</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total kundebalanse</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {customersLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold">
+                      {new Intl.NumberFormat('no-NO', { 
+                        style: 'currency', 
+                        currency: 'NOK',
+                        minimumFractionDigits: 0
+                      }).format(totalBalance)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">SAF-T importer</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {sessionsLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <div className="text-2xl font-bold">{saftSessions?.length || 0}</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Aldersfordeling */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Aldersfordeling kundefordringer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SaftCustomersAgedAnalysis clientId={clientId || ''} />
+              </CardContent>
+            </Card>
+
+            {/* Kundetabell */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Alle kunder</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SaftCustomersTable clientId={clientId || ''} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </StickyClientLayout>
+  );
+};
+
+export default CustomersPage;

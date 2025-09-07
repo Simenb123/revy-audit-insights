@@ -90,6 +90,8 @@ import { PdfCreatorPage } from "./components/pdf/PdfCreatorPage";
 import AksjonaerregisterPage from "./pages/ressurser/aksjonaerregister";
 import AIMultiAgentStudio from "./pages/AIMultiAgentStudio";
 import AdminEmbeddingsManager from "./pages/AdminEmbeddingsManager";
+import CustomersPage from "./pages/CustomersPage";
+import SuppliersPage from "./pages/SuppliersPage";
 const queryClient = new QueryClient();
 
 function App() {
@@ -147,9 +149,11 @@ function App() {
                    <Route path="clients/:clientId/reports" element={<ProtectedRoute><ReportsManagement /></ProtectedRoute>} />
                     <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
                     <Route path="clients/:clientId/audit/sampling" element={<ProtectedRoute><AuditSampling /></ProtectedRoute>} />
-                    <Route path="clients/:clientId/transaction-analysis" element={<ProtectedRoute><TransactionAnalysis /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
+                     <Route path="clients/:clientId/transaction-analysis" element={<ProtectedRoute><TransactionAnalysis /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
                   <Route path="clients/:clientId/upload-history" element={<ProtectedRoute><UploadHistory /></ProtectedRoute>} />
                   
                   {/* Legacy routes for backward compatibility */}

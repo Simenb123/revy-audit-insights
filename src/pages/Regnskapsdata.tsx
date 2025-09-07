@@ -17,6 +17,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { A07ControlStatement } from '@/components/AccountingData/A07ControlStatement';
 import { A07DataSection } from '@/components/AccountingData/A07DataSection';
+import { useSaftImportSessions } from '@/hooks/useSaftImportSessions';
+import { useSaftCustomers } from '@/hooks/useSaftCustomers';
+import { useSaftSuppliers } from '@/hooks/useSaftSuppliers';
 
 const Regnskapsdata = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -26,6 +29,9 @@ const Regnskapsdata = () => {
   const { data: glVersions, isLoading: glLoading } = useAccountingVersions(clientId || '');
   const { data: tbVersions, isLoading: tbLoading } = useTrialBalanceVersions(clientId || '');
   const { data: payrollImports, isLoading: payrollLoading } = usePayrollImports(clientId || '');
+  const { data: saftSessions, isLoading: saftLoading } = useSaftImportSessions(clientId || '');
+  const { data: saftCustomers } = useSaftCustomers(clientId || '');
+  const { data: saftSuppliers } = useSaftSuppliers(clientId || '');
 
   const handleExportPayrollData = async () => {
     if (!clientId || !payrollImports?.length) {
@@ -224,6 +230,109 @@ const Regnskapsdata = () => {
     </Card>
   );
 
+  const SaftImportSection = ({ clientId }: { clientId: string }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          SAF-T Import
+        </CardTitle>
+        <Button size="sm" variant="outline" onClick={() => window.location.href = `/clients/${clientId}/saft`}>
+          <Upload className="h-4 w-4 mr-2" />
+          Last opp
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {saftLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        ) : saftSessions && saftSessions.length > 0 ? (
+          <div className="space-y-3">
+            {saftSessions.slice(0, 3).map((session, index) => (
+              <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium">{session.file_name}</span>
+                    {index === 0 && (
+                      <Badge variant="default" className="text-xs">Nyeste</Badge>
+                    )}
+                    <Badge 
+                      variant={session.import_status === 'completed' ? 'default' : 'secondary'} 
+                      className="text-xs"
+                    >
+                      {session.import_status}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-4">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(session.created_at)}
+                    </span>
+                    {session.metadata.total_customers && (
+                      <span>{session.metadata.total_customers} kunder</span>
+                    )}
+                    {session.metadata.total_suppliers && (
+                      <span>{session.metadata.total_suppliers} leverandører</span>
+                    )}
+                    {session.metadata.total_transactions && (
+                      <span>{session.metadata.total_transactions} transaksjoner</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {saftSessions.length > 3 && (
+              <Button variant="outline" className="w-full">
+                Vis alle {saftSessions.length} importer
+              </Button>
+            )}
+            
+            {/* Quick links to analysis */}
+            <div className="pt-4 border-t">
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => window.location.href = `/clients/${clientId}/customers`}
+                  disabled={!saftCustomers?.length}
+                >
+                  Kunder ({saftCustomers?.length || 0})
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => window.location.href = `/clients/${clientId}/suppliers`}
+                  disabled={!saftSuppliers?.length}
+                >
+                  Leverandører ({saftSuppliers?.length || 0})
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Ingen SAF-T filer lastet opp ennå</p>
+            <Button size="sm" variant="outline" className="mt-4" onClick={() => window.location.href = `/clients/${clientId}/saft`}>
+              <Upload className="h-4 w-4 mr-2" />
+              Last opp første fil
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <StickyClientLayout
       clientName={client.company_name || client.name}
@@ -315,14 +424,7 @@ const Regnskapsdata = () => {
                 </CardContent>
               </Card>
               
-              <DocumentSection
-                title="SAF-T Import"
-                icon={FileText}
-                versions={[]}
-                isLoading={false}
-                uploadPath={`/clients/${clientId}/saft`}
-                emptyText="Ingen SAF-T filer lastet opp ennå"
-              />
+              <SaftImportSection clientId={clientId || ''} />
             </div>
 
             {/* A07 Data Section - Upload and management */}
