@@ -349,7 +349,7 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
     throw sessionUpdateError;
   }
 
-  // Upsert accounts into client_chart_of_accounts with SAF-T 1.3 fields
+  // Upsert accounts into client_chart_of_accounts (only existing schema fields)
   const accountRows = parsed.accounts.map(a => {
     const derivedType = convertToNorwegian(String((a as any).account_type ?? (a as any).type ?? ''));
     return {
@@ -358,17 +358,10 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       account_name: a.description || a.account_id,
       account_type: derivedType,
       is_active: true,
-      // SAF-T 1.3 fields
+      // SAF-T 1.3 metadata fields (balance data goes to trial_balances and AR/AP aggregates)
       grouping_category: a.grouping_category,
       grouping_code: a.grouping_code,
-      standard_account_code: a.standard_account_code,
-      opening_debit_balance: a.opening_debit_balance,
-      opening_credit_balance: a.opening_credit_balance,
-      closing_debit_balance: a.closing_debit_balance,
-      closing_credit_balance: a.closing_credit_balance,
-      opening_balance: a.opening_balance,
-      closing_balance: a.closing_balance,
-      vat_code: a.vat_code
+      standard_account_code: a.standard_account_code
     };
   });
 
