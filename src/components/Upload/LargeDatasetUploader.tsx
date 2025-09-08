@@ -34,23 +34,91 @@ const createFileWorker = () => {
       const reader = new FileReader();
       reader.onload = function(event) {
         const text = event.target.result;
-        const lines = text.split('\\n');
-        const chunks = [];
+        const lines = text.split('\\n').filter(line => line.trim().length > 0);
         
-        // Process in chunks
-        for (let i = 0; i < lines.length; i += chunkSize) {
-          const chunk = lines.slice(i, i + chunkSize);
+        // Detect CSV separator and parse headers
+        const detectSeparator = (line) => {
+          const semicolonCount = (line.match(/;/g) || []).length;
+          const commaCount = (line.match(/,/g) || []).length;
+          return semicolonCount > commaCount ? ';' : ',';
+        };
+        
+        const parseCSVLine = (line, separator) => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === separator && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+        
+        if (lines.length === 0) {
+          self.postMessage({ type: 'error', error: 'Empty file' });
+          return;
+        }
+        
+        // Detect separator from first line
+        const separator = detectSeparator(lines[0]);
+        
+        // Parse all lines to objects
+        const parsedData = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const fields = parseCSVLine(line, separator);
+          
+          // Map to standard field names (support both column letters and Norwegian headers)
+          const rowObj = {
+            A: fields[0] || '',  // Orgnr
+            B: fields[1] || '',  // Company name
+            C: fields[2] || '',  // Share class
+            D: fields[3] || '',  // Holder name
+            E: fields[4] || '',  // Birth year/orgnr
+            F: fields[5] || '',  // Address
+            G: fields[6] || '',  // Country
+            H: fields[7] || '',  // Shares
+            I: fields[8] || ''   // Total shares
+          };
+          
+          // Also add Norwegian field names for compatibility
+          rowObj.orgnr = fields[0] || '';
+          rowObj.selskap = fields[1] || '';
+          rowObj.aksjeklasse = fields[2] || '';
+          rowObj.navn_aksjonaer = fields[3] || '';
+          rowObj.fodselsaar_orgnr = fields[4] || '';
+          rowObj.landkode = fields[6] || '';
+          rowObj.antall_aksjer = fields[7] || '';
+          
+          parsedData.push(rowObj);
+        }
+        
+        // Create chunks of parsed objects
+        const chunks = [];
+        for (let i = 0; i < parsedData.length; i += chunkSize) {
+          const chunk = parsedData.slice(i, i + chunkSize);
           chunks.push({
             index: Math.floor(i / chunkSize),
             data: chunk,
-            isLast: i + chunkSize >= lines.length
+            isLast: i + chunkSize >= parsedData.length
           });
         }
         
         self.postMessage({
           type: 'chunks',
           chunks: chunks,
-          totalLines: lines.length
+          totalLines: parsedData.length
         });
       };
       
@@ -61,7 +129,7 @@ const createFileWorker = () => {
         });
       };
       
-      reader.readAsText(file);
+      reader.readAsText(file, 'utf-8');
     };
   `;
   

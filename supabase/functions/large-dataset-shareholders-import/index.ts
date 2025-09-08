@@ -218,6 +218,12 @@ async function finalizeSession(
 }
 
 function processRow(row: any, year: number): ProcessedRow | null {
+  // Handle both string lines and parsed objects
+  if (typeof row === 'string') {
+    console.log('⚠️ Received string instead of object:', row.substring(0, 100))
+    return null
+  }
+  
   // Flexible field mapping for Norwegian CSV files
   const getValue = (fields: string[]): string => {
     for (const field of fields) {
@@ -243,7 +249,7 @@ function processRow(row: any, year: number): ProcessedRow | null {
 
   const shareClass = getValue([
     'aksjeklasse', 'Aksjeklasse', 'share_class', 'C'
-  ]) || 'A'
+  ]) || 'Ordinære aksjer'
 
   const sharesStr = getValue([
     'antall aksjer', 'Antall aksjer', 'aksjer', 'shares', 'antall_aksjer', 'H'
@@ -251,8 +257,12 @@ function processRow(row: any, year: number): ProcessedRow | null {
 
   const shares = parseInt(sharesStr) || 0
 
+  // More detailed logging for debugging
+  console.log(`🔍 Processing row: orgnr=${orgnr}, company=${companyName.substring(0,20)}, holder=${holderName.substring(0,20)}, shares=${shares}`)
+
   // Validate required fields
   if (!orgnr || orgnr.length < 8 || !companyName || !holderName || shares <= 0) {
+    console.log(`❌ Row validation failed: orgnr=${orgnr} (len=${orgnr.length}), company=${!!companyName}, holder=${!!holderName}, shares=${shares}`)
     return null
   }
 
@@ -261,12 +271,12 @@ function processRow(row: any, year: number): ProcessedRow | null {
 
   // Extract holder details
   const birthYearOrOrgnr = getValue([
-    'fødselsår/orgnr', 'Fødselsår/orgnr', 'birth_year', 'eier_orgnr', 'E'
+    'fødselsår/orgnr', 'Fødselsår/orgnr', 'birth_year', 'eier_orgnr', 'fodselsaar_orgnr', 'E'
   ]).replace(/\s/g, '')
 
   let holderOrgnr: string | undefined
   let holderBirthYear: number | undefined
-  const holderCountry = getValue(['landkode', 'Landkode', 'country_code', 'G']) || 'NO'
+  const holderCountry = getValue(['landkode', 'Landkode', 'country_code', 'G']) || 'NOR'
 
   // Parse birth year/org number field
   if (birthYearOrOrgnr) {
