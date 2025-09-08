@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, Upload, Search, Network } from 'lucide-react'
 
-import { ShareholdersUpload } from '@/components/Shareholders/ShareholdersUpload'
 import { ShareholdersTable } from '@/components/Shareholders/ShareholdersTable'
 import { OwnershipGraph } from '@/components/Shareholders/OwnershipGraph'
+import EnhancedShareholdersUpload from '@/components/Shareholders/EnhancedShareholdersUpload'
 
 const AksjonaerregisterPage: React.FC = () => {
   const [selectedCompanyOrgnr, setSelectedCompanyOrgnr] = useState<string>('')
@@ -45,7 +45,18 @@ const AksjonaerregisterPage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="import" className="space-y-4">
-          <ShareholdersUpload />
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Aksjonærregister</CardTitle>
+              <CardDescription>
+                Last opp CSV- eller Excel-filer med aksjonærinformasjon. 
+                Systemet støtter store datasett med millioner av rader.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EnhancedShareholdersUpload />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="search" className="space-y-4">
