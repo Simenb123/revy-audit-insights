@@ -235,7 +235,7 @@ const DataTable = <T extends Record<string, any>>({
     sortOrder?: 'asc' | 'desc';
     searchTerm?: string;
   };
-  const [views, setViews] = useLocalStorage<TableView[]>(preferencesKey ? `${preferencesKey}:views` : undefined, []);
+  const [views, setViews] = useLocalStorage<TableView[]>(preferencesKey && !preferencesKey.includes('-columns-only') ? `${preferencesKey}:views` : undefined, []);
   const [colWidths, setColWidths] = useLocalStorage<Record<string, number>>(preferencesKey ? `${preferencesKey}:widths` : undefined, {});
 
   const saveCurrentView = () => {
@@ -648,7 +648,7 @@ const TableBlock = (
               onExcelExport={handleExport}
               onPdfExport={onPdfExport ? () => onPdfExport(filteredAndSortedData) : undefined}
               isExportDisabled={!data || data.length === 0}
-              viewsDropdown={preferencesKey ? <ViewsDropdown /> : undefined}
+              viewsDropdown={preferencesKey && !preferencesKey.includes('-columns-only') ? <ViewsDropdown /> : undefined}
               customActions={toolbarCustomActions}
             />
           </div>
@@ -822,9 +822,9 @@ const TableBlock = (
             )}
           </div>
           <div className="flex items-center gap-2">
-            {preferencesKey && <ViewsDropdown />}
+            {preferencesKey && !preferencesKey.includes('-columns-only') && <ViewsDropdown />}
             {enableColumnManager && (
-              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
+              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Velg kolonner" />
             )}
             {preferencesKey && (
               <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">
@@ -862,9 +862,9 @@ const TableBlock = (
         {/* Header controls are now moved inside the table when using internal toolbar */}
         {!enableInternalToolbar && (
           <div className="flex items-center gap-2">
-            {preferencesKey && <ViewsDropdown />}
+            {preferencesKey && !preferencesKey.includes('-columns-only') && <ViewsDropdown />}
             {enableColumnManager && (
-              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Kolonner" />
+              <ColumnManager columns={safeCmState} onChange={setCmState} allowPinLeft title="Tilpass kolonner" triggerLabel="Velg kolonner" />
             )}
             {preferencesKey && (
               <Button variant="outline" size="sm" onClick={resetColWidths} title="Tilbakestill kolonnebredder">

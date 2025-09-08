@@ -37,6 +37,8 @@ export interface StandardDataTableProps<T = any> extends Omit<DataTableProps<T>,
   enablePdfExport?: boolean;
   pdfTitle?: string;
   pdfOrientation?: 'portrait' | 'landscape';
+  // Views management
+  disableViews?: boolean; // Disable "Lagre ny visning" while keeping column manager
 }
 
 const StandardDataTable = <T extends Record<string, any>>({
@@ -48,10 +50,13 @@ const StandardDataTable = <T extends Record<string, any>>({
   enablePdfExport = false,
   pdfTitle,
   pdfOrientation = 'landscape',
+  disableViews = false,
   ...props
 }: StandardDataTableProps<T>) => {
   // Generate preferences key from table name if not provided
-  const finalPreferencesKey = preferencesKey || (tableName ? `standard-table-${tableName}` : undefined);
+  const basePreferencesKey = preferencesKey || (tableName ? `standard-table-${tableName}` : undefined);
+  // If views are disabled, use a special key that prevents ViewsDropdown but allows column preferences
+  const finalPreferencesKey = disableViews ? `${basePreferencesKey}-columns-only` : basePreferencesKey;
 
   // PDF Export function
   const handlePdfExport = React.useCallback(async (data: T[]) => {

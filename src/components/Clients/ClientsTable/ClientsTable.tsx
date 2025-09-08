@@ -391,6 +391,7 @@ const ClientsTable = ({
           showSearch={false}
           emptyMessage="Ingen klienter funnet"
           tableName="Klienter"
+          disableViews={true}
         />
       </CardContent>
     </Card>
