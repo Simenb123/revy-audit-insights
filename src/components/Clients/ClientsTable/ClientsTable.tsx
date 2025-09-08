@@ -388,6 +388,7 @@ const ClientsTable = ({
           stickyHeader
           maxBodyHeight="60vh"
           wrapInCard={false}
+          enableInternalToolbar={false}
           showSearch={false}
           emptyMessage="Ingen klienter funnet"
           tableName="Klienter"
