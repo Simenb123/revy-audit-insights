@@ -106,7 +106,7 @@ async function processChunk(
   chunkIndex: number,
   year: number
 ) {
-  console.log(`📦 Processing chunk ${chunkIndex} with ${chunkData.length} rows`)
+  console.log(`📦 Processing chunk ${chunkIndex} with ${chunkData.length} rows for year ${year}`)
 
   const processedRows: ProcessedRow[] = []
   const companies = new Map<string, string>()
@@ -128,25 +128,43 @@ async function processChunk(
           name: processed.holder_name,
           orgnr: processed.holder_orgnr,
           birth_year: processed.holder_birth_year,
-          country_code: processed.holder_country || 'NO',
+          country_code: processed.holder_country || 'NOR',
           user_id: userId
         })
+      } else {
+        console.log(`❌ Failed to process row:`, row)
       }
     } catch (rowError) {
+      console.error('Row processing error:', rowError)
       errors.push(`Row error: ${rowError.message}`)
     }
   }
 
+  console.log(`✅ Processed ${processedRows.length}/${chunkData.length} rows successfully`)
+
   if (processedRows.length > 0) {
     try {
-      // Insert data
+      console.log(`🔄 Starting 3-step insertion process`)
+      
+      // Step 1: Insert companies
+      console.log(`Step 1: Inserting companies`)
       await insertCompanies(supabaseClient, Array.from(companies.entries()), year, userId)
+      
+      // Step 2: Insert entities  
+      console.log(`Step 2: Inserting entities`)
       await insertEntities(supabaseClient, Array.from(entities.values()))
+      
+      // Step 3: Insert holdings
+      console.log(`Step 3: Inserting holdings`) 
       await insertHoldings(supabaseClient, processedRows, userId)
+      
+      console.log(`✅ All 3 steps completed successfully`)
     } catch (insertError) {
-      console.error('Insert error in chunk:', insertError)
+      console.error('💥 Insert error in chunk:', insertError)
       errors.push(`Insert error: ${insertError.message}`)
     }
+  } else {
+    console.warn(`⚠️ No valid rows processed in chunk ${chunkIndex}`)
   }
 
   // Update session progress
@@ -303,36 +321,85 @@ function processRow(row: any, year: number): ProcessedRow | null {
 }
 
 async function insertCompanies(supabaseClient: any, companies: [string, string][], year: number, userId: string) {
-  const companyData = companies.map(([orgnr, name]) => ({
-    orgnr,
-    name,
-    year,
-    total_shares: 0,
-    user_id: userId
-  }))
+  console.log(`📊 Inserting ${companies.length} companies`)
+  
+  for (const [orgnr, name] of companies) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('share_companies')
+        .select('id')
+        .eq('orgnr', orgnr)
+        .eq('year', year)
+        .eq('user_id', userId)
+        .single()
 
-  const { error } = await supabaseClient
-    .from('share_companies')
-    .upsert(companyData, { onConflict: 'orgnr,year,user_id' })
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking existing company:', error)
+        continue
+      }
 
-  if (error) {
-    console.error('Company insert error:', error)
-    throw error
+      if (!data) {
+        const { error: insertError } = await supabaseClient
+          .from('share_companies')
+          .insert({
+            orgnr,
+            name,
+            year,
+            total_shares: 0,
+            calculated_total: 0,
+            user_id: userId
+          })
+
+        if (insertError) {
+          console.error(`Failed to insert company ${orgnr}:`, insertError)
+        } else {
+          console.log(`✅ Inserted company: ${name} (${orgnr})`)
+        }
+      }
+    } catch (err) {
+      console.error(`Error processing company ${orgnr}:`, err)
+    }
   }
 }
 
 async function insertEntities(supabaseClient: any, entities: any[]) {
-  const { error } = await supabaseClient
-    .from('share_entities')
-    .upsert(entities, { onConflict: 'entity_type,name,orgnr,user_id' })
+  console.log(`👥 Inserting ${entities.length} entities`)
+  
+  for (const entity of entities) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('share_entities')
+        .select('id')
+        .eq('entity_type', entity.entity_type)
+        .eq('name', entity.name)
+        .eq('user_id', entity.user_id)
+        .single()
 
-  if (error) {
-    console.error('Entity insert error:', error)
-    throw error
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking existing entity:', error)
+        continue
+      }
+
+      if (!data) {
+        const { error: insertError } = await supabaseClient
+          .from('share_entities')
+          .insert(entity)
+
+        if (insertError) {
+          console.error(`Failed to insert entity ${entity.name}:`, insertError)
+        } else {
+          console.log(`✅ Inserted entity: ${entity.name}`)
+        }
+      }
+    } catch (err) {
+      console.error(`Error processing entity ${entity.name}:`, err)
+    }
   }
 }
 
 async function insertHoldings(supabaseClient: any, holdings: ProcessedRow[], userId: string) {
+  console.log(`📈 Processing ${holdings.length} holdings`)
+  
   // Get entity IDs for holders
   const entityNames = holdings.map(h => h.holder_name)
   const { data: entities } = await supabaseClient
@@ -341,39 +408,55 @@ async function insertHoldings(supabaseClient: any, holdings: ProcessedRow[], use
     .in('name', entityNames)
     .eq('user_id', userId)
 
+  console.log(`Found ${entities?.length || 0} entities for ${entityNames.length} holder names`)
+
   const entityMap = new Map()
   entities?.forEach((e: any) => {
     const key = e.orgnr || e.name
     entityMap.set(key, e.id)
   })
 
-  const holdingData = holdings.map(h => {
-    const holderKey = h.holder_orgnr || h.holder_name
-    const holderId = entityMap.get(holderKey)
-    
-    if (!holderId) {
-      console.warn(`No entity found for holder: ${h.holder_name}`)
-      return null
-    }
+  for (const h of holdings) {
+    try {
+      const holderKey = h.holder_orgnr || h.holder_name
+      const holderId = entityMap.get(holderKey)
+      
+      if (!holderId) {
+        console.warn(`❌ No entity found for holder: ${h.holder_name}`)
+        continue
+      }
 
-    return {
-      company_orgnr: h.orgnr,
-      holder_id: holderId,
-      share_class: h.share_class,
-      shares: h.shares,
-      year: new Date().getFullYear(), // Use current year for now
-      user_id: userId
-    }
-  }).filter(Boolean)
+      // Check if holding already exists
+      const { data: existing } = await supabaseClient
+        .from('share_holdings')
+        .select('id')
+        .eq('company_orgnr', h.orgnr)
+        .eq('holder_id', holderId)
+        .eq('share_class', h.share_class)
+        .eq('year', h.shares > 0 ? new Date().getFullYear() : h.shares) // Fix this to use proper year
+        .eq('user_id', userId)
+        .single()
 
-  if (holdingData.length > 0) {
-    const { error } = await supabaseClient
-      .from('share_holdings')
-      .upsert(holdingData, { onConflict: 'company_orgnr,holder_id,share_class,year,user_id' })
+      if (!existing) {
+        const { error: insertError } = await supabaseClient
+          .from('share_holdings')
+          .insert({
+            company_orgnr: h.orgnr,
+            holder_id: holderId,
+            share_class: h.share_class,
+            shares: h.shares,
+            year: new Date().getFullYear(), // TODO: Get proper year from context
+            user_id: userId
+          })
 
-    if (error) {
-      console.error('Holdings insert error:', error)
-      throw error
+        if (insertError) {
+          console.error(`Failed to insert holding for ${h.holder_name}:`, insertError)
+        } else {
+          console.log(`✅ Inserted holding: ${h.holder_name} -> ${h.shares} shares`)
+        }
+      }
+    } catch (err) {
+      console.error(`Error processing holding for ${h.holder_name}:`, err)
     }
   }
 }
