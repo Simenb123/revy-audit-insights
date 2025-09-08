@@ -617,11 +617,24 @@ export async function persistParsed(clientId: string, parsed: SaftResult, fileNa
       country: t.country || '',
     }));
 
+    // Deduplicate tax codes to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+    const uniqueTaxRows = Array.from(
+      new Map(taxRows.map(t => [t.tax_code, t])).values()
+    );
+    
+    const duplicatesRemoved = taxRows.length - uniqueTaxRows.length;
+    if (duplicatesRemoved > 0) {
+      console.log(`⚠️ Removed ${duplicatesRemoved} duplicate tax codes from ${taxRows.length} total entries`);
+    }
+    
+    console.log(`💼 Inserting ${uniqueTaxRows.length} unique tax codes...`);
+
     const { error: taxError } = await supabase
       .from('saft_tax_table')
-      .upsert(taxRows, { onConflict: 'client_id,import_session_id,tax_code' });
+      .upsert(uniqueTaxRows, { onConflict: 'client_id,import_session_id,tax_code' });
     
     if (taxError) throw taxError;
+    console.log(`✅ Inserted ${uniqueTaxRows.length} tax codes successfully`);
   }
 
   // Insert GL with version_id and upload_batch_id
