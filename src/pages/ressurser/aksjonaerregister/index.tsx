@@ -5,7 +5,7 @@ import { Users, Upload, Search, Network } from 'lucide-react'
 
 import { ShareholdersTable } from '@/components/Shareholders/ShareholdersTable'
 import { OwnershipGraph } from '@/components/Shareholders/OwnershipGraph'
-import EnhancedShareholdersUpload from '@/components/Shareholders/EnhancedShareholdersUpload'
+import { ShareholderUpload } from '@/components/Shareholders/ShareholderUpload'
 
 const AksjonaerregisterPage: React.FC = () => {
   const [selectedCompanyOrgnr, setSelectedCompanyOrgnr] = useState<string>('')
@@ -54,7 +54,7 @@ const AksjonaerregisterPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EnhancedShareholdersUpload />
+              <ShareholderUpload year={2024} />
             </CardContent>
           </Card>
         </TabsContent>
