@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +115,51 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
     isProcessing,
     error
   } = useAdvancedUpload();
+
+  // Process shareholder data chunks through the database
+  const processShareholderChunks = async (chunks: any[]): Promise<{validRows: number, invalidRows: number, errors: string[]}> => {
+    const sessionId = `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const year = new Date().getFullYear();
+    let totalValid = 0;
+    let totalInvalid = 0;
+    let allErrors: string[] = [];
+
+    try {
+      // Initialize session
+      await supabase.functions.invoke('large-dataset-shareholders-import', {
+        body: { action: 'initSession', sessionId, year, totalChunks: chunks.length }
+      });
+
+      // Process each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        const { data, error } = await supabase.functions.invoke('large-dataset-shareholders-import', {
+          body: { 
+            action: 'processChunk', 
+            sessionId, 
+            chunkData: chunks[i].data, 
+            chunkIndex: i,
+            year 
+          }
+        });
+
+        if (error) throw error;
+        
+        totalValid += data.processedRows || 0;
+        totalInvalid += (data.totalRows || 0) - (data.processedRows || 0);
+        allErrors.push(...(data.errors || []));
+      }
+
+      // Finalize session
+      await supabase.functions.invoke('large-dataset-shareholders-import', {
+        body: { action: 'finalizeSession', sessionId, year }
+      });
+
+      return { validRows: totalValid, invalidRows: totalInvalid, errors: allErrors };
+    } catch (error) {
+      console.error('Shareholder processing error:', error);
+      throw error;
+    }
+  };
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -242,11 +288,11 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
         };
 
         if (enableWebWorker && workerRef.current) {
-          // Process with Web Worker
+          // Process with Web Worker and database integration
           await new Promise<void>((resolve, reject) => {
             const worker = workerRef.current!;
             
-            worker.onmessage = (e) => {
+            worker.onmessage = async (e) => {
               const { type, chunks, totalLines, error } = e.data;
               
               if (type === 'error') {
@@ -257,11 +303,26 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
               if (type === 'chunks') {
                 fileResult.totalRows = totalLines;
                 fileResult.processedRows = totalLines;
-                fileResult.validRows = Math.floor(totalLines * 0.95); // Simulate validation
-                fileResult.invalidRows = totalLines - fileResult.validRows;
                 fileResult.preview = chunks[0]?.data.slice(0, 10) || [];
-                fileResult.endTime = Date.now();
                 
+                // Process data through database if uploadType is shareholders
+                if (uploadType === 'shareholders') {
+                  try {
+                    const processResults = await processShareholderChunks(chunks);
+                    fileResult.validRows = processResults.validRows;
+                    fileResult.invalidRows = processResults.invalidRows;
+                    fileResult.errors = processResults.errors;
+                  } catch (dbError) {
+                    fileResult.errors = [`Database error: ${dbError.message}`];
+                    fileResult.validRows = 0;
+                    fileResult.invalidRows = totalLines;
+                  }
+                } else {
+                  fileResult.validRows = Math.floor(totalLines * 0.95); // Simulate validation
+                  fileResult.invalidRows = totalLines - fileResult.validRows;
+                }
+                
+                fileResult.endTime = Date.now();
                 resolve();
               }
             };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdvancedUploadProvider, LargeDatasetUploader } from '@/components/Upload';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import { Info, Users, Building, TrendingUp } from 'lucide-react';
 
 interface EnhancedShareholdersUploadProps {
@@ -13,8 +14,14 @@ const EnhancedShareholdersUpload: React.FC<EnhancedShareholdersUploadProps> = ({
   onComplete,
   clientId
 }) => {
+  const { toast } = useToast();
+  
   const handleUploadComplete = (results: any[]) => {
     console.log('Upload completed:', results);
+    toast({
+      title: "Aksjonærregister importert!",
+      description: `${results.length} filer er behandlet og lagret i databasen.`,
+    });
     if (onComplete) {
       onComplete(results);
     }
