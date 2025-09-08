@@ -309,14 +309,6 @@ const ClientsTable = ({
                 Avanserte filtre
               </Button>
               
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onShowColumnsConfig}
-              >
-                <Settings size={16} />
-                Kolonner
-              </Button>
               
               <Button 
                 variant="outline" 
@@ -388,7 +380,7 @@ const ClientsTable = ({
           stickyHeader
           maxBodyHeight="60vh"
           wrapInCard={false}
-          enableInternalToolbar={false}
+          enableInternalToolbar={true}
           showSearch={false}
           emptyMessage="Ingen klienter funnet"
           tableName="Klienter"
