@@ -381,7 +381,6 @@ const ClientsTable = ({
           maxBodyHeight="60vh"
           wrapInCard={false}
           enableInternalToolbar={true}
-          enableColumnManager={false}
           showSearch={false}
           emptyMessage="Ingen klienter funnet"
           tableName="Klienter"
