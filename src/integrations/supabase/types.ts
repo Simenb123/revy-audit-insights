@@ -7066,6 +7066,42 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          id: number
+          job_type: string
+          rows_loaded: number | null
+          source_path: string | null
+          status: string
+          total_rows: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          job_type: string
+          rows_loaded?: number | null
+          source_path?: string | null
+          status?: string
+          total_rows?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          job_type?: string
+          rows_loaded?: number | null
+          source_path?: string | null
+          status?: string
+          total_rows?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       import_sessions: {
         Row: {
           created_at: string
@@ -11332,6 +11368,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shareholders_staging: {
+        Row: {
+          aksjeklasse: string | null
+          antall_aksjer: number | null
+          created_at: string | null
+          fodselsaar_orgnr: string | null
+          id: number
+          landkode: string | null
+          navn_aksjonaer: string | null
+          orgnr: string | null
+          selskap: string | null
+          user_id: string | null
+          year: number | null
+        }
+        Insert: {
+          aksjeklasse?: string | null
+          antall_aksjer?: number | null
+          created_at?: string | null
+          fodselsaar_orgnr?: string | null
+          id?: number
+          landkode?: string | null
+          navn_aksjonaer?: string | null
+          orgnr?: string | null
+          selskap?: string | null
+          user_id?: string | null
+          year?: number | null
+        }
+        Update: {
+          aksjeklasse?: string | null
+          antall_aksjer?: number | null
+          created_at?: string | null
+          fodselsaar_orgnr?: string | null
+          id?: number
+          landkode?: string | null
+          navn_aksjonaer?: string | null
+          orgnr?: string | null
+          selskap?: string | null
+          user_id?: string | null
+          year?: number | null
+        }
+        Relationships: []
       }
       standard_account_audit_area_mappings: {
         Row: {

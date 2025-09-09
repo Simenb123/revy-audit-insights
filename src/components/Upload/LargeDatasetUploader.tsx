@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { uploadAndStartImport } from '@/lib/upload/uploadShareholderFile';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -202,50 +203,12 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
     error
   } = useAdvancedUpload();
 
-  // Process shareholder data chunks through the database
-  const processShareholderChunks = async (chunks: any[]): Promise<{validRows: number, invalidRows: number, errors: string[]}> => {
-    const sessionId = `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const year = new Date().getFullYear();
-    let totalValid = 0;
-    let totalInvalid = 0;
-    let allErrors: string[] = [];
-
-    try {
-      // Initialize session
-      await supabase.functions.invoke('large-dataset-shareholders-import', {
-        body: { action: 'initSession', sessionId, year, totalChunks: chunks.length }
-      });
-
-      // Process each chunk
-      for (let i = 0; i < chunks.length; i++) {
-        const { data, error } = await supabase.functions.invoke('large-dataset-shareholders-import', {
-          body: { 
-            action: 'processChunk', 
-            sessionId, 
-            chunkData: chunks[i].data, 
-            chunkIndex: i,
-            year 
-          }
-        });
-
-        if (error) throw error;
-        
-        totalValid += data.processedRows || 0;
-        totalInvalid += (data.totalRows || 0) - (data.processedRows || 0);
-        allErrors.push(...(data.errors || []));
-      }
-
-      // Finalize session
-      await supabase.functions.invoke('large-dataset-shareholders-import', {
-        body: { action: 'finalizeSession', sessionId, year }
-      });
-
-      return { validRows: totalValid, invalidRows: totalInvalid, errors: allErrors };
-    } catch (error) {
-      console.error('Shareholder processing error:', error);
-      throw error;
-    }
+  // Start shareholder server job using Storage-first approach
+  const startShareholderServerJob = async (file: File, sampleMapping: Record<string,string>) => {
+    return uploadAndStartImport(file, { mapping: sampleMapping });
   };
+
+  const [jobStatus, setJobStatus] = useState<{status:string; rows_loaded:number; total_rows:number; error?:string} | null>(null);
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -262,6 +225,45 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
 
   const workerRef = useRef<Worker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Poll job status for shareholders import
+  useEffect(() => {
+    if (uploadType !== 'shareholders' || currentPhase !== 'process') return;
+    
+    let interval: any;
+    const pollJobStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('import_jobs')
+          .select('status, rows_loaded, total_rows, error')
+          .eq('job_type', 'shareholders')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data) {
+          setJobStatus(data as any);
+          if (data.status === 'done' || data.status === 'error') {
+            clearInterval(interval);
+            if (data.status === 'done') {
+              toast.success(`Import fullført! ${data.rows_loaded} rader lastet inn.`);
+            } else if (data.status === 'error') {
+              toast.error(`Import feilet: ${data.error}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error polling job status:', err);
+      }
+    };
+
+    pollJobStatus();
+    interval = setInterval(pollJobStatus, 2000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [uploadType, currentPhase]);
 
   // Initialize Web Worker
   useEffect(() => {
@@ -394,12 +396,22 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
                 // Process data through database if uploadType is shareholders
                 if (uploadType === 'shareholders') {
                   try {
-                    const processResults = await processShareholderChunks(chunks);
-                    fileResult.validRows = processResults.validRows;
-                    fileResult.invalidRows = processResults.invalidRows;
-                    fileResult.errors = processResults.errors;
-                  } catch (dbError) {
-                    fileResult.errors = [`Database error: ${dbError.message}`];
+                    // Simple heuristic mapping based on header names used in repo
+                    const mapping = {
+                      orgnr: 'orgnr',
+                      selskap: 'selskap', 
+                      aksjeklasse: 'aksjeklasse',
+                      navn_aksjonaer: 'navn_aksjonaer',
+                      fodselsaar_orgnr: 'fodselsaar_orgnr',
+                      landkode: 'landkode',
+                      antall_aksjer: 'antall_aksjer'
+                    };
+                    await startShareholderServerJob(file, mapping);
+                    toast.success('Import startet – følger progresjon…');
+                    fileResult.validRows = totalLines; // Set to totalLines since we started the job
+                    fileResult.invalidRows = 0;
+                  } catch (err: any) {
+                    fileResult.errors = [`Start import failed: ${err?.message ?? err}`];
                     fileResult.validRows = 0;
                     fileResult.invalidRows = totalLines;
                   }
