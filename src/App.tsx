@@ -47,10 +47,11 @@ import AccountRelationshipsPage from "./pages/Admin/AccountRelationships";
 import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
-import AnalysisPage from "./pages/AnalysisPage";
+import UnifiedAnalysisPage from "./pages/UnifiedAnalysisPage";
 import ClientDocuments from "./pages/ClientDocuments";
 import NotFound from "./pages/NotFound";
 import ClientRedirect from "./components/Layout/ClientRedirect";
+import AnalysisRedirect from "./components/Layout/AnalysisRedirect";
 import { ClientHistoryTracker } from "./components/Layout/ClientHistoryTracker";
 import Sandbox from "./pages/Sandbox";
 import Revisorskolen from "./pages/Revisorskolen";
@@ -82,8 +83,6 @@ import BookkeepingReports from "./pages/BookkeepingReports";
 import AssetManagement from "./pages/AssetManagement";
 import BudgetManagement from "./pages/BudgetManagement";
 import ReportsManagement from "./pages/ReportsManagement";
-import TransactionAnalysis from "./pages/TransactionAnalysis";
-import AuditSampling from "./pages/AuditSampling";
 import { InvestmentSecuritiesRedirect, InvestmentPricesRedirect, InvestmentCurrenciesRedirect } from "./components/InvestmentRedirects";
 import DataredigeringPage from "./pages/Dataredigering";
 import LegalRelationsAdmin from "./components/Knowledge/admin/LegalRelationsAdmin";
@@ -152,9 +151,11 @@ function App() {
                    <Route path="clients/:clientId/assets" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
                    <Route path="clients/:clientId/budget" element={<ProtectedRoute><BudgetManagement /></ProtectedRoute>} />
                    <Route path="clients/:clientId/reports" element={<ProtectedRoute><ReportsManagement /></ProtectedRoute>} />
-                    <Route path="clients/:clientId/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
-                    <Route path="clients/:clientId/audit/sampling" element={<ProtectedRoute><AuditSampling /></ProtectedRoute>} />
-                     <Route path="clients/:clientId/transaction-analysis" element={<ProtectedRoute><TransactionAnalysis /></ProtectedRoute>} />
+                     <Route path="clients/:clientId/analysis" element={<ProtectedRoute><UnifiedAnalysisPage /></ProtectedRoute>} />
+                     
+                     {/* Redirects for backward compatibility */}
+                     <Route path="clients/:clientId/transaction-analysis" element={<AnalysisRedirect />} />
+                     <Route path="clients/:clientId/audit/sampling" element={<AnalysisRedirect />} />
                    <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
                    <Route path="clients/:clientId/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                    <Route path="clients/:clientId/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />

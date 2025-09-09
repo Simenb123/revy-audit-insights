@@ -149,7 +149,7 @@ const ResizableLeftSidebar = () => {
     },
     {
       title: 'Transaksjonsanalyse',
-      url: `/clients/${clientId}/transaction-analysis`,
+      url: `/clients/${clientId}/analysis`,
       icon: Brain,
     },
     {
