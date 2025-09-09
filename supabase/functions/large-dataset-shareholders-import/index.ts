@@ -212,13 +212,13 @@ serve(async (req) => {
       `;
 
       // 3) HOLDINGS: sett inn med korrekt holder_id (JOIN via entity_key) + valgfri UPSERT
-      // Anta at share_holdings har (company_orgnr, holder_id, aksjeklasse) som unik kombo – justér ved behov
+      // Anta at share_holdings har (company_orgnr, holder_id, share_class) som unik kombo – justér ved behov
       await conn.queryArray`
-        INSERT INTO share_holdings (company_orgnr, holder_id, aksjeklasse, shares, country)
+        INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, country)
         SELECT
           NULLIF(TRIM(s.orgnr), ''),
           e.id,
-          NULLIF(TRIM(s.aksjeklasse), ''),
+          NULLIF(TRIM(s.aksjeklasse), ''),      -- CSV/staging-feltet heter fortsatt aksjeklasse
           NULLIF(TRIM(s.antall_aksjer), '')::BIGINT,
           NULLIF(TRIM(s.landkode), '')
         FROM shareholders_staging s
@@ -226,7 +226,7 @@ serve(async (req) => {
           ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
         WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
           AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
-        ON CONFLICT (company_orgnr, holder_id, aksjeklasse) DO UPDATE
+        ON CONFLICT (company_orgnr, holder_id, share_class) DO UPDATE
           SET shares  = EXCLUDED.shares,
               country = COALESCE(EXCLUDED.country, share_holdings.country)
       `;
