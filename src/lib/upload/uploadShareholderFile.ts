@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 type Mapping = Record<string, string>; // { kildeHeader: målKolonne }
 
@@ -11,10 +11,6 @@ export async function uploadAndStartImport(
     fileSize: file.size, 
     options: opts 
   });
-  
-  const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co';
-  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc';
-  const supabase = createClient(supabaseUrl, anonKey);
 
   const bucket = opts.bucket ?? 'imports';
   const key = `${opts.prefix ?? 'shareholders/'}${Date.now()}_${file.name}`;
@@ -35,30 +31,24 @@ export async function uploadAndStartImport(
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token ?? null;
 
-  // 3) Kall edge-funksjon – bruk JWT hvis tilgjengelig (ellers fall-back til anon key)
+  // 3) Kall edge-funksjon via Supabase client
   console.log('🚀 DEBUG: Calling edge function', { 
-    url: `${supabaseUrl}/functions/v1/large-dataset-shareholders-import`,
+    functionName: 'large-dataset-shareholders-import',
     hasToken: !!token,
     payload: { bucket, path: key, mapping: opts.mapping }
   });
   
-  const res = await fetch(`${supabaseUrl}/functions/v1/large-dataset-shareholders-import`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token ?? anonKey}`,
-    },
-    body: JSON.stringify({ bucket, path: key, mapping: opts.mapping }),
+  const { data, error } = await supabase.functions.invoke('large-dataset-shareholders-import', {
+    body: { bucket, path: key, mapping: opts.mapping }
   });
   
   console.log('📡 DEBUG: Edge function response', { 
-    status: res.status, 
-    statusText: res.statusText 
+    data,
+    error 
   });
 
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Start import failed: ${res.status} ${t}`);
+  if (error) {
+    throw new Error(`Start import failed: ${error.message}`);
   }
 
   return { storagePath: `${bucket}/${key}` };
