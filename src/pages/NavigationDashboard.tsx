@@ -10,6 +10,8 @@ import {
 import { cn } from '@/lib/utils';
 import StandardPageLayout from '@/components/Layout/StandardPageLayout';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
+import { BetaBadge } from '@/components/ui/BetaBadge';
+import { isAdvancedAIEnabled, isAdvancedAIInBeta } from '@/lib/featureFlags';
 
 const NavigationDashboard = () => {
   const { setPageTitle } = usePageTitle();
@@ -18,17 +20,35 @@ const NavigationDashboard = () => {
     setPageTitle('Hovedmeny');
   }, [setPageTitle]);
 
+  // Filter items based on feature flags
+  const getFilteredItems = (items: any[]) => {
+    return items.filter(item => {
+      if (item.featureFlag) {
+        return item.featureFlag();
+      }
+      return true;
+    });
+  };
+
   const navigationSections = [
     {
       title: 'Hovedfunksjoner',
       description: 'Daglige arbeidsoppgaver og kjernevirksomhet',
-      items: [
+      items: getFilteredItems([
         { name: 'Dashboard', href: '/', icon: Home, description: 'Oversikt og KPIer', color: 'bg-blue-500' },
         { name: 'Klienter', href: '/clients', icon: Users, description: 'Administrer revisjonsoppdrag', color: 'bg-green-500' },
         { name: 'Fagstoff', href: '/fag', icon: Book, description: 'Kunnskapsbase og artikler', color: 'bg-purple-500' },
-        { name: 'AI Revy', href: '/ai-revy-admin', icon: Brain, description: 'AI-assistent for revisjon', color: 'bg-orange-500' },
+        { 
+          name: 'AI Revy', 
+          href: '/ai-revy-admin', 
+          icon: Brain, 
+          description: 'AI-assistent for revisjon', 
+          color: 'bg-orange-500',
+          featureFlag: isAdvancedAIEnabled,
+          showBeta: isAdvancedAIInBeta()
+        },
         { name: 'Administrasjon', href: '/admin', icon: Shield, description: 'Bruker- og organisasjonsadministrasjon', color: 'bg-purple-500' }
-      ]
+      ])
     },
     {
       title: 'Organisasjon',
@@ -86,14 +106,17 @@ const NavigationDashboard = () => {
                         <div className={cn('rounded-lg p-2 text-white', item.color)}>
                           <item.icon className="h-6 w-6" />
                         </div>
-                        <div className="space-y-1 flex-1">
-                          <h3 className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {item.description}
-                          </p>
-                        </div>
+                         <div className="space-y-1 flex-1">
+                           <div className="flex items-center gap-2">
+                             <h3 className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">
+                               {item.name}
+                             </h3>
+                             {item.showBeta && <BetaBadge />}
+                           </div>
+                           <p className="text-xs text-muted-foreground line-clamp-2">
+                             {item.description}
+                           </p>
+                         </div>
                       </div>
                     </CardContent>
                   </Card>

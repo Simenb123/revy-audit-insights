@@ -24,6 +24,8 @@ import {
   Database,
   Brain
 } from 'lucide-react';
+import { BetaBadge } from '@/components/ui/BetaBadge';
+import { isAdvancedAIEnabled, isAdvancedAIInBeta } from '@/lib/featureFlags';
 
 const adminItems = [
   { title: "Oversikt", url: "/admin", icon: LayoutDashboard },
@@ -36,7 +38,13 @@ const adminItems = [
 ];
 
 const ragItems = [
-  { title: "Juridisk Relasjonskart", url: "/admin/rag/juridisk", icon: Database },
+  { 
+    title: "Juridisk Relasjonskart", 
+    url: "/admin/rag/juridisk", 
+    icon: Database,
+    featureFlag: isAdvancedAIEnabled,
+    showBeta: isAdvancedAIInBeta()
+  },
 ];
 
 const AdminSidebar = () => {
@@ -44,6 +52,18 @@ const AdminSidebar = () => {
   const collapsed = state === 'collapsed';
   const location = useLocation();
 
+  // Filter items based on feature flags
+  const getFilteredItems = (items: any[]) => {
+    return items.filter(item => {
+      if (item.featureFlag) {
+        return item.featureFlag();
+      }
+      return true;
+    });
+  };
+
+  const filteredRagItems = getFilteredItems(ragItems);
+  
   const isActive = (path: string) => {
     if (path === "/admin") {
       return location.pathname === "/admin";
@@ -86,26 +106,33 @@ const AdminSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
-            <Brain className="h-4 w-4 inline mr-2" />
-            RAG & Kunnskapsstyring
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {ragItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls(item.url)}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {filteredRagItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+              <Brain className="h-4 w-4 inline mr-2" />
+              RAG & Kunnskapsstyring
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredRagItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls(item.url)}>
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && (
+                          <div className="flex items-center gap-2">
+                            <span>{item.title}</span>
+                            {item.showBeta && <BetaBadge />}
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

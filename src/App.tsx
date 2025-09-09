@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import ScrollToTop from "@/components/Layout/ScrollToTop";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { RevyContextProvider } from "@/components/RevyContext/RevyContextProvider";
@@ -14,6 +14,7 @@ import { FiscalYearProvider } from "@/contexts/FiscalYearContext";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import { isAdvancedAIEnabled, isReportBuilderEnabled } from "@/lib/featureFlags";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import OrganizationSetup from "./pages/OrganizationSetup";
@@ -189,16 +190,16 @@ function App() {
                    <Route path="admin/rag/juridisk" element={<ProtectedRoute><LegalRelationsAdmin /></ProtectedRoute>} />
                    <Route path="admin/embeddings" element={<ProtectedRoute><AdminEmbeddingsManager /></ProtectedRoute>} />
                    <Route path="academy" element={<Academy />} />
-                   <Route path="ai-revy-admin" element={<AIRevyAdmin />} />
-                   <Route path="ai/multi-agent-studio" element={<ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute>} />
-                   <Route path="clients/:clientId/ai/multi-agent-studio" element={<ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute>} />
-                  <Route path="admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-                  <Route path="superadmin" element={<ProtectedRoute><Superadmin /></ProtectedRoute>} />
-                  <Route path="performance" element={<PerformanceMonitoring />} />
-                  <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
-                  <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
-                   <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
-                   <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                    <Route path="ai-revy-admin" element={isAdvancedAIEnabled() ? <AIRevyAdmin /> : <Navigate to="/clients" replace />} />
+                    <Route path="ai/multi-agent-studio" element={isAdvancedAIEnabled() ? <ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute> : <Navigate to="/clients" replace />} />
+                    <Route path="clients/:clientId/ai/multi-agent-studio" element={isAdvancedAIEnabled() ? <ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute> : <Navigate to="/clients" replace />} />
+                   <Route path="admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+                   <Route path="superadmin" element={<ProtectedRoute><Superadmin /></ProtectedRoute>} />
+                   <Route path="performance" element={<PerformanceMonitoring />} />
+                   <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
+                   <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
+                    <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
+                    <Route path="reports" element={isReportBuilderEnabled() ? <ProtectedRoute><Reports /></ProtectedRoute> : <Navigate to="/clients" replace />} />
                    <Route path="key-figures" element={<ProtectedRoute><KeyFigureManager /></ProtectedRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />

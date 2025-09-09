@@ -20,6 +20,7 @@ import { useAnalysisSessions, useAnalysisSessionsForClient } from '@/hooks/useAn
 import { analysisService } from '@/services/analysisService';
 import { toast } from 'sonner';
 import { formatNorwegianNumber } from '@/utils/fileProcessing';
+import { isAdvancedAIEnabled } from '@/lib/featureFlags';
 
 interface AnalysisPanelProps {
   clientId: string;
@@ -215,23 +216,24 @@ export const AnalysisPanel = ({
       />
 
       {/* Analysis Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Brain className="w-5 h-5" />
-            <span>Dataanalyse</span>
-          </CardTitle>
-          <CardDescription>
-            Kjør analyser på {filteredData ? 'filtrerte' : 'alle'} regnskapsdata
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Current Data Summary */}
-          {filterStats && (
-            <Alert>
-              <AlertDescription>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
+      {isAdvancedAIEnabled() && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Brain className="w-5 h-5" />
+              <span>Dataanalyse</span>
+            </CardTitle>
+            <CardDescription>
+              Kjør analyser på {filteredData ? 'filtrerte' : 'alle'} regnskapsdata
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Current Data Summary */}
+            {filterStats && (
+              <Alert>
+                <AlertDescription>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
                     <div className="text-sm font-medium">Transaksjoner</div>
                     <div className="text-lg">{filterStats.filteredCount.toLocaleString('nb-NO')}</div>
                   </div>
@@ -302,6 +304,7 @@ export const AnalysisPanel = ({
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Basic Analysis Results */}
       {basicAnalysisResults && (

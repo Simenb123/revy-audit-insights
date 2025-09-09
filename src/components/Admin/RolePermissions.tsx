@@ -1,8 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield } from 'lucide-react';
+import { isAdvancedAIEnabled } from '@/lib/featureFlags';
 
 const RolePermissions = () => {
+  // Don't render placeholder content if feature is disabled
+  if (!isAdvancedAIEnabled()) {
+    return null;
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
