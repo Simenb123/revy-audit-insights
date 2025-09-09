@@ -172,27 +172,66 @@ serve(async (req) => {
 
       console.log(`Processed ${rowsProcessed} rows`);
 
-      // Move to production table (adjust as needed for your schema)
-      const insertResult = await conn.queryArray`
-        INSERT INTO share_holdings (
-          company_orgnr, 
-          holder_id, 
-          share_class, 
-          shares, 
-          year, 
-          user_id
-        )
-        SELECT 
-          orgnr, 
-          navn_aksjonaer, 
-          aksjeklasse, 
-          COALESCE(NULLIF(antall_aksjer, '')::integer, 0), 
-          year,
-          user_id
-        FROM shareholders_staging 
-        WHERE orgnr IS NOT NULL AND orgnr != ''
-        ON CONFLICT DO NOTHING
+      // --- Etter vellykket COPY til shareholders_staging ---
+      // Oppdater import_jobs (valgfritt hvis du sporer rader)
+      await supabase.from('import_jobs')
+        .update({ status: 'running' })
+        .eq('id', jobId ?? 0);
+
+      // Start en transaksjon for den tre-stegs innlastingen
+      await conn.queryArray`BEGIN`;
+
+      // 1) COMPANIES: upsert basert på orgnr
+      await conn.queryArray`
+        INSERT INTO share_companies (orgnr, name)
+        SELECT DISTINCT
+          NULLIF(TRIM(orgnr), '')               AS orgnr,
+          NULLIF(TRIM(selskap), '')             AS name
+        FROM shareholders_staging s
+        WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
+        ON CONFLICT (orgnr) DO UPDATE
+          SET name = EXCLUDED.name
       `;
+
+      // 2) ENTITIES: upsert på en stabil nøkkel (entity_key)
+      // Bygg nøkkelen som: lower(trim(navn)) || '|' || coalesce(trim(fodselsaar_orgnr),'?')
+      await conn.queryArray`
+        INSERT INTO share_entities (entity_key, name, national_id, country)
+        SELECT DISTINCT
+          LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
+          NULLIF(TRIM(navn_aksjonaer), '')                                                       AS name,
+          NULLIF(TRIM(fodselsaar_orgnr), '')                                                     AS national_id,
+          NULLIF(TRIM(landkode), '')                                                             AS country
+        FROM shareholders_staging s
+        WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
+        ON CONFLICT (entity_key) DO UPDATE
+          SET
+            name        = EXCLUDED.name,
+            national_id = COALESCE(share_entities.national_id, EXCLUDED.national_id),
+            country     = COALESCE(EXCLUDED.country, share_entities.country)
+      `;
+
+      // 3) HOLDINGS: sett inn med korrekt holder_id (JOIN via entity_key) + valgfri UPSERT
+      // Anta at share_holdings har (company_orgnr, holder_id, aksjeklasse) som unik kombo – justér ved behov
+      await conn.queryArray`
+        INSERT INTO share_holdings (company_orgnr, holder_id, aksjeklasse, shares, country)
+        SELECT
+          NULLIF(TRIM(s.orgnr), ''),
+          e.id,
+          NULLIF(TRIM(s.aksjeklasse), ''),
+          NULLIF(TRIM(s.antall_aksjer), '')::BIGINT,
+          NULLIF(TRIM(s.landkode), '')
+        FROM shareholders_staging s
+        JOIN share_entities e
+          ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
+        WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
+          AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
+        ON CONFLICT (company_orgnr, holder_id, aksjeklasse) DO UPDATE
+          SET shares  = EXCLUDED.shares,
+              country = COALESCE(EXCLUDED.country, share_holdings.country)
+      `;
+
+      await conn.queryArray`COMMIT`;
 
       console.log(`Inserted ${rowsProcessed} rows into production table`);
 
