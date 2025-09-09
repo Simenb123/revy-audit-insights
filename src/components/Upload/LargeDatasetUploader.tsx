@@ -71,13 +71,31 @@ const createFileWorker = () => {
         // Detect separator from first line
         const separator = detectSeparator(lines[0]);
         
-        // Parse all lines to objects
+        // Skip header row if it contains text headers  
+        let startIndex = 0;
+        if (lines.length > 0) {
+          const firstLineFields = parseCSVLine(lines[0], separator);
+          const hasTextHeaders = firstLineFields.some(field => 
+            field.toLowerCase().includes('orgnr') || 
+            field.toLowerCase().includes('selskap') ||
+            field.toLowerCase().includes('navn') ||
+            field.toLowerCase().includes('aksjer')
+          );
+          if (hasTextHeaders) {
+            startIndex = 1;
+          }
+        }
+
+        // Parse all data lines to objects
         const parsedData = [];
-        for (let i = 0; i < lines.length; i++) {
+        for (let i = startIndex; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
           
           const fields = parseCSVLine(line, separator);
+          
+          // Skip lines with insufficient data
+          if (fields.length < 4) continue;
           
           // Map to standard field names (support both column letters and Norwegian headers)
           const rowObj = {
@@ -98,8 +116,8 @@ const createFileWorker = () => {
           rowObj.aksjeklasse = fields[2] || '';
           rowObj.navn_aksjonaer = fields[3] || '';
           rowObj.fodselsaar_orgnr = fields[4] || '';
-          rowObj.landkode = fields[6] || '';
-          rowObj.antall_aksjer = fields[7] || '';
+          rowObj.landkode = fields[6] || 'NO'; // Default to Norway
+          rowObj.antall_aksjer = fields[7] || '0';
           
           parsedData.push(rowObj);
         }
