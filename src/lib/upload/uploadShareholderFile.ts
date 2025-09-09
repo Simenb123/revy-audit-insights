@@ -6,6 +6,12 @@ export async function uploadAndStartImport(
   file: File,
   opts: { bucket?: string; prefix?: string; mapping: Mapping }
 ) {
+  console.log('🔧 DEBUG: uploadAndStartImport called', { 
+    fileName: file.name, 
+    fileSize: file.size, 
+    options: opts 
+  });
+  
   const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ZWxoZndhb2l6cXllY2lrc2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjM2NzksImV4cCI6MjA2MDczOTY3OX0.h20hURN-5qCAtI8tZaHpEoCnNmfdhIuYJG3tgXyvKqc';
   const supabase = createClient(supabaseUrl, anonKey);
@@ -14,17 +20,28 @@ export async function uploadAndStartImport(
   const key = `${opts.prefix ?? 'shareholders/'}${Date.now()}_${file.name}`;
 
   // 1) Laste opp fil
+  console.log('📁 DEBUG: Starting storage upload', { bucket, key });
   const { error: upErr } = await supabase.storage.from(bucket).upload(key, file, {
     upsert: false,
     contentType: file.type || 'text/csv',
   });
-  if (upErr) throw upErr;
+  if (upErr) {
+    console.error('❌ DEBUG: Storage upload failed', upErr);
+    throw upErr;
+  }
+  console.log('✅ DEBUG: Storage upload successful');
 
   // 2) Hent brukerens access_token for å identifisere user_id i edge-funksjonen
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token ?? null;
 
   // 3) Kall edge-funksjon – bruk JWT hvis tilgjengelig (ellers fall-back til anon key)
+  console.log('🚀 DEBUG: Calling edge function', { 
+    url: `${supabaseUrl}/functions/v1/large-dataset-shareholders-import`,
+    hasToken: !!token,
+    payload: { bucket, path: key, mapping: opts.mapping }
+  });
+  
   const res = await fetch(`${supabaseUrl}/functions/v1/large-dataset-shareholders-import`, {
     method: 'POST',
     headers: {
@@ -32,6 +49,11 @@ export async function uploadAndStartImport(
       Authorization: `Bearer ${token ?? anonKey}`,
     },
     body: JSON.stringify({ bucket, path: key, mapping: opts.mapping }),
+  });
+  
+  console.log('📡 DEBUG: Edge function response', { 
+    status: res.status, 
+    statusText: res.statusText 
   });
 
   if (!res.ok) {

@@ -205,7 +205,19 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
 
   // Start shareholder server job using Storage-first approach
   const startShareholderServerJob = async (file: File, sampleMapping: Record<string,string>) => {
-    return uploadAndStartImport(file, { mapping: sampleMapping });
+    console.log('🚀 DEBUG: startShareholderServerJob called', { 
+      fileName: file.name, 
+      fileSize: file.size, 
+      mapping: sampleMapping 
+    });
+    try {
+      const result = await uploadAndStartImport(file, { mapping: sampleMapping });
+      console.log('✅ DEBUG: uploadAndStartImport completed successfully', result);
+      return result;
+    } catch (error) {
+      console.error('❌ DEBUG: uploadAndStartImport failed', error);
+      throw error;
+    }
   };
 
   const [jobStatus, setJobStatus] = useState<{status:string; rows_loaded:number; total_rows:number; error?:string} | null>(null);
@@ -394,7 +406,9 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
                 fileResult.preview = chunks[0]?.data.slice(0, 10) || [];
                 
                 // Process data through database if uploadType is shareholders
+                console.log('🔍 DEBUG: Checking uploadType', { uploadType, file: file.name });
                 if (uploadType === 'shareholders') {
+                  console.log('✅ DEBUG: uploadType is shareholders, starting server job...');
                   try {
                     // Simple heuristic mapping based on header names used in repo
                     const mapping = {
@@ -407,15 +421,18 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
                       antall_aksjer: 'antall_aksjer'
                     };
                     await startShareholderServerJob(file, mapping);
+                    console.log('✅ DEBUG: Server job completed successfully');
                     toast.success('Import startet – følger progresjon…');
                     fileResult.validRows = totalLines; // Set to totalLines since we started the job
                     fileResult.invalidRows = 0;
                   } catch (err: any) {
+                    console.error('❌ DEBUG: Server job failed', err);
                     fileResult.errors = [`Start import failed: ${err?.message ?? err}`];
                     fileResult.validRows = 0;
                     fileResult.invalidRows = totalLines;
                   }
                 } else {
+                  console.log('ℹ️ DEBUG: uploadType is not shareholders, using fallback simulation');
                   fileResult.validRows = Math.floor(totalLines * 0.95); // Simulate validation
                   fileResult.invalidRows = totalLines - fileResult.validRows;
                 }
