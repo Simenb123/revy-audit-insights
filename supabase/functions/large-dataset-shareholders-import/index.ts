@@ -23,21 +23,36 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = createClient(supabaseUrl, serviceKey);
 
-    console.log(`Starting import from ${bucket}/${path}`);
+  // Finn bruker fra Authorization-header
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-    // Opprett jobbrad
-    const jobRes = await supabase.from('import_jobs')
-      .insert({ 
-        job_type: 'shareholders', 
-        status: 'running', 
-        total_rows: 0, 
-        rows_loaded: 0, 
-        source_path: `${bucket}/${path}` 
-      })
-      .select('id').single();
-    const jobId = jobRes.data?.id;
+  let userId: string | null = null;
+  try {
+    if (bearer) {
+      const { data: { user } } = await supabase.auth.getUser(bearer);
+      userId = user?.id ?? null;
+    }
+  } catch (_) {
+    // stilletiende fall-back; userId = null
+  }
+
+  console.log(`Starting import from ${bucket}/${path}`);
+
+  // Opprett jobbrad med user_id
+  const jobRes = await supabase.from('import_jobs')
+    .insert({
+      job_type: 'shareholders',
+      status: 'running',
+      total_rows: 0,
+      rows_loaded: 0,
+      source_path: `${bucket}/${path}`,
+      user_id: userId, // <- viktig for RLS
+    })
+    .select('id').single();
+  const jobId = jobRes.data?.id;
 
     console.log(`Created job ${jobId}`);
 
