@@ -237,6 +237,7 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
 
   const workerRef = useRef<Worker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isRunningRef = useRef(false);
 
   // Poll job status for shareholders import
   useEffect(() => {
@@ -358,6 +359,14 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
   // Process files with advanced features
   const handleProcessFiles = useCallback(async () => {
     if (!session || selectedFiles.length === 0) return;
+    
+    if (isRunningRef.current) {
+      console.log('⚠️ DEBUG: Process already running, ignoring duplicate call');
+      return;
+    }
+    
+    isRunningRef.current = true;
+    console.log('🔒 DEBUG: Setting run lock to prevent double execution');
 
     setCurrentPhase('process');
     setProcessingStats(prev => ({
@@ -497,13 +506,15 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
       if (onComplete) {
         onComplete(results);
       }
-
     } catch (error) {
-      console.error('Processing error:', error);
-      toast.error('Feil under behandling av filer');
+      console.error('❌ DEBUG: handleProcessFiles failed', error);
+      toast.error(`Processing failed: ${error instanceof Error ? error.message : String(error)}`);
       setCurrentPhase('select');
+    } finally {
+      isRunningRef.current = false;
+      console.log('🔓 DEBUG: Released run lock');
     }
-  }, [session, selectedFiles, enableWebWorker, chunkSize, onProgress, onComplete, processingStats.estimatedTimeRemaining]);
+  }, [session, selectedFiles, enableWebWorker, chunkSize, uploadType, onProgress, onComplete, processingStats.estimatedTimeRemaining]);
 
   // Reset to start
   const handleReset = useCallback(() => {
@@ -698,7 +709,7 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
 
             {/* Start Processing Button */}
             {!isProcessing && session?.status === 'idle' && (
-              <Button onClick={handleProcessFiles} className="w-full" disabled={!canProcess}>
+              <Button onClick={handleProcessFiles} className="w-full" disabled={!canProcess || isRunningRef.current}>
                 <Upload className="h-4 w-4 mr-2" />
                 Start Behandling
               </Button>
