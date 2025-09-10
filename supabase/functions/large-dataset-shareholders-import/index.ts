@@ -118,6 +118,13 @@ serve(async (req) => {
           created_at TIMESTAMPTZ DEFAULT NOW()
         )
       `;
+      
+      // Ensure antall_aksjer column is BIGINT 
+      await conn.queryArray`
+        ALTER TABLE shareholders_staging 
+        ALTER COLUMN antall_aksjer TYPE BIGINT USING antall_aksjer::BIGINT
+      `;
+      
       await conn.queryArray`TRUNCATE shareholders_staging`;
 
       console.log('Processing rows with simple batch insert...');
