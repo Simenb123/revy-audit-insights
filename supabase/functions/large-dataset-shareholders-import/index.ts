@@ -131,7 +131,15 @@ serve(async (req) => {
         if (rows.length === 0) return;
 
         const values = rows.map((row, idx) => {
-          const params = targetCols.map(col => row[col] || '');
+        const params = targetCols.map(col => {
+          const value = row[col] || '';
+          // Handle INTEGER columns
+          if (col === 'antall_aksjer' || col === 'year') {
+            const numValue = parseInt(value.replace(/[^0-9]/g, ''));
+            return isNaN(numValue) ? 0 : numValue;
+          }
+          return value;
+        });
           const placeholders = params.map((_, i) => `$${idx * targetCols.length + i + 1}`).join(',');
           return `(${placeholders})`;
         }).join(',');
