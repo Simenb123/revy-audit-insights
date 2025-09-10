@@ -440,8 +440,10 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
                       'Aksjeklasse': 'aksjeklasse',
                       'Navn aksjonær': 'navn_aksjonaer',
                       'Fødselsår/orgnr': 'fodselsaar_orgnr',
+                      'Postnr/sted': '', // Ignore this column to prevent data shift
                       'Landkode': 'landkode',
                       'Antall aksjer': 'antall_aksjer'
+                      // Note: "Antall aksjer selskap" column is also ignored
                     };
                     await startShareholderServerJob(file, mapping);
                     console.log('✅ DEBUG: Server job completed successfully');
