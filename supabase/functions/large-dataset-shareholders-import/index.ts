@@ -88,7 +88,7 @@ serve(async (req) => {
     const targetCols: string[] = [];
     const srcByTarget: Record<string,string> = {};
     for (const [src, tgt] of Object.entries(mapping)) {
-      if (srcHeaders.includes(src)) { 
+      if (srcHeaders.includes(src) && tgt && tgt.trim() !== '') { 
         targetCols.push(tgt); 
         srcByTarget[tgt] = src; 
       }
