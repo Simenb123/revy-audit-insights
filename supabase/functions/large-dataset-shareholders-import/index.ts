@@ -122,10 +122,11 @@ serve(async (req) => {
 
       console.log('Processing rows with simple batch insert...');
 
-      // Process data in batches using simple INSERT
+      // Process data in batches using UNNEST-optimized INSERT
       let remainder = buf;
       let batch: any[] = [];
-      const batchSize = 1000;
+      const batchSize = 200; // Redusert for mindre CPU-bruk
+      let batchCount = 0; // For CPU yield
 
       // HJELPER: rens opp antall_aksjer så INSERT til BIGINT ikke feiler
       function sanitizeRow(row: Record<string, any>) {
@@ -156,22 +157,47 @@ serve(async (req) => {
 
         const safeRows = rows.map(sanitizeRow);
 
-        const values = safeRows.map((row, idx) => {
-          const placeholders = targetCols.map((_, i) => `$${idx * targetCols.length + i + 1}`).join(',');
-          return `(${placeholders})`;
-        }).join(',');
+        // UNNEST-basert insert: samle kolonne-data i arrays
+        const columnArrays: Record<string, any[]> = {};
+        targetCols.forEach(col => columnArrays[col] = []);
 
-        const allParams = safeRows.flatMap(row =>
-          targetCols.map(col => {
-            // Bruk null på tom streng
-            const v = row[col] ?? '';
-            if (v === '') return null;
-            return v;
-          })
-        );
-        const query = `INSERT INTO shareholders_staging (${targetCols.map(c => `"${c}"`).join(',')}) VALUES ${values}`;
+        // Fyll kolonne-arrays fra sanitiserte rader
+        for (const row of safeRows) {
+          targetCols.forEach(col => {
+            const value = row[col] ?? '';
+            columnArrays[col].push(value === '' ? null : value);
+          });
+        }
 
-        await conn.queryArray(query, allParams);
+        // Type-casting for hver kolonne
+        const columnTypes: Record<string, string> = {
+          'orgnr': 'text[]',
+          'selskap': 'text[]', 
+          'aksjeklasse': 'text[]',
+          'navn_aksjonaer': 'text[]',
+          'fodselsaar_orgnr': 'text[]',
+          'landkode': 'text[]',
+          'antall_aksjer': 'bigint[]',
+          'year': 'integer[]',
+          'user_id': 'uuid[]'
+        };
+
+        // Bygg UNNEST-parametere med type-casting
+        const unnestParams = targetCols.map((col, idx) => {
+          const type = columnTypes[col] || 'text[]';
+          return `$${idx + 1}::${type}`;
+        }).join(', ');
+
+        // SQL med UNNEST i stedet for VALUES
+        const query = `
+          INSERT INTO shareholders_staging (${targetCols.map(c => `"${c}"`).join(',')})
+          SELECT * FROM unnest(${unnestParams})
+        `;
+
+        // Parametere er kolonne-arrays i riktig rekkefølge
+        const params = targetCols.map(col => columnArrays[col]);
+
+        await conn.queryArray(query, params);
         rowsProcessed += rows.length;
 
         // Update job progress
@@ -211,6 +237,12 @@ serve(async (req) => {
               if (batch.length >= batchSize) {
                 await processBatch(batch);
                 batch = [];
+                batchCount++;
+                
+                // CPU yield hver 5. batch for å unngå "CPU Time exceeded"
+                if (batchCount % 5 === 0) {
+                  await new Promise(r => setTimeout(r, 0));
+                }
               }
             }
           }
