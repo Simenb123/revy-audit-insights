@@ -211,39 +211,57 @@ serve(async (req) => {
       // 2) ENTITIES: upsert på en stabil nøkkel (entity_key)
       // Bygg nøkkelen som: lower(trim(navn)) || '|' || coalesce(trim(fodselsaar_orgnr),'?')
       await conn.queryArray`
-        INSERT INTO share_entities (entity_key, name, national_id, country)
+        INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type)
         SELECT DISTINCT
           LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
           NULLIF(TRIM(navn_aksjonaer), '')                                                       AS name,
-          NULLIF(TRIM(fodselsaar_orgnr), '')                                                     AS national_id,
-          NULLIF(TRIM(landkode), '')                                                             AS country
+          CASE 
+            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN NULLIF(TRIM(fodselsaar_orgnr), '')
+            ELSE NULL
+          END AS orgnr,
+          CASE 
+            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
+            ELSE NULL
+          END AS birth_year,
+          COALESCE(NULLIF(TRIM(landkode), ''), 'NO')                                            AS country_code,
+          CASE 
+            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN 'company'
+            ELSE 'person'
+          END AS entity_type
         FROM shareholders_staging s
         WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
         ON CONFLICT (entity_key) DO UPDATE
           SET
-            name        = EXCLUDED.name,
-            national_id = COALESCE(share_entities.national_id, EXCLUDED.national_id),
-            country     = COALESCE(EXCLUDED.country, share_entities.country)
+            name         = EXCLUDED.name,
+            orgnr        = COALESCE(share_entities.orgnr, EXCLUDED.orgnr),
+            birth_year   = COALESCE(share_entities.birth_year, EXCLUDED.birth_year),
+            country_code = COALESCE(EXCLUDED.country_code, share_entities.country_code),
+            entity_type  = EXCLUDED.entity_type
       `;
 
       // 3) HOLDINGS: sett inn med korrekt holder_id (JOIN via entity_key) + valgfri UPSERT
       // Anta at share_holdings har (company_orgnr, holder_id, share_class) som unik kombo – justér ved behov
       await conn.queryArray`
-        INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, country)
+        INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
         SELECT
           NULLIF(TRIM(s.orgnr), ''),
           e.id,
-          NULLIF(TRIM(s.aksjeklasse), ''),      -- CSV/staging-feltet heter fortsatt aksjeklasse
-          NULLIF(TRIM(s.antall_aksjer), '')::BIGINT,
-          NULLIF(TRIM(s.landkode), '')
+          NULLIF(TRIM(s.aksjeklasse), ''),
+          CASE 
+            WHEN NULLIF(TRIM(s.antall_aksjer), '') ~ '^[0-9]+$' 
+            THEN NULLIF(TRIM(s.antall_aksjer), '')::BIGINT
+            ELSE 0
+          END,
+          EXTRACT(YEAR FROM NOW())::INTEGER,
+          s.user_id
         FROM shareholders_staging s
         JOIN share_entities e
           ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
         WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
           AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
-        ON CONFLICT (company_orgnr, holder_id, share_class) DO UPDATE
-          SET shares  = EXCLUDED.shares,
-              country = COALESCE(EXCLUDED.country, share_holdings.country)
+        ON CONFLICT (company_orgnr, holder_id, share_class, year) DO UPDATE
+          SET shares   = EXCLUDED.shares,
+              user_id  = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
       `;
 
       await conn.queryArray`COMMIT`;
