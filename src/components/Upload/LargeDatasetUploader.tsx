@@ -203,15 +203,29 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
     error
   } = useAdvancedUpload();
 
-  // Start shareholder server job using Storage-first approach
+  // Start shareholder server job using Storage-first approach with TUS support
   const startShareholderServerJob = async (file: File, sampleMapping: Record<string,string>) => {
     console.log('🚀 DEBUG: startShareholderServerJob called', { 
       fileName: file.name, 
       fileSize: file.size, 
       mapping: sampleMapping 
     });
+    
     try {
-      const result = await uploadAndStartImport(file, { mapping: sampleMapping });
+      const result = await uploadAndStartImport(file, { 
+        mapping: sampleMapping,
+        onProgress: (progress) => {
+          // Update upload progress in UI
+          const uploadPercent = Math.round((progress.percentage / 2)); // Upload is 50% of total process
+          if (onProgress) {
+            onProgress({
+              percent: uploadPercent,
+              status: `Laster opp fil: ${progress.percentage}%`,
+              eta: undefined
+            });
+          }
+        }
+      });
       console.log('✅ DEBUG: uploadAndStartImport completed successfully', result);
       return result;
     } catch (error) {
