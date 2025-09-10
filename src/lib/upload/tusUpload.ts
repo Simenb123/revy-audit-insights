@@ -57,18 +57,17 @@ export async function tusUpload(
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .uploadToSignedUrl(urlData.path, urlData.token, file, {
-          contentType: contentType || file.type,
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-                percentage: Math.round((progress.loaded / progress.total) * 100)
-              });
-            }
-            console.log(`📊 Upload progress: ${Math.round((progress.loaded / progress.total) * 100)}%`);
-          }
+          contentType: contentType || file.type
         });
+
+      // Manual progress simulation since onUploadProgress isn't available
+      if (onProgress) {
+        onProgress({
+          loaded: file.size,
+          total: file.size,
+          percentage: 100
+        });
+      }
 
       if (!uploadError) {
         console.log('✅ TUS upload completed successfully');
