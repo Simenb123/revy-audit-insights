@@ -112,7 +112,7 @@ serve(async (req) => {
           navn_aksjonaer TEXT,
           fodselsaar_orgnr TEXT,
           landkode TEXT DEFAULT 'NO',
-          antall_aksjer INTEGER DEFAULT 0,
+          antall_aksjer BIGINT DEFAULT 0,
           year INTEGER DEFAULT EXTRACT(YEAR FROM NOW()),
           user_id UUID,
           created_at TIMESTAMPTZ DEFAULT NOW()
@@ -127,17 +127,23 @@ serve(async (req) => {
       let batch: any[] = [];
       const batchSize = 1000;
 
-      // HJELPER: rens opp antall_aksjer så INSERT til INTEGER ikke feiler
+      // HJELPER: rens opp antall_aksjer så INSERT til BIGINT ikke feiler
       function sanitizeRow(row: Record<string, any>) {
         const out = { ...row };
         if (out.antall_aksjer != null) {
-          // Gjør om til string, fjern mellomrom og vanlige tusenskilletegn
-          const raw = String(out.antall_aksjer).trim().replace(/\s+/g, '').replace(/[.,\u00A0]/g, '');
-          // Tillat bare rene tall
-          if (/^\d+$/.test(raw)) {
-            out.antall_aksjer = Number(raw);
+          // Gjør om til string, fjern mellomrom, tusenskilletegn og ikke-numeriske tegn
+          const raw = String(out.antall_aksjer)
+            .trim()
+            .replace(/\s+/g, '')              // fjern alle mellomrom
+            .replace(/[.,\u00A0\u2009]/g, '') // fjern punktum, komma, non-breaking space
+            .replace(/[^0-9]/g, '');          // behold bare siffer
+          
+          // Tillat bare rene tall, håndter store verdier
+          if (/^\d+$/.test(raw) && raw.length > 0) {
+            const numValue = BigInt(raw);
+            out.antall_aksjer = numValue.toString(); // konverter tilbake til string for database
           } else {
-            out.antall_aksjer = null; // eller 0 hvis du foretrekker
+            out.antall_aksjer = null;
           }
         } else {
           out.antall_aksjer = null;
