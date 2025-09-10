@@ -433,15 +433,15 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
                 if (uploadType === 'shareholders') {
                   console.log('✅ DEBUG: uploadType is shareholders, starting server job...');
                   try {
-                    // Simple heuristic mapping based on header names used in repo
+                    // Map database columns to actual CSV headers
                     const mapping = {
-                      orgnr: 'orgnr',
-                      selskap: 'selskap', 
-                      aksjeklasse: 'aksjeklasse',
-                      navn_aksjonaer: 'navn_aksjonaer',
-                      fodselsaar_orgnr: 'fodselsaar_orgnr',
-                      landkode: 'landkode',
-                      antall_aksjer: 'antall_aksjer'
+                      orgnr: 'Orgnr',
+                      selskap: 'Selskap', 
+                      aksjeklasse: 'Aksjeklasse',
+                      navn_aksjonaer: 'Navn aksjonær',
+                      fodselsaar_orgnr: 'Fødselsår/orgnr',
+                      landkode: 'Landkode',
+                      antall_aksjer: 'Antall aksjer'
                     };
                     await startShareholderServerJob(file, mapping);
                     console.log('✅ DEBUG: Server job completed successfully');
