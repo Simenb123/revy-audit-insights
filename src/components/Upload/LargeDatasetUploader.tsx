@@ -665,9 +665,9 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Samlet fremgang ({processingStats.processedFiles}/{processingStats.totalFiles})</span>
-                <span>{Math.round((processingStats.processedFiles / processingStats.totalFiles) * 100)}%</span>
+                <span>{processingStats.totalFiles > 0 ? Math.round((processingStats.processedFiles / processingStats.totalFiles) * 100) : 0}%</span>
               </div>
-              <Progress value={(processingStats.processedFiles / processingStats.totalFiles) * 100} />
+              <Progress value={processingStats.totalFiles > 0 ? (processingStats.processedFiles / processingStats.totalFiles) * 100 : 0} />
               {processingStats.estimatedTimeRemaining > 0 && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" />

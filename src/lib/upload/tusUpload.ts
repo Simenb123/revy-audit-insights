@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import * as tus from 'tus-js-client';
 
 export interface TusUploadProgress {
   loaded: number;
@@ -14,12 +15,9 @@ export interface TusUploadOptions {
   onRetry?: (attempt: number, error: Error) => void;
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // ms
-
 /**
- * TUS-based resumable upload for large files
- * Uses Supabase's createSignedUploadUrl and uploadToSignedUrl for files > 6MB
+ * Real TUS resumable upload for large files
+ * Uses tus-js-client against Supabase's resumable upload endpoint
  */
 export async function tusUpload(
   file: File, 
@@ -27,82 +25,83 @@ export async function tusUpload(
 ): Promise<{ path: string; fullPath: string }> {
   const { bucket, path, contentType, onProgress, onRetry } = options;
   
-  console.log('📡 Starting TUS upload', { 
+  console.log('📡 Starting real TUS upload', { 
     fileName: file.name, 
     fileSize: file.size,
     bucket, 
     path 
   });
 
-  // Step 1: Create signed upload URL
-  const { data: urlData, error: urlError } = await supabase.storage
-    .from(bucket)
-    .createSignedUploadUrl(path);
-
-  if (urlError) {
-    console.error('❌ Failed to create signed upload URL:', urlError);
-    throw new Error(`Failed to create upload URL: ${urlError.message}`);
+  // Get authentication session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('No active session for TUS upload');
   }
 
-  console.log('✅ Created signed upload URL:', urlData);
+  // Construct the TUS resumable endpoint
+  const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co';
+  const projectId = 'fxelhfwaoizqyecikscu';
+  const endpoint = `https://${projectId}.supabase.co/storage/v1/upload/resumable`;
 
-  // Step 2: Upload using TUS protocol with retries
-  let attempt = 0;
-  let lastError: Error;
+  let retryCount = 0;
 
-  while (attempt <= MAX_RETRIES) {
-    try {
-      console.log(`🔄 TUS upload attempt ${attempt + 1}/${MAX_RETRIES + 1}`);
-      
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .uploadToSignedUrl(urlData.path, urlData.token, file, {
-          contentType: contentType || file.type
-        });
-
-      // Manual progress simulation since onUploadProgress isn't available
-      if (onProgress) {
-        onProgress({
-          loaded: file.size,
-          total: file.size,
-          percentage: 100
-        });
-      }
-
-      if (!uploadError) {
+  return new Promise<{ path: string; fullPath: string }>((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint,
+      chunkSize: 6 * 1024 * 1024, // 6MB chunks
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${session.access_token}`,
+        'x-upsert': 'true'
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: bucket,
+        objectName: path,
+        contentType: contentType || file.type || 'text/csv',
+        cacheControl: '3600'
+      },
+      onError: (error) => {
+        console.error(`❌ TUS upload error (attempt ${retryCount + 1}):`, error);
+        if (onRetry) {
+          onRetry(++retryCount, error);
+        }
+        reject(new Error(`TUS upload failed: ${error.message}`));
+      },
+      onProgress: (bytesUploaded, bytesTotal) => {
+        const percentage = Math.floor((bytesUploaded / bytesTotal) * 100);
+        console.log(`📈 TUS progress: ${percentage}% (${bytesUploaded}/${bytesTotal})`);
+        
+        if (onProgress) {
+          onProgress({
+            loaded: bytesUploaded,
+            total: bytesTotal,
+            percentage
+          });
+        }
+      },
+      onSuccess: () => {
         console.log('✅ TUS upload completed successfully');
-        return {
-          path: urlData.path,
-          fullPath: `${bucket}/${urlData.path}`
-        };
+        resolve({
+          path,
+          fullPath: `${bucket}/${path}`
+        });
       }
+    });
 
-      lastError = new Error(uploadError.message);
-      console.error(`❌ Upload attempt ${attempt + 1} failed:`, uploadError);
-
-    } catch (error) {
-      lastError = error as Error;
-      console.error(`❌ Upload attempt ${attempt + 1} error:`, error);
-    }
-
-    attempt++;
-
-    // If not the last attempt, wait before retrying
-    if (attempt <= MAX_RETRIES) {
-      const delay = RETRY_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
-      console.log(`⏳ Retrying in ${delay}ms...`);
-      
-      if (onRetry) {
-        onRetry(attempt, lastError);
+    // Start the upload, checking for previous uploads first
+    upload.findPreviousUploads().then((previousUploads) => {
+      if (previousUploads.length > 0) {
+        console.log('🔄 Resuming previous TUS upload');
+        upload.resumeFromPreviousUpload(previousUploads[0]);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-
-  // All attempts failed
-  console.error('💀 TUS upload failed after all retries');
-  throw new Error(`Upload failed after ${MAX_RETRIES + 1} attempts: ${lastError.message}`);
+      upload.start();
+    }).catch((error) => {
+      console.error('❌ Error starting TUS upload:', error);
+      reject(error);
+    });
+  });
 }
 
 /**
