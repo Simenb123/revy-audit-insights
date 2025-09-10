@@ -127,24 +127,42 @@ serve(async (req) => {
       let batch: any[] = [];
       const batchSize = 1000;
 
+      // HJELPER: rens opp antall_aksjer så INSERT til INTEGER ikke feiler
+      function sanitizeRow(row: Record<string, any>) {
+        const out = { ...row };
+        if (out.antall_aksjer != null) {
+          // Gjør om til string, fjern mellomrom og vanlige tusenskilletegn
+          const raw = String(out.antall_aksjer).trim().replace(/\s+/g, '').replace(/[.,\u00A0]/g, '');
+          // Tillat bare rene tall
+          if (/^\d+$/.test(raw)) {
+            out.antall_aksjer = Number(raw);
+          } else {
+            out.antall_aksjer = null; // eller 0 hvis du foretrekker
+          }
+        } else {
+          out.antall_aksjer = null;
+        }
+        return out;
+      }
+
       const processBatch = async (rows: any[]) => {
         if (rows.length === 0) return;
 
-        const values = rows.map((row, idx) => {
-        const params = targetCols.map(col => {
-          const value = row[col] || '';
-          // Handle INTEGER columns
-          if (col === 'antall_aksjer' || col === 'year') {
-            const numValue = parseInt(value.replace(/[^0-9]/g, ''));
-            return isNaN(numValue) ? 0 : numValue;
-          }
-          return value;
-        });
-          const placeholders = params.map((_, i) => `$${idx * targetCols.length + i + 1}`).join(',');
+        const safeRows = rows.map(sanitizeRow);
+
+        const values = safeRows.map((row, idx) => {
+          const placeholders = targetCols.map((_, i) => `$${idx * targetCols.length + i + 1}`).join(',');
           return `(${placeholders})`;
         }).join(',');
 
-        const allParams = rows.flatMap(row => targetCols.map(col => row[col] || ''));
+        const allParams = safeRows.flatMap(row =>
+          targetCols.map(col => {
+            // Bruk null på tom streng
+            const v = row[col] ?? '';
+            if (v === '') return null;
+            return v;
+          })
+        );
         const query = `INSERT INTO shareholders_staging (${targetCols.map(c => `"${c}"`).join(',')}) VALUES ${values}`;
 
         await conn.queryArray(query, allParams);
