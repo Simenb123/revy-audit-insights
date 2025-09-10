@@ -125,31 +125,36 @@ serve(async (req) => {
       // Process data in batches using UNNEST-optimized INSERT
       let remainder = buf;
       let batch: any[] = [];
-      const batchSize = 200; // Redusert for mindre CPU-bruk
+      const batchSize = 50; // Aggressiv reduksjon for CPU-optimalisering
       let batchCount = 0; // For CPU yield
+      let totalProcessed = 0; // For progress logging
 
-      // HJELPER: rens opp antall_aksjer så INSERT til BIGINT ikke feiler
+      // FORENKLET sanitizeRow for minimal CPU-bruk
       function sanitizeRow(row: Record<string, any>) {
-        const out = { ...row };
-        if (out.antall_aksjer != null) {
-          // Gjør om til string, fjern mellomrom, tusenskilletegn og ikke-numeriske tegn
-          const raw = String(out.antall_aksjer)
-            .trim()
-            .replace(/\s+/g, '')              // fjern alle mellomrom
-            .replace(/[.,\u00A0\u2009]/g, '') // fjern punktum, komma, non-breaking space
-            .replace(/[^0-9]/g, '');          // behold bare siffer
-          
-          // Tillat bare rene tall, håndter store verdier
-          if (/^\d+$/.test(raw) && raw.length > 0) {
-            const numValue = BigInt(raw);
-            out.antall_aksjer = numValue.toString(); // konverter tilbake til string for database
-          } else {
-            out.antall_aksjer = null;
-          }
+        const result = { ...row };
+        
+        // antall_aksjer: fjern alle ikke-siffer, konverter til BigInt eller null
+        if (result.antall_aksjer) {
+          const digits = String(result.antall_aksjer).replace(/[^0-9]/g, '');
+          result.antall_aksjer = digits ? digits : null;
         } else {
-          out.antall_aksjer = null;
+          result.antall_aksjer = null;
         }
-        return out;
+
+        // year: fjern ikke-siffer, parse til heltall eller null
+        if (result.year) {
+          const yearDigits = String(result.year).replace(/[^0-9]/g, '');
+          result.year = yearDigits ? parseInt(yearDigits, 10) : null;
+        } else {
+          result.year = new Date().getFullYear(); // Default til inneværende år
+        }
+
+        // Sett userId hvis vi har den
+        if (userId) {
+          result.user_id = userId;
+        }
+
+        return result;
       }
 
       const processBatch = async (rows: any[]) => {
@@ -199,6 +204,12 @@ serve(async (req) => {
 
         await conn.queryArray(query, params);
         rowsProcessed += rows.length;
+        totalProcessed += rows.length;
+
+        // Progress logging hver 1000 rader
+        if (totalProcessed % 1000 === 0) {
+          console.log(`Progress: ${totalProcessed} rows processed`);
+        }
 
         // Update job progress
         if (jobId && rowsProcessed % 5000 === 0) {
@@ -239,9 +250,9 @@ serve(async (req) => {
                 batch = [];
                 batchCount++;
                 
-                // CPU yield hver 5. batch for å unngå "CPU Time exceeded"
-                if (batchCount % 5 === 0) {
-                  await new Promise(r => setTimeout(r, 0));
+                // CPU yield hver 2. batch for å unngå "CPU Time exceeded"
+                if (batchCount % 2 === 0) {
+                  await new Promise(res => setTimeout(res, 0));
                 }
               }
             }
