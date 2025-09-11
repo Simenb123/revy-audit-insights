@@ -18,57 +18,82 @@ serve(async (req) => {
 
   try {
     if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
-    const { bucket, path, mapping } = await req.json() as { bucket: string; path: string; mapping: Mapping; };
+    const { action, bucket, path, mapping, jobId, offset = 0, limit = 100000 } = await req.json() as {
+      action: "init" | "process";
+      bucket?: string;
+      path?: string;
+      mapping?: Mapping;
+      jobId?: number;
+      offset?: number;
+      limit?: number;
+    };
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
-  const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(supabaseUrl, serviceKey);
 
-  // Finn bruker fra Authorization-header
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    // Finn bruker fra Authorization-header
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  let userId: string | null = null;
-  try {
-    if (bearer) {
-      const { data: { user } } = await supabase.auth.getUser(bearer);
-      userId = user?.id ?? null;
+    let userId: string | null = null;
+    try {
+      if (bearer) {
+        const { data: { user } } = await supabase.auth.getUser(bearer);
+        userId = user?.id ?? null;
+      }
+    } catch (_) {
+      // stilletiende fall-back; userId = null
     }
-  } catch (_) {
-    // stilletiende fall-back; userId = null
-  }
 
-  console.log(`Starting import from ${bucket}/${path}`);
+    // Handle init action - create job and return immediately
+    if (action === "init") {
+      console.log(`Starting import from ${bucket}/${path}`);
+      
+      const jobRes = await supabase.from('import_jobs')
+        .insert({
+          job_type: 'shareholders',
+          status: 'running',
+          total_rows: 0,
+          rows_loaded: 0,
+          source_path: `${bucket}/${path}`,
+          user_id: userId,
+        })
+        .select('id').single();
+      
+      console.log(`Created job ${jobRes.data?.id}`);
+      
+      return new Response(JSON.stringify({ jobId: jobRes.data?.id }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-  // Opprett jobbrad med user_id
-  const jobRes = await supabase.from('import_jobs')
-    .insert({
-      job_type: 'shareholders',
-      status: 'running',
-      total_rows: 0,
-      rows_loaded: 0,
-      source_path: `${bucket}/${path}`,
-      user_id: userId, // <- viktig for RLS
-    })
-    .select('id').single();
-  const jobId = jobRes.data?.id;
+    if (action !== "process") {
+      throw new Error("Unsupported action. Use 'init' or 'process'.");
+    }
 
-    console.log(`Created job ${jobId}`);
+    // Handle process action - process a chunk of the CSV
+    if (!jobId || !bucket || !path || !mapping) {
+      throw new Error("Missing required parameters for process action");
+    }
 
     // Signed URL for streaming
-    const { data: signed, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 30);
+    const { data: signed, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
     if (signErr) throw signErr;
 
     const resp = await fetch(signed.signedUrl);
     if (!resp.ok || !resp.body) throw new Error(`Storage fetch failed: ${resp.status}`);
 
-    console.log(`Fetched file from storage, processing...`);
+    console.log(`Fetched file from storage, processing chunk offset=${offset}, limit=${limit}...`);
 
-    // Les headerlinje
+    // Les headerlinje og skip til offset
     const decoder = new TextDecoder();
     const reader = resp.body.getReader();
     let headerLine = "", buf = "";
+    
+    // Read header line
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -96,6 +121,20 @@ serve(async (req) => {
     if (!targetCols.length) throw new Error("No mapped columns match CSV header");
 
     console.log(`Mapped columns: ${targetCols.join(', ')}`);
+
+    // Skip to offset position
+    let lineNo = 0;
+    while (lineNo < offset) {
+      const { line, nextBuf } = readLine(buf);
+      if (line === null) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        continue;
+      }
+      buf = nextBuf;
+      lineNo++;
+    }
 
     const pool = new Pool(dbUrl, 1, true);
     const conn = await pool.connect();
@@ -127,14 +166,13 @@ serve(async (req) => {
       
       await conn.queryArray`TRUNCATE shareholders_staging`;
 
-      console.log('Processing rows with simple batch insert...');
+      console.log('Processing rows with chunked batch insert...');
 
       // Process data in batches using UNNEST-optimized INSERT
-      let remainder = buf;
       let batch: any[] = [];
-      const batchSize = 50; // Aggressiv reduksjon for CPU-optimalisering
-      let batchCount = 0; // For CPU yield
-      let totalProcessed = 0; // For progress logging
+      const batchSize = 500; // Increase batch size for chunked processing
+      let batchCount = 0;
+      let processedInChunk = 0;
 
       // FORENKLET sanitizeRow for minimal CPU-bruk
       function sanitizeRow(row: Record<string, any>) {
@@ -211,159 +249,162 @@ serve(async (req) => {
 
         await conn.queryArray(query, params);
         rowsProcessed += rows.length;
-        totalProcessed += rows.length;
+        processedInChunk += rows.length;
 
         // Progress logging hver 1000 rader
-        if (totalProcessed % 1000 === 0) {
-          console.log(`Progress: ${totalProcessed} rows processed`);
-        }
-
-        // Update job progress
-        if (jobId && rowsProcessed % 5000 === 0) {
-          await supabase.from('import_jobs')
-            .update({ rows_loaded: rowsProcessed })
-            .eq('id', jobId);
+        if ((lineNo + processedInChunk) % 1000 === 0) {
+          console.log(`Progress: ${lineNo + processedInChunk} rows processed`);
         }
       };
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          if (remainder.length) {
-            const row = parseRow(remainder, srcHeaders, srcByTarget, targetCols);
-            if (row) batch.push(row);
-          }
-          if (batch.length > 0) {
-            await processBatch(batch);
-          }
-          break;
+      // Process up to 'limit' rows in this chunk
+      while (processedInChunk < limit) {
+        const { line, nextBuf } = readLine(buf);
+        if (line === null) {
+          // Need more data
+          const { value, done } = await reader.read();
+          if (done) break; // EOF
+          buf += decoder.decode(value, { stream: true });
+          continue;
         }
-
-        const chunk = decoder.decode(value, { stream: true });
-        remainder += chunk;
-        let idx;
-
-        while ((idx = remainder.indexOf("\n")) !== -1) {
-          const line = remainder.slice(0, idx).trim();
-          remainder = remainder.slice(idx + 1);
-          
-          if (line) {
-            const row = parseRow(line, srcHeaders, srcByTarget, targetCols);
-            if (row) {
-              batch.push(row);
+        buf = nextBuf;
+        
+        if (line.trim()) {
+          const row = parseRow(line, srcHeaders, srcByTarget, targetCols);
+          if (row) {
+            batch.push(row);
+            
+            if (batch.length >= batchSize) {
+              await processBatch(batch);
+              batch = [];
+              batchCount++;
               
-              if (batch.length >= batchSize) {
-                await processBatch(batch);
-                batch = [];
-                batchCount++;
-                
-                // CPU yield hver 2. batch for å unngå "CPU Time exceeded"
-                if (batchCount % 2 === 0) {
-                  await new Promise(res => setTimeout(res, 0));
-                }
+              // CPU yield every 2 batches
+              if (batchCount % 2 === 0) {
+                await new Promise(res => setTimeout(res, 0));
               }
             }
           }
         }
+        processedInChunk++;
+      }
+      
+      // Process remaining batch
+      if (batch.length > 0) {
+        await processBatch(batch);
       }
 
-      console.log(`Processed ${rowsProcessed} rows`);
+      console.log(`Processed ${rowsProcessed} rows in chunk`);
 
-      // --- Etter vellykket COPY til shareholders_staging ---
-      // Oppdater import_jobs (valgfritt hvis du sporer rader)
+      // Update progress and determine if we're done
+      const totalRowsProcessed = lineNo + processedInChunk;
       await supabase.from('import_jobs')
-        .update({ status: 'running' })
-        .eq('id', jobId ?? 0);
+        .update({ rows_loaded: totalRowsProcessed })
+        .eq('id', jobId);
 
-      // Start en transaksjon for den tre-stegs innlastingen
-      await conn.queryArray`BEGIN`;
+      // Check if we've reached EOF
+      const { value, done } = await reader.read();
+      const isEOF = done && (!value || value.length === 0) && buf.trim().length === 0;
+      
+      if (isEOF || processedInChunk === 0) {
+        // This is the last chunk, process staging data into production tables
+        console.log('Final chunk - processing staging data into production tables');
+        
+        // Start transaction for the three-step loading
+        await conn.queryArray`BEGIN`;
 
-      // 1) COMPANIES: upsert basert på orgnr
-      await conn.queryArray`
-        INSERT INTO share_companies (orgnr, name)
-        SELECT DISTINCT
-          NULLIF(TRIM(orgnr), '')               AS orgnr,
-          NULLIF(TRIM(selskap), '')             AS name
-        FROM shareholders_staging s
-        WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
-        ON CONFLICT (orgnr) DO UPDATE
-          SET name = EXCLUDED.name
-      `;
+        // 1) COMPANIES: upsert based on orgnr
+        await conn.queryArray`
+          INSERT INTO share_companies (orgnr, name, year, user_id)
+          SELECT DISTINCT
+            NULLIF(TRIM(orgnr), '') AS orgnr,
+            NULLIF(TRIM(selskap), '') AS name,
+            COALESCE(year, EXTRACT(YEAR FROM NOW())::INTEGER) AS year,
+            user_id
+          FROM shareholders_staging s
+          WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
+          ON CONFLICT (orgnr, year) DO UPDATE
+            SET name = EXCLUDED.name,
+                user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
+        `;
 
-      // 2) ENTITIES: upsert på en stabil nøkkel (entity_key)
-      // Bygg nøkkelen som: lower(trim(navn)) || '|' || coalesce(trim(fodselsaar_orgnr),'?')
-      await conn.queryArray`
-        INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type)
-        SELECT DISTINCT
-          LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
-          NULLIF(TRIM(navn_aksjonaer), '')                                                       AS name,
-          CASE 
-            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN NULLIF(TRIM(fodselsaar_orgnr), '')
-            ELSE NULL
-          END AS orgnr,
-          CASE 
-            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
-            ELSE NULL
-          END AS birth_year,
-          COALESCE(NULLIF(TRIM(landkode), ''), 'NO')                                            AS country_code,
-          CASE 
-            WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN 'company'
-            ELSE 'person'
-          END AS entity_type
-        FROM shareholders_staging s
-        WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-        ON CONFLICT (entity_key) DO UPDATE
-          SET
-            name         = EXCLUDED.name,
-            orgnr        = COALESCE(share_entities.orgnr, EXCLUDED.orgnr),
-            birth_year   = COALESCE(share_entities.birth_year, EXCLUDED.birth_year),
-            country_code = COALESCE(EXCLUDED.country_code, share_entities.country_code),
-            entity_type  = EXCLUDED.entity_type
-      `;
+        // 2) ENTITIES: upsert on stable key (entity_key)
+        await conn.queryArray`
+          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
+          SELECT DISTINCT
+            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
+            NULLIF(TRIM(navn_aksjonaer), '') AS name,
+            CASE 
+              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN NULLIF(TRIM(fodselsaar_orgnr), '')
+              ELSE NULL
+            END AS orgnr,
+            CASE 
+              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
+              ELSE NULL
+            END AS birth_year,
+            COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
+            CASE 
+              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN 'company'
+              ELSE 'person'
+            END AS entity_type,
+            user_id
+          FROM shareholders_staging s
+          WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
+          ON CONFLICT (entity_key) DO UPDATE
+            SET
+              name = EXCLUDED.name,
+              orgnr = COALESCE(share_entities.orgnr, EXCLUDED.orgnr),
+              birth_year = COALESCE(share_entities.birth_year, EXCLUDED.birth_year),
+              country_code = COALESCE(EXCLUDED.country_code, share_entities.country_code),
+              entity_type = EXCLUDED.entity_type,
+              user_id = COALESCE(share_entities.user_id, EXCLUDED.user_id)
+        `;
 
-      // 3) HOLDINGS: sett inn med korrekt holder_id (JOIN via entity_key) + valgfri UPSERT
-      // Anta at share_holdings har (company_orgnr, holder_id, share_class) som unik kombo – justér ved behov
-      await conn.queryArray`
-        INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
-        SELECT
-          NULLIF(TRIM(s.orgnr), ''),
-          e.id,
-          NULLIF(TRIM(s.aksjeklasse), ''),
-          CASE 
-            WHEN NULLIF(TRIM(s.antall_aksjer), '') ~ '^[0-9]+$' 
-            THEN NULLIF(TRIM(s.antall_aksjer), '')::BIGINT
-            ELSE 0
-          END,
-          EXTRACT(YEAR FROM NOW())::INTEGER,
-          s.user_id
-        FROM shareholders_staging s
-        JOIN share_entities e
-          ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
-        WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
-          AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
-        ON CONFLICT (company_orgnr, holder_id, share_class, year) DO UPDATE
-          SET shares   = EXCLUDED.shares,
-              user_id  = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
-      `;
+        // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key)
+        await conn.queryArray`
+          INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
+          SELECT
+            NULLIF(TRIM(s.orgnr), ''),
+            e.id,
+            NULLIF(TRIM(s.aksjeklasse), ''),
+            COALESCE(s.antall_aksjer, 0),
+            COALESCE(s.year, EXTRACT(YEAR FROM NOW())::INTEGER),
+            s.user_id
+          FROM shareholders_staging s
+          JOIN share_entities e
+            ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
+          WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
+            AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
+          ON CONFLICT (company_orgnr, holder_id, share_class, year) DO UPDATE
+            SET shares = EXCLUDED.shares,
+                user_id = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
+        `;
 
-      await conn.queryArray`COMMIT`;
-
-      console.log(`Inserted ${rowsProcessed} rows into production table`);
-
-      await supabase.from('import_jobs').update({ 
-        status: 'done',
-        total_rows: rowsProcessed,
-        rows_loaded: rowsProcessed 
-      }).eq('id', jobId ?? 0);
+        await conn.queryArray`COMMIT`;
+        
+        // Mark job as completed
+        await supabase.from('import_jobs').update({ 
+          status: 'done',
+          total_rows: totalRowsProcessed,
+          rows_loaded: totalRowsProcessed 
+        }).eq('id', jobId);
+        
+        console.log(`Import completed. Total rows processed: ${totalRowsProcessed}`);
+      }
 
     } finally {
       await conn.release();
       await pool.end();
     }
 
+    const nextOffset = lineNo + processedInChunk;
+    const isDone = isEOF || processedInChunk === 0;
+
     return new Response(JSON.stringify({ 
-      ok: true, 
-      rowsProcessed,
+      done: isDone,
+      nextOffset,
+      processedInChunk,
+      totalProcessed: nextOffset,
       jobId 
     }), { 
       status: 200,
@@ -390,6 +431,14 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to read a line from buffer
+function readLine(buffer: string): { line: string | null; nextBuf: string } {
+  const idx = buffer.indexOf('\n');
+  if (idx === -1) return { line: null, nextBuf: buffer };
+  const line = buffer.slice(0, idx).trim();
+  return { line, nextBuf: buffer.slice(idx + 1) };
+}
 
 // Helper function to parse CSV row
 function parseRow(

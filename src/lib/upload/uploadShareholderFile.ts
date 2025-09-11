@@ -14,6 +14,7 @@ export async function uploadAndStartImport(
     prefix?: string; 
     mapping: Mapping;
     onProgress?: UploadProgressCallback;
+    onProcessProgress?: (processed: number, total: number) => void;
   }
 ) {
   console.log('🔧 DEBUG: uploadAndStartImport called', { 
@@ -25,7 +26,7 @@ export async function uploadAndStartImport(
   const bucket = opts.bucket ?? 'imports';
   const key = `${opts.prefix ?? 'shareholders/'}${Date.now()}_${file.name}`;
 
-  // 1) Laste opp fil - use TUS for large files, standard upload for small files
+  // 1) Upload file - use TUS for large files, standard upload for small files
   console.log('📁 DEBUG: Starting storage upload', { bucket, key, fileSize: file.size });
   
   let uploadPath: string;
@@ -67,29 +68,81 @@ export async function uploadAndStartImport(
     console.log('✅ Standard upload successful');
   }
 
-  // 2) Hent brukerens access_token for å identifisere user_id i edge-funksjonen
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData?.session?.access_token ?? null;
-
-  // 3) Kall edge-funksjon via Supabase client
-  console.log('🚀 DEBUG: Calling edge function', { 
-    functionName: 'large-dataset-shareholders-import',
-    hasToken: !!token,
-    payload: { bucket, path: key, mapping: opts.mapping }
+  // 2) Initialize import job
+  console.log('🚀 DEBUG: Initializing import job');
+  
+  const { data: initData, error: initError } = await supabase.functions.invoke('large-dataset-shareholders-import', {
+    body: { 
+      action: 'init',
+      bucket, 
+      path: uploadPath, 
+      mapping: opts.mapping 
+    }
   });
   
-  const { data, error } = await supabase.functions.invoke('large-dataset-shareholders-import', {
-    body: { bucket, path: uploadPath, mapping: opts.mapping }
-  });
-  
-  console.log('📡 DEBUG: Edge function response', { 
-    data,
-    error 
-  });
-
-  if (error) {
-    throw new Error(`Start import failed: ${error.message}`);
+  if (initError) {
+    throw new Error(`Initialize import failed: ${initError.message}`);
   }
 
-  return { storagePath: `${bucket}/${uploadPath}` };
+  const jobId = initData?.jobId;
+  if (!jobId) {
+    throw new Error('No job ID returned from init');
+  }
+
+  console.log('✅ Import job created:', jobId);
+
+  // 3) Process file in chunks
+  let offset = 0;
+  const limit = 100000; // Process 100k rows per chunk
+  let totalProcessed = 0;
+  
+  console.log('🔄 Starting chunked processing...');
+  
+  while (true) {
+    console.log(`📊 Processing chunk: offset=${offset}, limit=${limit}`);
+    
+    const { data: processData, error: processError } = await supabase.functions.invoke('large-dataset-shareholders-import', {
+      body: { 
+        action: 'process',
+        bucket, 
+        path: uploadPath, 
+        mapping: opts.mapping,
+        jobId,
+        offset,
+        limit
+      }
+    });
+    
+    if (processError) {
+      throw new Error(`Process chunk failed: ${processError.message}`);
+    }
+    
+    totalProcessed = processData?.totalProcessed || 0;
+    const processedInChunk = processData?.processedInChunk || 0;
+    
+    console.log(`✅ Chunk processed: ${processedInChunk} rows, total: ${totalProcessed}`);
+    
+    // Report progress
+    if (opts.onProcessProgress) {
+      opts.onProcessProgress(totalProcessed, totalProcessed + (processData?.done ? 0 : limit));
+    }
+    
+    // Check if done
+    if (processData?.done) {
+      console.log('🎉 Import completed!');
+      break;
+    }
+    
+    // Move to next chunk
+    offset = processData?.nextOffset || (offset + processedInChunk);
+    
+    // Small delay between chunks to prevent overwhelming the system
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  return { 
+    storagePath: `${bucket}/${uploadPath}`,
+    jobId,
+    totalProcessed 
+  };
 }

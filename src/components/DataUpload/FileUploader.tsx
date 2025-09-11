@@ -104,6 +104,11 @@ const ShareholderFileUploader = ({ year }: { year: number }) => {
           onProgress: (progress) => {
             setUploadProgress(progress.percentage);
             setCurrentMessage(`Laster opp fil: ${progress.percentage}%`);
+          },
+          onProcessProgress: (processed, estimated) => {
+            setProcessedRows(processed);
+            setTotalRows(Math.max(processed, estimated));
+            setCurrentMessage(`Behandler data: ${processed.toLocaleString()} rader`);
           }
         });
 
