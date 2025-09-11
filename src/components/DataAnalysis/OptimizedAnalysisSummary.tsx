@@ -218,13 +218,19 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {analysis.account_distribution.slice(0, 10).map((account, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{account.account}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(account.amount)}</TableCell>
-                  <TableCell className="text-right">{formatNumeric(account.count)}</TableCell>
-                </TableRow>
-              ))}
+              {analysis.account_distribution.slice(0, 10).map((account, index) => {
+                // Safeguard: ensure amount is not NaN
+                const safeAmount = isNaN(account.amount) ? 0 : (account.amount ?? 0);
+                const safeCount = isNaN(account.count) ? 0 : (account.count ?? 0);
+                
+                return (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{account.account}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(safeAmount)}</TableCell>
+                    <TableCell className="text-right">{formatNumeric(safeCount)}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           {analysis.account_distribution.length > 10 && (
@@ -253,14 +259,20 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {analysis.monthly_summary.map((month, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{month.month}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.debit)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.credit)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.net)}</TableCell>
-                  </TableRow>
-                ))}
+                {analysis.monthly_summary.map((month, index) => {
+                  // Safeguard: compute net_amount if missing
+                  const netAmount = month.net ?? ((month.debit ?? 0) - (month.credit ?? 0));
+                  const safeNetAmount = isNaN(netAmount) ? 0 : netAmount;
+                  
+                  return (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{month.month}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(month.debit ?? 0)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(month.credit ?? 0)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(safeNetAmount)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

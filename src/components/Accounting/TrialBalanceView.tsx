@@ -4,7 +4,8 @@ import { useTBVersionOptions } from '@/hooks/useTrialBalanceVersions';
 import TrialBalanceTable from './TrialBalanceTable';
 import TBVersionSelector from '@/components/DataAnalysis/TBVersionSelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Layers } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Layers, Info } from 'lucide-react';
 import { TBVersionOption } from '@/types/accounting';
 
 interface TrialBalanceViewProps {
@@ -40,11 +41,22 @@ const TrialBalanceView = ({ clientId }: TrialBalanceViewProps) => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Ingen saldobalanse data</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Ingen saldobalanse data
+          </CardTitle>
           <CardDescription>
-            Ingen saldobalanse funnet for {selectedFiscalYear}. Last opp data for å komme i gang.
+            Ingen saldobalanse funnet for {selectedFiscalYear}. Last opp en saldobalanse fil for å komme i gang.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Alert variant="default">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              For å se saldobalanse data, last opp en Excel-fil med kontobalansen eller velg et annet regnskapsår hvor data er tilgjengelig.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
       </Card>
     );
   }

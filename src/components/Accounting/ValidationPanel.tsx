@@ -58,10 +58,10 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
             <Info className="h-4 w-4" />
             <AlertDescription>
               {!selectedGLVersion && !selectedTBVersion 
-                ? 'Både hovedbok og saldobalanse må være valgt for validering'
+                ? 'Velg både hovedbok og saldobalanse versjon for å starte validering'
                 : !selectedGLVersion 
-                  ? 'Hovedbok må være valgt for validering'
-                  : 'Saldobalanse må være valgt for validering'
+                  ? 'Velg hovedbok versjon for å starte validering'
+                  : 'Velg saldobalanse versjon for å starte validering'
               }
             </AlertDescription>
           </Alert>

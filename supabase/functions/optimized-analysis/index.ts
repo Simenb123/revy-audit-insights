@@ -113,6 +113,34 @@ serve(async (req) => {
       }
     }
 
+    // 7. Use the optimized_analysis RPC as a fallback for comprehensive analysis
+    if (analysisTypes.includes('comprehensive') || analysisTypes.length === 0) {
+      const { data: comprehensiveAnalysis, error: comprehensiveError } = await supabase.rpc('optimized_analysis', {
+        p_client_id: clientId,
+        p_dataset_id: versionId
+      });
+      
+      if (comprehensiveError) {
+        console.error('Comprehensive analysis error:', comprehensiveError);
+      } else {
+        // Merge the comprehensive analysis results
+        const analysisData = typeof comprehensiveAnalysis === 'string' 
+          ? JSON.parse(comprehensiveAnalysis) 
+          : comprehensiveAnalysis;
+        
+        if (analysisData) {
+          results.comprehensive = analysisData;
+          // Also populate individual analysis types if they weren't requested separately
+          if (!results.account_distribution) results.account_distribution = analysisData.account_distribution || [];
+          if (!results.monthly_summary) results.monthly_summary = analysisData.monthly_summary || [];
+          if (!results.basic_info) results.basic_info = {
+            total_transactions: analysisData.total_transactions || 0,
+            date_range: analysisData.date_range || { start: null, end: null }
+          };
+        }
+      }
+    }
+
     console.log('Optimized analysis completed:', Object.keys(results));
 
     return new Response(

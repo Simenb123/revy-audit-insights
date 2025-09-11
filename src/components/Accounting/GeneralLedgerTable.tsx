@@ -112,11 +112,17 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       accessor: 'balance_amount',
       sortable: true,
       align: 'right',
-      format: (value: number | null) => (
-        <span className={value && value < 0 ? 'text-destructive' : ''}>
-          {formatCurrency(value)}
-        </span>
-      ),
+      format: (value: number | null, row?: any) => {
+        // Safeguard: compute net amount if missing
+        const netAmount = value ?? ((row?.debit_amount ?? 0) - (row?.credit_amount ?? 0));
+        const safeNetAmount = isNaN(netAmount) ? 0 : netAmount;
+        
+        return (
+          <span className={safeNetAmount && safeNetAmount < 0 ? 'text-destructive' : ''}>
+            {formatCurrency(safeNetAmount)}
+          </span>
+        );
+      },
     };
 
     if (!fieldDefinitions) {
