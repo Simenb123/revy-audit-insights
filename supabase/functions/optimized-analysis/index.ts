@@ -143,8 +143,66 @@ serve(async (req) => {
 
     console.log('Optimized analysis completed:', Object.keys(results));
 
+    // Normalize net values to avoid missing net_amount/net across responses
+    const normalizeResults = (r: Record<string, any>) => {
+      try {
+        if (Array.isArray(r.monthly_summary)) {
+          r.monthly_summary = r.monthly_summary.map((m: any) => {
+            const debit = m.debit ?? m.total_debit ?? 0;
+            const credit = m.credit ?? m.total_credit ?? 0;
+            const net = m.net ?? m.net_amount ?? (debit - credit);
+            return {
+              ...m,
+              debit,
+              credit,
+              net,
+              net_amount: m.net_amount ?? net,
+            };
+          });
+        }
+        if (Array.isArray(r.top_accounts)) {
+          r.top_accounts = r.top_accounts.map((t: any) => {
+            const debit = t.debit ?? t.debit_amount ?? 0;
+            const credit = t.credit ?? t.credit_amount ?? 0;
+            const net = t.net ?? t.net_amount ?? (debit - credit);
+            return {
+              ...t,
+              debit_amount: t.debit_amount ?? debit,
+              credit_amount: t.credit_amount ?? credit,
+              net,
+              net_amount: t.net_amount ?? net,
+            };
+          });
+        }
+        if (r.comprehensive) {
+          const c = r.comprehensive;
+          if (Array.isArray(c.monthly_summary)) {
+            c.monthly_summary = c.monthly_summary.map((m: any) => {
+              const debit = m.debit ?? m.total_debit ?? 0;
+              const credit = m.credit ?? m.total_credit ?? 0;
+              const net = m.net ?? m.net_amount ?? (debit - credit);
+              return { ...m, debit, credit, net, net_amount: m.net_amount ?? net };
+            });
+          }
+          if (Array.isArray(c.top_accounts)) {
+            c.top_accounts = c.top_accounts.map((t: any) => {
+              const debit = t.debit ?? t.debit_amount ?? 0;
+              const credit = t.credit ?? t.credit_amount ?? 0;
+              const net = t.net ?? t.net_amount ?? (debit - credit);
+              return { ...t, debit_amount: t.debit_amount ?? debit, credit_amount: t.credit_amount ?? credit, net, net_amount: t.net_amount ?? net };
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Normalization error:', e);
+      }
+      return r;
+    };
+
+    const normalized = normalizeResults(results);
+
     return new Response(
-      JSON.stringify({ results }),
+      JSON.stringify({ results: normalized }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react';
 import { useAccountingValidation } from '@/hooks/useAccountingValidation';
 import { formatCurrency } from '@/lib/formatters';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface ValidationPanelProps {
   clientId: string;
@@ -65,6 +67,13 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
               }
             </AlertDescription>
           </Alert>
+          {!selectedTBVersion && (
+            <div className="mt-4">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/clients/${clientId}/trial-balance`}>Velg/last opp saldobalanse</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

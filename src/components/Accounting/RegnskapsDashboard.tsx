@@ -210,16 +210,20 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {statistics.topAccounts.slice(0, 5).map((account, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{account.account}</div>
+            {statistics.topAccounts.slice(0, 5).map((account, index) => {
+              const net = (account as any).net_amount ?? (account as any).net ?? (((account as any).debit_amount ?? 0) - ((account as any).credit_amount ?? 0));
+              const safeNet = isNaN(net) ? 0 : net;
+              return (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{account.account}</div>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {formatNumeric(Math.abs(safeNet))}
+                  </div>
                 </div>
-                <div className="text-sm font-medium">
-                  {formatNumeric(Math.abs(account.net))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
