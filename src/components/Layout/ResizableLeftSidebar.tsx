@@ -42,6 +42,8 @@ import {
 } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUserProfile'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
+import { isAdvancedAIEnabled, isReportBuilderEnabled, isPayrollEnabled, isPayrollInBeta, isAdvancedAIInBeta, isReportBuilderInBeta } from '@/lib/featureFlags'
+import { BetaBadge } from '@/components/ui/BetaBadge'
 
 // Static non-client specific items
 const generalWorkItems = [
@@ -53,18 +55,19 @@ const generalWorkItems = [
 ]
 
 
-// Ressurser - tilgjengelig for alle
+// Ressurser - tilgjengelig for alle (med feature flags)
 const resourceItems = [
   {
     title: 'Klienter',
     url: '/clients',
     icon: Users,
   },
-  {
+  ...(isReportBuilderEnabled() ? [{
     title: 'Rapporter',
     url: '/reports',
     icon: FileText,
-  },
+    showBeta: isReportBuilderInBeta(),
+  }] : []),
   {
     title: 'Kunnskapsbase',
     url: '/fag',
@@ -85,11 +88,12 @@ const resourceItems = [
     url: '/resources/aksjonaerregister',
     icon: Users,
   },
-  {
+  ...(isAdvancedAIEnabled() ? [{
     title: 'AI-Studio',
     url: '/ai/multi-agent-studio',
     icon: Brain,
-  },
+    showBeta: isAdvancedAIInBeta(),
+  }] : []),
 ]
 
 const ResizableLeftSidebar = () => {
@@ -309,7 +313,7 @@ const ResizableLeftSidebar = () => {
                   })}
 
                   {/* Lønn sub-section */}
-                  {clientId && payrollItems.length > 0 && (
+                  {clientId && isPayrollEnabled() && payrollItems.length > 0 && (
                     <SidebarMenuItem>
                       <Collapsible 
                         open={!collapsedSections['payroll']} 
@@ -319,7 +323,12 @@ const ResizableLeftSidebar = () => {
                           <SidebarMenuButton className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 flex-shrink-0" />
-                              {!isCollapsed && <span className="text-xs truncate">Lønn</span>}
+                              {!isCollapsed && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs truncate">Lønn</span>
+                                  {isPayrollInBeta() && <BetaBadge className="text-xs px-1 py-0.5" />}
+                                </div>
+                              )}
                             </div>
                             {!isCollapsed && (
                               collapsedSections['payroll'] ? 
@@ -578,7 +587,12 @@ const ResizableLeftSidebar = () => {
                         >
                           <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
                             <item.icon className="h-4 w-4 flex-shrink-0" />
-                            {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
+                            {!isCollapsed && (
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-xs truncate">{item.title}</span>
+                                {item.showBeta && <BetaBadge className="text-xs px-1 py-0.5" />}
+                              </div>
+                            )}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

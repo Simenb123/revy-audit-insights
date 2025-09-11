@@ -14,7 +14,7 @@ import { FiscalYearProvider } from "@/contexts/FiscalYearContext";
 import AppLayout from "@/components/Layout/AppLayout";
 import { RightSidebarProvider } from "@/components/Layout/RightSidebarContext";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
-import { isAdvancedAIEnabled, isReportBuilderEnabled } from "@/lib/featureFlags";
+import { isAdvancedAIEnabled, isReportBuilderEnabled, isPayrollEnabled } from "@/lib/featureFlags";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import OrganizationSetup from "./pages/OrganizationSetup";
@@ -125,11 +125,12 @@ function App() {
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/ar" element={<ProtectedRoute><ArBalances /></ProtectedRoute>} />
                   <Route path="clients/:clientId/ap" element={<ProtectedRoute><ApBalances /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollOverview /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />
-                  <Route path="clients/:clientId/payroll/kontrolloppstilling" element={<ProtectedRoute><PayrollReconciliation /></ProtectedRoute>} />
+                  {/* Payroll routes - feature flagged */}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll" element={<ProtectedRoute><PayrollOverview /></ProtectedRoute>} />}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/kontrolloppstilling" element={<ProtectedRoute><PayrollReconciliation /></ProtectedRoute>} />}
                   <Route path="clients/:clientId/investments/overview" element={<ProtectedRoute><InvestmentOverview /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/portfolios" element={<ProtectedRoute><InvestmentPortfolios /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/transactions" element={<ProtectedRoute><InvestmentTransactions /></ProtectedRoute>} />
