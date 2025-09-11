@@ -13661,6 +13661,10 @@ export type Database = {
           title: string
         }[]
       }
+      optimized_analysis: {
+        Args: { p_client_id: string; p_dataset_id?: string }
+        Returns: Json
+      }
       process_existing_completed_documents: {
         Args: Record<PropertyKey, never>
         Returns: {
