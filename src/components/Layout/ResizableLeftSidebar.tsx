@@ -158,12 +158,12 @@ const ResizableLeftSidebar = () => {
     },
     {
       title: 'Saldobalanse',
-      url: `/clients/${clientId}/trial-balance`,
+      url: `/clients/${clientId}/trial-balance-view`,
       icon: BarChart3,
     },
     {
       title: 'Hovedbok',
-      url: `/clients/${clientId}/general-ledger`,
+      url: `/clients/${clientId}/ledger`,
       icon: FileText,
     },
     {

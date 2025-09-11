@@ -47,6 +47,8 @@ import AccountRelationshipsPage from "./pages/Admin/AccountRelationships";
 import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
 import TrialBalanceUpload from "./pages/TrialBalanceUpload";
+import LedgerPage from "./pages/LedgerPage";
+import TrialBalancePage from "./pages/TrialBalancePage";
 import UnifiedAnalysisPage from "./pages/UnifiedAnalysisPage";
 import ClientDocuments from "./pages/ClientDocuments";
 import NotFound from "./pages/NotFound";
@@ -122,6 +124,8 @@ function App() {
                   <Route path="clients/:clientId/:phase" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
                   <Route path="clients/:clientId/trial-balance" element={<ProtectedRoute><TrialBalanceUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/general-ledger" element={<ProtectedRoute><GeneralLedgerUpload /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/ledger" element={<ProtectedRoute><LedgerPage /></ProtectedRoute>} />
+                  <Route path="clients/:clientId/trial-balance-view" element={<ProtectedRoute><TrialBalancePage /></ProtectedRoute>} />
                   <Route path="clients/:clientId/saft" element={<ProtectedRoute><SaftUpload /></ProtectedRoute>} />
                   <Route path="clients/:clientId/ar" element={<ProtectedRoute><ArBalances /></ProtectedRoute>} />
                   <Route path="clients/:clientId/ap" element={<ProtectedRoute><ApBalances /></ProtectedRoute>} />
