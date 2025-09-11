@@ -5,11 +5,9 @@ import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X } from 'lucide-react';
+import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X, ExternalLink } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
 import OptimizedAnalysisSummary from './OptimizedAnalysisSummary';
-import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
-import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
 
 import GLVersionSelector from './GLVersionSelector';
 import TBVersionSelector from './TBVersionSelector';
@@ -20,6 +18,7 @@ import TrialBalanceMappingTable from '../Accounting/TrialBalanceMappingTable';
 import { GLVersionOption, TBVersionOption } from '@/types/accounting';
 import ResponsiveTabs from '@/components/ui/responsive-tabs';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 
 interface AccountingExplorerProps {
@@ -54,8 +53,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   const tabItems = [
     { id: 'overview', label: 'Oversikt', icon: Activity },
-    { id: 'ledger', label: 'Hovedbok', icon: LineChart },
-    { id: 'balances', label: 'Saldobalanse', icon: Layers },
     { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
     { id: 'journal', label: 'Bilag', icon: FileText },
   ];
@@ -198,43 +195,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
             </div>
           )}
           
-          {activeTab === 'ledger' && (
-            <div className="space-y-4">
-              {hasGLData && activeGLVersion ? (
-                <GeneralLedgerTable clientId={clientId} versionId={activeGLVersion.id} />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ingen hovedbok data</CardTitle>
-                    <CardDescription>
-                      Last opp hovedbok for å se transaksjoner
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </div>
-          )}
-            
-          {activeTab === 'balances' && (
-            <div className="space-y-4">
-              {hasTBData && selectedTBVersion ? (
-                <TrialBalanceTable 
-                  clientId={clientId} 
-                  selectedVersion={selectedTBVersion.version}
-                  accountingYear={selectedFiscalYear}
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ingen saldobalanse data</CardTitle>
-                    <CardDescription>
-                      Last opp saldobalanse for å se kontosaldoer
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </div>
-          )}
           
           {activeTab === 'statement' && (
             <div className="space-y-4">
@@ -242,7 +202,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                 <ClientFinancialStatementGenerator 
                   clientId={clientId} 
                   selectedVersion={selectedTBVersion.version}
-                  onNavigateToMapping={() => setActiveTab('balances')}
+                  onNavigateToMapping={() => setActiveTab('overview')}
                 />
               ) : (
                 <Card>
