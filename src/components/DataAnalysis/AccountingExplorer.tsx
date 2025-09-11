@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useSearchParams } from 'react-router-dom';
 import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
+import OptimizedAnalysisSummary from './OptimizedAnalysisSummary';
 import GeneralLedgerTable from '@/components/Accounting/GeneralLedgerTable';
 import TrialBalanceTable from '@/components/Accounting/TrialBalanceTable';
 
@@ -167,7 +168,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <DrillDownTable clientId={clientId} />
+                    <OptimizedAnalysisSummary clientId={clientId} versionId={activeGLVersion.id} />
                   </CardContent>
                 </Card>
               )}

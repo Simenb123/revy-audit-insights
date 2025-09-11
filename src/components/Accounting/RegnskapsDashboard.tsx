@@ -3,148 +3,68 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, AlertTriangle, Database, CheckCircle, Calculator, FileText } from 'lucide-react';
-import { useGeneralLedgerData } from '@/hooks/useGeneralLedgerData';
-import { useTrialBalanceData } from '@/hooks/useTrialBalanceData';
-import { useGeneralLedgerValidation } from '@/hooks/useGeneralLedgerValidation';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, AlertTriangle, Database, CheckCircle, Calculator, FileText, RefreshCw, Clock } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useActiveVersion } from '@/hooks/useAccountingVersions';
-import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
+import { useOptimizedAnalysis } from '@/hooks/useOptimizedAnalysis';
 import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 
 interface RegnskapsDashboardProps {
   clientId: string;
 }
 
-interface StatisticsData {
-  totalTransactions: number;
-  uniqueVouchers: number;
-  minAmount: number;
-  maxAmount: number;
-  avgAmount: number;
-  medianAmount: number;
-  stdDeviation: number;
-  totalDebit: number;
-  totalCredit: number;
-  balanceDifference: number;
-}
-
-interface CrossCheckResult {
-  accountsInLedgerOnly: string[];
-  accountsInTrialOnly: string[];
-  balanceDiscrepancies: Array<{
-    accountNumber: string;
-    ledgerBalance: number;
-    trialBalance: number;
-    difference: number;
-  }>;
-}
 
 export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { data: activeGLVersion } = useActiveVersion(clientId);
-  const { data: activeTBVersion } = useActiveTrialBalanceVersion(clientId, selectedFiscalYear);
 
-  // Hent hovedboksdata med aktiv versjon
-  const { data: ledgerData, isLoading: ledgerLoading, error: ledgerError } = useGeneralLedgerData(
-    clientId,
-    activeGLVersion?.id,
-    { page: 1, pageSize: 10000 }
+  // Use optimized analysis instead of fetching all transaction data
+  const { 
+    data: analysisResult, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useOptimizedAnalysis(
+    { 
+      clientId,
+      datasetId: activeGLVersion?.id 
+    },
+    { 
+      enabled: !!activeGLVersion?.id,
+      staleTime: 2 * 60 * 1000 // 2 minutes
+    }
   );
 
-  // Hent saldobalanse med aktiv versjon
-  const { data: trialBalanceData, isLoading: trialLoading, error: trialError } = useTrialBalanceData(
-    clientId,
-    activeTBVersion?.version,
-    activeTBVersion?.year
-  );
+  // Extract key metrics from optimized analysis
+  const statistics = useMemo(() => {
+    if (!analysisResult) return null;
 
-  // Valider hovedboksdata
-  const validationResults = useGeneralLedgerValidation(ledgerData || []);
-
-  const isLoading = ledgerLoading || trialLoading;
-  const hasError = ledgerError || trialError;
-
-  // Beregn statistikk
-  const statistics = useMemo((): StatisticsData | null => {
-    if (!ledgerData || ledgerData.length === 0) return null;
-
-    const amounts = ledgerData
-      .map(t => Math.abs(t.balance_amount || 0))
-      .filter(amount => amount > 0)
-      .sort((a, b) => a - b);
-
-    const vouchers = new Set(ledgerData.map(t => t.voucher_number).filter(Boolean));
+    const monthlyData = analysisResult.monthly_summary || [];
+    const totalDebit = monthlyData.reduce((sum, m) => sum + (m.debit || 0), 0);
+    const totalCredit = monthlyData.reduce((sum, m) => sum + (m.credit || 0), 0);
     
-    const totalDebit = ledgerData.reduce((sum, t) => sum + (t.debit_amount || 0), 0);
-    const totalCredit = ledgerData.reduce((sum, t) => sum + (t.credit_amount || 0), 0);
-    
-    const avgAmount = amounts.length ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
-    const medianAmount = amounts.length ? 
-      amounts.length % 2 === 0 
-        ? (amounts[amounts.length / 2 - 1] + amounts[amounts.length / 2]) / 2
-        : amounts[Math.floor(amounts.length / 2)]
-      : 0;
-
-    // Standard deviation
-    const variance = amounts.length ? 
-      amounts.reduce((sum, amount) => sum + Math.pow(amount - avgAmount, 2), 0) / amounts.length
-      : 0;
-    const stdDeviation = Math.sqrt(variance);
-
     return {
-      totalTransactions: ledgerData.length,
-      uniqueVouchers: vouchers.size,
-      minAmount: amounts.length ? amounts[0] : 0,
-      maxAmount: amounts.length ? amounts[amounts.length - 1] : 0,
-      avgAmount,
-      medianAmount,
-      stdDeviation,
+      totalTransactions: analysisResult.total_transactions,
       totalDebit,
       totalCredit,
-      balanceDifference: totalDebit - totalCredit
+      balanceDifference: analysisResult.trial_balance_crosscheck.diff,
+      isBalanced: analysisResult.trial_balance_crosscheck.balanced,
+      dataQualityIssues: analysisResult.data_quality_flags?.reduce((sum, flag) => sum + flag.count, 0) || 0,
+      topAccounts: analysisResult.top_accounts || [],
+      accountDistribution: analysisResult.account_distribution || []
     };
-  }, [ledgerData]);
+  }, [analysisResult]);
 
-  // Kryssjekk hovedbok vs saldobalanse
-  const crossCheck = useMemo((): CrossCheckResult | null => {
-    if (!ledgerData || !trialBalanceData) return null;
-
-    const ledgerAccounts = new Set(ledgerData.map(t => t.account_number).filter(Boolean));
-    const trialAccounts = new Set(trialBalanceData.map(t => t.account_number).filter(Boolean));
-
-    const accountsInLedgerOnly = Array.from(ledgerAccounts).filter(acc => !trialAccounts.has(acc));
-    const accountsInTrialOnly = Array.from(trialAccounts).filter(acc => !ledgerAccounts.has(acc));
-
-    // Sammenlign saldoer
-    const balanceDiscrepancies: CrossCheckResult['balanceDiscrepancies'] = [];
-    
-    for (const trialEntry of trialBalanceData) {
-      if (!trialEntry.account_number) continue;
-      
-      const ledgerSum = ledgerData
-        .filter(t => t.account_number === trialEntry.account_number)
-        .reduce((sum, t) => sum + (t.balance_amount || 0), 0);
-      
-      const trialBalance = trialEntry.closing_balance || 0;
-      const difference = Math.abs(ledgerSum - trialBalance);
-      
-      if (difference > 0.01) { // Toleranse for avrundingsfeil
-        balanceDiscrepancies.push({
-          accountNumber: trialEntry.account_number,
-          ledgerBalance: ledgerSum,
-          trialBalance,
-          difference
-        });
-      }
-    }
-
-    return {
-      accountsInLedgerOnly,
-      accountsInTrialOnly,
-      balanceDiscrepancies
-    };
-  }, [ledgerData, trialBalanceData]);
+  const lastUpdated = analysisResult?.metadata?.generated_at 
+    ? new Date(analysisResult.metadata.generated_at).toLocaleString('no-NO', {
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : null;
 
   if (isLoading) {
     return (
@@ -165,12 +85,21 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
     );
   }
 
-  if (hasError) {
+  if (error) {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          Kunne ikke laste regnskapsdata: {ledgerError?.message || trialError?.message}
+        <AlertDescription className="flex items-center justify-between">
+          <span>Kunne ikke laste analyse: {error.message}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()}
+            className="ml-4"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Prøv på nytt
+          </Button>
         </AlertDescription>
       </Alert>
     );
@@ -188,8 +117,8 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
   }
 
   const getBalanceStatus = () => {
+    if (statistics.isBalanced) return { status: 'success', text: 'Balansert' };
     const diff = Math.abs(statistics.balanceDifference);
-    if (diff < 0.01) return { status: 'success', text: 'Balansert' };
     if (diff < 100) return { status: 'warning', text: 'Mindre avvik' };
     return { status: 'destructive', text: 'Ubalanse' };
   };
@@ -198,6 +127,20 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Last updated timestamp */}
+      {lastUpdated && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            Sist oppdatert: {lastUpdated}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Oppdater
+          </Button>
+        </div>
+      )}
+
       {/* Hovednøkkeltall */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -213,12 +156,12 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unike bilag</CardTitle>
+            <CardTitle className="text-sm font-medium">Totale kontoer</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumeric(statistics.uniqueVouchers)}</div>
-            <p className="text-xs text-muted-foreground">Bilagsnummer</p>
+            <div className="text-2xl font-bold">{formatNumeric(statistics.accountDistribution.length)}</div>
+            <p className="text-xs text-muted-foreground">Unike kontoer</p>
           </CardContent>
         </Card>
 
@@ -249,145 +192,69 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">{validationResults.totalValidationErrors}</div>
-              <Badge variant={validationResults.totalValidationErrors === 0 ? 'success' : 'destructive'}>
-                {validationResults.totalValidationErrors === 0 ? 'OK' : 'Feil'}
+              <div className="text-2xl font-bold">{statistics.dataQualityIssues}</div>
+              <Badge variant={statistics.dataQualityIssues === 0 ? 'success' : 'destructive'}>
+                {statistics.dataQualityIssues === 0 ? 'OK' : 'Feil'}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">Ubalanserte bilag</p>
+            <p className="text-xs text-muted-foreground">Datakvalitetsproblemer</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Beløpsstatistikk */}
+      {/* Top kontoer */}
       <Card>
         <CardHeader>
-          <CardTitle>Beløpsanalyse</CardTitle>
-          <CardDescription>Statistisk fordeling av transaksjonsbeløp</CardDescription>
+          <CardTitle>Kontoanalyse</CardTitle>
+          <CardDescription>Kontoer med høyest aktivitet</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Minimum</div>
-              <div className="text-lg font-medium">{formatNumeric(statistics.minAmount)}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Gjennomsnitt</div>
-              <div className="text-lg font-medium">{formatNumeric(statistics.avgAmount)}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Median</div>
-              <div className="text-lg font-medium">{formatNumeric(statistics.medianAmount)}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Maksimum</div>
-              <div className="text-lg font-medium">{formatNumeric(statistics.maxAmount)}</div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t">
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground">Standardavvik</div>
-              <div className="text-lg font-medium">{formatNumeric(statistics.stdDeviation)}</div>
-            </div>
+          <div className="space-y-3">
+            {statistics.topAccounts.slice(0, 5).map((account, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{account.account}</div>
+                </div>
+                <div className="text-sm font-medium">
+                  {formatNumeric(Math.abs(account.net))}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Kryssjekk og datakvalitet */}
-      {crossCheck && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kryssjekk: Hovedbok vs Saldobalanse</CardTitle>
-              <CardDescription>Sammenligning av kontoer og saldoer</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Kontoer kun i hovedbok:</span>
-                  <Badge variant={crossCheck.accountsInLedgerOnly.length > 0 ? 'warning' : 'success'}>
-                    {crossCheck.accountsInLedgerOnly.length}
-                  </Badge>
-                </div>
-                {crossCheck.accountsInLedgerOnly.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {crossCheck.accountsInLedgerOnly.slice(0, 5).join(', ')}
-                    {crossCheck.accountsInLedgerOnly.length > 5 && ` +${crossCheck.accountsInLedgerOnly.length - 5} flere`}
+      {/* Datakvalitet detaljer */}
+      {analysisResult && analysisResult.data_quality_flags.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Datakvalitet detaljer</CardTitle>
+            <CardDescription>Funnet {statistics.dataQualityIssues} datakvalitetsproblemer</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {analysisResult.data_quality_flags.map((flag, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="text-sm font-medium">
+                    {flag.code === 'MISSING_ACCOUNT' && 'Manglende kontomapping'}
+                    {flag.code === 'ZERO_AMOUNT' && 'Nullbeløp transaksjoner'}
+                    {flag.code === 'FUTURE_DATE' && 'Fremtidige datoer'}
                   </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Kontoer kun i saldobalanse:</span>
-                  <Badge variant={crossCheck.accountsInTrialOnly.length > 0 ? 'warning' : 'success'}>
-                    {crossCheck.accountsInTrialOnly.length}
-                  </Badge>
-                </div>
-                {crossCheck.accountsInTrialOnly.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {crossCheck.accountsInTrialOnly.slice(0, 5).join(', ')}
-                    {crossCheck.accountsInTrialOnly.length > 5 && ` +${crossCheck.accountsInTrialOnly.length - 5} flere`}
+                  <div className="text-xs text-muted-foreground">
+                    {flag.count} forekomster
                   </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Saldoavvik:</span>
-                  <Badge variant={crossCheck.balanceDiscrepancies.length > 0 ? 'destructive' : 'success'}>
-                    {crossCheck.balanceDiscrepancies.length}
-                  </Badge>
                 </div>
-                {crossCheck.balanceDiscrepancies.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Største avvik: {formatNumeric(Math.max(...crossCheck.balanceDiscrepancies.map(d => d.difference)))}
-                  </div>
-                )}
+                <Badge variant={
+                  flag.severity === 'high' ? 'destructive' : 
+                  flag.severity === 'med' ? 'warning' : 
+                  'secondary'
+                }>
+                  {flag.severity === 'high' ? 'Høy' : flag.severity === 'med' ? 'Medium' : 'Lav'}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Datakvalitet detaljer</CardTitle>
-              <CardDescription>Validering av regnskapsdata</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Ubalanserte bilag:</span>
-                  <Badge variant={validationResults.totalValidationErrors > 0 ? 'destructive' : 'success'}>
-                    {validationResults.totalValidationErrors}
-                  </Badge>
-                </div>
-                {validationResults.vouchersWithImbalance.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Største ubalanse: {formatNumeric(Math.max(...validationResults.vouchersWithImbalance.map(v => Math.abs(v.balance))))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Total hovedboksbalanse:</span>
-                  <Badge variant={Math.abs(validationResults.overallBalance) < 0.01 ? 'success' : 'warning'}>
-                    {formatNumeric(Math.abs(validationResults.overallBalance))}
-                  </Badge>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Gjennomsnittlig poster pr. bilag:</span>
-                  <span className="text-sm font-medium">
-                    {statistics.uniqueVouchers > 0 ? formatNumeric(statistics.totalTransactions / statistics.uniqueVouchers) : '0'}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
