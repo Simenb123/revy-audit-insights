@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useOptimizedAnalysis } from '@/hooks/useOptimizedAnalysis';
 import { formatNumeric } from '@/utils/kpiFormat';
+import { safeNet } from '@/utils/netCalculation';
 
 interface OptimizedAnalysisSummaryProps {
   clientId: string;
@@ -260,16 +261,14 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
               </TableHeader>
               <TableBody>
                 {analysis.monthly_summary.map((month, index) => {
-                  // Safeguard: compute net_amount if missing
-                  const netAmount = month.net ?? ((month.debit ?? 0) - (month.credit ?? 0));
-                  const safeNetAmount = isNaN(netAmount) ? 0 : netAmount;
+                  const netValue = safeNet(month);
                   
                   return (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{month.month}</TableCell>
                       <TableCell className="text-right">{formatCurrency(month.debit ?? 0)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(month.credit ?? 0)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(safeNetAmount)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(netValue)}</TableCell>
                     </TableRow>
                   );
                 })}

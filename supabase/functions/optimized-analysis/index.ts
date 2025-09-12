@@ -146,6 +146,7 @@ serve(async (req) => {
     // Normalize net values to avoid missing net_amount/net across responses
     const normalizeResults = (r: Record<string, any>) => {
       try {
+        // Monthly summary normalization
         if (Array.isArray(r.monthly_summary)) {
           r.monthly_summary = r.monthly_summary.map((m: any) => {
             const debit = m.debit ?? m.total_debit ?? 0;
@@ -156,10 +157,12 @@ serve(async (req) => {
               debit,
               credit,
               net,
-              net_amount: m.net_amount ?? net,
+              net_amount: net,
             };
           });
         }
+        
+        // Top accounts normalization
         if (Array.isArray(r.top_accounts)) {
           r.top_accounts = r.top_accounts.map((t: any) => {
             const debit = t.debit ?? t.debit_amount ?? 0;
@@ -167,13 +170,24 @@ serve(async (req) => {
             const net = t.net ?? t.net_amount ?? (debit - credit);
             return {
               ...t,
-              debit_amount: t.debit_amount ?? debit,
-              credit_amount: t.credit_amount ?? credit,
+              debit_amount: debit,
+              credit_amount: credit,
               net,
-              net_amount: t.net_amount ?? net,
+              net_amount: net,
             };
           });
         }
+        
+        // Account distribution normalization (if needed)
+        if (Array.isArray(r.account_distribution)) {
+          r.account_distribution = r.account_distribution.map((a: any) => ({
+            ...a,
+            amount: a.amount ?? 0,
+            count: a.count ?? 0,
+          }));
+        }
+        
+        // Comprehensive analysis normalization
         if (r.comprehensive) {
           const c = r.comprehensive;
           if (Array.isArray(c.monthly_summary)) {
@@ -181,7 +195,7 @@ serve(async (req) => {
               const debit = m.debit ?? m.total_debit ?? 0;
               const credit = m.credit ?? m.total_credit ?? 0;
               const net = m.net ?? m.net_amount ?? (debit - credit);
-              return { ...m, debit, credit, net, net_amount: m.net_amount ?? net };
+              return { ...m, debit, credit, net, net_amount: net };
             });
           }
           if (Array.isArray(c.top_accounts)) {
@@ -189,8 +203,15 @@ serve(async (req) => {
               const debit = t.debit ?? t.debit_amount ?? 0;
               const credit = t.credit ?? t.credit_amount ?? 0;
               const net = t.net ?? t.net_amount ?? (debit - credit);
-              return { ...t, debit_amount: t.debit_amount ?? debit, credit_amount: t.credit_amount ?? credit, net, net_amount: t.net_amount ?? net };
+              return { ...t, debit_amount: debit, credit_amount: credit, net, net_amount: net };
             });
+          }
+          if (Array.isArray(c.account_distribution)) {
+            c.account_distribution = c.account_distribution.map((a: any) => ({
+              ...a,
+              amount: a.amount ?? 0,
+              count: a.count ?? 0,
+            }));
           }
         }
       } catch (e) {
