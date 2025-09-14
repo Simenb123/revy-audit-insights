@@ -68,10 +68,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Calculate totals for all transactions matching the filters (not just the page)
+    // Calculate totals using SQL aggregation (much faster than client-side loops)
     let totalsQuery = supabase
       .from('general_ledger_transactions')
-      .select('debit_amount, credit_amount, balance_amount, (COALESCE(debit_amount, 0) - COALESCE(credit_amount, 0)) as net_amount')
+      .select(`
+        sum(COALESCE(debit_amount, 0))::numeric as total_debit,
+        sum(COALESCE(credit_amount, 0))::numeric as total_credit,
+        sum(COALESCE(balance_amount, 0))::numeric as total_balance,
+        sum(COALESCE(debit_amount, 0) - COALESCE(credit_amount, 0))::numeric as total_net,
+        count(*)::integer as total_count
+      `)
       .eq('client_id', clientId);
 
     // Apply the same filters as the main query
@@ -80,7 +86,7 @@ Deno.serve(async (req) => {
     if (startAccount) totalsQuery = totalsQuery.gte('account_number', startAccount);
     if (endAccount) totalsQuery = totalsQuery.lte('account_number', endAccount);
 
-    const { data: totalsData, error: totalsError } = await totalsQuery;
+    const { data: totalsData, error: totalsError } = await totalsQuery.single();
 
     if (totalsError) {
       console.error('Error calculating totals:', totalsError);
@@ -90,14 +96,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Calculate the sums
-    const totals = totalsData.reduce((acc, transaction) => {
-      acc.totalDebit += transaction.debit_amount || 0;
-      acc.totalCredit += transaction.credit_amount || 0;
-      acc.totalBalance += transaction.balance_amount || 0;
-      acc.totalNet += transaction.net_amount || 0;
-      return acc;
-    }, { totalDebit: 0, totalCredit: 0, totalBalance: 0, totalNet: 0 });
+    // Server-calculated totals (no client-side loops)
+    const totals = {
+      totalDebit: parseFloat(totalsData?.total_debit || '0'),
+      totalCredit: parseFloat(totalsData?.total_credit || '0'),
+      totalBalance: parseFloat(totalsData?.total_balance || '0'),
+      totalNet: parseFloat(totalsData?.total_net || '0'),
+      totalCount: parseInt(totalsData?.total_count || '0', 10)
+    };
 
     return new Response(JSON.stringify({ data, count, totals }), {
       status: 200,

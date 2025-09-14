@@ -64,7 +64,7 @@ export class AnalysisService {
         end: transactions[transactions.length - 1]?.transaction_date
       },
       // Use optimized server-side analysis instead of client-side loops
-      // DEPRECATED: Replace with optimized_analysis RPC call
+      // DEPRECATED: These client-side calculations are slow - replace with optimized_analysis RPC call
       account_distribution: this.calculateAccountDistribution(transactions),
       amount_statistics: this.calculateAmountStatistics(transactions),
       monthly_summary: this.calculateMonthlySummary(transactions)
@@ -302,8 +302,9 @@ export class AnalysisService {
 
   // Helper methods for TypeScript analysis - DEPRECATED: Use server-side optimized_analysis instead
   // These methods are kept for legacy compatibility but should not be used for new code
-  // DEPRECATED: Use optimized_analysis RPC function instead
+  // DEPRECATED: Use optimized_analysis RPC function instead - it performs SQL aggregations that are much faster
   private calculateAccountDistribution(transactions: any[]): { account: string; count: number }[] {
+    console.warn('DEPRECATED: calculateAccountDistribution() performs client-side loops. Use optimized_analysis RPC instead.');
     const distribution: Record<string, number> = {};
     
     transactions.forEach(tx => {
@@ -316,8 +317,9 @@ export class AnalysisService {
       .sort((a, b) => b.count - a.count);
   }
 
-  // DEPRECATED: Use optimized_analysis RPC function instead
+  // DEPRECATED: Use optimized_analysis RPC function instead - it performs SQL aggregations that are much faster
   private calculateAmountStatistics(transactions: any[]) {
+    console.warn('DEPRECATED: calculateAmountStatistics() performs client-side loops. Use optimized_analysis RPC instead.');
     const amounts = transactions.map(tx =>
       tx.debit_amount ?? -(tx.credit_amount ?? 0)
     );
@@ -333,8 +335,9 @@ export class AnalysisService {
     };
   }
 
-  // DEPRECATED: Use optimized_analysis RPC function instead
+  // DEPRECATED: Use optimized_analysis RPC function instead - it performs SQL aggregations that are much faster
   private calculateMonthlySummary(transactions: any[]) {
+    console.warn('DEPRECATED: calculateMonthlySummary() performs client-side loops. Use optimized_analysis RPC instead.');
     const monthlyData: Record<string, { count: number; sum: number }> = {};
 
     transactions.forEach(tx => {

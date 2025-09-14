@@ -30,6 +30,7 @@ import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
+import { AnalysisProvider } from '@/components/DataAnalysis/AnalysisProvider';
 import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
 
@@ -182,13 +183,15 @@ const UnifiedAnalysisPage = React.memo(() => {
                 </TabsTrigger>
               </TabsList>
               
-              {/* Overview Tab - Data Analysis */}
-              <TabsContent value="overview" className="mt-6">
-                <div className="space-y-6">
-                  <AccountingExplorer clientId={client.id} />
-                  <RegnskapsDashboard clientId={client.id} />
-                </div>
-              </TabsContent>
+              {/* Wrap with AnalysisProvider for shared state */}
+              <AnalysisProvider clientId={client.id}>
+                {/* Overview Tab - Data Analysis */}
+                <TabsContent value="overview" className="mt-6">
+                  <div className="space-y-6">
+                    <AccountingExplorer clientId={client.id} />
+                    <RegnskapsDashboard clientId={client.id} />
+                  </div>
+                </TabsContent>
               
               {/* Transaction Analysis Tab */}
               <TabsContent value="transactions" className="mt-6">
@@ -427,7 +430,7 @@ const UnifiedAnalysisPage = React.memo(() => {
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
+          </AnalysisProvider>
         </div>
       </div>
     </StickyClientLayout>
