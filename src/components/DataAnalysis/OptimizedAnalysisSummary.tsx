@@ -113,7 +113,9 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
     );
   }
 
-  const balanceStatus = analysis.trial_balance_crosscheck.balanced 
+  // Use strict equality check for balanced status
+  const isBalanced = Math.abs(analysis.trial_balance_crosscheck.diff || 0) === 0;
+  const balanceStatus = isBalanced
     ? { status: 'success', text: 'Balansert' }
     : { status: 'destructive', text: 'Ubalanse' };
 
@@ -190,7 +192,7 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              {analysis.trial_balance_crosscheck.balanced ? 'Hovedbok og saldobalanse stemmer' : 'Avvik mellom hovedbok og saldobalanse'}
+              {isBalanced ? 'Hovedbok og saldobalanse stemmer overens' : 'Avvik funnet mellom hovedbok og saldobalanse'}
             </p>
           </CardContent>
         </Card>

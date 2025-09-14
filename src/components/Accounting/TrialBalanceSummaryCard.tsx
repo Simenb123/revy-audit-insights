@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Calculator, AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
+import { formatNumeric } from '@/utils/kpiFormat';
 import type { TrialBalanceSummary } from '@/types/optimizedAnalysis';
 
 interface TrialBalanceSummaryCardProps {
@@ -49,8 +50,10 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
     );
   }
 
-  const isBalanced = !summary.has_imbalance;
+  // Use strict equality check for balanced status based on net total
+  const isBalanced = Math.abs(summary.total_net) === 0;
   const netAmount = Math.abs(summary.total_net);
+  const difference = summary.total_net; // Use actual net as difference (can be negative)
 
   return (
     <Card>
@@ -85,7 +88,7 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-sm font-medium text-muted-foreground">Totale kontoer</div>
-            <div className="text-lg font-semibold">{summary.total_accounts}</div>
+            <div className="text-lg font-semibold">{formatNumeric(summary.total_accounts)}</div>
           </div>
           <div>
             <div className="text-sm font-medium text-muted-foreground">Netto balanse</div>
@@ -108,7 +111,7 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
             <div className="flex justify-between">
               <span className="text-sm font-medium">Differanse:</span>
               <span className={`text-sm font-semibold ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(netAmount)}
+                {formatCurrency(difference)}
               </span>
             </div>
           </div>
