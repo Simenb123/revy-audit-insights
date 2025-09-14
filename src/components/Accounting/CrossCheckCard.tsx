@@ -52,8 +52,9 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
     );
   }
 
-  const isBalanced = crossCheck.balanced;
+  // Use diff === 0 as primary indicator for balanced status
   const difference = Math.abs(crossCheck.diff || 0);
+  const isBalanced = difference === 0;
 
   const getStatusIcon = () => {
     if (isBalanced) {

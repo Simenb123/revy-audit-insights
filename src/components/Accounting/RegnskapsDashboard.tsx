@@ -104,7 +104,10 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
   }
 
   const getBalanceStatus = () => {
-    if (statistics.isBalanced) return { status: 'success', text: 'Balansert' };
+    // Use diff === 0 as primary indicator for balanced status
+    const crossCheck = analysisResult?.trial_balance_crosscheck;
+    const isBalanced = crossCheck ? Math.abs(crossCheck.diff || 0) === 0 : false;
+    if (isBalanced) return { status: 'success', text: 'Balansert' };
     return { status: 'destructive', text: 'Ubalanse' };
   };
 
