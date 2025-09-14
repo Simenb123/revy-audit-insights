@@ -17,15 +17,20 @@ import {
 import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
 import { formatNumeric } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
+import { TrialBalanceSummaryCard } from '@/components/Accounting/TrialBalanceSummaryCard';
+import { CrossCheckCard } from '@/components/Accounting/CrossCheckCard';
+import { AnalysisCacheStatus } from '@/components/DataAnalysis/AnalysisCacheStatus';
 
 interface OptimizedAnalysisSummaryProps {
   clientId: string;
   versionId?: string;
+  showCacheStatus?: boolean;
 }
 
 const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({ 
   clientId, 
-  versionId 
+  versionId,
+  showCacheStatus = false
 }) => {
   // Use shared analysis context to avoid duplicate API calls
   const { 
@@ -130,6 +135,27 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
         </div>
       )}
 
+      {/* Cross-check and Trial Balance Summary Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CrossCheckCard 
+          crossCheck={analysis.trial_balance_crosscheck}
+          isLoading={isLoading}
+        />
+        <TrialBalanceSummaryCard 
+          summary={analysis.trial_balance_summary}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Cache Status (optional) */}
+      {showCacheStatus && (
+        <AnalysisCacheStatus
+          clientId={clientId}
+          lastUpdated={lastUpdated}
+          isCached={analysis.metadata?.cached === true}
+        />
+      )}
+
       {/* Key metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -147,7 +173,7 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Balanse</CardTitle>
+            <CardTitle className="text-sm font-medium">Balanse Status</CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -163,7 +189,9 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
                 {balanceStatus.text}
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Debet/Kredit differanse</p>
+            <p className="text-xs text-muted-foreground">
+              {analysis.trial_balance_crosscheck.balanced ? 'Hovedbok og saldobalanse stemmer' : 'Avvik mellom hovedbok og saldobalanse'}
+            </p>
           </CardContent>
         </Card>
 

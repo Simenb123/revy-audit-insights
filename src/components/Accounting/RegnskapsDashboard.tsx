@@ -10,6 +10,8 @@ import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
 import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
+import { CrossCheckCard } from '@/components/Accounting/CrossCheckCard';
+import { TrialBalanceSummaryCard } from '@/components/Accounting/TrialBalanceSummaryCard';
 
 interface RegnskapsDashboardProps {
   clientId: string;
@@ -125,6 +127,18 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
           </Button>
         </div>
       )}
+
+      {/* Cross-check and Trial Balance Summary Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CrossCheckCard 
+          crossCheck={analysisResult.trial_balance_crosscheck}
+          isLoading={isLoading}
+        />
+        <TrialBalanceSummaryCard 
+          summary={analysisResult.trial_balance_summary}
+          isLoading={isLoading}
+        />
+      </div>
 
       {/* Hovednøkkeltall */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

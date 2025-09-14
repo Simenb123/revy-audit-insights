@@ -44,6 +44,7 @@ export interface OptimizedAnalysisMetadata {
   client_id: string;
   dataset_id: string;
   generated_at: string;
+  cached?: boolean;
 }
 
 export interface OptimizedAnalysisResult {
@@ -54,6 +55,7 @@ export interface OptimizedAnalysisResult {
   top_accounts: TopAccount[];
   data_quality_flags: DataQualityFlag[];
   trial_balance_crosscheck: TrialBalanceCrosscheck;
+  trial_balance_summary?: TrialBalanceSummary; // New field for trial balance summary
   amount_statistics?: AmountStatistics; // New field for enhanced statistics
   overview?: OverviewStatistics; // New field for overview data
   metadata: OptimizedAnalysisMetadata;
@@ -72,4 +74,12 @@ export interface OverviewStatistics {
   total_debit: number;
   total_credit: number;
   total_net: number;
+}
+
+export interface TrialBalanceSummary {
+  total_accounts: number;
+  total_debit: number;
+  total_credit: number;
+  total_net: number;
+  has_imbalance: boolean;
 }

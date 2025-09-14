@@ -1220,6 +1220,48 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_cache: {
+        Row: {
+          analysis_type: string
+          cache_key: string
+          cached_at: string
+          client_id: string
+          created_at: string
+          dataset_id: string
+          expires_at: string
+          id: string
+          result_data: Json
+          trial_balance_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_type?: string
+          cache_key: string
+          cached_at?: string
+          client_id: string
+          created_at?: string
+          dataset_id: string
+          expires_at?: string
+          id?: string
+          result_data: Json
+          trial_balance_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_type?: string
+          cache_key?: string
+          cached_at?: string
+          client_id?: string
+          created_at?: string
+          dataset_id?: string
+          expires_at?: string
+          id?: string
+          result_data?: Json
+          trial_balance_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analysis_results: {
         Row: {
           client_id: string
@@ -13598,6 +13640,10 @@ export type Database = {
       }
       increment_cache_hit: {
         Args: { hash_to_update: string }
+        Returns: undefined
+      }
+      invalidate_analysis_cache_for_client: {
+        Args: { p_client_id: string }
         Returns: undefined
       }
       is_super_admin: {
