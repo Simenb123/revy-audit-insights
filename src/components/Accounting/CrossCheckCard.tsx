@@ -57,17 +57,13 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
 
   const getStatusIcon = () => {
     if (isBalanced) {
-      return <CheckCircle className="h-4 w-4 text-green-600" />;
+      return <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />;
     }
-    if (difference < 100) {
-      return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-    }
-    return <XCircle className="h-4 w-4 text-red-600" />;
+    return <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />;
   };
 
   const getStatusText = () => {
     if (isBalanced) return "Balansert";
-    if (difference < 100) return "Mindre avvik";
     return "Ubalansert";
   };
 
@@ -93,8 +89,6 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
             variant={getStatusVariant()}
             className={isBalanced 
               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              : difference < 100
-              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
               : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
             }
           >
@@ -119,10 +113,8 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
             <div className="font-medium text-muted-foreground">Status</div>
             <div className={`font-semibold ${
               isBalanced 
-                ? 'text-green-600' 
-                : difference < 100 
-                ? 'text-yellow-600' 
-                : 'text-red-600'
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-red-600 dark:text-red-400'
             }`}>
               {getStatusText()}
             </div>
@@ -131,8 +123,8 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
             <div className="font-medium text-muted-foreground">Differanse</div>
             <div className={`font-semibold ${
               isBalanced 
-                ? 'text-green-600' 
-                : 'text-red-600'
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-red-600 dark:text-red-400'
             }`}>
               {formatCurrency(difference)}
             </div>

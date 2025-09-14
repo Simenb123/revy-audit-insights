@@ -105,8 +105,6 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
 
   const getBalanceStatus = () => {
     if (statistics.isBalanced) return { status: 'success', text: 'Balansert' };
-    const diff = Math.abs(statistics.balanceDifference);
-    if (diff < 100) return { status: 'warning', text: 'Mindre avvik' };
     return { status: 'destructive', text: 'Ubalanse' };
   };
 

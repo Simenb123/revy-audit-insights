@@ -89,7 +89,7 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
           </div>
           <div>
             <div className="text-sm font-medium text-muted-foreground">Netto balanse</div>
-            <div className={`text-lg font-semibold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-lg font-semibold ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatCurrency(netAmount)}
             </div>
           </div>
@@ -107,7 +107,7 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
           <div className="border-t pt-2">
             <div className="flex justify-between">
               <span className="text-sm font-medium">Differanse:</span>
-              <span className={`text-sm font-semibold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm font-semibold ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {formatCurrency(netAmount)}
               </span>
             </div>
