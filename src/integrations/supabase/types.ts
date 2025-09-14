@@ -13425,6 +13425,21 @@ export type Database = {
         Args: { p_audit_firm_id: string }
         Returns: number
       }
+      fetch_ledger_transactions: {
+        Args: {
+          p_client_id: string
+          p_end_account?: string
+          p_end_date?: string
+          p_page?: number
+          p_page_size?: number
+          p_sort_by?: string
+          p_sort_order?: string
+          p_start_account?: string
+          p_start_date?: string
+          p_version_id?: string
+        }
+        Returns: Json
+      }
       find_duplicate_transactions: {
         Args: { p_client_id: string; p_version_id: string }
         Returns: {

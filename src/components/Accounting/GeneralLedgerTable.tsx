@@ -26,12 +26,13 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     logger.log('🔍 GeneralLedgerTable rendering for client:', clientId, 'version:', versionId);
   }
   
-  // Use the updated useTransactions hook that provides server-side totals
+  // Use optimized useTransactions hook with version ID
   const { data: transactionData, isLoading, error } = useTransactions(clientId, {
     page: currentPage,
     pageSize,
     sortBy: sortBy,
     sortOrder: sortOrder,
+    versionId: versionId, // Pass version ID for optimized queries
   });
 
   const transactions = transactionData?.transactions || [];
@@ -113,8 +114,8 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
       sortable: true,
       align: 'right',
       format: (value: number | null, row?: any) => {
-        // Use server-provided net_amount, fallback to calculation if needed
-        const netAmount = value ?? row?.net_amount ?? ((row?.debit_amount ?? 0) - (row?.credit_amount ?? 0));
+        // Use server-provided net_amount (no fallback calculation needed)
+        const netAmount = row?.net_amount ?? 0;
         const safeNetAmount = isNaN(netAmount) ? 0 : netAmount;
         
         return (

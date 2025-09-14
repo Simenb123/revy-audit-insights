@@ -7,6 +7,7 @@ import { useAccountingValidation } from '@/hooks/useAccountingValidation';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
 
 interface ValidationPanelProps {
   clientId: string;
@@ -15,13 +16,26 @@ interface ValidationPanelProps {
 }
 
 const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: ValidationPanelProps) => {
+  // Try to use analysis context for cross-check if available
+  let analysisContext;
+  let hasAnalysisContext = false;
+  
+  try {
+    analysisContext = useAnalysisContext();
+    hasAnalysisContext = Boolean(analysisContext?.analysis);
+  } catch (error) {
+    // Not within AnalysisProvider, use fallback validation
+    hasAnalysisContext = false;
+  }
+  
   // Enhanced logging for debugging version issues
   console.log('🔍 ValidationPanel props:', {
     clientId,
     selectedGLVersion,
     selectedTBVersion,
     hasGLVersion: !!selectedGLVersion,
-    hasTBVersion: !!selectedTBVersion
+    hasTBVersion: !!selectedTBVersion,
+    hasAnalysisContext
   });
 
   const { data: validation, isLoading, error, status, fetchStatus } = useAccountingValidation(clientId, selectedGLVersion, selectedTBVersion);
@@ -30,41 +44,20 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
   console.log('[ValidationPanel] Validation data:', validation);
   console.log('[ValidationPanel] Error:', error);
 
-  if (isLoading || status === 'pending') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Validering</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Check if we're missing required versions
+  // Show "Venter på data" only if ledger OR trial balance is missing
   const isDataMissing = !selectedGLVersion || !selectedTBVersion;
   
   if (isDataMissing) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Validering</CardTitle>
+          <CardTitle>Kryssjekk Hovedbok vs. Saldobalanse</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
-              {!selectedGLVersion && !selectedTBVersion 
-                ? 'Velg både hovedbok og saldobalanse versjon for å starte validering'
-                : !selectedGLVersion 
-                  ? 'Velg hovedbok versjon for å starte validering'
-                  : 'Velg saldobalanse versjon for å starte validering'
-              }
+              Venter på data - {!selectedGLVersion ? 'hovedbok' : ''}{!selectedGLVersion && !selectedTBVersion ? ' og ' : ''}{!selectedTBVersion ? 'saldobalanse' : ''} mangler
             </AlertDescription>
           </Alert>
           {!selectedTBVersion && (
@@ -74,6 +67,57 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Use analysis context for quick cross-check if available
+  if (hasAnalysisContext && analysisContext?.analysis?.trial_balance_crosscheck) {
+    const crossCheck = analysisContext.analysis.trial_balance_crosscheck;
+    const isBalanced = crossCheck.balanced;
+    const difference = Math.abs(crossCheck.diff || 0);
+    
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {isBalanced ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            Kryssjekk Hovedbok vs. Saldobalanse
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant={isBalanced ? "default" : "destructive"}>
+            {isBalanced ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            <AlertDescription>
+              {isBalanced 
+                ? `Hovedbok og saldobalanse er balansert (differanse: ${formatCurrency(difference)})`
+                : `Ubalanse oppdaget: ${formatCurrency(difference)} differanse mellom hovedbok og saldobalanse`
+              }
+            </AlertDescription>
+          </Alert>
+          
+          {!isBalanced && (
+            <div className="text-sm text-muted-foreground">
+              Bruk detaljert validering nedenfor for mer informasjon om avvikene.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading || status === 'pending') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Kryssjekk Hovedbok vs. Saldobalanse</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -92,7 +136,7 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Validering</CardTitle>
+          <CardTitle>Kryssjekk Hovedbok vs. Saldobalanse</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive">
@@ -110,7 +154,7 @@ const ValidationPanel = ({ clientId, selectedGLVersion, selectedTBVersion }: Val
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Validering</CardTitle>
+          <CardTitle>Kryssjekk Hovedbok vs. Saldobalanse</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="default">

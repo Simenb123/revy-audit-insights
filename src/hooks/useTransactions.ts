@@ -23,6 +23,7 @@ interface UseTransactionsOptions {
   endAccount?: string
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
+  versionId?: string // Add version ID support
 }
 
 export function useTransactions(
@@ -33,24 +34,36 @@ export function useTransactions(
     queryKey: ['transactions', clientId, options],
     enabled: !!clientId,
     queryFn: async () => {
-      const { page = 1, pageSize = 100, startDate, endDate, startAccount, endAccount, sortBy, sortOrder } = options
-      const { data, error } = await supabase.functions.invoke('transactions', {
-        body: {
-          clientId,
-          startDate,
-          endDate,
-          startAccount,
-          endAccount,
-          page,
-          pageSize,
-          sortBy,
-          sortOrder,
-        },
+      const { 
+        page = 1, 
+        pageSize = 100, 
+        startDate, 
+        endDate, 
+        startAccount, 
+        endAccount, 
+        sortBy, 
+        sortOrder,
+        versionId
+      } = options
+      
+      // Use optimized Supabase RPC function instead of edge function
+      const { data, error } = await supabase.rpc('fetch_ledger_transactions', {
+        p_client_id: clientId,
+        p_version_id: versionId || null,
+        p_page: page,
+        p_page_size: pageSize,
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_start_account: startAccount || null,
+        p_end_account: endAccount || null,
+        p_sort_by: sortBy || 'transaction_date',
+        p_sort_order: sortOrder || 'asc'
       })
 
       if (error) throw error
 
-      const items = (data?.data || []).map((t: any) => ({
+      const result = data as any
+      const items = (result?.data || []).map((t: any) => ({
         id: t.id,
         transaction_date: t.transaction_date,
         account_number: t.account_number || '',
@@ -59,13 +72,14 @@ export function useTransactions(
         debit_amount: t.debit_amount,
         credit_amount: t.credit_amount,
         balance_amount: t.balance_amount,
-        net_amount: t.net_amount ?? ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
+        net_amount: t.net_amount, // Server-provided net amount
       })) as Transaction[]
 
       return {
         transactions: items,
-        count: data?.count ?? 0,
-        totals: data?.totals ?? { totalDebit: 0, totalCredit: 0, totalBalance: 0 },
+        count: result?.count ?? 0,
+        totals: result?.totals ?? { totalDebit: 0, totalCredit: 0, totalBalance: 0, totalNet: 0 },
+        metadata: result?.metadata
       }
     },
   })
