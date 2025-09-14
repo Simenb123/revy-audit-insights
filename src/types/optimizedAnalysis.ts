@@ -82,4 +82,5 @@ export interface TrialBalanceSummary {
   total_credit: number;
   total_net: number;
   has_imbalance: boolean;
+  difference?: number; // Optional for backward compatibility
 }
