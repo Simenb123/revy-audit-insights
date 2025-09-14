@@ -52,9 +52,10 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
     );
   }
 
-  // Use diff === 0 as primary indicator for balanced status
-  const difference = Math.abs(crossCheck.diff || 0);
+  // Use strict equality on diff for balanced status
+  const difference = crossCheck.diff || 0;
   const isBalanced = difference === 0;
+  const absoluteDifference = Math.abs(difference);
 
   const getStatusIcon = () => {
     if (isBalanced) {
@@ -103,8 +104,8 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
           {getStatusIcon()}
           <AlertDescription>
             {isBalanced 
-              ? `Hovedbok og saldobalanse stemmer overens (differanse: ${formatCurrency(difference)})`
-              : `Avvik funnet: ${formatCurrency(difference)} differanse mellom hovedbok og saldobalanse`
+              ? `Hovedbok og saldobalanse stemmer overens (differanse: ${formatCurrency(absoluteDifference)})`
+              : `Avvik funnet: ${formatCurrency(absoluteDifference)} differanse mellom hovedbok og saldobalanse`
             }
           </AlertDescription>
         </Alert>
@@ -127,7 +128,7 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
                 ? 'text-green-600 dark:text-green-400' 
                 : 'text-red-600 dark:text-red-400'
             }`}>
-              {formatCurrency(difference)}
+              {formatCurrency(absoluteDifference)}
             </div>
           </div>
         </div>

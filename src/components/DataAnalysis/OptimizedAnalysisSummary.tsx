@@ -15,6 +15,7 @@ import {
   CheckCircle 
 } from 'lucide-react';
 import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
+import { useCacheInvalidation } from '@/hooks/useCacheInvalidation';
 import { formatNumeric } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
 import { TrialBalanceSummaryCard } from '@/components/Accounting/TrialBalanceSummaryCard';
@@ -40,6 +41,18 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
     refetch,
     lastUpdated 
   } = useAnalysisContext();
+
+  const { invalidateClientCache } = useCacheInvalidation();
+
+  const handleRefresh = async () => {
+    try {
+      await invalidateClientCache(clientId);
+      refetch();
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+      refetch(); // Still try to refetch even if cache invalidation fails
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { 
@@ -130,7 +143,7 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
             <Clock className="h-4 w-4" />
             Sist oppdatert: {lastUpdated}
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Oppdater
           </Button>

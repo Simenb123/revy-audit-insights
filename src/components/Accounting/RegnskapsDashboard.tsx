@@ -8,6 +8,7 @@ import { TrendingUp, AlertTriangle, Database, CheckCircle, Calculator, FileText,
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useActiveVersion } from '@/hooks/useAccountingVersions';
 import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
+import { useCacheInvalidation } from '@/hooks/useCacheInvalidation';
 import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
 import { CrossCheckCard } from '@/components/Accounting/CrossCheckCard';
@@ -30,6 +31,18 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
     refetch,
     lastUpdated 
   } = useAnalysisContext();
+
+  const { invalidateClientCache } = useCacheInvalidation();
+
+  const handleRefresh = async () => {
+    try {
+      await invalidateClientCache(clientId);
+      refetch();
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+      refetch(); // Still try to refetch even if cache invalidation fails
+    }
+  };
 
   // Extract key metrics from optimized analysis
   const statistics = useMemo(() => {
@@ -122,7 +135,7 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
             <Clock className="h-4 w-4" />
             Sist oppdatert: {lastUpdated}
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Oppdater
           </Button>

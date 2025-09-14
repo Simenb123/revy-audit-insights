@@ -50,10 +50,10 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
     );
   }
 
-  // Use strict equality check for balanced status based on net total
-  const isBalanced = Math.abs(summary.total_net) === 0;
-  const netAmount = Math.abs(summary.total_net);
-  const difference = summary.total_net; // Use actual net as difference (can be negative)
+  // Use strict equality check for balanced status based on difference field
+  const difference = summary.difference || summary.total_net || 0;
+  const isBalanced = difference === 0;
+  const netAmount = Math.abs(summary.total_net || 0);
 
   return (
     <Card>
@@ -88,12 +88,12 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-sm font-medium text-muted-foreground">Totale kontoer</div>
-            <div className="text-lg font-semibold">{formatNumeric(summary.total_accounts)}</div>
+            <div className="text-lg font-semibold">{formatNumeric(summary.total_accounts || 0)}</div>
           </div>
           <div>
             <div className="text-sm font-medium text-muted-foreground">Netto balanse</div>
             <div className={`text-lg font-semibold ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {formatCurrency(netAmount)}
+              {formatNumeric(summary.total_net || 0)} kr
             </div>
           </div>
         </div>
@@ -101,17 +101,17 @@ export function TrialBalanceSummaryCard({ summary, isLoading }: TrialBalanceSumm
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Totalt debet:</span>
-            <span className="text-sm font-medium">{formatCurrency(summary.total_debit)}</span>
+            <span className="text-sm font-medium">{formatNumeric(summary.total_debit || 0)} kr</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Totalt kredit:</span>
-            <span className="text-sm font-medium">{formatCurrency(summary.total_credit)}</span>
+            <span className="text-sm font-medium">{formatNumeric(summary.total_credit || 0)} kr</span>
           </div>
           <div className="border-t pt-2">
             <div className="flex justify-between">
               <span className="text-sm font-medium">Differanse:</span>
               <span className={`text-sm font-semibold ${isBalanced ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(difference)}
+                {formatNumeric(difference)} kr
               </span>
             </div>
           </div>
