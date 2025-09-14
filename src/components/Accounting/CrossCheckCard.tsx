@@ -53,9 +53,9 @@ export function CrossCheckCard({ crossCheck, isLoading }: CrossCheckCardProps) {
   }
 
   // Use strict equality on diff for balanced status
-  const difference = crossCheck.diff || 0;
+  const difference = crossCheck.diff;
   const isBalanced = difference === 0;
-  const absoluteDifference = Math.abs(difference);
+  const absoluteDifference = Math.abs(difference ?? 0);
 
   const getStatusIcon = () => {
     if (isBalanced) {
