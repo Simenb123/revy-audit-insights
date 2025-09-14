@@ -48,7 +48,9 @@ export class OptimizedAnalysisService {
     }
 
     // Parse the JSON response from the RPC function
-    return typeof data === 'string' ? JSON.parse(data) : (data as unknown) as OptimizedAnalysisResult;
+    const result = typeof data === 'string' ? JSON.parse(data) : (data as unknown) as OptimizedAnalysisResult;
+    
+    return result;
   }
 
   /**
