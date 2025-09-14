@@ -7,6 +7,7 @@ import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import ClientNavigation from '@/components/Clients/ClientDetails/ClientNavigation';
 import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import AuditSampling from '@/components/DataAnalysis/AuditSampling';
+import { AnalysisProvider } from '@/components/DataAnalysis/AnalysisProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Database, Download, Brain, Target, Settings } from 'lucide-react';
@@ -67,7 +68,8 @@ const AnalysisPage = React.memo(() => {
         
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
-            <Tabs defaultValue="data" className="w-full">
+            <AnalysisProvider clientId={client.id}>
+              <Tabs defaultValue="data" className="w-full">
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="data" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
@@ -115,7 +117,8 @@ const AnalysisPage = React.memo(() => {
                   <NorwegianCharFixer />
                 </div>
               </TabsContent>
-            </Tabs>
+              </Tabs>
+            </AnalysisProvider>
           </div>
         </div>
       </div>

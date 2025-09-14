@@ -14,7 +14,7 @@ import {
   Calculator,
   CheckCircle 
 } from 'lucide-react';
-import { useOptimizedAnalysis } from '@/hooks/useOptimizedAnalysis';
+import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
 import { formatNumeric } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
 
@@ -27,21 +27,14 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
   clientId, 
   versionId 
 }) => {
+  // Use shared analysis context to avoid duplicate API calls
   const { 
-    data: analysis, 
+    analysis, 
     isLoading, 
     error, 
-    refetch 
-  } = useOptimizedAnalysis(
-    { 
-      clientId,
-      datasetId: versionId 
-    },
-    { 
-      enabled: !!versionId,
-      staleTime: 2 * 60 * 1000 // 2 minutes
-    }
-  );
+    refetch,
+    lastUpdated 
+  } = useAnalysisContext();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nb-NO', { 
@@ -51,15 +44,7 @@ const OptimizedAnalysisSummary: React.FC<OptimizedAnalysisSummaryProps> = ({
     }).format(amount);
   };
 
-  const lastUpdated = analysis?.metadata?.generated_at 
-    ? new Date(analysis.metadata.generated_at).toLocaleString('no-NO', {
-        year: 'numeric',
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    : null;
+  // lastUpdated is now provided by the context
 
   if (isLoading) {
     return (

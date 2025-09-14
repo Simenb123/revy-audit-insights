@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, AlertTriangle, Database, CheckCircle, Calculator, FileText, RefreshCw, Clock } from 'lucide-react';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { useActiveVersion } from '@/hooks/useAccountingVersions';
-import { useOptimizedAnalysis } from '@/hooks/useOptimizedAnalysis';
+import { useAnalysisContext } from '@/components/DataAnalysis/AnalysisProvider';
 import { formatNumeric, formatPercent } from '@/utils/kpiFormat';
 import { safeNet } from '@/utils/netCalculation';
 
@@ -20,22 +20,14 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
   const { selectedFiscalYear } = useFiscalYear();
   const { data: activeGLVersion } = useActiveVersion(clientId);
 
-  // Use optimized analysis instead of fetching all transaction data
+  // Use shared analysis context to avoid duplicate API calls
   const { 
-    data: analysisResult, 
+    analysis: analysisResult, 
     isLoading, 
     error, 
-    refetch 
-  } = useOptimizedAnalysis(
-    { 
-      clientId,
-      datasetId: activeGLVersion?.id 
-    },
-    { 
-      enabled: !!activeGLVersion?.id,
-      staleTime: 2 * 60 * 1000 // 2 minutes
-    }
-  );
+    refetch,
+    lastUpdated 
+  } = useAnalysisContext();
 
   // Extract key metrics from optimized analysis
   const statistics = useMemo(() => {
@@ -57,15 +49,7 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
     };
   }, [analysisResult]);
 
-  const lastUpdated = analysisResult?.metadata?.generated_at 
-    ? new Date(analysisResult.metadata.generated_at).toLocaleString('no-NO', {
-        year: 'numeric',
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    : null;
+  // lastUpdated is now provided by the context
 
   if (isLoading) {
     return (
