@@ -3,11 +3,12 @@ import { optimizedAnalysisService } from '@/services/optimizedAnalysisService';
 import type { OptimizedAnalysisInput, OptimizedAnalysisResult } from '@/types/optimizedAnalysis';
 
 /**
- * React Query hook for optimized analysis
+ * Enhanced React Query hook for optimized analysis with server-side caching
+ * Now includes amount_statistics and overview data from enhanced SQL function
  * 
  * @param input - Analysis parameters (clientId required, datasetId optional)
  * @param options - React Query options
- * @returns Query result with analysis data
+ * @returns Query result with comprehensive analysis data
  * 
  * @example
  * ```typescript
@@ -27,6 +28,10 @@ import type { OptimizedAnalysisInput, OptimizedAnalysisResult } from '@/types/op
  *       <p>Total transactions: {analysis.total_transactions}</p>
  *       <p>Date range: {analysis.date_range.start} to {analysis.date_range.end}</p>
  *       <p>Trial balance balanced: {analysis.trial_balance_crosscheck.balanced ? 'Yes' : 'No'}</p>
+ *       
+ *       <h3>Enhanced Statistics</h3>
+ *       <p>Average transaction: {analysis.amount_statistics?.average}</p>
+ *       <p>Positive transactions: {analysis.amount_statistics?.positive_count}</p>
  *       
  *       <h3>Data Quality Issues</h3>
  *       {analysis.data_quality_flags.map(flag => (

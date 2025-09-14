@@ -2,8 +2,17 @@ import { supabase } from "@/integrations/supabase/client";
 import type { OptimizedAnalysisInput, OptimizedAnalysisResult } from "@/types/optimizedAnalysis";
 
 /**
- * Service for calling the optimized analysis RPC function
- * Performs server-side aggregations for maximum performance
+ * Enhanced service for optimized analysis with server-side SQL aggregations
+ * 
+ * This service interfaces with the optimized_analysis Supabase RPC function
+ * which performs all heavy calculations on the database server rather than
+ * in the browser, providing faster analysis for large datasets.
+ * 
+ * Key features:
+ * - Server-side aggregations using SQL CTEs
+ * - Comprehensive statistics (totals, distributions, quality checks)
+ * - Enhanced amount statistics (min, max, average, counts)
+ * - Future: Server-side caching for sub-second response times
  */
 export class OptimizedAnalysisService {
   /**
@@ -77,12 +86,29 @@ export class OptimizedAnalysisService {
   }
 
   /**
-   * Calculates key financial metrics from the analysis
+   * Enhanced financial metrics calculation
    * 
-   * @param result - Analysis result
-   * @returns Key financial indicators
+   * Uses server-provided statistics when available (enhanced version),
+   * falls back to calculations from aggregated data for compatibility.
    */
   getFinancialMetrics(result: OptimizedAnalysisResult) {
+    // Use server-provided amount statistics if available (enhanced version)
+    if (result.amount_statistics) {
+      return {
+        totalDebit: result.overview?.total_debit ?? 0,
+        totalCredit: result.overview?.total_credit ?? 0,
+        netAmount: result.overview?.total_net ?? 0,
+        averageAmount: result.amount_statistics.average,
+        minAmount: result.amount_statistics.min,
+        maxAmount: result.amount_statistics.max,
+        positiveTransactions: result.amount_statistics.positive_count,
+        negativeTransactions: result.amount_statistics.negative_count,
+        transactionCount: result.total_transactions,
+        volatility: this.calculateVolatility(result.monthly_summary)
+      };
+    }
+
+    // Legacy calculation for backwards compatibility
     const monthlySummary = result.monthly_summary;
     
     if (!monthlySummary || monthlySummary.length === 0) {
@@ -90,8 +116,9 @@ export class OptimizedAnalysisService {
         totalDebit: 0,
         totalCredit: 0,
         netAmount: 0,
-        averageMonthlyVolume: 0,
-        volatility: 0
+        averageAmount: 0,
+        volatility: 0,
+        transactionCount: result.total_transactions
       };
     }
 
@@ -100,19 +127,29 @@ export class OptimizedAnalysisService {
     const netAmount = totalDebit - totalCredit;
     const averageMonthlyVolume = (totalDebit + totalCredit) / (monthlySummary.length * 2);
 
-    // Calculate monthly volatility (standard deviation of net amounts)
-    const monthlyNets = monthlySummary.map(m => m.net);
-    const avgNet = monthlyNets.reduce((sum, net) => sum + net, 0) / monthlyNets.length;
-    const variance = monthlyNets.reduce((sum, net) => sum + Math.pow(net - avgNet, 2), 0) / monthlyNets.length;
-    const volatility = Math.sqrt(variance);
-
     return {
       totalDebit,
       totalCredit,
       netAmount,
-      averageMonthlyVolume,
-      volatility
+      averageAmount: averageMonthlyVolume,
+      transactionCount: result.total_transactions,
+      volatility: this.calculateVolatility(monthlySummary)
     };
+  }
+
+  /**
+   * Calculate volatility from monthly summary data
+   */
+  private calculateVolatility(monthlySummary: any[]): number {
+    if (!monthlySummary || monthlySummary.length === 0) {
+      return 0;
+    }
+
+    // Calculate monthly volatility (standard deviation of net amounts)
+    const monthlyNets = monthlySummary.map(m => m.net);
+    const avgNet = monthlyNets.reduce((sum, net) => sum + net, 0) / monthlyNets.length;
+    const variance = monthlyNets.reduce((sum, net) => sum + Math.pow(net - avgNet, 2), 0) / monthlyNets.length;
+    return Math.sqrt(variance);
   }
 }
 

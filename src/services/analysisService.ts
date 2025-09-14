@@ -63,6 +63,8 @@ export class AnalysisService {
         start: transactions[0]?.transaction_date,
         end: transactions[transactions.length - 1]?.transaction_date
       },
+      // Use optimized server-side analysis instead of client-side loops
+      // DEPRECATED: Replace with optimized_analysis RPC call
       account_distribution: this.calculateAccountDistribution(transactions),
       amount_statistics: this.calculateAmountStatistics(transactions),
       monthly_summary: this.calculateMonthlySummary(transactions)
@@ -298,7 +300,9 @@ export class AnalysisService {
     return data?.filtered_data_summary || null;
   }
 
-  // Helper methods for TypeScript analysis
+  // Helper methods for TypeScript analysis - DEPRECATED: Use server-side optimized_analysis instead
+  // These methods are kept for legacy compatibility but should not be used for new code
+  // DEPRECATED: Use optimized_analysis RPC function instead
   private calculateAccountDistribution(transactions: any[]): { account: string; count: number }[] {
     const distribution: Record<string, number> = {};
     
@@ -312,6 +316,7 @@ export class AnalysisService {
       .sort((a, b) => b.count - a.count);
   }
 
+  // DEPRECATED: Use optimized_analysis RPC function instead
   private calculateAmountStatistics(transactions: any[]) {
     const amounts = transactions.map(tx =>
       tx.debit_amount ?? -(tx.credit_amount ?? 0)
@@ -328,6 +333,7 @@ export class AnalysisService {
     };
   }
 
+  // DEPRECATED: Use optimized_analysis RPC function instead
   private calculateMonthlySummary(transactions: any[]) {
     const monthlyData: Record<string, { count: number; sum: number }> = {};
 

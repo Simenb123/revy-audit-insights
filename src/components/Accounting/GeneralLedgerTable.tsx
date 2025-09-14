@@ -109,12 +109,12 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     const amountCol: StandardDataTableColumn<any> = {
       key: 'balance_amount',
       header: 'Beløp',
-      accessor: 'balance_amount',
+      accessor: 'net_amount', // Use server-provided net_amount
       sortable: true,
       align: 'right',
       format: (value: number | null, row?: any) => {
-        // Safeguard: compute net amount if missing
-        const netAmount = value ?? ((row?.debit_amount ?? 0) - (row?.credit_amount ?? 0));
+        // Use server-provided net_amount, fallback to calculation if needed
+        const netAmount = value ?? row?.net_amount ?? ((row?.debit_amount ?? 0) - (row?.credit_amount ?? 0));
         const safeNetAmount = isNaN(netAmount) ? 0 : netAmount;
         
         return (
@@ -326,7 +326,7 @@ const GeneralLedgerTable = ({ clientId, versionId, accountNumberFilter }: Genera
     return {
       debit: serverTotals.totalDebit,
       credit: serverTotals.totalCredit,
-      balance: serverTotals.totalBalance
+      balance: serverTotals.totalNet ?? serverTotals.totalBalance // Use server net amount
     };
   }, [serverTotals]);
 

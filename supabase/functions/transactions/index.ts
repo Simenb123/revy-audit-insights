@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
         debit_amount,
         credit_amount,
         balance_amount,
+        (COALESCE(debit_amount, 0) - COALESCE(credit_amount, 0)) as net_amount,
         voucher_number,
         account_number,
         account_name
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     // Calculate totals for all transactions matching the filters (not just the page)
     let totalsQuery = supabase
       .from('general_ledger_transactions')
-      .select('debit_amount, credit_amount, balance_amount')
+      .select('debit_amount, credit_amount, balance_amount, (COALESCE(debit_amount, 0) - COALESCE(credit_amount, 0)) as net_amount')
       .eq('client_id', clientId);
 
     // Apply the same filters as the main query
@@ -94,8 +95,9 @@ Deno.serve(async (req) => {
       acc.totalDebit += transaction.debit_amount || 0;
       acc.totalCredit += transaction.credit_amount || 0;
       acc.totalBalance += transaction.balance_amount || 0;
+      acc.totalNet += transaction.net_amount || 0;
       return acc;
-    }, { totalDebit: 0, totalCredit: 0, totalBalance: 0 });
+    }, { totalDebit: 0, totalCredit: 0, totalBalance: 0, totalNet: 0 });
 
     return new Response(JSON.stringify({ data, count, totals }), {
       status: 200,

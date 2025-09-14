@@ -54,5 +54,22 @@ export interface OptimizedAnalysisResult {
   top_accounts: TopAccount[];
   data_quality_flags: DataQualityFlag[];
   trial_balance_crosscheck: TrialBalanceCrosscheck;
+  amount_statistics?: AmountStatistics; // New field for enhanced statistics
+  overview?: OverviewStatistics; // New field for overview data
   metadata: OptimizedAnalysisMetadata;
+}
+
+export interface AmountStatistics {
+  sum: number;
+  average: number;
+  min: number;
+  max: number;
+  positive_count: number;
+  negative_count: number;
+}
+
+export interface OverviewStatistics {
+  total_debit: number;
+  total_credit: number;
+  total_net: number;
 }

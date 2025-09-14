@@ -11,6 +11,7 @@ export interface Transaction {
   debit_amount: number | null
   credit_amount: number | null
   balance_amount: number | null
+  net_amount: number | null
 }
 
 interface UseTransactionsOptions {
@@ -57,7 +58,8 @@ export function useTransactions(
         description: t.description,
         debit_amount: t.debit_amount,
         credit_amount: t.credit_amount,
-        balance_amount: t.balance_amount ?? ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
+        balance_amount: t.balance_amount,
+        net_amount: t.net_amount ?? ((t.debit_amount || 0) as number - (t.credit_amount || 0) as number),
       })) as Transaction[]
 
       return {
