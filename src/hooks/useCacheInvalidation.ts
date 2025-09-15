@@ -21,7 +21,7 @@ export function useCacheInvalidation() {
       return { success: true };
     },
     onSuccess: (_, { clientId }) => {
-      // Invalidate all related queries for this client
+      // Invalidate all related queries for this client including trial balance versions
       queryClient.invalidateQueries({
         queryKey: ['optimized-analysis', clientId]
       });
@@ -30,6 +30,12 @@ export function useCacheInvalidation() {
       });
       queryClient.invalidateQueries({
         queryKey: ['fetch-ledger-transactions', clientId]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['population-analysis', clientId]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['active-trial-balance-version', clientId]
       });
     },
   });

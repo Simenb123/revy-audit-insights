@@ -86,11 +86,20 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
   }
 
   if (error) {
+    const errorMessage = error.message || 'Feil ved lasting av analysedata';
+    const norwegianError = errorMessage.includes('No active dataset found') 
+      ? 'Ingen aktiv dataversjon funnet - last opp og velg et datasett først.'
+      : errorMessage.includes('GROUP BY')
+      ? 'Teknisk feil i dataanalyse - kontakt support.'
+      : errorMessage.includes('invalid input syntax for type uuid')
+      ? 'Feil i dataformat - kontakt support for å korrigere dataversjon.'
+      : errorMessage;
+      
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
-          <span>Kunne ikke laste analyse: {error.message}</span>
+          <span>Kunne ikke laste analyse: {norwegianError}</span>
           <Button 
             variant="outline" 
             size="sm" 
@@ -128,6 +137,38 @@ export function RegnskapsDashboard({ clientId }: RegnskapsDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header with version info */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Regnskapsanalyse</h1>
+          <div className="flex flex-wrap items-center gap-4 mt-2 text-muted-foreground">
+            <p>AI-drevet analyse av regnskapsdata og saldobalanse</p>
+            {activeGLVersion && (
+              <div className="flex items-center gap-2">
+                <Database className="h-3 w-3" />
+                <span className="text-xs bg-muted px-2 py-1 rounded-md">
+                  Datasett: v{activeGLVersion.version_number} • {activeGLVersion.total_transactions || 0} transaksjoner
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {lastUpdated && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              Sist oppdatert: {lastUpdated}
+            </div>
+          )}
+          
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Oppdater
+          </Button>
+        </div>
+      </div>
+
       {/* Last updated timestamp */}
       {lastUpdated && (
         <div className="flex items-center justify-between">

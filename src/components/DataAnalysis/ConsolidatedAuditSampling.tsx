@@ -536,13 +536,27 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
               <AlertTriangle className="h-5 w-5" />
               Tom populasjon
             </CardTitle>
-            <CardDescription className="text-amber-600">
-              {populationData?.emptyReason === 'no_standard_accounts' && "Ingen regnskapslinjer er valgt."}
+          <CardDescription className="text-amber-600">
+            <div className="space-y-2">
+              {populationData?.emptyReason === 'no_standard_accounts' && (
+                <div>
+                  <p><strong>Ingen regnskapslinjer valgt:</strong> Velg en eller flere regnskapslinjer nedenfor.</p>
+                  <p className="text-sm text-amber-700 mt-1">💡 Tips: Bruk hurtigvalgene "Kun Varekostnad" eller "Kun Omsetning".</p>
+                </div>
+              )}
               {populationData?.emptyReason === 'no_matching_accounts' && "Ingen kontoer matcher de valgte regnskapslinjene."}
               {populationData?.emptyReason === 'zero_balances' && "Alle kontoer har nullsaldo for det valgte året."}
               {populationData?.emptyReason === 'all_excluded' && "Alle relevante kontoer er ekskludert fra utvalget."}
-              {populationData?.metadata?.hasDataForYear === false && "Ingen regnskapsdata funnet for det valgte året."}
-            </CardDescription>
+              {populationData?.metadata?.hasDataForYear === false && (
+                <div>
+                  <p><strong>Ingen data for {params.fiscalYear}:</strong> Regnskapsdata mangler for det valgte året.</p>
+                  {populationData?.metadata?.availableYears && populationData.metadata.availableYears.length > 0 && (
+                    <p className="text-sm mt-1">Tilgjengelige år: <strong>{populationData.metadata.availableYears.join(', ')}</strong></p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
