@@ -14,11 +14,12 @@ interface RevisionWorkflowProps {
 }
 
 const phases = [
-  { key: 'overview' as AuditPhase, number: 0 },
   { key: 'engagement' as AuditPhase, number: 1 },
   { key: 'planning' as AuditPhase, number: 2 },
-  { key: 'execution' as AuditPhase, number: 3 },
-  { key: 'completion' as AuditPhase, number: 4 }
+  { key: 'risk_assessment' as AuditPhase, number: 3 },
+  { key: 'execution' as AuditPhase, number: 4 },
+  { key: 'completion' as AuditPhase, number: 5 },
+  { key: 'reporting' as AuditPhase, number: 6 }
 ];
 
 const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: RevisionWorkflowProps) => {
@@ -81,59 +82,84 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
         </div>
       </div>
 
-      {/* Phase steps - now with equal sizing and action counts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {phases.map((phase, index) => {
-          const status = getPhaseStatus(index);
-          const isClickable = onPhaseClick;
-          const info = phaseInfo[phase.key];
-          const IconComponent = info.icon;
-          const actionCount = getPhaseActionCount(phase.key);
-          const completedCount = getPhaseCompletedActions(phase.key);
-          
-          return (
-            <div key={phase.key} className="relative">
-              <div
-                className={`
-                  relative p-3 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[120px] flex flex-col justify-between
-                  ${status === 'current' 
-                    ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 
-                    : status === 'completed'
-                    ? 'border-green-500 bg-green-50 shadow-lg hover:shadow-xl'
-                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                  }
-                `}
-                onClick={() => isClickable && onPhaseClick(phase.key)}
-              >
-                {/* Phase number badge */}
-                <div className={`
-                  absolute -top-3 -left-3 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-lg
-                  ${status === 'current' 
-                    ? 'bg-blue-500' 
-                    : status === 'completed'
-                    ? 'bg-green-500'
-                    : 'bg-gray-400'
-                  }
-                `}>
+      {/* Stepper Design - Smaller, More Connected */}
+      <div className="relative">
+        {/* Main connector line */}
+        <div className="hidden md:block absolute top-10 left-8 right-8 h-1 bg-gray-200 z-0">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-1000"
+            style={{ width: `${getProgressWidth()}%` }}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+          {phases.map((phase, index) => {
+            const status = getPhaseStatus(index);
+            const isClickable = onPhaseClick;
+            const info = phaseInfo[phase.key];
+            const IconComponent = info.icon;
+            const actionCount = getPhaseActionCount(phase.key);
+            const completedCount = getPhaseCompletedActions(phase.key);
+            
+            return (
+              <div key={phase.key} className="relative flex flex-col items-center">
+                {/* Stepper Circle */}
+                <div 
+                  className={`
+                    relative z-10 w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all duration-300 cursor-pointer group
+                    ${status === 'current' 
+                      ? 'border-blue-500 bg-blue-500 shadow-xl transform scale-110' 
+                      : status === 'completed'
+                      ? 'border-green-500 bg-green-500 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-blue-300 hover:shadow-md'
+                    }
+                  `}
+                  onClick={() => isClickable && onPhaseClick(phase.key)}
+                >
                   {status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  ) : IconComponent ? (
-                    <IconComponent className="w-4 h-4 text-white" />
+                    <CheckCircle className="w-8 h-8 text-white" />
+                  ) : status === 'current' ? (
+                    <IconComponent className="w-8 h-8 text-white" />
                   ) : (
-                    <span className="text-white">{phase.number}</span>
+                    <span className={`text-lg font-bold ${status === 'upcoming' ? 'text-gray-400' : 'text-white'}`}>
+                      {phase.number}
+                    </span>
                   )}
+                  
+                  {/* Step number badge for current/completed */}
+                  <div className={`
+                    absolute -top-2 -right-2 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
+                    ${status === 'current' ? 'bg-blue-600 text-white' :
+                      status === 'completed' ? 'bg-green-600 text-white' :
+                      'bg-gray-400 text-white'
+                    }
+                  `}>
+                    {phase.number}
+                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="pt-3 flex-1">
-                  <h3 className={`font-bold text-base mb-2 ${
+                {/* Content Card - Smaller and Compact */}
+                <div 
+                  className={`
+                    mt-3 p-2 rounded-lg border transition-all duration-200 cursor-pointer group-hover:shadow-md min-h-[80px] w-full
+                    ${status === 'current' 
+                      ? 'border-blue-200 bg-blue-50' 
+                      : status === 'completed'
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                    }
+                  `}
+                  onClick={() => isClickable && onPhaseClick(phase.key)}
+                >
+                  <h3 className={`font-semibold text-sm mb-1 text-center ${
                     status === 'current' ? 'text-blue-900' :
                     status === 'completed' ? 'text-green-900' :
                     'text-gray-700'
                   }`}>
                     {info.label}
                   </h3>
-                  <p className={`text-sm mb-3 ${
+                  
+                  <p className={`text-xs text-center mb-2 leading-tight ${
                     status === 'current' ? 'text-blue-700' :
                     status === 'completed' ? 'text-green-700' :
                     'text-gray-500'
@@ -141,50 +167,21 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                     {info.description}
                   </p>
 
-                  {/* Action count display */}
+                  {/* Compact action count */}
                   {actionCount > 0 && (
-                    <div className={`text-xs font-medium ${
+                    <div className={`text-xs font-medium text-center ${
                       status === 'current' ? 'text-blue-600' :
                       status === 'completed' ? 'text-green-600' :
                       'text-gray-500'
                     }`}>
-                      <div className="flex items-center gap-1">
-                        <Target className="w-3 h-3" />
-                        <span>{completedCount}/{actionCount} handlinger</span>
-                      </div>
+                      {completedCount}/{actionCount}
                     </div>
                   )}
                 </div>
-
-                {/* Action indicator */}
-                <div className="mt-3 flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className={status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
-                    Vis detaljer
-                  </span>
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </div>
-
-                {/* Status indicator */}
-                {status === 'current' && (
-                  <div className="absolute top-2 right-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                  </div>
-                )}
               </div>
-
-              {/* Connector line between phases */}
-              {index < phases.length - 1 && (
-                <div className="hidden lg:block absolute top-1/2 -right-2 w-4 h-1 bg-gray-300 transform -translate-y-1/2 z-0">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      getPhaseStatus(index) === 'completed' ? 'bg-green-500' : 'bg-gray-300'
-                    }`}
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
