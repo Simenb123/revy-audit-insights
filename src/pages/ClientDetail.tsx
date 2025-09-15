@@ -11,7 +11,6 @@ import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 import RevisionWorkflow from '@/components/Clients/ClientDetails/RevisionWorkflow';
 import PhaseContent from '@/components/Clients/ClientDetails/PhaseContent';
 import { AuditPhase } from '@/types/revio';
-import ClientDashboard from '@/components/Clients/ClientDetails/ClientDashboard';
 
 const ClientDetail = () => {
   const { clientId, phase } = useParams<{ clientId: string; phase?: AuditPhase }>();
@@ -161,15 +160,7 @@ const ClientDetail = () => {
       pageTitle="Oversikt"
     >
       <div className="space-y-6 p-6">
-        {/* Client Dashboard - Prominent Overview */}
-        {selectedPhase === 'overview' && (
-          <ClientDashboard 
-            client={client}
-            onOverviewClick={() => handlePhaseClick('overview')}
-          />
-        )}
-
-        {/* Revision Workflow Progress - Stepper Design */}
+        {/* Revision Workflow Progress */}
         <RevisionWorkflow
           currentPhase={client.phase}
           progress={client.progress || 0}
@@ -179,7 +170,7 @@ const ClientDetail = () => {
         
         {/* Phase-specific content */}
         <PhaseContent 
-          phase={selectedPhase}
+          phase={selectedPhase} 
           client={client}
         />
       </div>
