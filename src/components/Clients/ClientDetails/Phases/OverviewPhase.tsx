@@ -1,6 +1,5 @@
 import React from 'react';
 import { Client } from '@/types/revio';
-import CompactPhaseNavigation from '../CompactPhaseNavigation';
 import NextTaskCard from '../NextTaskCard';
 import CompactAccountingStatus from '../CompactAccountingStatus';
 import EnhancedClientInfoCard from '../EnhancedClientInfoCard';
@@ -26,13 +25,7 @@ const OverviewPhase = ({ client }: OverviewPhaseProps) => {
 
   return (
     <div className="space-y-6">
-      {/* 1. Compact Phase Navigation (Top) */}
-      <CompactPhaseNavigation 
-        currentPhase={client.phase}
-        onPhaseClick={handlePhaseClick}
-      />
-      
-      {/* 2. Status Cards Row */}
+      {/* Status Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <NextTaskCard client={client} />
         <CompactAccountingStatus client={client} />
