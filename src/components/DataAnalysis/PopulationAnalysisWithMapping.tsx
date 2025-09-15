@@ -83,23 +83,39 @@ const PopulationAnalysisWithMapping: React.FC<PopulationAnalysisWithMappingProps
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive">Analyse feil</CardTitle>
+            <CardTitle className="text-destructive">Analysefeil</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Det oppstod en feil under populasjonsanalysen.
-            </p>
-            <details className="bg-muted p-3 rounded text-sm">
-              <summary className="cursor-pointer font-medium">Tekniske detaljer</summary>
-              <pre className="mt-2 text-xs overflow-x-auto">
-                {JSON.stringify({
-                  message: analysisError.message,
-                  standards: selectedStandardNumbers,
-                  mappedAccounts: populationAccountNumbers?.length || 0,
-                  version: versionKey
-                }, null, 2)}
-              </pre>
-            </details>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Det oppstod en feil under populasjonsanalysen. Dette kan skyldes:
+                </p>
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  <li>Manglende eller ugyldig regnskapsdata for valgt år</li>
+                  <li>Feilaktige mappinger mellom kontoer og regnskapslinjer</li>
+                  <li>Problemer med databasen eller nettverkstilkobling</li>
+                </ul>
+                <div className="text-xs text-muted-foreground mt-3">
+                  <strong>Forslag til løsning:</strong>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Sjekk at regnskapsdata er lastet opp for året {fiscalYear}</li>
+                    <li>Kontroller at trial balance mappinger eksisterer</li>
+                    <li>Prøv å velge et annet regnskapsår</li>
+                  </ul>
+                </div>
+                <details className="bg-muted p-3 rounded text-xs">
+                  <summary className="cursor-pointer font-medium">Tekniske detaljer</summary>
+                  <pre className="mt-2 text-xs overflow-x-auto">
+                    {JSON.stringify({
+                      message: analysisError.message,
+                      standards: selectedStandardNumbers,
+                      mappedAccounts: populationAccountNumbers?.length || 0,
+                      version: versionKey,
+                      fiscalYear: fiscalYear
+                    }, null, 2)}
+                  </pre>
+                </details>
+              </div>
           </CardContent>
         </Card>
       </div>
@@ -119,9 +135,24 @@ const PopulationAnalysisWithMapping: React.FC<PopulationAnalysisWithMappingProps
             <CardTitle>Tom populasjon</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Ingen kontonumre funnet for valgte standardlinjer. Sjekk at kontoplanen er lastet opp og at trial balance mappings eksisterer.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Ingen kontonummer funnet for valgte standardlinjer. Dette kan skyldes:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                <li>Kontoplanen er ikke lastet opp</li>
+                <li>Trial balance mappinger mangler for valgte linjer</li>
+                <li>Valgte regnskapslinjer har ingen tilhørende kontoer</li>
+              </ul>
+              <div className="text-xs text-muted-foreground mt-3">
+                <strong>Forslag til løsning:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Last opp kontoplan og trial balance data</li>
+                  <li>Sjekk mapping mellom kontoer og regnskapslinjer</li>
+                  <li>Prøv andre standardlinjer eller regnskapsår</li>
+                </ul>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
