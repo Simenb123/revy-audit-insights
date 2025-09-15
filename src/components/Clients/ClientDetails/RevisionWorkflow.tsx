@@ -125,7 +125,7 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                 </div>
 
                 {/* Content */}
-                <div className="pt-2 flex-1">
+                <div className="pt-2 flex-1 text-center">
                   <h3 className={`font-bold text-sm mb-1 ${
                     status === 'current' ? 'text-blue-900' :
                     status === 'completed' ? 'text-green-900' :
@@ -148,7 +148,7 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                       status === 'completed' ? 'text-green-600' :
                       'text-gray-500'
                     }`}>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-center gap-1">
                         <Target className="w-3 h-3" />
                         <span>{completedCount}/{actionCount} handlinger</span>
                       </div>
