@@ -41,11 +41,16 @@ const PopulationAnalysisWithMapping: React.FC<PopulationAnalysisWithMappingProps
     populationAccountNumbers // Pass mapped accounts to gate the query
   );
 
-  // Debug logging (midlertidig)
-  console.debug('[PopulationAnalysisWithMapping] Standards:', selectedStandardNumbers);
-  console.debug('[PopulationAnalysisWithMapping] Mapped accounts:', populationAccountNumbers.length);
-  console.debug('[PopulationAnalysisWithMapping] Analysis enabled:', hasMappedAccounts);
-  console.debug('[PopulationAnalysisWithMapping] Analysis data:', !!analysisData);
+  // Debug logging - structured
+  if (selectedStandardNumbers.length > 0) {
+    console.debug('[PopulationAnalysisWithMapping] Analysis status:', {
+      standards: selectedStandardNumbers,
+      mappedCount: populationAccountNumbers.length,
+      analysisEnabled: hasMappedAccounts,
+      hasAnalysisData: !!analysisData,
+      isLoading: { mapping: isMappingLoading, analysis: isAnalysisLoading }
+    });
+  }
 
   // 3) Rendre tabs uansett - ikke {hasData && <Tabs/>}
   // Check if we have results based on basic stats

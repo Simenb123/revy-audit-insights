@@ -64,26 +64,26 @@ export function useAccountNumberMapping(
 
   // 3. Bygg populasjon (kontonumre) basert på mappinger
   const populationAccountNumbers = useMemo(() => {
-    if (!accounts || !mappings || selectedStandardNumbers.length === 0) {
-      console.debug('[Account Mapping] No data available for mapping');
+    if (!mappings || selectedStandardNumbers.length === 0) {
+      console.debug('[Account Mapping] No mappings or selected standards');
       return [];
     }
 
     const accountSet = new Set<string>();
     
-    // Først prøv direct mappings fra trial_balance_mappings
+    // Map standardnumre til kontonumre via trial_balance_mappings
     mappings.forEach(mapping => {
       if (selectedStandardNumbers.includes(mapping.statement_line_number)) {
         accountSet.add(mapping.account_number);
       }
     });
 
-    console.debug('[Account Mapping] Found', accountSet.size, 'accounts via direct mappings');
+    const mappedAccounts = [...accountSet].sort();
     console.debug('[Account Mapping] Selected standards:', selectedStandardNumbers);
-    console.debug('[Account Mapping] Mapped accounts:', [...accountSet]);
+    console.debug('[Account Mapping] Found', mappedAccounts.length, 'mapped accounts:', mappedAccounts.slice(0, 10), mappedAccounts.length > 10 ? '...' : '');
 
-    return [...accountSet].sort();
-  }, [accounts, mappings, selectedStandardNumbers]);
+    return mappedAccounts;
+  }, [mappings, selectedStandardNumbers]);
 
   const isLoading = isLoadingAccounts || isLoadingMappings;
   

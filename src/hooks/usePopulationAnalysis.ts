@@ -307,11 +307,10 @@ export function usePopulationAnalysis(
         }
       };
     },
-    // 3) Gate: kjør først når mappingen har gitt minst én konto
+    // Enable query when we have client and standards selected
     enabled: 
       !!debouncedClientId && 
-      debouncedSelectedStandardNumbers.length > 0 &&
-      debouncedPopulationAccountNumbers.length > 0, // Wait for mapping
+      debouncedSelectedStandardNumbers.length > 0,
     retry: (failureCount, error: any) => {
       // Don't retry on specific business logic errors
       if (error?.message?.includes('invalid input syntax for type uuid')) {
