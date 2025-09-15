@@ -493,12 +493,12 @@ async function calculateFormula(
 ): Promise<FormulaCalculationResult> {
   try {
     if (!formulaId && !customFormula) {
-      return {
-        value: 0,
-        formattedValue: '0',
-        isValid: false,
-        error: 'Either formulaId or customFormula is required'
-      };
+    return {
+      value: 0,
+      formattedValue: 'Ugyldig',
+      isValid: false,
+      error: 'Either formulaId or customFormula is required'
+    };
     }
 
     if (formulaId) {
@@ -594,7 +594,7 @@ async function calculateFormula(
     logError('Error in calculateFormula:', error);
     return {
       value: 0,
-      formattedValue: '0',
+      formattedValue: 'Feil',
       isValid: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
@@ -666,7 +666,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         value: 0,
-        formattedValue: '0',
+        formattedValue: 'Serverfeil',
         isValid: false,
         error: errorMessage 
       }),

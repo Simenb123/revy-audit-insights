@@ -55,7 +55,7 @@ export interface PopulationAnalysisData {
   };
   timeSeriesAnalysis: {
     monthlyData: TimeSeriesData[];
-    trend: 'stable' | 'increasing' | 'decreasing' | 'insufficient_data';
+    trend: 'stable' | 'increasing' | 'decreasing' | 'ikke_nok_data';
     seasonality: 'none' | 'detected';
   };
   anomalyDetection: {
@@ -182,7 +182,7 @@ export function usePopulationAnalysis(
           closingBalance: number;
         }>;
         trendAnalysis: {
-          trend: 'stable' | 'increasing' | 'decreasing' | 'insufficient_data';
+          trend: 'stable' | 'increasing' | 'decreasing' | 'ikke_nok_data';
           seasonality: 'none' | 'detected';
         };
         timeSeries: Array<{
@@ -274,7 +274,7 @@ export function usePopulationAnalysis(
             transactionCount: ts.transactionCount,
             totalAmount: ts.totalAmount
           })),
-          trend: trendAnalysis?.trend || 'insufficient_data',
+          trend: trendAnalysis?.trend || 'ikke_nok_data',
           seasonality: trendAnalysis?.seasonality || 'none'
         },
         anomalyDetection: {

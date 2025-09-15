@@ -536,12 +536,12 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
               <AlertTriangle className="h-5 w-5" />
               Tom populasjon
             </CardTitle>
-          <CardDescription className="text-amber-600">
-            <div className="space-y-2">
+          <CardDescription>
+            <div className="text-amber-600 space-y-2">
               {populationData?.emptyReason === 'no_standard_accounts' && (
                 <div>
-                  <p><strong>Ingen regnskapslinjer valgt:</strong> Velg en eller flere regnskapslinjer nedenfor.</p>
-                  <p className="text-sm text-amber-700 mt-1">💡 Tips: Bruk hurtigvalgene "Kun Varekostnad" eller "Kun Omsetning".</p>
+                  <div><strong>Ingen regnskapslinjer valgt:</strong> Velg en eller flere regnskapslinjer nedenfor.</div>
+                  <div className="text-sm text-amber-700 mt-1">💡 Tips: Bruk hurtigvalgene "Kun Varekostnad" eller "Kun Omsetning".</div>
                 </div>
               )}
               {populationData?.emptyReason === 'no_matching_accounts' && "Ingen kontoer matcher de valgte regnskapslinjene."}
@@ -549,9 +549,9 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
               {populationData?.emptyReason === 'all_excluded' && "Alle relevante kontoer er ekskludert fra utvalget."}
               {populationData?.metadata?.hasDataForYear === false && (
                 <div>
-                  <p><strong>Ingen data for {params.fiscalYear}:</strong> Regnskapsdata mangler for det valgte året.</p>
+                  <div><strong>Ingen data for {params.fiscalYear}:</strong> Regnskapsdata mangler for det valgte året.</div>
                   {populationData?.metadata?.availableYears && populationData.metadata.availableYears.length > 0 && (
-                    <p className="text-sm mt-1">Tilgjengelige år: <strong>{populationData.metadata.availableYears.join(', ')}</strong></p>
+                    <div className="text-sm mt-1">Tilgjengelige år: <strong>{populationData.metadata.availableYears.join(', ')}</strong></div>
                   )}
                 </div>
               )}

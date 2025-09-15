@@ -133,7 +133,7 @@ export function useEnhancedPopulationAnalysis(
             transactionCount: ts.transactionCount || 0,
             totalAmount: ts.totalAmount || 0
           })),
-          trend: responseData.trendAnalysis?.trend || 'insufficient_data',
+          trend: responseData.trendAnalysis?.trend || 'ikke_nok_data',
           seasonality: responseData.trendAnalysis?.seasonality || 'none'
         },
         anomalyDetection: {

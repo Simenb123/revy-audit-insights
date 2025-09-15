@@ -155,7 +155,18 @@ const PopulationAnalysisSection: React.FC<PopulationAnalysisSectionProps> = ({
                 )}
 
                 <div className="text-sm text-muted-foreground">
-                  Trend: <span className="font-medium capitalize">{analysisData.timeSeriesAnalysis?.trend || 'Ingen data'}</span>
+                  Trend: <span className="font-medium capitalize">
+                    {(() => {
+                      const trend = analysisData.timeSeriesAnalysis?.trend;
+                      switch (trend) {
+                        case 'stable': return 'Stabil';
+                        case 'increasing': return 'Økende';
+                        case 'decreasing': return 'Synkende';
+                        case 'ikke_nok_data': return 'Ikke nok data';
+                        default: return 'Ingen data';
+                      }
+                    })()}
+                  </span>
                 </div>
 
                 <div className="text-sm text-muted-foreground">
