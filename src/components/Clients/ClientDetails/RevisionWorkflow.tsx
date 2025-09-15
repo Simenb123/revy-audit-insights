@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, TrendingUp, ArrowRight, Target } from 'lucide-react';
+import { CheckCircle, TrendingUp, Target } from 'lucide-react';
 import { AuditPhase } from '@/types/revio';
 import { useClientAuditActions } from '@/hooks/useAuditActions';
 import { phaseInfo } from '@/constants/phaseInfo';
@@ -95,7 +95,7 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
             <div key={phase.key} className="relative">
               <div
                 className={`
-                  relative p-3 rounded-xl border-2 transition-all duration-300 group cursor-pointer hover:scale-105 hover:shadow-xl min-h-[120px] flex flex-col justify-between
+                  relative p-2 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl min-h-[80px] flex flex-col justify-between
                   ${status === 'current' 
                     ? 'border-blue-500 bg-blue-50 shadow-xl transform scale-105' 
                     : status === 'completed'
@@ -125,15 +125,15 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                 </div>
 
                 {/* Content */}
-                <div className="pt-3 flex-1">
-                  <h3 className={`font-bold text-base mb-2 ${
+                <div className="pt-2 flex-1">
+                  <h3 className={`font-bold text-sm mb-1 ${
                     status === 'current' ? 'text-blue-900' :
                     status === 'completed' ? 'text-green-900' :
                     'text-gray-700'
                   }`}>
                     {info.label}
                   </h3>
-                  <p className={`text-sm mb-3 ${
+                  <p className={`text-xs mb-2 ${
                     status === 'current' ? 'text-blue-700' :
                     status === 'completed' ? 'text-green-700' :
                     'text-gray-500'
@@ -154,14 +154,6 @@ const RevisionWorkflow = ({ currentPhase, progress, onPhaseClick, clientId }: Re
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Action indicator */}
-                <div className="mt-3 flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className={status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
-                    Vis detaljer
-                  </span>
-                  <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
 
                 {/* Status indicator */}
