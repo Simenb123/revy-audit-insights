@@ -201,7 +201,7 @@ export const useFinancialFrameworkValidation = (
   const totalAssetsResult = useFormulaCalculation({
     clientId,
     fiscalYear,
-    formulaId: '665', // Standard line for Sum eiendeler
+    customFormula: '[665]', // Standard line for Sum eiendeler
     selectedVersion: activeVersion?.id,
     enabled: !!activeVersion
   });
@@ -210,7 +210,7 @@ export const useFinancialFrameworkValidation = (
   const revenueResult = useFormulaCalculation({
     clientId,
     fiscalYear,
-    formulaId: '19', // Standard line for Sum driftsinntekter
+    customFormula: '[19]', // Standard line for Sum driftsinntekter
     selectedVersion: activeVersion?.id,
     enabled: !!activeVersion
   });
