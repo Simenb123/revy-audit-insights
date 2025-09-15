@@ -11,7 +11,7 @@ import {
   useCopyActionsFromTemplate,
   useApplyStandardPackage
 } from '@/hooks/useAuditActions';
-import SubjectAreaNav from './SubjectAreaNav';
+
 import ActionTemplateList from './ActionTemplateList';
 import ClientActionsList from './ClientActionsList';
 import CopyFromClientDialog from './CopyFromClientDialog';
@@ -25,7 +25,7 @@ interface AuditActionsManagerProps {
 }
 
 const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsManagerProps) => {
-  const [selectedArea, setSelectedArea] = useState<string>('sales');
+  
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('client-actions');
   const [helpDismissed, setHelpDismissed] = useLocalStorage<boolean>('audit-actions-help-dismissed', false);
@@ -35,11 +35,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
   const copyActionsMutation = useCopyActionsFromTemplate();
   const applyStandardMutation = useApplyStandardPackage();
 
-  // Calculate action counts per subject area
-  const actionCounts = clientActions.reduce((acc, action) => {
-    acc[action.subject_area] = (acc[action.subject_area] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
 
   // Calculate overall progress
   const totalActions = clientActions.length;
@@ -58,25 +53,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
     }
   };
 
-  // Get the display name for the selected area
-  const getSelectedAreaLabel = (areaKey: string) => {
-    // This would need to be updated to get the display name from subject areas
-    // For now, we'll use a fallback
-    const areaLabels: Record<string, string> = {
-      sales: 'Salg',
-      payroll: 'Lønn',
-      operating_expenses: 'Driftskostnader',
-      inventory: 'Varelager',
-      finance: 'Finans',
-      banking: 'Bank',
-      fixed_assets: 'Anleggsmidler',
-      receivables: 'Kundefordringer',
-      payables: 'Leverandørgjeld',
-      equity: 'Egenkapital',
-      other: 'Annet'
-    };
-    return areaLabels[areaKey] || areaKey;
-  };
 
   if (templatesLoading || actionsLoading) {
     return (
@@ -129,26 +105,14 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Revisjonshandlinger - Fagområder</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SubjectAreaNav
-            selectedArea={selectedArea}
-            onAreaSelect={setSelectedArea}
-            actionCounts={actionCounts}
-          />
-        </CardContent>
-      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="client-actions">
-            Klienthandlinger ({getSelectedAreaLabel(selectedArea)})
+            Klienthandlinger
           </TabsTrigger>
           <TabsTrigger value="templates" onClick={() => setActiveTab('templates')}>
-            Handlingsmaler ({getSelectedAreaLabel(selectedArea)})
+            Handlingsmaler
           </TabsTrigger>
         </TabsList>
         
@@ -184,7 +148,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           
           <ClientActionsList
             actions={clientActions}
-            selectedArea={selectedArea}
             clientId={clientId}
             phase={phase as any}
             onOpenTemplates={() => setActiveTab('templates')}
@@ -194,7 +157,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         <TabsContent value="templates" className="space-y-4">
           <ActionTemplateList
             templates={templates}
-            selectedArea={selectedArea}
             phase={phase as string}
             onCopyToClient={handleCopyToClient}
           />
@@ -205,7 +167,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         open={copyFromClientOpen}
         onOpenChange={setCopyFromClientOpen}
         targetClientId={clientId}
-        selectedArea={selectedArea}
         phase={phase}
       />
     </div>

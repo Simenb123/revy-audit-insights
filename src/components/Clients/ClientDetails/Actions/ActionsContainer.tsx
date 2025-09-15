@@ -25,7 +25,7 @@ import {
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import CopyFromClientDialog from '@/components/AuditActions/CopyFromClientDialog';
-import SubjectAreaNav from '@/components/AuditActions/SubjectAreaNav';
+
 import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
 import { toast } from 'sonner';
 
@@ -36,7 +36,7 @@ interface ActionsContainerProps {
 
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
-  const [selectedArea, setSelectedArea] = useState<string>('sales');
+  
   const [activeTab, setActiveTab] = useState<string>('actions');
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
@@ -50,24 +50,11 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     template.applicable_phases.includes(phase)
   );
 
-// Derived data
-const actionCounts = phaseActions.reduce((acc, a) => {
-  acc[a.subject_area] = (acc[a.subject_area] || 0) + 1;
-  return acc;
-}, {} as Record<string, number>);
 
 const completedActions = phaseActions.filter(action => action.status === 'completed');
 const inProgressActions = phaseActions.filter(action => action.status === 'in_progress');
 const notStartedActions = phaseActions.filter(action => action.status === 'not_started');
 
-// Auto-select first area with actions if current area has none
-React.useEffect(() => {
-  if (!phaseActions.length) return;
-  if (!actionCounts[selectedArea]) {
-    const firstArea = Object.keys(actionCounts).find((k) => actionCounts[k] > 0);
-    if (firstArea) setSelectedArea(firstArea);
-  }
-}, [phaseActions, selectedArea]);
 
   const handleCopyTemplates = async (templateIds: string[]) => {
     try {
@@ -77,14 +64,6 @@ React.useEffect(() => {
         phase
       });
       setActiveTab('actions');
-      if (Array.isArray(inserted) && inserted.length) {
-        const counts = inserted.reduce((acc: Record<string, number>, i: any) => {
-          acc[i.subject_area] = (acc[i.subject_area] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        const topArea = Object.entries(counts).sort((a,b) => b[1]-a[1])[0]?.[0];
-        if (topArea) setSelectedArea(topArea);
-      }
       toast.success('Maler kopiert til klienten');
     } catch (error) {
       logger.error('Error copying templates:', error);
@@ -180,13 +159,6 @@ React.useEffect(() => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <SubjectAreaNav
-              selectedArea={selectedArea}
-              onAreaSelect={setSelectedArea}
-              actionCounts={actionCounts}
-            />
-          </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="actions" className="gap-2">
@@ -210,17 +182,8 @@ React.useEffect(() => {
                     onClick={async () => {
                       try {
                         const inserted = await applyStandardMutation.mutateAsync({ clientId, phase });
-                        // Velg fanen "Mine handlinger" og sett fagområde med flest nye handlinger
                         setActiveTab('actions');
-                        if (Array.isArray(inserted) && inserted.length) {
-                          const counts = inserted.reduce((acc: Record<string, number>, i: any) => {
-                            acc[i.subject_area] = (acc[i.subject_area] || 0) + 1;
-                            return acc;
-                          }, {});
-                          const topArea = Object.entries(counts).sort((a,b) => b[1]-a[1])[0]?.[0];
-                          if (topArea) setSelectedArea(topArea);
-                        }
-                        toast.success('Standardpakke lagt til. Viser fagområde med nye handlinger.');
+                        toast.success('Standardpakke lagt til');
                       } catch (e) {
                         logger.error('Failed to apply standard package', e);
                         toast.error('Kunne ikke legge til standardpakke');
@@ -267,7 +230,6 @@ React.useEffect(() => {
               ) : (
                 <ClientActionsList
                   actions={phaseActions}
-                  selectedArea={selectedArea}
                   clientId={clientId}
                   phase={phase}
                   onOpenTemplates={() => setActiveTab('templates')}
@@ -291,7 +253,6 @@ React.useEffect(() => {
               ) : (
                 <ActionTemplateList
                   templates={phaseTemplates}
-                  selectedArea={selectedArea}
                   phase={phase}
                   onCopyToClient={handleCopyTemplates}
                 />
@@ -313,7 +274,6 @@ React.useEffect(() => {
         open={copyFromClientOpen}
         onOpenChange={setCopyFromClientOpen}
         targetClientId={clientId}
-        selectedArea={selectedArea}
         phase={phase}
       />
     </div>

@@ -21,13 +21,12 @@ import ActionsFilterHeader from './ActionsFilterHeader';
 
 interface ClientActionsListProps {
   actions: ClientAuditAction[];
-  selectedArea: string;
   clientId: string;
   phase: import('@/types/revio').AuditPhase;
   onOpenTemplates?: () => void;
 }
 
-const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTemplates }: ClientActionsListProps) => {
+const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: ClientActionsListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedAction, setSelectedAction] = useState<ClientAuditAction | null>(null);
@@ -43,23 +42,19 @@ const ClientActionsList = ({ actions, selectedArea, clientId, phase, onOpenTempl
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const areaActions = useMemo(() => actions.filter(a => selectedArea === 'all' ? true : a.subject_area === selectedArea), [actions, selectedArea]);
+  const filteredActions = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return actions.filter(action => {
+      const matchesSearch = action.name.toLowerCase().includes(term) || action.description?.toLowerCase().includes(term);
+      const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [actions, searchTerm, statusFilter]);
 
   const handleEdit = (action: ClientAuditAction) => {
     setSelectedAction(action);
     setDrawerOpen(true);
   };
-
-  // Filter actions by selected area, search term, and status
-  const filteredActions = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return actions.filter(action => {
-      const matchesArea = selectedArea === 'all' || action.subject_area === selectedArea;
-      const matchesSearch = action.name.toLowerCase().includes(term) || action.description?.toLowerCase().includes(term);
-      const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
-      return matchesArea && matchesSearch && matchesStatus;
-    });
-  }, [actions, selectedArea, searchTerm, statusFilter]);
 
 const dndEnabled = searchTerm === '' && statusFilter === 'all';
 
@@ -75,10 +70,10 @@ const rowVirtualizer = useWindowVirtualizer({
     if (!dndEnabled) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const fromIndex = areaActions.findIndex(a => a.id === active.id);
-    const toIndex = areaActions.findIndex(a => a.id === over.id);
+    const fromIndex = filteredActions.findIndex(a => a.id === active.id);
+    const toIndex = filteredActions.findIndex(a => a.id === over.id);
     if (fromIndex === -1 || toIndex === -1) return;
-    const reordered = arrayMove(areaActions, fromIndex, toIndex);
+    const reordered = arrayMove(filteredActions, fromIndex, toIndex);
     const updates = reordered.map((a, idx) => ({ id: a.id, sort_order: idx }));
     reorderMutation.mutate({ clientId, updates });
   };
@@ -177,31 +172,28 @@ const rowVirtualizer = useWindowVirtualizer({
         <CardContent>
           {filteredActions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {(() => {
-                const areaSubset = selectedArea === 'all' ? actions : actions.filter(a => a.subject_area === selectedArea);
-                return areaSubset.length === 0 ? (
-                    <div className="space-y-3">
-                      <div>Ingen handlinger funnet for dette fagområdet</div>
-                      <div className="flex items-center gap-2 justify-center">
-                        <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
-                          <Plus size={16} />
-                          Ny handling
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => { if (onOpenTemplates) onOpenTemplates(); else toast('Bytt til fanen Handlingsmaler for å velge maler.'); }}>
-                          Fra mal
-                        </Button>
-                      </div>
-                    </div>
-                ) : (
-                  <div>Ingen handlinger matcher søkekriteriene</div>
-                );
-              })()}
+              {actions.length === 0 ? (
+                <div className="space-y-3">
+                  <div>Ingen handlinger funnet</div>
+                  <div className="flex items-center gap-2 justify-center">
+                    <Button size="sm" className="gap-2" onClick={() => setNewOpen(true)}>
+                      <Plus size={16} />
+                      Ny handling
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { if (onOpenTemplates) onOpenTemplates(); else toast('Bytt til fanen Handlingsmaler for å velge maler.'); }}>
+                      Fra mal
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>Ingen handlinger matcher søkekriteriene</div>
+              )}
             </div>
           ) : dndEnabled ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={areaActions.map(a => a.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={filteredActions.map(a => a.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-3">
-                  {areaActions.map((action) => (
+                  {filteredActions.map((action) => (
                     <SortableActionRow
                       key={action.id}
                       action={action}
@@ -252,15 +244,13 @@ const rowVirtualizer = useWindowVirtualizer({
       />
 
       {(() => {
-        const areaActions = selectedArea === 'all' ? actions : actions.filter(a => a.subject_area === selectedArea);
-        const maxSort = areaActions.length ? Math.max(...areaActions.map(a => a.sort_order || 0)) : 0;
+        const maxSort = actions.length ? Math.max(...actions.map(a => a.sort_order || 0)) : 0;
         const nextSortOrder = maxSort + 1;
         return (
           <NewActionDialog
             open={newOpen}
             onOpenChange={setNewOpen}
             clientId={clientId}
-            selectedArea={selectedArea}
             phase={phase}
             nextSortOrder={nextSortOrder}
             onCreated={(created) => { setSelectedAction(created); setDrawerOpen(true); }}

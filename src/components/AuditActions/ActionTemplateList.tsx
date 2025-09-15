@@ -5,7 +5,6 @@ import FlexibleActionTemplateList from './FlexibleActionTemplateList';
 
 interface ActionTemplateListProps {
   templates: AuditActionTemplate[];
-  selectedArea: string;
   phase?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
@@ -13,7 +12,6 @@ interface ActionTemplateListProps {
 
 const ActionTemplateList = ({ 
   templates, 
-  selectedArea, 
   phase,
   onCopyToClient, 
   onEditTemplate
@@ -21,7 +19,6 @@ const ActionTemplateList = ({
   return (
     <FlexibleActionTemplateList
       templates={templates}
-      selectedArea={selectedArea}
       phase={phase}
       onCopyToClient={onCopyToClient}
       onEditTemplate={onEditTemplate}

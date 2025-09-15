@@ -19,7 +19,7 @@ interface CopyFromClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   targetClientId: string;
-  selectedArea: string;
+  selectedArea?: string;
   phase: string;
 }
 
@@ -42,7 +42,7 @@ const CopyFromClientDialog = ({
   }, [sourceClientId]);
 
   const filteredActions = sourceActions.filter(
-    (a) => a.subject_area === selectedArea
+    (a) => a.phase === phase && (!selectedArea || a.subject_area === selectedArea)
   );
 
   const toggleAction = (id: string, checked: boolean) => {
@@ -104,7 +104,7 @@ const CopyFromClientDialog = ({
               {actionsLoading ? (
                 <p className="text-sm text-muted-foreground">Laster handlinger...</p>
               ) : filteredActions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Ingen handlinger i dette fagområdet.</p>
+                <p className="text-sm text-muted-foreground">Ingen handlinger for denne fasen.</p>
               ) : (
                 filteredActions.map((action) => (
                   <div key={action.id} className="flex items-center gap-2">

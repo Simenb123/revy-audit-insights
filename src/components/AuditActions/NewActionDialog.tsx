@@ -13,7 +13,7 @@ interface NewActionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
-  selectedArea: AuditSubjectArea | string;
+  selectedArea?: AuditSubjectArea | string;
   phase: AuditPhase | string;
   nextSortOrder: number;
   onCreated?: (action: ClientAuditAction) => void;
@@ -52,7 +52,7 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
     template_id: null,
     assigned_to: null,
     reviewed_by: null,
-    subject_area: selectedArea as AuditSubjectArea,
+    subject_area: (selectedArea || 'general') as AuditSubjectArea,
     action_type: values.action_type,
     status: 'not_started',
     phase: phase as AuditPhase,

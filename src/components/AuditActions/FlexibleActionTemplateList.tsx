@@ -18,7 +18,6 @@ import { phaseLabels } from '@/constants/phaseLabels';
 
 interface FlexibleActionTemplateListProps {
   templates: AuditActionTemplate[];
-  selectedArea?: string;
   phase?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
@@ -26,7 +25,6 @@ interface FlexibleActionTemplateListProps {
 
 const FlexibleActionTemplateList = ({ 
   templates, 
-  selectedArea, 
   phase,
   onCopyToClient, 
   onEditTemplate
@@ -44,7 +42,7 @@ const FlexibleActionTemplateList = ({
     phaseFilter,
     setPhaseFilter,
     filteredTemplates
-  } = useTemplateFilters(templates, { selectedArea, initialPhase: phase });
+  } = useTemplateFilters(templates, { initialPhase: phase });
 
   const handleTemplateSelect = (templateId: string, checked: boolean) => {
     if (checked) {
@@ -99,8 +97,7 @@ const FlexibleActionTemplateList = ({
                   Kopier valgte ({selectedTemplates.length})
                 </Button>
               )}
-              <CreateActionTemplateDialog 
-                selectedArea={selectedArea}
+               <CreateActionTemplateDialog 
                 trigger={
                   <Button size="sm">
                     Ny handlingsmal
@@ -168,7 +165,6 @@ const FlexibleActionTemplateList = ({
 
       {viewMode === 'enhanced' ? (
         <EnhancedActionTemplateList
-          selectedArea={selectedArea}
           onCopyToClient={onCopyToClient}
           onEditTemplate={onEditTemplate}
           phase={phase}
@@ -181,7 +177,6 @@ const FlexibleActionTemplateList = ({
               <CardContent className="p-6 text-center text-gray-500">
                 <p className="mb-4">Ingen handlingsmaler funnet med de valgte filtrene.</p>
                 <CreateActionTemplateDialog 
-                  selectedArea={selectedArea}
                   trigger={
                     <Button>
                       Opprett første handlingsmal
