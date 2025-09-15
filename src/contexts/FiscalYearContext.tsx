@@ -23,9 +23,10 @@ export const FiscalYearProvider = ({ children }: { children: React.ReactNode }) 
     return localStorage.getItem('selectedClientId') || null;
   });
   const [selectedFiscalYear, setSelectedFiscalYear] = useState(() => {
-    const stored = localStorage.getItem('selectedFiscalYear');
-    // Default to 2024 for this specific client to ensure we get actual trial balance data
-    return stored ? parseInt(stored, 10) : 2024;
+    // Force reset to 2024 to ensure we use the year with actual accounting data
+    // Clear any cached values that might be set to 2025
+    localStorage.removeItem('selectedFiscalYear');
+    return 2024;
   });
 
   // Generate fiscal year options (current year and 5 years back/forward)
