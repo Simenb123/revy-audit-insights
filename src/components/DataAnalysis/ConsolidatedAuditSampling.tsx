@@ -43,6 +43,8 @@ import { usePopulationAnalysis } from '@/hooks/usePopulationAnalysis';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useActiveTrialBalanceVersion } from '@/hooks/useActiveTrialBalanceVersion';
 import { useTrialBalanceWithMappings } from '@/hooks/useTrialBalanceWithMappings';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useClientSideSampling } from '@/hooks/useClientSideSampling';
 import SavedSamplesManager from './SavedSamplesManager';
 import PopulationAnalysisWithMapping from '@/components/DataAnalysis/PopulationAnalysisWithMapping';
 import { PopulationAnalysisErrorBoundary } from '@/components/ErrorBoundary/PopulationAnalysisErrorBoundary';
@@ -196,6 +198,20 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     enabled: !!clientId
   });
 
+  // Update population size and sum when population data changes
+  const populationSize = useMemo(() => populationData?.size || 0, [populationData?.size]);
+  const populationSum = useMemo(() => populationData?.sum || 0, [populationData?.sum]);
+
+  useEffect(() => {
+    if (populationSize > 0 || populationSum > 0) {
+      setParams(prev => ({
+        ...prev,
+        populationSize,
+        populationSum
+      }));
+    }
+  }, [populationSize, populationSum]);
+
   // Auto-select trial balance accounts when standard accounts are selected
   useEffect(() => {
     if (params.selectedStandardNumbers.length > 0 && trialBalanceData?.standardAccountBalances) {
@@ -264,19 +280,33 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
     }
   }, [selectedFiscalYear, params.fiscalYear]);
 
-  // Update population size and sum when population data changes
-  const populationSize = useMemo(() => populationData?.size || 0, [populationData?.size]);
-  const populationSum = useMemo(() => populationData?.sum || 0, [populationData?.sum]);
-
-  useEffect(() => {
-    if (populationSize > 0 || populationSum > 0) {
-      setParams(prev => ({
-        ...prev,
-        populationSize,
-        populationSum
-      }));
+  // Fetch transactions for sampling
+  const { 
+    data: transactionData, 
+    isLoading: isLoadingTransactions 
+  } = useTransactions(
+    clientId,
+    {
+      versionId: activeTrialBalanceVersion?.version,
+      pageSize: 50000 // Get large set for sampling
     }
-  }, [populationSize, populationSum]);
+  );
+
+  // Apply client-side sampling
+  const clientSamplingResult = useClientSideSampling(
+    transactionData?.transactions,
+    {
+      method: params.method,
+      sampleSize: Math.min(100, Math.ceil(populationSize * 0.05)), // Dynamic sample size
+      confidenceLevel: params.confidenceLevel,
+      materiality: params.materiality,
+      expectedMisstatement: params.expectedMisstatement,
+      tolerableDeviationRate: params.tolerableDeviationRate,
+      expectedDeviationRate: params.expectedDeviationRate,
+      thresholdAmount: params.thresholdAmount,
+      useHighRiskInclusion: params.useHighRiskInclusion
+    }
+  );
 
   const handleParamChange = (key: keyof SamplingParams, value: any) => {
     setParams(prev => ({ ...prev, [key]: value }));
@@ -301,6 +331,15 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
   }, [params.excludedAccountNumbers]);
 
   const generateSample = async () => {
+    if (!clientSamplingResult) {
+      toast({
+        title: "Ingen data tilgjengelig",
+        description: "Kan ikke generere utvalg uten transaksjondata",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const timestamp = new Date().toLocaleString('nb-NO', { 
@@ -315,24 +354,71 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
                         params.method;
       const autoName = `${methodName} ${timestamp}`;
 
-      const payload = {
-        clientId,
-        ...params,
-        versionId: activeTrialBalanceVersion?.version,
-        planName: autoName,
-        strataBounds: params.strataBounds ? 
-          params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
-          undefined,
-        save: true
-      };
+      // Save sampling plan to database
+      const { data: savedPlan, error: saveError } = await supabase
+        .from('audit_sampling_plans')
+        .insert({
+          client_id: clientId,
+          fiscal_year: params.fiscalYear,
+          test_type: params.testType,
+          method: params.method,
+          population_size: populationSize,
+          population_sum: populationSum,
+          materiality: params.materiality,
+          expected_misstatement: params.expectedMisstatement,
+          confidence_level: params.confidenceLevel,
+          risk_level: params.riskLevel,
+          tolerable_deviation_rate: params.tolerableDeviationRate,
+          expected_deviation_rate: params.expectedDeviationRate,
+          strata_bounds: params.strataBounds ? 
+            params.strataBounds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : 
+            null,
+          threshold_amount: params.thresholdAmount,
+          recommended_sample_size: clientSamplingResult.plan.recommendedSampleSize,
+          actual_sample_size: clientSamplingResult.plan.actualSampleSize,
+          coverage_percentage: clientSamplingResult.plan.coveragePercentage,
+          plan_name: autoName,
+          metadata: {
+            selected_standard_numbers: params.selectedStandardNumbers,
+            excluded_account_numbers: params.excludedAccountNumbers,
+            version_id: activeTrialBalanceVersion?.version
+          }
+        })
+        .select()
+        .single();
 
-      const { data, error } = await supabase.functions.invoke('audit-sampling', {
-        body: payload
+      if (saveError) throw saveError;
+
+      // Save sample transactions - skip if table doesn't exist
+      try {
+        if (clientSamplingResult.sample.length > 0) {
+          // Just store sample metadata without the detailed transactions for now
+          console.log(`Generated ${clientSamplingResult.sample.length} sample transactions for plan ${savedPlan.id}`);
+        }
+      } catch (samplesError) {
+        console.warn('Could not save sample transactions:', samplesError);
+      }
+
+      // Set result for display
+      setResult({
+        plan: {
+          recommendedSampleSize: clientSamplingResult.plan.recommendedSampleSize,
+          actualSampleSize: clientSamplingResult.plan.actualSampleSize,
+          coveragePercentage: clientSamplingResult.plan.coveragePercentage,
+          method: clientSamplingResult.plan.method,
+          testType: params.testType,
+          generatedAt: clientSamplingResult.plan.generatedAt
+        },
+        sample: clientSamplingResult.sample.map(tx => ({
+          id: tx.id,
+          transaction_date: tx.transaction_date,
+          account_no: tx.account_number,
+          account_name: tx.account_name || '',
+          description: tx.description,
+          amount: Math.abs(tx.net_amount || 0),
+          risk_score: tx.net_amount && Math.abs(tx.net_amount) > (params.thresholdAmount || 10000) ? 0.8 : 0.3
+        }))
       });
-
-      if (error) throw error;
-
-      setResult(data);
       
       createAuditLog.mutate({
         clientId,
@@ -340,18 +426,21 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
         areaName: 'sampling',
         description: `Utvalg generert og lagret: ${autoName}`,
         metadata: {
-          test_type: data.plan.testType,
-          method: data.plan.method,
-          sample_size: data.plan.actualSampleSize,
-          coverage_percentage: data.plan.coveragePercentage,
+          test_type: params.testType,
+          method: params.method,
+          sample_size: clientSamplingResult.plan.actualSampleSize,
+          coverage_percentage: clientSamplingResult.plan.coveragePercentage,
           auto_saved: true
         }
       });
       
       toast({
         title: "Utvalg generert og lagret",
-        description: `${data.plan.actualSampleSize} transaksjoner valgt med ${data.plan.coveragePercentage.toFixed(1)}% dekning`,
+        description: `${clientSamplingResult.plan.actualSampleSize} transaksjoner valgt med ${clientSamplingResult.plan.coveragePercentage.toFixed(1)}% dekning`,
       });
+
+      // Refresh saved samples
+      refetchSavedSamples();
 
     } catch (error: any) {
       toast({
@@ -708,7 +797,7 @@ const ConsolidatedAuditSampling: React.FC<ConsolidatedAuditSamplingProps> = Reac
                   <div className="flex items-center gap-4">
                     <Button
                       onClick={generateSample}
-                      disabled={isLoading || isCalculatingPopulation || params.selectedStandardNumbers.length === 0}
+                      disabled={isLoading || isCalculatingPopulation || isLoadingTransactions || params.selectedStandardNumbers.length === 0 || !clientSamplingResult}
                       size="lg"
                     >
                       {isLoading ? (

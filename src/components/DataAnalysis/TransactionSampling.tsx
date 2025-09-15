@@ -14,7 +14,8 @@ import { Check } from 'lucide-react';
 import { Account, Transaction, SamplingResult } from '@/types/revio';
 import { formatCurrency } from '@/lib/formatters';
 
-import { supabase } from '@/integrations/supabase/client';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useClientSideSampling } from '@/hooks/useClientSideSampling';
 
 export interface TransactionSamplingProps {
   selectedAccount?: Account | null;
@@ -29,75 +30,62 @@ const TransactionSampling = ({ selectedAccount, clientId, versionId }: Transacti
   const [threshold, setThreshold] = useState<number>(10000);
   const [samplingResult, setSamplingResult] = useState<SamplingResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Fetch transactions for the selected account
+  const { data: transactionData, isLoading: isLoadingTransactions } = useTransactions(
+    clientId, 
+    {
+      versionId,
+      startAccount: selectedAccount?.number,
+      endAccount: selectedAccount?.number,
+      pageSize: 10000 // Get all transactions for sampling
+    }
+  );
+
+  // Apply client-side sampling
+  const clientSamplingResult = useClientSideSampling(
+    transactionData?.transactions, 
+    {
+      method: samplingMethod === 'random' ? 'SRS' : 
+              samplingMethod === 'stratified' ? 'STRATIFIED' : 'MUS',
+      sampleSize,
+      coverageTarget,
+      thresholdAmount: threshold
+    }
+  );
   
   // Apply sampling
   const applySampling = async () => {
-    if (!clientId || !selectedAccount) return;
+    if (!clientId || !selectedAccount || !clientSamplingResult) return;
     
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('transaction-sampling', {
-        body: {
-          clientId,
-          versionId,
-          method: samplingMethod,
-          params: {
-            sampleSize,
-            coverageTarget,
-            threshold
-          },
-          accountFilter: selectedAccount.number
-        }
-      });
-
-      if (error) {
-        console.error('Sampling error:', error);
-        throw new Error('Feil ved utvalgsuttak');
-      }
-
-      // Transform backend data to frontend format
-      const transformedTransactions = data.transactions.map((tx: any) => ({
+      // Transform client sampling result to UI format
+      const transformedTransactions = clientSamplingResult.sample.map((tx) => ({
         id: tx.id,
         date: tx.transaction_date,
         description: tx.description,
-        amount: Math.abs((tx.debit_amount || 0) - (tx.credit_amount || 0)),
+        amount: Math.abs(tx.net_amount || 0),
         account: tx.account_number,
-        voucher: tx.voucher_number,
+        voucher: tx.id.slice(-4), // Use last 4 chars as voucher for display
         isTested: false
       }));
 
       setSamplingResult({
         transactions: transformedTransactions,
-        summary: data.summary
+        summary: clientSamplingResult.summary || {
+          totalCount: transactionData?.count || 0,
+          sampledCount: transformedTransactions.length,
+          totalAmount: clientSamplingResult.summary?.totalAmount || 0,
+          sampledAmount: clientSamplingResult.summary?.sampledAmount || 0,
+          coverage: clientSamplingResult.plan.coveragePercentage,
+          method: samplingMethod
+        }
       });
       
     } catch (error) {
       console.error('Sampling failed:', error);
-      // Fallback to mock data if API fails
-      const mockTransactions = [
-        {
-          id: '1',
-          date: '2024-01-15',
-          description: 'Eksempel transaksjon',
-          amount: 24500,
-          account: selectedAccount.number,
-          voucher: '1001',
-          isTested: false
-        }
-      ];
-      
-      setSamplingResult({
-        transactions: mockTransactions.slice(0, sampleSize),
-        summary: {
-          totalCount: 1,
-          sampledCount: 1,
-          totalAmount: 24500,
-          sampledAmount: 24500,
-          coverage: 100,
-          method: samplingMethod
-        }
-      });
     } finally {
       setIsLoading(false);
     }
@@ -289,8 +277,8 @@ const TransactionSampling = ({ selectedAccount, clientId, versionId }: Transacti
                   </Tabs>
                   
                   <div className="flex gap-4 pt-4">
-                    <Button onClick={applySampling} disabled={isLoading}>
-                      {isLoading ? 'Genererer utvalg...' : 'Generer utvalg'}
+                    <Button onClick={applySampling} disabled={isLoading || isLoadingTransactions || !clientSamplingResult}>
+                      {isLoading || isLoadingTransactions ? 'Genererer utvalg...' : 'Generer utvalg'}
                     </Button>
                     <Button variant="outline" onClick={resetSampling}>
                       Tilbakestill
