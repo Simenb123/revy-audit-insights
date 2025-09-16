@@ -208,19 +208,32 @@ const LargeDatasetUploader: React.FC<LargeDatasetUploaderProps> = ({
     console.log('🚀 DEBUG: startShareholderServerJob called', { 
       fileName: file.name, 
       fileSize: file.size, 
-      mapping: sampleMapping 
+      mapping: sampleMapping,
+      useTUS: file.size > 6 * 1024 * 1024 // Log TUS usage for files > 6MB
     });
     
     try {
       const result = await uploadAndStartImport(file, { 
         mapping: sampleMapping,
         onProgress: (progress) => {
-          // Update upload progress in UI
-          const uploadPercent = Math.round((progress.percentage / 2)); // Upload is 50% of total process
+          // TUS upload progress (0-100% for upload phase)
           if (onProgress) {
             onProgress({
-              percent: uploadPercent,
-              status: `Laster opp fil: ${progress.percentage}%`,
+              percent: Math.round(progress.percentage * 0.4), // Upload is 40% of total process
+              status: file.size > 6 * 1024 * 1024 
+                ? `TUS opplasting: ${progress.percentage}% (${Math.round(progress.loaded/1024/1024)}MB/${Math.round(progress.total/1024/1024)}MB)`
+                : `Laster opp fil: ${progress.percentage}%`,
+              eta: undefined
+            });
+          }
+        },
+        onProcessProgress: (processed, total) => {
+          // Processing progress (40-100% of total process)
+          const processingPercent = total > 0 ? (processed / total) * 60 : 0; // 60% for processing
+          if (onProgress) {
+            onProgress({
+              percent: 40 + Math.round(processingPercent), // 40% upload + 60% processing
+              status: `Behandler data: ${processed.toLocaleString()} / ${total.toLocaleString()} rader`,
               eta: undefined
             });
           }

@@ -93,7 +93,7 @@ export async function uploadAndStartImport(
 
   // 3) Process file in chunks
   let offset = 0;
-  const limit = 100000; // Process 100k rows per chunk
+  const limit = 50000; // Process 50k rows per chunk (reduced to prevent CPU timeout)
   let totalProcessed = 0;
   
   console.log('🔄 Starting chunked processing...');
