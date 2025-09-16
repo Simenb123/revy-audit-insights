@@ -32,26 +32,50 @@ export async function tusUpload(
     path 
   });
 
-  // Get authentication session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  // Check initial authentication session
+  const { data: { session: initialSession } } = await supabase.auth.getSession();
+  if (!initialSession) {
     throw new Error('No active session for TUS upload');
   }
 
+  // Check if token expires soon and refresh proactively
+  const tokenExpiresAt = initialSession.expires_at ? initialSession.expires_at * 1000 : 0;
+  const now = Date.now();
+  const timeUntilExpiry = tokenExpiresAt - now;
+  
+  if (timeUntilExpiry < 5 * 60 * 1000) { // Less than 5 minutes
+    console.log('🔄 Token expires soon, refreshing proactively');
+    await supabase.auth.refreshSession();
+  }
+
   // Construct the TUS resumable endpoint
-  const supabaseUrl = 'https://fxelhfwaoizqyecikscu.supabase.co';
   const projectId = 'fxelhfwaoizqyecikscu';
   const endpoint = `https://${projectId}.supabase.co/storage/v1/upload/resumable`;
 
   let retryCount = 0;
+  let authRetryCount = 0;
 
   return new Promise<{ path: string; fullPath: string }>((resolve, reject) => {
+    // Function to get fresh token for each request
+    const getFreshToken = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error('No valid session available');
+        }
+        return session.access_token;
+      } catch (error) {
+        console.error('❌ Failed to get fresh token:', error);
+        throw error;
+      }
+    };
+
     const upload = new tus.Upload(file, {
       endpoint,
       chunkSize: 6 * 1024 * 1024, // 6MB chunks
-      retryDelays: [0, 3000, 5000, 10000, 20000],
+      retryDelays: [0, 1000, 3000, 5000, 10000, 20000], // Increased retry attempts
+      // Remove static authorization header - use beforeRequest instead
       headers: {
-        authorization: `Bearer ${session.access_token}`,
         'x-upsert': 'true'
       },
       uploadDataDuringCreation: true,
@@ -62,8 +86,43 @@ export async function tusUpload(
         contentType: contentType || file.type || 'text/csv',
         cacheControl: '3600'
       },
-      onError: (error) => {
+      // Dynamic token renewal for each request  
+      onBeforeRequest: async (req: any) => {
+        try {
+          const token = await getFreshToken();
+          req.setHeader('Authorization', `Bearer ${token}`);
+          console.log('🔄 Updated authorization header for TUS request');
+        } catch (error) {
+          console.error('❌ Failed to set authorization header:', error);
+          throw error;
+        }
+      },
+      onError: async (error) => {
         console.error(`❌ TUS upload error (attempt ${retryCount + 1}):`, error);
+        
+        // Handle authentication errors specifically
+        if (error.message.includes('Unauthorized') || 
+            error.message.includes('AccessDenied') ||
+            error.message.includes('exp') ||
+            error.message.includes('403') ||
+            error.message.includes('401')) {
+          
+          authRetryCount++;
+          console.log(`🔐 Authentication error detected (${authRetryCount}/3), attempting token refresh...`);
+          
+          if (authRetryCount <= 3) {
+            try {
+              // Force token refresh
+              await supabase.auth.refreshSession();
+              console.log('✅ Token refreshed successfully, retrying upload');
+              // Let TUS handle the retry with fresh token via beforeRequest
+              return;
+            } catch (refreshError) {
+              console.error('❌ Failed to refresh token:', refreshError);
+            }
+          }
+        }
+        
         if (onRetry) {
           onRetry(++retryCount, error);
         }
