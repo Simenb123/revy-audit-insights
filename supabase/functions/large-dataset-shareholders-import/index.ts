@@ -79,9 +79,28 @@ serve(async (req) => {
       throw new Error("Missing required parameters for process action");
     }
 
-    // Signed URL for streaming
-    const { data: signed, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
-    if (signErr) throw signErr;
+    // Signed URL for streaming - wait for TUS upload completion if needed
+    let signed, signErr;
+    let retryCount = 0;
+    const maxRetries = 5;
+    
+    while (retryCount < maxRetries) {
+      const result = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      signed = result.data;
+      signErr = result.error;
+      
+      if (!signErr) break;
+      
+      // If file not found and it's a recent TUS upload, wait and retry
+      if (signErr.message?.includes('Object not found') && retryCount < maxRetries - 1) {
+        console.log(`File not found, retrying in ${(retryCount + 1) * 2}s (attempt ${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        retryCount++;
+        continue;
+      }
+      
+      throw signErr;
+    }
 
     const resp = await fetch(signed.signedUrl);
     if (!resp.ok || !resp.body) throw new Error(`Storage fetch failed: ${resp.status}`);
