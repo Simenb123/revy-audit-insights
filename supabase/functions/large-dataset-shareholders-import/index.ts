@@ -139,6 +139,8 @@ serve(async (req) => {
     const pool = new Pool(dbUrl, 1, true);
     const conn = await pool.connect();
     let rowsProcessed = 0;
+    let processedInChunk = 0;
+    let isEOF = false;
 
     try {
       // Create staging table if it doesn't exist
@@ -172,7 +174,6 @@ serve(async (req) => {
       let batch: any[] = [];
       const batchSize = 500; // Increase batch size for chunked processing
       let batchCount = 0;
-      let processedInChunk = 0;
 
       // FORENKLET sanitizeRow for minimal CPU-bruk
       function sanitizeRow(row: Record<string, any>) {
@@ -304,7 +305,7 @@ serve(async (req) => {
 
       // Check if we've reached EOF
       const { value, done } = await reader.read();
-      const isEOF = done && (!value || value.length === 0) && buf.trim().length === 0;
+      isEOF = done && (!value || value.length === 0) && buf.trim().length === 0;
       
       if (isEOF || processedInChunk === 0) {
         // This is the last chunk, process staging data into production tables

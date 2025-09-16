@@ -1,84 +1,82 @@
 /* Dashboard-specific animations and transitions */
 
-@layer utilities {
-  /* Widget animations */
-  .widget-enter {
-    animation: widget-slide-in 0.3s ease-out;
-  }
+/* Widget animations */
+.widget-enter {
+  animation: widget-slide-in 0.3s ease-out;
+}
+
+.widget-exit {
+  animation: widget-slide-out 0.2s ease-in;
+}
+
+.widget-loading {
+  animation: widget-pulse 1.5s ease-in-out infinite;
+}
+
+.widget-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.widget-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+}
+
+/* Layout transition animations */
+.layout-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dashboard performance indicators */
+.perf-good {
+  animation: pulse-success 2s ease-in-out infinite;
+}
   
-  .widget-exit {
-    animation: widget-slide-out 0.2s ease-in;
-  }
-  
-  .widget-loading {
-    animation: widget-pulse 1.5s ease-in-out infinite;
-  }
-  
-  .widget-hover {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .widget-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Layout transition animations */
-  .layout-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  /* Dashboard performance indicators */
-  .perf-good {
-    animation: pulse-success 2s ease-in-out infinite;
-  }
-  
-  .perf-warning {
-    animation: pulse-warning 2s ease-in-out infinite;
-  }
-  
-  .perf-critical {
-    animation: pulse-critical 1s ease-in-out infinite;
-  }
-  
-  /* Grid layout animations */
-  .grid-item-enter {
-    animation: scale-in-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  
-  .grid-item-exit {
-    animation: scale-out 0.2s ease-in;
-  }
-  
-  /* Loading states */
-  .skeleton-wave {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--muted-foreground) / 0.1) 50%,
-      hsl(var(--muted)) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-wave 1.5s ease-in-out infinite;
-  }
-  
-  /* Micro-interactions */
-  .interactive-scale {
-    transition: transform 0.1s ease-out;
-  }
-  
-  .interactive-scale:active {
-    transform: scale(0.98);
-  }
-  
-  /* Theme transitions */
-  .theme-transition {
-    transition: 
-      background-color 0.3s ease,
-      border-color 0.3s ease,
-      color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
+.perf-warning {
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.perf-critical {
+  animation: pulse-critical 1s ease-in-out infinite;
+}
+
+/* Grid layout animations */
+.grid-item-enter {
+  animation: scale-in-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.grid-item-exit {
+  animation: scale-out 0.2s ease-in;
+}
+
+/* Loading states */
+.skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+/* Micro-interactions */
+.interactive-scale {
+  transition: transform 0.1s ease-out;
+}
+
+.interactive-scale:active {
+  transform: scale(0.98);
+}
+
+/* Theme transitions */
+.theme-transition {
+  transition: 
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 /* Keyframe definitions */
