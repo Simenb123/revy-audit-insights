@@ -79,33 +79,54 @@ serve(async (req) => {
       throw new Error("Missing required parameters for process action");
     }
 
+    console.log(`Processing chunk for jobId=${jobId}, bucket=${bucket}, path=${path}, offset=${offset}, limit=${limit}`);
+
     // Signed URL for streaming - wait for TUS upload completion if needed
     let signed, signErr;
     let retryCount = 0;
-    const maxRetries = 5;
+    const maxRetries = 8; // Increased retries for TUS uploads
     
     while (retryCount < maxRetries) {
+      console.log(`Attempting to get signed URL for ${bucket}/${path} (attempt ${retryCount + 1}/${maxRetries})`);
+      
       const result = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
       signed = result.data;
       signErr = result.error;
       
-      if (!signErr) break;
+      if (!signErr && signed?.signedUrl) {
+        console.log(`✅ Successfully got signed URL: ${signed.signedUrl.substring(0, 100)}...`);
+        break;
+      }
       
-      // If file not found and it's a recent TUS upload, wait and retry
-      if (signErr.message?.includes('Object not found') && retryCount < maxRetries - 1) {
-        console.log(`File not found, retrying in ${(retryCount + 1) * 2}s (attempt ${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+      // Enhanced error logging and retry logic for TUS uploads
+      console.log(`❌ Storage error (attempt ${retryCount + 1}): ${signErr?.message || 'Unknown error'}`);
+      
+      if (signErr?.message?.includes('Object not found') && retryCount < maxRetries - 1) {
+        const waitTime = Math.min((retryCount + 1) * 3000, 15000); // Max 15s wait
+        console.log(`🔄 File not found, likely TUS upload still processing. Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         retryCount++;
         continue;
       }
       
-      throw signErr;
+      // If we've exhausted retries or it's a different error, throw
+      throw new Error(`Storage access failed after ${retryCount + 1} attempts: ${signErr?.message || 'Unknown storage error'}`);
     }
 
-    const resp = await fetch(signed.signedUrl);
-    if (!resp.ok || !resp.body) throw new Error(`Storage fetch failed: ${resp.status}`);
+    if (!signed?.signedUrl) {
+      throw new Error('Failed to get signed URL from storage');
+    }
 
-    console.log(`Fetched file from storage, processing chunk offset=${offset}, limit=${limit}...`);
+    console.log(`🌐 Fetching file content from signed URL...`);
+    const resp = await fetch(signed.signedUrl);
+    if (!resp.ok) {
+      throw new Error(`Storage fetch failed: ${resp.status} ${resp.statusText}. URL: ${signed.signedUrl.substring(0, 100)}...`);
+    }
+    if (!resp.body) {
+      throw new Error('No response body from storage fetch');
+    }
+
+    console.log(`✅ Successfully fetched file from storage (${resp.headers.get('content-length')} bytes), processing chunk offset=${offset}, limit=${limit}...`);
 
     // Les headerlinje og skip til offset
     const decoder = new TextDecoder();
@@ -433,22 +454,39 @@ serve(async (req) => {
     });
 
   } catch (e: any) {
-    console.error('Import error:', e);
+    const errorMessage = String(e?.message ?? e);
+    console.error('❌ Import error:', errorMessage);
+    console.error('❌ Full error object:', e);
+    console.error('❌ Stack trace:', e?.stack);
     
-    // Update job status on error
+    // Update job status on error with detailed error info
     try {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!, 
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
       await supabase.from('import_jobs')
-        .update({ status: 'error', error: String(e?.message ?? e) })
+        .update({ 
+          status: 'error', 
+          error: errorMessage,
+          rows_loaded: 0 // Reset on error
+        })
         .eq('status', 'running');
-    } catch {}
+      console.log('📝 Updated job status to error in database');
+    } catch (dbError) {
+      console.error('❌ Failed to update job status:', dbError);
+    }
 
-    return new Response(String(e?.message ?? e), { 
+    // Return detailed error response
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: {
+        type: e?.constructor?.name || 'UnknownError',
+        stack: e?.stack?.split('\n').slice(0, 5) // First 5 lines of stack
+      }
+    }), { 
       status: 500,
-      headers: corsHeaders 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
