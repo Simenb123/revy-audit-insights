@@ -406,7 +406,7 @@ serve(async (req) => {
         // Start transaction for the three-step loading
         await conn.queryArray`BEGIN`;
 
-        // 1) COMPANIES: upsert based on orgnr
+        // 1) COMPANIES: upsert based on orgnr, year, user_id
         await conn.queryArray`
           INSERT INTO share_companies (orgnr, name, year, user_id)
           SELECT DISTINCT
@@ -416,12 +416,12 @@ serve(async (req) => {
             user_id
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
-          ON CONFLICT (orgnr, year) DO UPDATE
+          ON CONFLICT (orgnr, year, user_id) DO UPDATE
             SET name = EXCLUDED.name,
                 user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
         `;
 
-        // 2) ENTITIES: upsert on stable key (entity_key)
+        // 2) ENTITIES: upsert on stable key (entity_key, user_id)
         await conn.queryArray`
           INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
           SELECT DISTINCT
@@ -443,7 +443,7 @@ serve(async (req) => {
             user_id
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-          ON CONFLICT (entity_key) DO UPDATE
+          ON CONFLICT (entity_key, user_id) DO UPDATE
             SET
               name = EXCLUDED.name,
               orgnr = COALESCE(share_entities.orgnr, EXCLUDED.orgnr),
@@ -453,7 +453,7 @@ serve(async (req) => {
               user_id = COALESCE(share_entities.user_id, EXCLUDED.user_id)
         `;
 
-        // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key)
+        // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key, including user_id)
         await conn.queryArray`
           INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
           SELECT
@@ -468,7 +468,7 @@ serve(async (req) => {
             ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
           WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
             AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
-          ON CONFLICT (company_orgnr, holder_id, share_class, year) DO UPDATE
+          ON CONFLICT (company_orgnr, holder_id, share_class, year, user_id) DO UPDATE
             SET shares = EXCLUDED.shares,
                 user_id = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
         `;
