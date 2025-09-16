@@ -18,7 +18,7 @@ serve(async (req) => {
 
   try {
     if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
-    const { action, bucket, path, mapping, jobId, offset = 0, limit = 100000 } = await req.json() as {
+    const { action, bucket, path, mapping, jobId, offset = 0, limit = 50000 } = await req.json() as {
       action: "init" | "process";
       bucket?: string;
       path?: string;
@@ -144,8 +144,9 @@ serve(async (req) => {
 
     try {
       // Create staging table if it doesn't exist
+      await conn.queryArray`DROP TABLE IF EXISTS shareholders_staging`;
       await conn.queryArray`
-        CREATE UNLOGGED TABLE IF NOT EXISTS shareholders_staging (
+        CREATE UNLOGGED TABLE shareholders_staging (
           id SERIAL PRIMARY KEY,
           orgnr TEXT,
           selskap TEXT,

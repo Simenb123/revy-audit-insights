@@ -80,7 +80,7 @@ export function ShareholderRegister() {
                   maxFileSize={500 * 1024 * 1024} // 500MB
                   enableWebWorker={true}
                   enableStreaming={true}
-                  chunkSize={100000} // 100K rader per chunk
+                  chunkSize={50000} // 50K rader per chunk
                   onComplete={(results) => {
                     // Map to existing callback format
                     const totalRows = results.reduce((sum, result) => sum + result.totalRows, 0)
