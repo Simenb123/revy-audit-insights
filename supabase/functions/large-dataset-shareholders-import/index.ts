@@ -81,15 +81,66 @@ serve(async (req) => {
 
     console.log(`Processing chunk for jobId=${jobId}, bucket=${bucket}, path=${path}, offset=${offset}, limit=${limit}`);
 
-    // Signed URL for streaming - wait for TUS upload completion if needed
+    // Fix path to avoid bucket duplication (e.g., if path is "imports/shareholders/file.csv" and bucket is "imports")
+    let cleanPath = path;
+    if (path.startsWith(`${bucket}/`)) {
+      cleanPath = path.substring(bucket.length + 1);
+      console.log(`🔧 Cleaned path from "${path}" to "${cleanPath}" (removed bucket prefix)`);
+    }
+
+    console.log(`📁 Using bucket: "${bucket}", path: "${cleanPath}"`);
+
+    // First check if object exists before attempting signed URL
+    let objectExists = false;
+    let existsRetryCount = 0;
+    const maxExistsRetries = 8;
+
+    while (existsRetryCount < maxExistsRetries && !objectExists) {
+      try {
+        console.log(`🔍 Checking if object exists: ${bucket}/${cleanPath} (attempt ${existsRetryCount + 1}/${maxExistsRetries})`);
+        
+        const listResult = await supabase.storage.from(bucket).list(
+          cleanPath.substring(0, cleanPath.lastIndexOf('/')),
+          { search: cleanPath.substring(cleanPath.lastIndexOf('/') + 1) }
+        );
+        
+        if (listResult.error) {
+          throw listResult.error;
+        }
+        
+        objectExists = listResult.data && listResult.data.length > 0;
+        
+        if (objectExists) {
+          console.log(`✅ Object confirmed to exist in storage`);
+          break;
+        } else if (existsRetryCount < maxExistsRetries - 1) {
+          const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
+          console.log(`⏳ Object not found yet, likely TUS upload still processing. Waiting ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      } catch (checkError) {
+        console.log(`❌ Error checking object existence: ${checkError.message}`);
+        if (existsRetryCount < maxExistsRetries - 1) {
+          const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+      existsRetryCount++;
+    }
+
+    if (!objectExists) {
+      throw new Error(`Object not found in storage after ${maxExistsRetries} attempts: ${bucket}/${cleanPath}`);
+    }
+
+    // Now get signed URL for the confirmed existing object
     let signed, signErr;
     let retryCount = 0;
-    const maxRetries = 8; // Increased retries for TUS uploads
+    const maxRetries = 3; // Reduced since we already confirmed object exists
     
     while (retryCount < maxRetries) {
-      console.log(`Attempting to get signed URL for ${bucket}/${path} (attempt ${retryCount + 1}/${maxRetries})`);
+      console.log(`🔗 Getting signed URL for ${bucket}/${cleanPath} (attempt ${retryCount + 1}/${maxRetries})`);
       
-      const result = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      const result = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60 * 60);
       signed = result.data;
       signErr = result.error;
       
