@@ -399,14 +399,15 @@ serve(async (req) => {
       const { value, done } = await reader.read();
       isEOF = done && (!value || value.length === 0) && buf.trim().length === 0;
       
-      if (isEOF || processedInChunk === 0) {
-        // This is the last chunk, process staging data into production tables
-        console.log('Final chunk - processing staging data into production tables');
+      if (isEOF || processedInChunk === 0 || processedInChunk >= 50000) {
+        // Process current batch of staging data to avoid CPU timeout
+        console.log(`Processing batch: ${processedInChunk} rows, EOF: ${isEOF}`);
         
-        // Start transaction for the three-step loading
+        // Start transaction for batch processing
         await conn.queryArray`BEGIN`;
 
-        // 1) COMPANIES: upsert based on orgnr, year, user_id
+        // Process in smaller SQL batches to prevent timeout
+        // 1) COMPANIES: process first 50k rows at a time
         await conn.queryArray`
           INSERT INTO share_companies (orgnr, name, year, user_id)
           SELECT DISTINCT
@@ -416,13 +417,16 @@ serve(async (req) => {
             user_id
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
+            AND s.ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)
           ON CONFLICT (orgnr, year, user_id) DO UPDATE
             SET name = EXCLUDED.name,
                 user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
         `;
 
-        // 2) ENTITIES: upsert with proper entity_key and conflict resolution
-        // First handle companies (with orgnr)
+        // Brief yield to prevent CPU timeout
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // 2) ENTITIES: handle companies (with orgnr) in batches
         await conn.queryArray`
           INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
           SELECT DISTINCT
@@ -436,13 +440,17 @@ serve(async (req) => {
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
             AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9
+            AND s.ctid IN (SELECT ctid FROM shareholders_staging WHERE LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 LIMIT 50000)
           ON CONFLICT (orgnr, user_id) DO UPDATE SET
             entity_key = EXCLUDED.entity_key,
             name = EXCLUDED.name,
             country_code = EXCLUDED.country_code
         `;
 
-        // Then handle persons (without orgnr, with birth_year)
+        // Brief yield
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // Handle persons (without orgnr, with birth_year) in batches
         await conn.queryArray`
           INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
           SELECT DISTINCT
@@ -461,11 +469,15 @@ serve(async (req) => {
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
             AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) != 9
+            AND s.ctid IN (SELECT ctid FROM shareholders_staging WHERE LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) != 9 LIMIT 50000)
           ON CONFLICT (name, birth_year, country_code, user_id, entity_type) DO UPDATE SET
             entity_key = EXCLUDED.entity_key
         `;
 
-        // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key, including user_id)
+        // Brief yield
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // 3) HOLDINGS: process in batches with proper joins
         await conn.queryArray`
           INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
           SELECT
@@ -480,6 +492,7 @@ serve(async (req) => {
             ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
           WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
             AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
+            AND s.ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)
           ON CONFLICT (company_orgnr, holder_id, share_class, year, user_id) DO UPDATE
             SET shares = EXCLUDED.shares,
                 user_id = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
@@ -487,14 +500,21 @@ serve(async (req) => {
 
         await conn.queryArray`COMMIT`;
         
-        // Mark job as completed
-        await supabase.from('import_jobs').update({ 
-          status: 'done',
-          total_rows: totalRowsProcessed,
-          rows_loaded: totalRowsProcessed 
-        }).eq('id', jobId);
+        // Clear processed staging data to free memory
+        await conn.queryArray`DELETE FROM shareholders_staging WHERE ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)`;
         
-        console.log(`Import completed. Total rows processed: ${totalRowsProcessed}`);
+        console.log(`Batch processed. Rows in chunk: ${processedInChunk}`);
+        
+        if (isEOF) {
+          // Mark job as completed only when truly done
+          await supabase.from('import_jobs').update({ 
+            status: 'done',
+            total_rows: totalRowsProcessed,
+            rows_loaded: totalRowsProcessed 
+          }).eq('id', jobId);
+          
+          console.log(`Import completed. Total rows processed: ${totalRowsProcessed}`);
+        }
       }
 
     } finally {
