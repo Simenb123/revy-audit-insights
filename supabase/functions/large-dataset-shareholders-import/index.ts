@@ -462,7 +462,6 @@ serve(async (req) => {
           ON CONFLICT (name, birth_year, country_code, user_id, entity_type) DO UPDATE SET
             entity_key = EXCLUDED.entity_key
         `;
-        `;
 
         // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key, including user_id)
         await conn.queryArray`
