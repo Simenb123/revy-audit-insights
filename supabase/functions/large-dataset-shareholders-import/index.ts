@@ -421,11 +421,10 @@ serve(async (req) => {
                 user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
         `;
 
-        // 2) ENTITIES: upsert on stable key (entity_key, user_id)
+        // 2) ENTITIES: upsert (entity_key is generated automatically by database)
         await conn.queryArray`
-          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
+          INSERT INTO share_entities (name, orgnr, birth_year, country_code, entity_type, user_id)
           SELECT DISTINCT
-            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
             NULLIF(TRIM(navn_aksjonaer), '') AS name,
             CASE 
               WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN NULLIF(TRIM(fodselsaar_orgnr), '')
