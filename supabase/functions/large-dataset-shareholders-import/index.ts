@@ -74,453 +74,296 @@ serve(async (req) => {
       throw new Error("Unsupported action. Use 'init' or 'process'.");
     }
 
-    // Handle process action - process a chunk of the CSV
+    // Handle process action using PostgreSQL stored procedure
     if (!jobId || !bucket || !path || !mapping) {
       throw new Error("Missing required parameters for process action");
     }
 
-    console.log(`Processing chunk for jobId=${jobId}, bucket=${bucket}, path=${path}, offset=${offset}, limit=${limit}`);
+    console.log(`Processing chunk via PostgreSQL function: jobId=${jobId}, offset=${offset}, limit=${limit}`);
 
-    // Fix path to avoid bucket duplication (e.g., if path is "imports/shareholders/file.csv" and bucket is "imports")
-    let cleanPath = path;
-    if (path.startsWith(`${bucket}/`)) {
-      cleanPath = path.substring(bucket.length + 1);
-      console.log(`🔧 Cleaned path from "${path}" to "${cleanPath}" (removed bucket prefix)`);
-    }
+    // If this is the first call (offset = 0), populate staging table from CSV
+    if (offset === 0) {
+      // Fix path to avoid bucket duplication
+      let cleanPath = path;
+      if (path.startsWith(`${bucket}/`)) {
+        cleanPath = path.substring(bucket.length + 1);
+        console.log(`🔧 Cleaned path from "${path}" to "${cleanPath}"`);
+      }
 
-    console.log(`📁 Using bucket: "${bucket}", path: "${cleanPath}"`);
+      console.log(`📁 Populating staging table from: ${bucket}/${cleanPath}`);
 
-    // First check if object exists before attempting signed URL
-    let objectExists = false;
-    let existsRetryCount = 0;
-    const maxExistsRetries = 8;
+      // Check if object exists
+      let objectExists = false;
+      let existsRetryCount = 0;
+      const maxExistsRetries = 5;
 
-    while (existsRetryCount < maxExistsRetries && !objectExists) {
-      try {
-        console.log(`🔍 Checking if object exists: ${bucket}/${cleanPath} (attempt ${existsRetryCount + 1}/${maxExistsRetries})`);
-        
-        const listResult = await supabase.storage.from(bucket).list(
-          cleanPath.substring(0, cleanPath.lastIndexOf('/')),
-          { search: cleanPath.substring(cleanPath.lastIndexOf('/') + 1) }
-        );
-        
-        if (listResult.error) {
-          throw listResult.error;
+      while (existsRetryCount < maxExistsRetries && !objectExists) {
+        try {
+          console.log(`🔍 Checking if object exists: ${bucket}/${cleanPath} (attempt ${existsRetryCount + 1})`);
+          
+          const listResult = await supabase.storage.from(bucket).list(
+            cleanPath.substring(0, cleanPath.lastIndexOf('/')),
+            { search: cleanPath.substring(cleanPath.lastIndexOf('/') + 1) }
+          );
+          
+          if (listResult.error) {
+            throw listResult.error;
+          }
+          
+          objectExists = listResult.data && listResult.data.length > 0;
+          
+          if (objectExists) {
+            console.log(`✅ Object confirmed to exist in storage`);
+            break;
+          } else if (existsRetryCount < maxExistsRetries - 1) {
+            const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
+            console.log(`⏳ Object not found, waiting ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        } catch (checkError) {
+          console.log(`❌ Error checking object existence: ${checkError.message}`);
+          if (existsRetryCount < maxExistsRetries - 1) {
+            const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
         }
-        
-        objectExists = listResult.data && listResult.data.length > 0;
-        
-        if (objectExists) {
-          console.log(`✅ Object confirmed to exist in storage`);
-          break;
-        } else if (existsRetryCount < maxExistsRetries - 1) {
-          const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
-          console.log(`⏳ Object not found yet, likely TUS upload still processing. Waiting ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-      } catch (checkError) {
-        console.log(`❌ Error checking object existence: ${checkError.message}`);
-        if (existsRetryCount < maxExistsRetries - 1) {
-          const waitTime = Math.min((existsRetryCount + 1) * 2000, 10000);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
+        existsRetryCount++;
       }
-      existsRetryCount++;
-    }
 
-    if (!objectExists) {
-      throw new Error(`Object not found in storage after ${maxExistsRetries} attempts: ${bucket}/${cleanPath}`);
-    }
-
-    // Now get signed URL for the confirmed existing object
-    let signed, signErr;
-    let retryCount = 0;
-    const maxRetries = 3; // Reduced since we already confirmed object exists
-    
-    while (retryCount < maxRetries) {
-      console.log(`🔗 Getting signed URL for ${bucket}/${cleanPath} (attempt ${retryCount + 1}/${maxRetries})`);
-      
-      const result = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60 * 60);
-      signed = result.data;
-      signErr = result.error;
-      
-      if (!signErr && signed?.signedUrl) {
-        console.log(`✅ Successfully got signed URL: ${signed.signedUrl.substring(0, 100)}...`);
-        break;
+      if (!objectExists) {
+        throw new Error(`Object not found in storage after ${maxExistsRetries} attempts: ${bucket}/${cleanPath}`);
       }
-      
-      // Enhanced error logging and retry logic for TUS uploads
-      console.log(`❌ Storage error (attempt ${retryCount + 1}): ${signErr?.message || 'Unknown error'}`);
-      
-      if (signErr?.message?.includes('Object not found') && retryCount < maxRetries - 1) {
-        const waitTime = Math.min((retryCount + 1) * 3000, 15000); // Max 15s wait
-        console.log(`🔄 File not found, likely TUS upload still processing. Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        retryCount++;
-        continue;
+
+      // Get signed URL for file access
+      const { data: signed, error: signErr } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(cleanPath, 60 * 60);
+
+      if (signErr || !signed?.signedUrl) {
+        throw new Error(`Failed to get signed URL: ${signErr?.message || 'Unknown error'}`);
       }
+
+      console.log(`🌐 Fetching file content from signed URL...`);
+      const resp = await fetch(signed.signedUrl);
+      if (!resp.ok) {
+        throw new Error(`Storage fetch failed: ${resp.status} ${resp.statusText}`);
+      }
+      if (!resp.body) {
+        throw new Error('No response body from storage fetch');
+      }
+
+      console.log(`✅ Successfully fetched file, parsing CSV and populating staging...`);
+
+      // Parse CSV and populate staging table
+      const decoder = new TextDecoder();
+      const reader = resp.body.getReader();
+      let headerLine = "", buf = "";
       
-      // If we've exhausted retries or it's a different error, throw
-      throw new Error(`Storage access failed after ${retryCount + 1} attempts: ${signErr?.message || 'Unknown storage error'}`);
-    }
-
-    if (!signed?.signedUrl) {
-      throw new Error('Failed to get signed URL from storage');
-    }
-
-    console.log(`🌐 Fetching file content from signed URL...`);
-    const resp = await fetch(signed.signedUrl);
-    if (!resp.ok) {
-      throw new Error(`Storage fetch failed: ${resp.status} ${resp.statusText}. URL: ${signed.signedUrl.substring(0, 100)}...`);
-    }
-    if (!resp.body) {
-      throw new Error('No response body from storage fetch');
-    }
-
-    console.log(`✅ Successfully fetched file from storage (${resp.headers.get('content-length')} bytes), processing chunk offset=${offset}, limit=${limit}...`);
-
-    // Les headerlinje og skip til offset
-    const decoder = new TextDecoder();
-    const reader = resp.body.getReader();
-    let headerLine = "", buf = "";
-    
-    // Read header line
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const nl = chunk.indexOf("\n");
-      if (nl !== -1) { 
-        headerLine = (buf + chunk.slice(0, nl)).trimEnd(); 
-        buf = chunk.slice(nl + 1); 
-        break; 
-      }
-      buf += chunk;
-    }
-
-    const srcHeaders = headerLine.split(/[,;](?=(?:[^"]*"[^"]*")*[^"]*$)/).map(s => s.trim().replace(/^"|"$/g, ""));
-    console.log(`Found headers: ${srcHeaders.join(', ')}`);
-
-    const targetCols: string[] = [];
-    const srcByTarget: Record<string,string> = {};
-    for (const [src, tgt] of Object.entries(mapping)) {
-      if (srcHeaders.includes(src) && tgt && tgt.trim() !== '') { 
-        targetCols.push(tgt); 
-        srcByTarget[tgt] = src; 
-      }
-    }
-    if (!targetCols.length) throw new Error("No mapped columns match CSV header");
-
-    console.log(`Mapped columns: ${targetCols.join(', ')}`);
-
-    // Skip to offset position
-    let lineNo = 0;
-    while (lineNo < offset) {
-      const { line, nextBuf } = readLine(buf);
-      if (line === null) {
+      // Read header line
+      while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        continue;
+        const chunk = decoder.decode(value, { stream: true });
+        const nl = chunk.indexOf("\n");
+        if (nl !== -1) { 
+          headerLine = (buf + chunk.slice(0, nl)).trimEnd(); 
+          buf = chunk.slice(nl + 1); 
+          break; 
+        }
+        buf += chunk;
       }
-      buf = nextBuf;
-      lineNo++;
-    }
 
-    const pool = new Pool(dbUrl, 1, true);
-    const conn = await pool.connect();
-    let rowsProcessed = 0;
-    let processedInChunk = 0;
-    let isEOF = false;
+      const srcHeaders = headerLine.split(/[,;](?=(?:[^"]*"[^"]*")*[^"]*$)/).map(s => s.trim().replace(/^"|"$/g, ""));
+      console.log(`Found headers: ${srcHeaders.join(', ')}`);
 
-    try {
-      // Create staging table if it doesn't exist
-      await conn.queryArray`DROP TABLE IF EXISTS shareholders_staging`;
-      await conn.queryArray`
-        CREATE UNLOGGED TABLE shareholders_staging (
-          id SERIAL PRIMARY KEY,
-          orgnr TEXT,
-          selskap TEXT,
-          aksjeklasse TEXT,
-          navn_aksjonaer TEXT,
-          fodselsaar_orgnr TEXT,
-          landkode TEXT DEFAULT 'NO',
-          antall_aksjer BIGINT DEFAULT 0,
-          year INTEGER DEFAULT EXTRACT(YEAR FROM NOW()),
-          user_id UUID,
-          created_at TIMESTAMPTZ DEFAULT NOW()
-        )
-      `;
-      
-      // Ensure antall_aksjer column is BIGINT 
-      await conn.queryArray`
-        ALTER TABLE shareholders_staging 
-        ALTER COLUMN antall_aksjer TYPE BIGINT USING antall_aksjer::BIGINT
-      `;
-      
-      await conn.queryArray`TRUNCATE shareholders_staging`;
+      const targetCols: string[] = [];
+      const srcByTarget: Record<string,string> = {};
+      for (const [src, tgt] of Object.entries(mapping)) {
+        if (srcHeaders.includes(src) && tgt && tgt.trim() !== '') { 
+          targetCols.push(tgt); 
+          srcByTarget[tgt] = src; 
+        }
+      }
+      if (!targetCols.length) throw new Error("No mapped columns match CSV header");
 
-      console.log('Processing rows with chunked batch insert...');
+      console.log(`Mapped columns: ${targetCols.join(', ')}`);
 
-      // Process data in batches using UNNEST-optimized INSERT
-      let batch: any[] = [];
-      const batchSize = 500; // Increase batch size for chunked processing
-      let batchCount = 0;
+      // Connect to database and create staging table
+      const pool = new Pool(dbUrl, 1, true);
+      const conn = await pool.connect();
 
-      // FORENKLET sanitizeRow for minimal CPU-bruk
-      function sanitizeRow(row: Record<string, any>) {
-        const result = { ...row };
+      try {
+        // Create staging table if it doesn't exist
+        await conn.queryArray`DROP TABLE IF EXISTS shareholders_staging`;
+        await conn.queryArray`
+          CREATE UNLOGGED TABLE shareholders_staging (
+            id SERIAL PRIMARY KEY,
+            orgnr TEXT,
+            selskap TEXT,
+            aksjeklasse TEXT,
+            navn_aksjonaer TEXT,
+            fodselsaar_orgnr TEXT,
+            landkode TEXT DEFAULT 'NO',
+            antall_aksjer BIGINT DEFAULT 0,
+            year INTEGER DEFAULT EXTRACT(YEAR FROM NOW()),
+            user_id UUID,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `;
         
-        // antall_aksjer: fjern alle ikke-siffer, konverter til BigInt eller null
-        if (result.antall_aksjer) {
-          const digits = String(result.antall_aksjer).replace(/[^0-9]/g, '');
-          result.antall_aksjer = digits ? digits : null;
-        } else {
-          result.antall_aksjer = null;
+        await conn.queryArray`TRUNCATE shareholders_staging`;
+
+        console.log('Processing CSV data in batches...');
+
+        // Process data in batches
+        let batch: any[] = [];
+        const batchSize = 1000;
+        let totalRowsProcessed = 0;
+
+        // Simplified sanitizeRow function
+        function sanitizeRow(row: Record<string, any>) {
+          const result = { ...row };
+          
+          // Clean antall_aksjer: remove non-digits
+          if (result.antall_aksjer) {
+            const digits = String(result.antall_aksjer).replace(/[^0-9]/g, '');
+            result.antall_aksjer = digits ? digits : null;
+          } else {
+            result.antall_aksjer = null;
+          }
+
+          // Clean year: remove non-digits, parse to integer
+          if (result.year) {
+            const yearDigits = String(result.year).replace(/[^0-9]/g, '');
+            result.year = yearDigits ? parseInt(yearDigits, 10) : null;
+          } else {
+            result.year = new Date().getFullYear();
+          }
+
+          // Set user_id
+          if (userId) {
+            result.user_id = userId;
+          }
+
+          return result;
         }
 
-        // year: fjern ikke-siffer, parse til heltall eller null
-        if (result.year) {
-          const yearDigits = String(result.year).replace(/[^0-9]/g, '');
-          result.year = yearDigits ? parseInt(yearDigits, 10) : null;
-        } else {
-          result.year = new Date().getFullYear(); // Default til inneværende år
-        }
+        const processBatch = async (rows: any[]) => {
+          if (rows.length === 0) return;
 
-        // Sett userId hvis vi har den
-        if (userId) {
-          result.user_id = userId;
-        }
+          const safeRows = rows.map(sanitizeRow);
 
-        return result;
-      }
+          // Prepare column arrays for UNNEST
+          const columnArrays: Record<string, any[]> = {};
+          targetCols.forEach(col => columnArrays[col] = []);
 
-      const processBatch = async (rows: any[]) => {
-        if (rows.length === 0) return;
+          // Fill column arrays
+          for (const row of safeRows) {
+            targetCols.forEach(col => {
+              const value = row[col] ?? '';
+              columnArrays[col].push(value === '' ? null : value);
+            });
+          }
 
-        const safeRows = rows.map(sanitizeRow);
+          // Type casting for columns
+          const columnTypes: Record<string, string> = {
+            'orgnr': 'text[]',
+            'selskap': 'text[]', 
+            'aksjeklasse': 'text[]',
+            'navn_aksjonaer': 'text[]',
+            'fodselsaar_orgnr': 'text[]',
+            'landkode': 'text[]',
+            'antall_aksjer': 'bigint[]',
+            'year': 'integer[]',
+            'user_id': 'uuid[]'
+          };
 
-        // UNNEST-basert insert: samle kolonne-data i arrays
-        const columnArrays: Record<string, any[]> = {};
-        targetCols.forEach(col => columnArrays[col] = []);
+          // Build UNNEST parameters with type casting
+          const unnestParams = targetCols.map((col, idx) => {
+            const type = columnTypes[col] || 'text[]';
+            return `$${idx + 1}::${type}`;
+          }).join(', ');
 
-        // Fyll kolonne-arrays fra sanitiserte rader
-        for (const row of safeRows) {
-          targetCols.forEach(col => {
-            const value = row[col] ?? '';
-            columnArrays[col].push(value === '' ? null : value);
-          });
-        }
+          // SQL with UNNEST instead of VALUES
+          const query = `
+            INSERT INTO shareholders_staging (${targetCols.map(c => `"${c}"`).join(',')})
+            SELECT * FROM unnest(${unnestParams})
+          `;
 
-        // Type-casting for hver kolonne
-        const columnTypes: Record<string, string> = {
-          'orgnr': 'text[]',
-          'selskap': 'text[]', 
-          'aksjeklasse': 'text[]',
-          'navn_aksjonaer': 'text[]',
-          'fodselsaar_orgnr': 'text[]',
-          'landkode': 'text[]',
-          'antall_aksjer': 'bigint[]',
-          'year': 'integer[]',
-          'user_id': 'uuid[]'
+          // Parameters are column arrays in correct order
+          const params = targetCols.map(col => columnArrays[col]);
+
+          await conn.queryArray(query, params);
+          totalRowsProcessed += rows.length;
+
+          if (totalRowsProcessed % 5000 === 0) {
+            console.log(`Staging progress: ${totalRowsProcessed} rows processed`);
+          }
         };
 
-        // Bygg UNNEST-parametere med type-casting
-        const unnestParams = targetCols.map((col, idx) => {
-          const type = columnTypes[col] || 'text[]';
-          return `$${idx + 1}::${type}`;
-        }).join(', ');
-
-        // SQL med UNNEST i stedet for VALUES
-        const query = `
-          INSERT INTO shareholders_staging (${targetCols.map(c => `"${c}"`).join(',')})
-          SELECT * FROM unnest(${unnestParams})
-        `;
-
-        // Parametere er kolonne-arrays i riktig rekkefølge
-        const params = targetCols.map(col => columnArrays[col]);
-
-        await conn.queryArray(query, params);
-        rowsProcessed += rows.length;
-        processedInChunk += rows.length;
-
-        // Progress logging hver 1000 rader
-        if ((lineNo + processedInChunk) % 1000 === 0) {
-          console.log(`Progress: ${lineNo + processedInChunk} rows processed`);
-        }
-      };
-
-      // Process up to 'limit' rows in this chunk
-      while (processedInChunk < limit) {
-        const { line, nextBuf } = readLine(buf);
-        if (line === null) {
-          // Need more data
-          const { value, done } = await reader.read();
-          if (done) break; // EOF
-          buf += decoder.decode(value, { stream: true });
-          continue;
-        }
-        buf = nextBuf;
-        
-        if (line.trim()) {
-          const row = parseRow(line, srcHeaders, srcByTarget, targetCols);
-          if (row) {
-            batch.push(row);
-            
-            if (batch.length >= batchSize) {
-              await processBatch(batch);
-              batch = [];
-              batchCount++;
+        // Process all CSV data into staging
+        while (true) {
+          const { line, nextBuf } = readLine(buf);
+          if (line === null) {
+            const { value, done } = await reader.read();
+            if (done) break; // EOF
+            buf += decoder.decode(value, { stream: true });
+            continue;
+          }
+          buf = nextBuf;
+          
+          if (line.trim()) {
+            const row = parseRow(line, srcHeaders, srcByTarget, targetCols);
+            if (row) {
+              batch.push(row);
               
-              // CPU yield every 2 batches
-              if (batchCount % 2 === 0) {
-                await new Promise(res => setTimeout(res, 0));
+              if (batch.length >= batchSize) {
+                await processBatch(batch);
+                batch = [];
               }
             }
           }
         }
-        processedInChunk++;
-      }
-      
-      // Process remaining batch
-      if (batch.length > 0) {
-        await processBatch(batch);
-      }
-
-      console.log(`Processed ${rowsProcessed} rows in chunk`);
-
-      // Update progress and determine if we're done
-      const totalRowsProcessed = lineNo + processedInChunk;
-      await supabase.from('import_jobs')
-        .update({ rows_loaded: totalRowsProcessed })
-        .eq('id', jobId);
-
-      // Check if we've reached EOF
-      const { value, done } = await reader.read();
-      isEOF = done && (!value || value.length === 0) && buf.trim().length === 0;
-      
-      if (isEOF || processedInChunk === 0 || processedInChunk >= 50000) {
-        // Process current batch of staging data to avoid CPU timeout
-        console.log(`Processing batch: ${processedInChunk} rows, EOF: ${isEOF}`);
         
-        // Start transaction for batch processing
-        await conn.queryArray`BEGIN`;
-
-        // Process in smaller SQL batches to prevent timeout
-        // 1) COMPANIES: process first 50k rows at a time
-        await conn.queryArray`
-          INSERT INTO share_companies (orgnr, name, year, user_id)
-          SELECT DISTINCT
-            NULLIF(TRIM(orgnr), '') AS orgnr,
-            NULLIF(TRIM(selskap), '') AS name,
-            COALESCE(year, EXTRACT(YEAR FROM NOW())::INTEGER) AS year,
-            user_id
-          FROM shareholders_staging s
-          WHERE NULLIF(TRIM(orgnr), '') IS NOT NULL
-            AND s.ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)
-          ON CONFLICT (orgnr, year, user_id) DO UPDATE
-            SET name = EXCLUDED.name,
-                user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
-        `;
-
-        // Brief yield to prevent CPU timeout
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-        // 2) ENTITIES: handle companies (with orgnr) in batches
-        await conn.queryArray`
-          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
-          SELECT DISTINCT
-            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
-            NULLIF(TRIM(navn_aksjonaer), '') AS name,
-            NULLIF(TRIM(fodselsaar_orgnr), '') AS orgnr,
-            NULL AS birth_year,
-            COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
-            'company' AS entity_type,
-            user_id
-          FROM shareholders_staging s
-          WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-            AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9
-            AND s.ctid IN (SELECT ctid FROM shareholders_staging WHERE LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 LIMIT 50000)
-          ON CONFLICT (orgnr, user_id) DO UPDATE SET
-            entity_key = EXCLUDED.entity_key,
-            name = EXCLUDED.name,
-            country_code = EXCLUDED.country_code
-        `;
-
-        // Brief yield
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-        // Handle persons (without orgnr, with birth_year) in batches
-        await conn.queryArray`
-          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
-          SELECT DISTINCT
-            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
-            NULLIF(TRIM(navn_aksjonaer), '') AS name,
-            NULL AS orgnr,
-            CASE 
-              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 
-                AND NULLIF(TRIM(fodselsaar_orgnr), '') ~ '^\d{4}$' 
-              THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
-              ELSE NULL
-            END AS birth_year,
-            COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
-            'person' AS entity_type,
-            user_id
-          FROM shareholders_staging s
-          WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-            AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) != 9
-            AND s.ctid IN (SELECT ctid FROM shareholders_staging WHERE LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) != 9 LIMIT 50000)
-          ON CONFLICT (name, birth_year, country_code, user_id, entity_type) DO UPDATE SET
-            entity_key = EXCLUDED.entity_key
-        `;
-
-        // Brief yield
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-        // 3) HOLDINGS: process in batches with proper joins
-        await conn.queryArray`
-          INSERT INTO share_holdings (company_orgnr, holder_id, share_class, shares, year, user_id)
-          SELECT
-            NULLIF(TRIM(s.orgnr), ''),
-            e.id,
-            NULLIF(TRIM(s.aksjeklasse), ''),
-            COALESCE(s.antall_aksjer, 0),
-            COALESCE(s.year, EXTRACT(YEAR FROM NOW())::INTEGER),
-            s.user_id
-          FROM shareholders_staging s
-          JOIN share_entities e
-            ON e.entity_key = LOWER(TRIM(s.navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(s.fodselsaar_orgnr), ''), '?')
-          WHERE NULLIF(TRIM(s.orgnr), '') IS NOT NULL
-            AND NULLIF(TRIM(s.navn_aksjonaer), '') IS NOT NULL
-            AND s.ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)
-          ON CONFLICT (company_orgnr, holder_id, share_class, year, user_id) DO UPDATE
-            SET shares = EXCLUDED.shares,
-                user_id = COALESCE(share_holdings.user_id, EXCLUDED.user_id)
-        `;
-
-        await conn.queryArray`COMMIT`;
-        
-        // Clear processed staging data to free memory
-        await conn.queryArray`DELETE FROM shareholders_staging WHERE ctid IN (SELECT ctid FROM shareholders_staging LIMIT 50000)`;
-        
-        console.log(`Batch processed. Rows in chunk: ${processedInChunk}`);
-        
-        if (isEOF) {
-          // Mark job as completed only when truly done
-          await supabase.from('import_jobs').update({ 
-            status: 'done',
-            total_rows: totalRowsProcessed,
-            rows_loaded: totalRowsProcessed 
-          }).eq('id', jobId);
-          
-          console.log(`Import completed. Total rows processed: ${totalRowsProcessed}`);
+        // Process remaining batch
+        if (batch.length > 0) {
+          await processBatch(batch);
         }
-      }
 
-    } finally {
-      await conn.release();
-      await pool.end();
+        console.log(`✅ Successfully populated staging table with ${totalRowsProcessed} rows`);
+
+      } finally {
+        await conn.release();
+        await pool.end();
+      }
     }
+
+    // Call PostgreSQL stored procedure to process batch
+    console.log(`🔄 Calling PostgreSQL function to process batch: offset=${offset}, limit=${limit}`);
+    
+    const { data: processResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
+      p_job_id: jobId,
+      p_user_id: userId,
+      p_offset: offset,
+      p_limit: limit
+    });
+
+    if (processError) {
+      throw new Error(`PostgreSQL batch processing failed: ${processError.message}`);
+    }
+
+    if (!processResult) {
+      throw new Error('No result returned from PostgreSQL batch processing');
+    }
+
+    console.log(`✅ Batch processed: ${JSON.stringify(processResult)}`);
+
+    const {
+      next_offset: nextOffset,
+      done: isDone,
+      processed_count: processedCount,
+      total_staging_rows: totalStagingRows
+    } = processResult;
 
     const nextOffset = lineNo + processedInChunk;
     const isDone = isEOF || processedInChunk === 0;
