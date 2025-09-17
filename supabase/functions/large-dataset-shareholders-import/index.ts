@@ -443,14 +443,7 @@ serve(async (req) => {
             user_id
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-          ON CONFLICT (entity_key, user_id) DO UPDATE
-            SET
-              name = EXCLUDED.name,
-              orgnr = COALESCE(share_entities.orgnr, EXCLUDED.orgnr),
-              birth_year = COALESCE(share_entities.birth_year, EXCLUDED.birth_year),
-              country_code = COALESCE(EXCLUDED.country_code, share_entities.country_code),
-              entity_type = EXCLUDED.entity_type,
-              user_id = COALESCE(share_entities.user_id, EXCLUDED.user_id)
+          ON CONFLICT (entity_key) DO NOTHING
         `;
 
         // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key, including user_id)
