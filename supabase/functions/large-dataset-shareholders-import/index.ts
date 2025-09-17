@@ -421,28 +421,47 @@ serve(async (req) => {
                 user_id = COALESCE(share_companies.user_id, EXCLUDED.user_id)
         `;
 
-        // 2) ENTITIES: upsert (entity_key is generated automatically by database)
+        // 2) ENTITIES: upsert with proper entity_key and conflict resolution
+        // First handle companies (with orgnr)
         await conn.queryArray`
-          INSERT INTO share_entities (name, orgnr, birth_year, country_code, entity_type, user_id)
+          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
           SELECT DISTINCT
+            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
             NULLIF(TRIM(navn_aksjonaer), '') AS name,
-            CASE 
-              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN NULLIF(TRIM(fodselsaar_orgnr), '')
-              ELSE NULL
-            END AS orgnr,
+            NULLIF(TRIM(fodselsaar_orgnr), '') AS orgnr,
+            NULL AS birth_year,
+            COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
+            'company' AS entity_type,
+            user_id
+          FROM shareholders_staging s
+          WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
+            AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9
+          ON CONFLICT (orgnr, user_id) DO UPDATE SET
+            entity_key = EXCLUDED.entity_key,
+            name = EXCLUDED.name,
+            country_code = EXCLUDED.country_code
+        `;
+
+        // Then handle persons (without orgnr, with birth_year)
+        await conn.queryArray`
+          INSERT INTO share_entities (entity_key, name, orgnr, birth_year, country_code, entity_type, user_id)
+          SELECT DISTINCT
+            LOWER(TRIM(navn_aksjonaer)) || '|' || COALESCE(NULLIF(TRIM(fodselsaar_orgnr), ''), '?') AS entity_key,
+            NULLIF(TRIM(navn_aksjonaer), '') AS name,
+            NULL AS orgnr,
             CASE 
               WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
               ELSE NULL
             END AS birth_year,
             COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
-            CASE 
-              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 9 THEN 'company'
-              ELSE 'person'
-            END AS entity_type,
+            'person' AS entity_type,
             user_id
           FROM shareholders_staging s
           WHERE NULLIF(TRIM(navn_aksjonaer), '') IS NOT NULL
-          ON CONFLICT (entity_key) DO NOTHING
+            AND LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) != 9
+          ON CONFLICT (name, birth_year, country_code, user_id, entity_type) DO UPDATE SET
+            entity_key = EXCLUDED.entity_key
+        `;
         `;
 
         // 3) HOLDINGS: insert with correct holder_id (JOIN via entity_key, including user_id)
