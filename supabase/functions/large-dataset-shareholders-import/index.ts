@@ -450,7 +450,9 @@ serve(async (req) => {
             NULLIF(TRIM(navn_aksjonaer), '') AS name,
             NULL AS orgnr,
             CASE 
-              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
+              WHEN LENGTH(NULLIF(TRIM(fodselsaar_orgnr), '')) = 4 
+                AND NULLIF(TRIM(fodselsaar_orgnr), '') ~ '^\d{4}$' 
+              THEN NULLIF(TRIM(fodselsaar_orgnr), '')::INTEGER
               ELSE NULL
             END AS birth_year,
             COALESCE(NULLIF(TRIM(landkode), ''), 'NO') AS country_code,
