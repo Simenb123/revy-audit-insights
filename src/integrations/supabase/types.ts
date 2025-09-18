@@ -13735,6 +13735,15 @@ export type Database = {
           triggered: boolean
         }[]
       }
+      process_shareholders_batch: {
+        Args: {
+          p_job_id: number
+          p_limit?: number
+          p_offset?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       queue_articles_for_embedding: {
         Args: Record<PropertyKey, never>
         Returns: {

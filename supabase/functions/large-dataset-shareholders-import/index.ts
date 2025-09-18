@@ -365,13 +365,10 @@ serve(async (req) => {
       total_staging_rows: totalStagingRows
     } = processResult;
 
-    const nextOffset = lineNo + processedInChunk;
-    const isDone = isEOF || processedInChunk === 0;
-
     return new Response(JSON.stringify({ 
       done: isDone,
       nextOffset,
-      processedInChunk,
+      processedInChunk: processedCount,
       totalProcessed: nextOffset,
       jobId 
     }), { 
