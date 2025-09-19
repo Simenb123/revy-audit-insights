@@ -64,7 +64,7 @@ serve(async (req) => {
         .from('import_jobs')
         .insert({
           job_type: 'shareholders',
-          status: 'running',
+          status: 'queued',
           total_rows: 0,
           rows_loaded: 0,
           source_path: `${bucket}/${path}`,
@@ -80,6 +80,8 @@ serve(async (req) => {
       console.log(`📝 Created job ${job.id}`);
 
       // Add job to queue for background processing
+      // Note: Supabase doesn't have a native queues.enqueue() method,
+      // so we use a table-based queue approach with shareholder_import_queue
       const { error: queueError } = await supabase
         .from('shareholder_import_queue')
         .insert({
@@ -135,7 +137,7 @@ serve(async (req) => {
           error: errorMessage,
           rows_loaded: 0
         })
-        .eq('status', 'running');
+        .eq('status', 'queued');
       
       await supabase.from('shareholder_import_queue')
         .update({ 

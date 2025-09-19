@@ -17,7 +17,7 @@ interface ShareholderRow {
   user_id: string;
 }
 
-const BATCH_SIZE = 10000;
+const BATCH_SIZE = 50000;
 
 // Helper function to download and parse file in chunks
 async function downloadAndParseFileChunk(
@@ -185,6 +185,12 @@ async function processShareholderImportQueue() {
       })
       .eq('id', queueItem.id);
     
+    // Update job status to running
+    await supabase
+      .from('import_jobs')
+      .update({ status: 'running' })
+      .eq('id', queueItem.job_id);
+    
     // Clear staging table for this user
     console.log('🗑️ Clearing existing staging data...');
     await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
@@ -274,8 +280,7 @@ async function processShareholderImportQueue() {
       await supabase
         .from('import_jobs')
         .update({ 
-          rows_loaded: totalProcessed,
-          status: done ? 'completed' : 'running'
+          rows_loaded: totalProcessed
         })
         .eq('id', queueItem.job_id);
       
