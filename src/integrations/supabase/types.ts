@@ -13450,6 +13450,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      clear_shareholders_staging: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       convert_currency: {
         Args: {
           p_amount: number
