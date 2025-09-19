@@ -19,9 +19,15 @@ interface ShareholderRow {
 
 const BATCH_SIZE = 10000;
 
-// Helper function to download and parse CSV/Excel file
-async function downloadAndParseFile(supabase: any, bucket: string, path: string): Promise<any[]> {
-  console.log(`📥 Downloading file from ${bucket}/${path}`);
+// Helper function to download and parse specific rows from CSV/Excel file
+async function downloadAndParseFileChunk(
+  supabase: any, 
+  bucket: string, 
+  path: string, 
+  offset: number = 0, 
+  limit: number = BATCH_SIZE
+): Promise<{ data: any[], totalRows: number, done: boolean }> {
+  console.log(`📥 Downloading file chunk from ${bucket}/${path} (offset: ${offset}, limit: ${limit})`);
   
   const { data: fileData, error: downloadError } = await supabase.storage
     .from(bucket)
@@ -38,7 +44,7 @@ async function downloadAndParseFile(supabase: any, bucket: string, path: string)
   const isExcel = path.toLowerCase().endsWith('.xlsx') || path.toLowerCase().endsWith('.xls');
   
   if (isExcel) {
-    console.log('📊 Parsing Excel file');
+    console.log('📊 Parsing Excel file chunk');
     const workbook = XLSX.read(uint8Array, { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -46,20 +52,27 @@ async function downloadAndParseFile(supabase: any, bucket: string, path: string)
     // Convert to JSON with header row
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     
-    if (!jsonData.length) return [];
+    if (!jsonData.length) return { data: [], totalRows: 0, done: true };
     
     const headers = jsonData[0] as string[];
-    const rows = jsonData.slice(1) as any[][];
+    const allRows = jsonData.slice(1) as any[][];
+    const totalRows = allRows.length;
     
-    return rows.map(row => {
+    // Skip rows based on offset and take only limit rows
+    const chunkRows = allRows.slice(offset, offset + limit);
+    const done = offset + chunkRows.length >= totalRows;
+    
+    const data = chunkRows.map(row => {
       const obj: any = {};
       headers.forEach((header, index) => {
         obj[header] = row[index] || '';
       });
       return obj;
     });
+    
+    return { data, totalRows, done };
   } else {
-    console.log('📄 Parsing CSV file');
+    console.log('📄 Parsing CSV file chunk');
     const csvText = new TextDecoder('utf-8').decode(uint8Array);
     
     return new Promise((resolve, reject) => {
@@ -70,7 +83,15 @@ async function downloadAndParseFile(supabase: any, bucket: string, path: string)
           if (results.errors.length > 0) {
             console.warn('CSV parsing warnings:', results.errors);
           }
-          resolve(results.data);
+          
+          const allRows = results.data as any[];
+          const totalRows = allRows.length;
+          
+          // Skip rows based on offset and take only limit rows
+          const chunkRows = allRows.slice(offset, offset + limit);
+          const done = offset + chunkRows.length >= totalRows;
+          
+          resolve({ data: chunkRows, totalRows, done });
         },
         error: (error) => {
           reject(new Error(`CSV parsing failed: ${error.message}`));
@@ -191,7 +212,7 @@ serve(async (req) => {
       return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const { action, bucket, path, mapping, jobId, offset = 0, limit = 50000 } = await req.json() as {
+    const { action, bucket, path, mapping, jobId, offset = 0, limit = BATCH_SIZE } = await req.json() as {
       action: "init" | "process";
       bucket?: string;
       path?: string;
@@ -226,13 +247,13 @@ serve(async (req) => {
       });
     }
 
-    // Handle init action - create job and start streaming processing
+    // Handle init action - create job only
     if (action === "init") {
       if (!bucket || !path || !mapping) {
         throw new Error("Missing required parameters: bucket, path, mapping");
       }
 
-      console.log(`🚀 Starting streaming import from ${bucket}/${path}`);
+      console.log(`🚀 Initializing import job for ${bucket}/${path}`);
       
       // Create import job
       const { data: job, error: jobError } = await supabase
@@ -258,130 +279,158 @@ serve(async (req) => {
       console.log('🗑️ Clearing existing staging data...');
       await supabase.rpc('clear_shareholders_staging', { p_user_id: userId });
 
-      // Download and parse the file
-      console.log('📥 Downloading and parsing file...');
-      const fileData = await downloadAndParseFile(supabase, bucket, path);
-      
-      if (!fileData || fileData.length === 0) {
-        throw new Error('No data found in file or file is empty');
-      }
-      
-      console.log(`📊 Found ${fileData.length} rows in file, starting batch processing...`);
-      
-      // Update job with total rows
-      await supabase
-        .from('import_jobs')
-        .update({ total_rows: fileData.length })
-        .eq('id', job.id);
-
-      // Process data in batches
-      let totalProcessed = 0;
-      let batch: ShareholderRow[] = [];
-      const defaultYear = new Date().getFullYear();
-      
-      for (let i = 0; i < fileData.length; i++) {
-        const rawRow = fileData[i];
-        
-        // Skip empty rows
-        if (!rawRow || Object.keys(rawRow).length === 0) {
-          continue;
-        }
-        
-        // Map the row to the ShareholderRow format
-        const mappedRow = mapRowToShareholderRow(rawRow, mapping, userId, defaultYear);
-        batch.push(mappedRow);
-        
-        // Process batch when it reaches BATCH_SIZE or at the end of file
-        if (batch.length >= BATCH_SIZE || i === fileData.length - 1) {
-          try {
-            console.log(`🔄 Processing batch ${Math.ceil((i + 1) / BATCH_SIZE)} of ${Math.ceil(fileData.length / BATCH_SIZE)}`);
-            
-            const batchResult = await processBatch(supabase, batch, job.id, totalProcessed);
-            
-            if (batchResult.success) {
-              totalProcessed += batchResult.processedCount;
-              console.log(`✅ Total processed so far: ${totalProcessed}/${fileData.length}`);
-            }
-            
-            // Clear the batch for next iteration
-            batch = [];
-            
-          } catch (batchError) {
-            console.error(`❌ Batch processing failed: ${batchError.message}`);
-            
-            // Update job status to error
-            await supabase
-              .from('import_jobs')
-              .update({ 
-                status: 'error', 
-                error: batchError.message,
-                rows_loaded: totalProcessed
-              })
-              .eq('id', job.id);
-            
-            throw batchError;
-          }
-        }
-      }
-      
-      // Mark job as completed
-      console.log(`🎉 Import completed successfully! Total processed: ${totalProcessed}`);
-      
-      await supabase
-        .from('import_jobs')
-        .update({ 
-          status: 'completed',
-          rows_loaded: totalProcessed,
-          total_rows: fileData.length
-        })
-        .eq('id', job.id);
-
       return new Response(JSON.stringify({ 
         jobId: job.id,
-        totalProcessed,
-        totalRows: fileData.length,
-        status: 'completed'
+        nextOffset: 0,
+        done: false,
+        totalProcessed: 0
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Handle process action (single batch - for backwards compatibility)
+    // Handle process action - process one chunk at a time
     if (action === "process") {
-      if (!jobId) {
-        throw new Error("Missing jobId for process action");
+      if (!jobId || !bucket || !path || !mapping) {
+        throw new Error("Missing required parameters: jobId, bucket, path, mapping");
       }
 
-      console.log(`Processing single batch: jobId=${jobId}, offset=${offset}, limit=${limit}`);
+      console.log(`📊 Processing chunk: jobId=${jobId}, offset=${offset}, limit=${limit}`);
       
-      const { data: batchResult, error: batchError } = await supabase.rpc('process_shareholders_batch', {
-        p_job_id: jobId,
-        p_user_id: userId,
-        p_offset: offset,
-        p_limit: limit
-      });
-
-      if (batchError) {
-        throw new Error(`Batch processing failed: ${batchError.message}`);
+      try {
+        // Download and parse only the chunk we need
+        const fileChunk = await downloadAndParseFileChunk(supabase, bucket, path, offset, limit);
+        
+        if (!fileChunk.data || fileChunk.data.length === 0) {
+          console.log('📭 No more data to process, marking as done');
+          
+          // Update job as completed
+          await supabase
+            .from('import_jobs')
+            .update({ status: 'completed' })
+            .eq('id', jobId);
+            
+          return new Response(JSON.stringify({ 
+            done: true,
+            nextOffset: offset,
+            processedInChunk: 0,
+            totalProcessed: offset,
+            totalRows: fileChunk.totalRows,
+            jobId 
+          }), { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Update job with total rows if not set yet
+        if (fileChunk.totalRows > 0) {
+          await supabase
+            .from('import_jobs')
+            .update({ total_rows: fileChunk.totalRows })
+            .eq('id', jobId)
+            .is('total_rows', null);
+        }
+        
+        console.log(`📋 Processing ${fileChunk.data.length} rows from chunk`);
+        
+        // Map rows to ShareholderRow format
+        const defaultYear = new Date().getFullYear();
+        const mappedRows: ShareholderRow[] = [];
+        
+        for (const rawRow of fileChunk.data) {
+          // Skip empty rows
+          if (!rawRow || Object.keys(rawRow).length === 0) {
+            continue;
+          }
+          
+          const mappedRow = mapRowToShareholderRow(rawRow, mapping, userId, defaultYear);
+          mappedRows.push(mappedRow);
+        }
+        
+        if (mappedRows.length === 0) {
+          console.log('📭 No valid rows in chunk, moving to next');
+          return new Response(JSON.stringify({ 
+            done: fileChunk.done,
+            nextOffset: offset + fileChunk.data.length,
+            processedInChunk: 0,
+            totalProcessed: offset + fileChunk.data.length,
+            totalRows: fileChunk.totalRows,
+            jobId 
+          }), { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Insert to staging table
+        console.log(`📥 Inserting ${mappedRows.length} rows to staging`);
+        const { error: insertError } = await supabase
+          .from('shareholders_staging')
+          .insert(mappedRows, { returning: 'minimal' });
+          
+        if (insertError) {
+          throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
+        }
+        
+        console.log(`✅ Inserted to staging, now processing batch...`);
+        
+        // Process the batch
+        const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
+          p_job_id: jobId,
+          p_user_id: userId,
+          p_offset: 0, // Always 0 for staging table offset
+          p_limit: mappedRows.length
+        });
+        
+        if (processError) {
+          throw new Error(`Failed to process batch: ${processError.message}`);
+        }
+        
+        const processedCount = batchResult?.processed_count || 0;
+        console.log(`🚀 Processed ${processedCount} rows from staging to production`);
+        
+        const nextOffset = offset + fileChunk.data.length;
+        const totalProcessed = offset + processedCount;
+        
+        // Update job progress
+        await supabase
+          .from('import_jobs')
+          .update({ 
+            rows_loaded: totalProcessed,
+            status: fileChunk.done ? 'completed' : 'running'
+          })
+          .eq('id', jobId);
+        
+        console.log(`📊 Progress: ${totalProcessed}/${fileChunk.totalRows} (${fileChunk.done ? 'DONE' : 'CONTINUING'})`);
+        
+        return new Response(JSON.stringify({ 
+          done: fileChunk.done,
+          nextOffset: nextOffset,
+          processedInChunk: processedCount,
+          totalProcessed: totalProcessed,
+          totalRows: fileChunk.totalRows,
+          jobId 
+        }), { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (processError: any) {
+        console.error(`❌ Chunk processing failed: ${processError.message}`);
+        
+        // Update job status to error
+        await supabase
+          .from('import_jobs')
+          .update({ 
+            status: 'error', 
+            error: processError.message
+          })
+          .eq('id', jobId);
+        
+        throw processError;
       }
-
-      if (!batchResult) {
-        throw new Error('No result returned from batch processing');
-      }
-
-      const { next_offset, done, processed_count } = batchResult;
-
-      return new Response(JSON.stringify({ 
-        done,
-        nextOffset: next_offset,
-        processedInChunk: processed_count,
-        totalProcessed: next_offset,
-        jobId 
-      }), { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
     }
 
     throw new Error("Unsupported action. Use 'init' or 'process'.");
