@@ -46,3 +46,7 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = true
   [functions.revy-model-test]
     verify_jwt = true
+  [functions.large-dataset-shareholders-import]
+    verify_jwt = true
+  [functions.shareholder-import-handler]
+    verify_jwt = false

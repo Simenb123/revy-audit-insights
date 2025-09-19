@@ -11411,6 +11411,56 @@ export type Database = {
           },
         ]
       }
+      shareholder_import_queue: {
+        Row: {
+          bucket: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          job_id: number
+          mapping: Json
+          metadata: Json | null
+          path: string
+          processed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_id: number
+          mapping: Json
+          metadata?: Json | null
+          path: string
+          processed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_id?: number
+          mapping?: Json
+          metadata?: Json | null
+          path?: string
+          processed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shareholder_import_queue_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shareholders_staging: {
         Row: {
           aksjeklasse: string | null
