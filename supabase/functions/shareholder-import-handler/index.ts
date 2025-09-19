@@ -17,7 +17,7 @@ interface ShareholderRow {
   user_id: string;
 }
 
-const BATCH_SIZE = 50000;
+const BATCH_SIZE = 10000;
 
 // Helper function to download and parse file in chunks
 async function downloadAndParseFileChunk(
@@ -129,7 +129,9 @@ function mapRowToShareholderRow(rawRow: any, mapping: Mapping, userId: string, d
           mapped.landkode = String(value).trim();
           break;
         case 'antall_aksjer':
-          mapped.antall_aksjer = parseInt(String(value)) || 0;
+          // Ensure BIGINT compatibility by sanitizing the number
+          const numValue = String(value).replace(/[^\d]/g, ''); // Remove non-digits
+          mapped.antall_aksjer = parseInt(numValue) || 0;
           break;
         case 'year':
           mapped.year = parseInt(String(value)) || defaultYear;
@@ -185,10 +187,10 @@ async function processShareholderImportQueue() {
       })
       .eq('id', queueItem.id);
     
-    // Update job status to running
+    // Update job status to processing
     await supabase
       .from('import_jobs')
-      .update({ status: 'running' })
+      .update({ status: 'processing' })
       .eq('id', queueItem.job_id);
     
     // Clear staging table for this user
@@ -271,6 +273,10 @@ async function processShareholderImportQueue() {
         const processedCount = batchResult?.processed_count || 0;
         totalProcessed += processedCount;
         console.log(`🚀 Processed ${processedCount} rows from staging to production (total: ${totalProcessed})`);
+        
+        // Clear staging table after processing each batch to prevent memory accumulation
+        console.log('🗑️ Clearing staging data after batch processing...');
+        await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
       }
       
       offset += fileChunk.data.length;

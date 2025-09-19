@@ -91,53 +91,48 @@ export async function uploadAndStartImport(
 
   console.log('✅ Import job created:', jobId);
 
-  // 3) Process file in chunks
-  let offset = 0;
-  const limit = 50000; // Process 50k rows per chunk (reduced to prevent CPU timeout)
-  let totalProcessed = 0;
+  // 3) Poll import job for progress updates
+  console.log('🔄 Starting job polling...');
   
-  console.log('🔄 Starting chunked processing...');
+  let totalProcessed = 0;
+  let totalRows = 0;
   
   while (true) {
-    console.log(`📊 Processing chunk: offset=${offset}, limit=${limit}`);
+    // Poll the import_jobs table for progress
+    const { data: jobData, error: jobError } = await supabase
+      .from('import_jobs')
+      .select('status, rows_loaded, total_rows, error')
+      .eq('id', jobId)
+      .single();
     
-    const { data: processData, error: processError } = await supabase.functions.invoke('large-dataset-shareholders-import', {
-      body: { 
-        action: 'process',
-        bucket, 
-        path: uploadPath, 
-        mapping: opts.mapping,
-        jobId,
-        offset,
-        limit
-      }
-    });
-    
-    if (processError) {
-      throw new Error(`Process chunk failed: ${processError.message}`);
+    if (jobError) {
+      throw new Error(`Failed to check job status: ${jobError.message}`);
     }
     
-    totalProcessed = processData?.totalProcessed || 0;
-    const processedInChunk = processData?.processedInChunk || 0;
-    
-    console.log(`✅ Chunk processed: ${processedInChunk} rows, total: ${totalProcessed}`);
-    
-    // Report progress
-    if (opts.onProcessProgress) {
-      opts.onProcessProgress(totalProcessed, totalProcessed + (processData?.done ? 0 : limit));
+    if (!jobData) {
+      throw new Error('Job not found');
     }
     
-    // Check if done
-    if (processData?.done) {
+    totalProcessed = jobData.rows_loaded || 0;
+    totalRows = jobData.total_rows || 0;
+    
+    console.log(`📊 Job status: ${jobData.status}, processed: ${totalProcessed}/${totalRows}`);
+    
+    // Report progress to callback
+    if (opts.onProcessProgress && totalRows > 0) {
+      opts.onProcessProgress(totalProcessed, totalRows);
+    }
+    
+    // Check job status
+    if (jobData.status === 'completed') {
       console.log('🎉 Import completed!');
       break;
+    } else if (jobData.status === 'error' || jobData.status === 'failed') {
+      throw new Error(`Import failed: ${jobData.error || 'Unknown error'}`);
     }
     
-    // Move to next chunk
-    offset = processData?.nextOffset || (offset + processedInChunk);
-    
-    // Small delay between chunks to prevent overwhelming the system
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait 2 seconds before polling again
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   return { 
