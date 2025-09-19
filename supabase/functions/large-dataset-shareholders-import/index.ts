@@ -109,7 +109,7 @@ serve(async (req) => {
           // Update job status to error
           await supabase
             .from('import_jobs')
-            .update({ status: 'error', error_message: batchError.message })
+            .update({ status: 'error', error: batchError.message })
             .eq('id', job.id);
           throw new Error(`Batch processing failed: ${batchError.message}`);
         }
