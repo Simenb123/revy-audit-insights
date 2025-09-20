@@ -17,17 +17,15 @@ interface ShareholderRow {
   user_id: string;
 }
 
-const BATCH_SIZE = 10000;
+const CHUNK_SIZE = 5000; // Process in smaller chunks to prevent memory issues
 
-// Helper function to download and parse file in chunks
-async function downloadAndParseFileChunk(
+// Helper function to download and parse CSV/Excel file
+async function downloadAndParseFile(
   supabase: any, 
   bucket: string, 
-  path: string, 
-  offset: number = 0, 
-  limit: number = BATCH_SIZE
-): Promise<{ data: any[], totalRows: number, done: boolean }> {
-  console.log(`📥 Downloading file chunk from ${bucket}/${path} (offset: ${offset}, limit: ${limit})`);
+  path: string
+): Promise<any[]> {
+  console.log(`📥 Downloading file from ${bucket}/${path}`);
   
   const { data: fileData, error: downloadError } = await supabase.storage
     .from(bucket)
@@ -44,7 +42,7 @@ async function downloadAndParseFileChunk(
   const isExcel = path.toLowerCase().endsWith('.xlsx') || path.toLowerCase().endsWith('.xls');
   
   if (isExcel) {
-    console.log('📊 Parsing Excel file chunk');
+    console.log('📊 Parsing Excel file');
     const workbook = XLSX.read(uint8Array, { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -52,27 +50,20 @@ async function downloadAndParseFileChunk(
     // Convert to JSON with header row
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     
-    if (!jsonData.length) return { data: [], totalRows: 0, done: true };
+    if (!jsonData.length) return [];
     
     const headers = jsonData[0] as string[];
     const allRows = jsonData.slice(1) as any[][];
-    const totalRows = allRows.length;
     
-    // Skip rows based on offset and take only limit rows
-    const chunkRows = allRows.slice(offset, offset + limit);
-    const done = offset + chunkRows.length >= totalRows;
-    
-    const data = chunkRows.map(row => {
+    return allRows.map(row => {
       const obj: any = {};
       headers.forEach((header, index) => {
         obj[header] = row[index] || '';
       });
       return obj;
     });
-    
-    return { data, totalRows, done };
   } else {
-    console.log('📄 Parsing CSV file chunk');
+    console.log('📄 Parsing CSV file');
     const csvText = new TextDecoder('utf-8').decode(uint8Array);
     
     return new Promise((resolve, reject) => {
@@ -83,15 +74,7 @@ async function downloadAndParseFileChunk(
           if (results.errors.length > 0) {
             console.warn('CSV parsing warnings:', results.errors);
           }
-          
-          const allRows = results.data as any[];
-          const totalRows = allRows.length;
-          
-          // Skip rows based on offset and take only limit rows
-          const chunkRows = allRows.slice(offset, offset + limit);
-          const done = offset + chunkRows.length >= totalRows;
-          
-          resolve({ data: chunkRows, totalRows, done });
+          resolve(results.data as any[]);
         },
         error: (error) => {
           reject(new Error(`CSV parsing failed: ${error.message}`));
@@ -148,7 +131,7 @@ function mapRowToShareholderRow(rawRow: any, mapping: Mapping, userId: string, d
   return mapped;
 }
 
-// Main queue handler function
+// Main queue processor function
 async function processShareholderImportQueue() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -166,12 +149,12 @@ async function processShareholderImportQueue() {
   
   if (queueError) {
     console.error('❌ Failed to fetch queue items:', queueError);
-    return;
+    return { success: false, message: 'Failed to fetch queue items' };
   }
   
   if (!queueItems || queueItems.length === 0) {
     console.log('📭 No pending jobs in queue');
-    return;
+    return { success: true, message: 'No pending jobs in queue' };
   }
   
   const queueItem = queueItems[0];
@@ -193,76 +176,54 @@ async function processShareholderImportQueue() {
       .update({ status: 'processing' })
       .eq('id', queueItem.job_id);
     
-    // Clear staging table for this user
+    // Download and parse the full file
+    const allRows = await downloadAndParseFile(supabase, queueItem.bucket, queueItem.path);
+    console.log(`📊 Parsed ${allRows.length} rows from file`);
+    
+    if (allRows.length === 0) {
+      throw new Error('No data found in file');
+    }
+    
+    // Update job with total rows
+    await supabase
+      .from('import_jobs')
+      .update({ total_rows: allRows.length })
+      .eq('id', queueItem.job_id);
+    
+    // Clear staging table for this user first
     console.log('🗑️ Clearing existing staging data...');
     await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
     
-    let totalProcessed = 0;
-    let offset = 0;
-    let done = false;
     const defaultYear = new Date().getFullYear();
+    let totalProcessed = 0;
     
-    // Process file in chunks
-    while (!done) {
-      console.log(`📊 Processing chunk at offset ${offset}`);
-      
-      // Download and parse chunk
-      const fileChunk = await downloadAndParseFileChunk(
-        supabase, 
-        queueItem.bucket, 
-        queueItem.path, 
-        offset, 
-        BATCH_SIZE
-      );
-      
-      if (!fileChunk.data || fileChunk.data.length === 0) {
-        console.log('📭 No more data to process');
-        done = true;
-        break;
-      }
-      
-      // Update job with total rows if not set yet
-      if (fileChunk.totalRows > 0) {
-        await supabase
-          .from('import_jobs')
-          .update({ total_rows: fileChunk.totalRows })
-          .eq('id', queueItem.job_id)
-          .is('total_rows', null);
-      }
-      
-      console.log(`📋 Processing ${fileChunk.data.length} rows from chunk`);
+    // Process in chunks to prevent memory issues
+    for (let i = 0; i < allRows.length; i += CHUNK_SIZE) {
+      const chunk = allRows.slice(i, i + CHUNK_SIZE);
+      console.log(`📋 Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}: rows ${i + 1}-${Math.min(i + CHUNK_SIZE, allRows.length)}`);
       
       // Map rows to ShareholderRow format
-      const mappedRows: ShareholderRow[] = [];
-      
-      for (const rawRow of fileChunk.data) {
-        // Skip empty rows
-        if (!rawRow || Object.keys(rawRow).length === 0) {
-          continue;
-        }
-        
-        const mappedRow = mapRowToShareholderRow(rawRow, queueItem.mapping, queueItem.user_id, defaultYear);
-        mappedRows.push(mappedRow);
-      }
+      const mappedRows: ShareholderRow[] = chunk
+        .filter(row => row && Object.keys(row).length > 0) // Skip empty rows
+        .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, defaultYear));
       
       if (mappedRows.length > 0) {
-        // Insert to staging table
+        // Insert chunk to staging table
         console.log(`📥 Inserting ${mappedRows.length} rows to staging`);
         const { error: insertError } = await supabase
           .from('shareholders_staging')
           .insert(mappedRows, { returning: 'minimal' });
           
         if (insertError) {
-          throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
+          throw new Error(`Failed to insert chunk to staging: ${insertError.message}`);
         }
         
-        console.log(`✅ Inserted to staging, now processing batch...`);
-        
-        // Process the batch
+        // Process the batch from staging to production tables
+        console.log(`🚀 Processing batch from staging...`);
         const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
           p_job_id: queueItem.job_id,
           p_user_id: queueItem.user_id,
-          p_offset: 0, // Always 0 for staging table offset
+          p_offset: 0, // Always 0 for staging table processing
           p_limit: mappedRows.length
         });
         
@@ -272,25 +233,17 @@ async function processShareholderImportQueue() {
         
         const processedCount = batchResult?.processed_count || 0;
         totalProcessed += processedCount;
-        console.log(`🚀 Processed ${processedCount} rows from staging to production (total: ${totalProcessed})`);
+        console.log(`✅ Processed ${processedCount} rows (total: ${totalProcessed}/${allRows.length})`);
         
-        // Clear staging table after processing each batch to prevent memory accumulation
-        console.log('🗑️ Clearing staging data after batch processing...');
+        // Clear staging table after each batch to prevent accumulation
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
+        
+        // Update job progress
+        await supabase
+          .from('import_jobs')
+          .update({ rows_loaded: totalProcessed })
+          .eq('id', queueItem.job_id);
       }
-      
-      offset += fileChunk.data.length;
-      done = fileChunk.done;
-      
-      // Update job progress
-      await supabase
-        .from('import_jobs')
-        .update({ 
-          rows_loaded: totalProcessed
-        })
-        .eq('id', queueItem.job_id);
-      
-      console.log(`📊 Progress: ${totalProcessed} rows processed${done ? ' - COMPLETED' : ''}`);
     }
     
     // Mark queue item as completed
@@ -302,7 +255,7 @@ async function processShareholderImportQueue() {
       })
       .eq('id', queueItem.id);
     
-    // Final update to job
+    // Final job update
     await supabase
       .from('import_jobs')
       .update({ 
@@ -312,6 +265,7 @@ async function processShareholderImportQueue() {
       .eq('id', queueItem.job_id);
     
     console.log(`✅ Successfully completed import job ${queueItem.job_id} with ${totalProcessed} rows processed`);
+    return { success: true, message: `Processed ${totalProcessed} rows successfully` };
     
   } catch (error: any) {
     console.error(`❌ Error processing queue item ${queueItem.id}:`, error);
@@ -326,7 +280,7 @@ async function processShareholderImportQueue() {
       })
       .eq('id', queueItem.id);
     
-    // Mark job as failed
+    // Mark job as failed  
     await supabase
       .from('import_jobs')
       .update({ 
@@ -334,6 +288,8 @@ async function processShareholderImportQueue() {
         error: error.message
       })
       .eq('id', queueItem.job_id);
+    
+    return { success: false, message: error.message };
   }
 }
 
@@ -352,12 +308,9 @@ serve(async (req) => {
     console.log('🎯 Shareholder import queue handler triggered');
     
     // Process the queue
-    await processShareholderImportQueue();
+    const result = await processShareholderImportQueue();
     
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: 'Queue processing completed'
-    }), {
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
