@@ -11507,6 +11507,7 @@ export type Database = {
           created_at: string | null
           fodselsaar_orgnr: string | null
           id: number
+          import_metadata: Json | null
           landkode: string | null
           navn_aksjonaer: string | null
           orgnr: string | null
@@ -11520,6 +11521,7 @@ export type Database = {
           created_at?: string | null
           fodselsaar_orgnr?: string | null
           id?: number
+          import_metadata?: Json | null
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
@@ -11533,6 +11535,7 @@ export type Database = {
           created_at?: string | null
           fodselsaar_orgnr?: string | null
           id?: number
+          import_metadata?: Json | null
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
