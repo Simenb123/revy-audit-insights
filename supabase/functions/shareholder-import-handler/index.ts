@@ -17,71 +17,212 @@ interface ShareholderRow {
   user_id: string;
 }
 
-const CHUNK_SIZE = 5000; // Process in smaller chunks to prevent memory issues
+const PROCESSING_CHUNK_SIZE = 1000; // Reduced chunk size for better memory management
+const DOWNLOAD_CHUNK_SIZE = 1024 * 1024; // 1MB chunks for streaming download
 
-// Helper function to download and parse CSV/Excel file
-async function downloadAndParseFile(
-  supabase: any, 
-  bucket: string, 
-  path: string
-): Promise<any[]> {
-  console.log(`📥 Downloading file from ${bucket}/${path}`);
+// Streaming CSV parser for large files
+async function streamParseCSV(
+  supabase: any,
+  bucket: string,
+  path: string,
+  onChunk: (chunk: any[]) => Promise<void>
+): Promise<void> {
+  console.log(`📥 Starting streaming download of ${bucket}/${path}`);
+  
+  let offset = 0;
+  let isFirstChunk = true;
+  let csvHeaders: string[] = [];
+  let partialRow = '';
+  let totalProcessed = 0;
+  
+  while (true) {
+    // Download chunk using range request
+    console.log(`📦 Downloading chunk at offset ${offset}...`);
+    const { data: chunkData, error: downloadError } = await supabase.storage
+      .from(bucket)
+      .download(path, {
+        transform: {
+          width: undefined,
+          height: undefined,
+          resize: undefined,
+          format: undefined,
+          quality: undefined
+        }
+      });
+    
+    if (downloadError) {
+      throw new Error(`Failed to download chunk: ${downloadError.message}`);
+    }
+    
+    // For now, we'll download the full file but process it in streaming chunks
+    // This is a limitation of Supabase Storage API which doesn't support range requests
+    if (isFirstChunk) {
+      const arrayBuffer = await chunkData.arrayBuffer();
+      const csvText = new TextDecoder('utf-8').decode(arrayBuffer);
+      
+      console.log(`📄 Processing CSV file in streaming chunks (${csvText.length} chars total)`);
+      
+      // Process CSV in streaming fashion using Papa Parse streaming
+      return new Promise((resolve, reject) => {
+        const chunkBuffer: any[] = [];
+        let headerSet = false;
+        
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          step: async (row: any, parser: any) => {
+            try {
+              if (!headerSet) {
+                console.log(`📋 CSV Headers found:`, Object.keys(row.data));
+                headerSet = true;
+              }
+              
+              chunkBuffer.push(row.data);
+              totalProcessed++;
+              
+              // Process in chunks to prevent memory buildup
+              if (chunkBuffer.length >= PROCESSING_CHUNK_SIZE) {
+                console.log(`🔄 Processing chunk of ${chunkBuffer.length} rows (total processed: ${totalProcessed})`);
+                
+                // Pause parsing while processing chunk
+                parser.pause();
+                
+                try {
+                  await onChunk([...chunkBuffer]);
+                  chunkBuffer.length = 0; // Clear buffer
+                  
+                  // Force garbage collection
+                  if (globalThis.gc) {
+                    globalThis.gc();
+                  }
+                  
+                  // Resume parsing
+                  parser.resume();
+                } catch (error) {
+                  parser.abort();
+                  reject(error);
+                  return;
+                }
+              }
+            } catch (error) {
+              parser.abort();
+              reject(error);
+            }
+          },
+          complete: async () => {
+            try {
+              // Process remaining rows in buffer
+              if (chunkBuffer.length > 0) {
+                console.log(`🔄 Processing final chunk of ${chunkBuffer.length} rows`);
+                await onChunk([...chunkBuffer]);
+              }
+              
+              console.log(`✅ Streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          },
+          error: (error: any) => {
+            reject(new Error(`CSV parsing failed: ${error.message}`));
+          }
+        });
+      });
+    }
+    
+    break; // For now, we only do single download due to Supabase Storage limitations
+  }
+}
+
+// Optimized Excel processing for large files
+async function streamParseExcel(
+  supabase: any,
+  bucket: string,
+  path: string,
+  onChunk: (chunk: any[]) => Promise<void>
+): Promise<void> {
+  console.log(`📊 Starting Excel file processing for ${bucket}/${path}`);
   
   const { data: fileData, error: downloadError } = await supabase.storage
     .from(bucket)
     .download(path);
     
   if (downloadError) {
-    throw new Error(`Failed to download file: ${downloadError.message}`);
+    throw new Error(`Failed to download Excel file: ${downloadError.message}`);
   }
   
   const arrayBuffer = await fileData.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
+  console.log(`📊 Processing Excel file in memory-efficient chunks`);
   
-  // Detect file type and parse accordingly
-  const isExcel = path.toLowerCase().endsWith('.xlsx') || path.toLowerCase().endsWith('.xls');
+  // Read workbook with minimal memory usage options
+  const workbook = XLSX.read(arrayBuffer, { 
+    type: 'array',
+    cellText: false,
+    cellDates: true,
+    cellNF: false,
+    sheetStubs: false,
+    WTF: false
+  });
   
-  if (isExcel) {
-    console.log('📊 Parsing Excel file');
-    const workbook = XLSX.read(uint8Array, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    
-    // Convert to JSON with header row
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    
-    if (!jsonData.length) return [];
-    
-    const headers = jsonData[0] as string[];
-    const allRows = jsonData.slice(1) as any[][];
-    
-    return allRows.map(row => {
-      const obj: any = {};
-      headers.forEach((header, index) => {
-        obj[header] = row[index] || '';
-      });
-      return obj;
-    });
-  } else {
-    console.log('📄 Parsing CSV file');
-    const csvText = new TextDecoder('utf-8').decode(uint8Array);
-    
-    return new Promise((resolve, reject) => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length > 0) {
-            console.warn('CSV parsing warnings:', results.errors);
-          }
-          resolve(results.data as any[]);
-        },
-        error: (error) => {
-          reject(new Error(`CSV parsing failed: ${error.message}`));
-        }
-      });
-    });
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  
+  // Get range to process in chunks
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+  console.log(`📋 Excel range: ${range.s.r} to ${range.e.r} rows`);
+  
+  // Extract headers from first row
+  const headers: string[] = [];
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: range.s.r, c: col });
+    const cell = worksheet[cellAddress];
+    headers.push(cell ? String(cell.v) : `Column_${col}`);
   }
+  
+  console.log(`📋 Excel headers:`, headers);
+  
+  // Process rows in chunks
+  let totalProcessed = 0;
+  for (let startRow = range.s.r + 1; startRow <= range.e.r; startRow += PROCESSING_CHUNK_SIZE) {
+    const endRow = Math.min(startRow + PROCESSING_CHUNK_SIZE - 1, range.e.r);
+    
+    console.log(`🔄 Processing Excel rows ${startRow} to ${endRow}`);
+    
+    const chunkRows: any[] = [];
+    
+    for (let row = startRow; row <= endRow; row++) {
+      const rowObj: any = {};
+      let hasData = false;
+      
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[cellAddress];
+        const value = cell ? cell.v : '';
+        
+        if (value !== '' && value !== null && value !== undefined) {
+          hasData = true;
+        }
+        
+        rowObj[headers[col - range.s.c]] = value;
+      }
+      
+      if (hasData) {
+        chunkRows.push(rowObj);
+      }
+    }
+    
+    if (chunkRows.length > 0) {
+      await onChunk(chunkRows);
+      totalProcessed += chunkRows.length;
+      
+      // Force garbage collection
+      if (globalThis.gc) {
+        globalThis.gc();
+      }
+    }
+  }
+  
+  console.log(`✅ Excel processing completed. Total processed: ${totalProcessed} rows`);
 }
 
 // Helper function to map raw data to ShareholderRow format
@@ -176,31 +317,22 @@ async function processShareholderImportQueue() {
       .update({ status: 'processing' })
       .eq('id', queueItem.job_id);
     
-    // Download and parse the full file
-    const allRows = await downloadAndParseFile(supabase, queueItem.bucket, queueItem.path);
-    console.log(`📊 Parsed ${allRows.length} rows from file`);
-    
-    if (allRows.length === 0) {
-      throw new Error('No data found in file');
-    }
-    
-    // Update job with total rows
-    await supabase
-      .from('import_jobs')
-      .update({ total_rows: allRows.length })
-      .eq('id', queueItem.job_id);
-    
     // Clear staging table for this user first
     console.log('🗑️ Clearing existing staging data...');
     await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
     
     const defaultYear = new Date().getFullYear();
     let totalProcessed = 0;
+    let estimatedTotalRows = 0;
     
-    // Process in chunks to prevent memory issues
-    for (let i = 0; i < allRows.length; i += CHUNK_SIZE) {
-      const chunk = allRows.slice(i, i + CHUNK_SIZE);
-      console.log(`📋 Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}: rows ${i + 1}-${Math.min(i + CHUNK_SIZE, allRows.length)}`);
+    // Detect file type for streaming approach
+    const isExcel = queueItem.path.toLowerCase().endsWith('.xlsx') || queueItem.path.toLowerCase().endsWith('.xls');
+    
+    // Streaming chunk processor function
+    const processChunk = async (chunk: any[]): Promise<void> => {
+      if (chunk.length === 0) return;
+      
+      console.log(`📋 Processing streaming chunk of ${chunk.length} rows`);
       
       // Map rows to ShareholderRow format
       const mappedRows: ShareholderRow[] = chunk
@@ -233,17 +365,29 @@ async function processShareholderImportQueue() {
         
         const processedCount = batchResult?.processed_count || 0;
         totalProcessed += processedCount;
-        console.log(`✅ Processed ${processedCount} rows (total: ${totalProcessed}/${allRows.length})`);
+        console.log(`✅ Processed ${processedCount} rows (total processed so far: ${totalProcessed})`);
         
         // Clear staging table after each batch to prevent accumulation
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
         
-        // Update job progress
+        // Update job progress (use processed count as total for now, will update at end)
         await supabase
           .from('import_jobs')
-          .update({ rows_loaded: totalProcessed })
+          .update({ 
+            rows_loaded: totalProcessed,
+            total_rows: Math.max(totalProcessed, estimatedTotalRows)
+          })
           .eq('id', queueItem.job_id);
       }
+    };
+    
+    // Stream parse the file based on type
+    if (isExcel) {
+      console.log('📊 Starting streaming Excel processing...');
+      await streamParseExcel(supabase, queueItem.bucket, queueItem.path, processChunk);
+    } else {
+      console.log('📄 Starting streaming CSV processing...');
+      await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk);
     }
     
     // Mark queue item as completed
