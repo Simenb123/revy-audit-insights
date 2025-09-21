@@ -1,95 +1,118 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-Deno.serve(async (req) => {
-  // Handle CORS
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  if (req.method !== 'POST') {
-    return new Response('Only POST allowed', { status: 405, headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('No authorization header')
+    if (req.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-    
-    if (authError || !user) {
-      throw new Error('Invalid token')
+    const { jobId, storagePath } = await req.json() as {
+      jobId: string;
+      storagePath?: string;
+    };
+
+    if (!jobId) {
+      return new Response(JSON.stringify({ error: "Job ID is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    const { session_id, year, isGlobal, batch_size = 1000, offset = 0 } = await req.json()
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
 
-    console.log(`Processing batch for session: ${session_id}, offset: ${offset}, batch_size: ${batch_size}`)
+    console.log(`🧹 Processing cleanup for job ${jobId}`);
 
-    // Process batch of companies
-    const { data: batchResult, error: batchError } = await supabase.rpc('update_total_shares_batch', {
-      p_year: year,
-      p_user_id: isGlobal ? null : user.id,
-      p_batch_size: batch_size,
-      p_offset: offset
-    })
+    // Get job details
+    const { data: job, error: jobError } = await supabase
+      .from('import_jobs')
+      .select('status, bucket_name, file_path')
+      .eq('id', jobId)
+      .single();
 
-    if (batchError) {
-      console.error('Batch processing error:', batchError)
-      throw new Error(`Batch processing failed: ${batchError.message}`)
+    if (jobError) {
+      throw new Error(`Failed to fetch job details: ${jobError.message}`);
     }
 
-    console.log(`Batch completed: processed ${batchResult.processed_count} companies, total: ${batchResult.total_companies}`)
+    if (!job) {
+      throw new Error('Job not found');
+    }
 
-    // If this is the final batch, get summary counts
-    let summary = null
-    if (!batchResult.has_more) {
-      const { data: companiesCount } = await supabase
-        .from('share_companies')
-        .select('*', { count: 'exact', head: true })
-        .eq('year', year)
-        .eq('user_id', isGlobal ? null : user.id)
-
-      const { data: holdingsCount } = await supabase
-        .from('share_holdings')
-        .select('*', { count: 'exact', head: true })
-        .eq('year', year)
-        .eq('user_id', isGlobal ? null : user.id)
-
-      summary = {
-        companies: companiesCount?.length || 0,
-        holdings: holdingsCount?.length || 0,
-        year
+    // Only cleanup if job is completed successfully
+    if (job.status === 'completed') {
+      let cleanupPath = storagePath;
+      
+      // Construct cleanup path from job data if not provided
+      if (!cleanupPath && job.bucket_name && job.file_path) {
+        cleanupPath = `${job.bucket_name}/${job.file_path}`;
       }
 
-      console.log(`Import session ${session_id} completed. Companies: ${summary.companies}, Holdings: ${summary.holdings}`)
+      if (cleanupPath) {
+        try {
+          // Parse bucket and path from storage path
+          const pathParts = cleanupPath.split('/');
+          const bucket = pathParts[0];
+          const filePath = pathParts.slice(1).join('/');
+
+          console.log(`🗑️ Cleaning up file: ${filePath} from bucket: ${bucket}`);
+
+          // Delete the uploaded file
+          const { error: deleteError } = await supabase.storage
+            .from(bucket)
+            .remove([filePath]);
+
+          if (deleteError) {
+            console.warn(`⚠️ Failed to delete file ${filePath}: ${deleteError.message}`);
+            // Don't fail the entire operation if file deletion fails
+          } else {
+            console.log(`✅ Successfully cleaned up file: ${filePath}`);
+            
+            // Update job to mark file as cleaned up
+            await supabase
+              .from('import_jobs')
+              .update({ 
+                metadata: { 
+                  file_cleaned_up: true, 
+                  cleaned_up_at: new Date().toISOString() 
+                } 
+              })
+              .eq('id', jobId);
+          }
+        } catch (cleanupError) {
+          console.warn(`⚠️ Error during file cleanup: ${cleanupError}`);
+        }
+      }
     }
 
-    return new Response(JSON.stringify({
+    return new Response(JSON.stringify({ 
       success: true,
-      session_id,
-      batch_result: batchResult,
-      summary,
-      completed: !batchResult.has_more
+      message: `Cleanup processed for job ${jobId}`,
+      status: job.status
     }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
 
-  } catch (error) {
-    console.error('Batch finish error:', error)
-    return new Response(JSON.stringify({
-      error: error.message
-    }), {
+  } catch (error: any) {
+    console.error('❌ Cleanup error:', error);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Unknown error during cleanup'
+    }), { 
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
   }
-})
+});

@@ -123,12 +123,24 @@ export async function uploadAndStartImport(
           // Check job status
           if (jobData.status === 'completed') {
             console.log('🎉 Import completed!');
-            channel.unsubscribe();
-            resolve({ 
-              storagePath: `${bucket}/${uploadPath}`,
-              jobId,
-              totalProcessed 
-            });
+         channel.unsubscribe();
+         
+         // Schedule file cleanup after successful import
+         supabase.functions.invoke('shareholders-import-finish-batch', {
+           body: { 
+             jobId,
+             storagePath: `${bucket}/${uploadPath}`
+           }
+         }).catch((cleanupError) => {
+           console.warn('⚠️ File cleanup failed:', cleanupError);
+           // Don't fail the main operation if cleanup fails
+         });
+         
+         resolve({ 
+           storagePath: `${bucket}/${uploadPath}`,
+           jobId,
+           totalProcessed 
+         });
           } else if (jobData.status === 'error' || jobData.status === 'failed') {
             channel.unsubscribe();
             reject(new Error(`Import failed: ${jobData.error || 'Unknown error'}`));
