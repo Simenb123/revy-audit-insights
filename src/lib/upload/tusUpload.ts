@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseUrl } from '@/integrations/supabase/client';
 import * as tus from 'tus-js-client';
 
 export interface TusUploadProgress {
@@ -49,9 +49,10 @@ export async function tusUpload(
   }
 
   // Construct the TUS resumable endpoint dynamically from environment
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+  // Note: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be configured in Lovable environment for production
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL || supabaseUrl;
   if (!SUPABASE_URL) {
-    throw new Error('Neither VITE_SUPABASE_URL nor SUPABASE_URL environment variable is configured');
+    throw new Error('Supabase URL is not configured. Set VITE_SUPABASE_URL, SUPABASE_URL eller bruk supabaseUrl-fall');
   }
   const projectRef = new URL(SUPABASE_URL).hostname.split('.')[0];
   const endpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
