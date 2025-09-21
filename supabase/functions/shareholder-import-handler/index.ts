@@ -18,123 +18,151 @@ interface ShareholderRow {
 }
 
 const PROCESSING_CHUNK_SIZE = 1000; // Reduced chunk size for better memory management
-const DOWNLOAD_CHUNK_SIZE = 1024 * 1024; // 1MB chunks for streaming download
 
-// Streaming CSV parser for large files
+// Helper function to download file with retry logic and signed URLs
+async function downloadFileWithRetry(
+  supabase: any,
+  bucket: string,
+  path: string,
+  maxRetries = 3
+): Promise<ArrayBuffer> {
+  console.log(`📥 Downloading file ${bucket}/${path} with retry logic`);
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Create signed URL for secure download
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 3600); // 1 hour expiry
+      
+      if (urlError) {
+        throw new Error(`Failed to create signed URL: ${urlError.message}`);
+      }
+
+      console.log(`📦 Attempt ${attempt}: Downloading from signed URL`);
+      
+      // Download using native fetch with better error handling
+      const response = await fetch(signedUrlData.signedUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Supabase-Edge-Function'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      console.log(`✅ Successfully downloaded file (${arrayBuffer.byteLength} bytes)`);
+      return arrayBuffer;
+
+    } catch (error: any) {
+      console.error(`❌ Download attempt ${attempt} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw new Error(`Failed to download after ${maxRetries} attempts: ${error.message}`);
+      }
+      
+      // Wait before retry (exponential backoff)
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+      console.log(`⏱️ Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw new Error('Unexpected error in download retry logic');
+}
+
+// Optimized CSV processing using streaming approach with retry logic
 async function streamParseCSV(
   supabase: any,
   bucket: string,
   path: string,
   onChunk: (chunk: any[]) => Promise<void>
 ): Promise<void> {
-  console.log(`📥 Starting streaming download of ${bucket}/${path}`);
+  console.log(`📥 Starting streaming CSV processing for ${bucket}/${path}`);
   
-  let offset = 0;
-  let isFirstChunk = true;
-  let csvHeaders: string[] = [];
-  let partialRow = '';
-  let totalProcessed = 0;
-  
-  while (true) {
-    // Download chunk using range request
-    console.log(`📦 Downloading chunk at offset ${offset}...`);
-    const { data: chunkData, error: downloadError } = await supabase.storage
-      .from(bucket)
-      .download(path, {
-        transform: {
-          width: undefined,
-          height: undefined,
-          resize: undefined,
-          format: undefined,
-          quality: undefined
+  try {
+    // Download file with retry logic
+    const arrayBuffer = await downloadFileWithRetry(supabase, bucket, path);
+    const csvText = new TextDecoder('utf-8').decode(arrayBuffer);
+    
+    console.log(`📄 Processing CSV file in streaming chunks (${csvText.length} chars total)`);
+    
+    // Process CSV in streaming fashion using Papa Parse streaming
+    return new Promise((resolve, reject) => {
+      const chunkBuffer: any[] = [];
+      let headerSet = false;
+      let totalProcessed = 0;
+      
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        step: async (row: any, parser: any) => {
+          try {
+            if (!headerSet) {
+              console.log(`📋 CSV Headers found:`, Object.keys(row.data));
+              headerSet = true;
+            }
+            
+            chunkBuffer.push(row.data);
+            totalProcessed++;
+            
+            // Process in chunks to prevent memory buildup
+            if (chunkBuffer.length >= PROCESSING_CHUNK_SIZE) {
+              console.log(`🔄 Processing chunk of ${chunkBuffer.length} rows (total processed: ${totalProcessed})`);
+              
+              // Pause parsing while processing chunk
+              parser.pause();
+              
+              try {
+                await onChunk([...chunkBuffer]);
+                chunkBuffer.length = 0; // Clear buffer
+                
+                // Force garbage collection
+                if (globalThis.gc) {
+                  globalThis.gc();
+                }
+                
+                // Resume parsing
+                parser.resume();
+              } catch (error) {
+                parser.abort();
+                reject(error);
+                return;
+              }
+            }
+          } catch (error) {
+            parser.abort();
+            reject(error);
+          }
+        },
+        complete: async () => {
+          try {
+            // Process remaining rows in buffer
+            if (chunkBuffer.length > 0) {
+              console.log(`🔄 Processing final chunk of ${chunkBuffer.length} rows`);
+              await onChunk([...chunkBuffer]);
+            }
+            
+            console.log(`✅ Streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        },
+        error: (error: any) => {
+          reject(new Error(`CSV parsing failed: ${error.message}`));
         }
       });
-    
-    if (downloadError) {
-      throw new Error(`Failed to download chunk: ${downloadError.message}`);
-    }
-    
-    // For now, we'll download the full file but process it in streaming chunks
-    // This is a limitation of Supabase Storage API which doesn't support range requests
-    if (isFirstChunk) {
-      const arrayBuffer = await chunkData.arrayBuffer();
-      const csvText = new TextDecoder('utf-8').decode(arrayBuffer);
-      
-      console.log(`📄 Processing CSV file in streaming chunks (${csvText.length} chars total)`);
-      
-      // Process CSV in streaming fashion using Papa Parse streaming
-      return new Promise((resolve, reject) => {
-        const chunkBuffer: any[] = [];
-        let headerSet = false;
-        
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          step: async (row: any, parser: any) => {
-            try {
-              if (!headerSet) {
-                console.log(`📋 CSV Headers found:`, Object.keys(row.data));
-                headerSet = true;
-              }
-              
-              chunkBuffer.push(row.data);
-              totalProcessed++;
-              
-              // Process in chunks to prevent memory buildup
-              if (chunkBuffer.length >= PROCESSING_CHUNK_SIZE) {
-                console.log(`🔄 Processing chunk of ${chunkBuffer.length} rows (total processed: ${totalProcessed})`);
-                
-                // Pause parsing while processing chunk
-                parser.pause();
-                
-                try {
-                  await onChunk([...chunkBuffer]);
-                  chunkBuffer.length = 0; // Clear buffer
-                  
-                  // Force garbage collection
-                  if (globalThis.gc) {
-                    globalThis.gc();
-                  }
-                  
-                  // Resume parsing
-                  parser.resume();
-                } catch (error) {
-                  parser.abort();
-                  reject(error);
-                  return;
-                }
-              }
-            } catch (error) {
-              parser.abort();
-              reject(error);
-            }
-          },
-          complete: async () => {
-            try {
-              // Process remaining rows in buffer
-              if (chunkBuffer.length > 0) {
-                console.log(`🔄 Processing final chunk of ${chunkBuffer.length} rows`);
-                await onChunk([...chunkBuffer]);
-              }
-              
-              console.log(`✅ Streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          },
-          error: (error: any) => {
-            reject(new Error(`CSV parsing failed: ${error.message}`));
-          }
-        });
-      });
-    }
-    
-    break; // For now, we only do single download due to Supabase Storage limitations
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to download chunk: ${error.message}`);
   }
 }
 
-// Optimized Excel processing for large files
+// Optimized Excel processing for large files with retry logic
 async function streamParseExcel(
   supabase: any,
   bucket: string,
@@ -143,86 +171,84 @@ async function streamParseExcel(
 ): Promise<void> {
   console.log(`📊 Starting Excel file processing for ${bucket}/${path}`);
   
-  const { data: fileData, error: downloadError } = await supabase.storage
-    .from(bucket)
-    .download(path);
+  try {
+    // Download file with retry logic
+    const arrayBuffer = await downloadFileWithRetry(supabase, bucket, path);
     
-  if (downloadError) {
-    throw new Error(`Failed to download Excel file: ${downloadError.message}`);
-  }
-  
-  const arrayBuffer = await fileData.arrayBuffer();
-  console.log(`📊 Processing Excel file in memory-efficient chunks`);
-  
-  // Read workbook with minimal memory usage options
-  const workbook = XLSX.read(arrayBuffer, { 
-    type: 'array',
-    cellText: false,
-    cellDates: true,
-    cellNF: false,
-    sheetStubs: false,
-    WTF: false
-  });
-  
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
-  
-  // Get range to process in chunks
-  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
-  console.log(`📋 Excel range: ${range.s.r} to ${range.e.r} rows`);
-  
-  // Extract headers from first row
-  const headers: string[] = [];
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const cellAddress = XLSX.utils.encode_cell({ r: range.s.r, c: col });
-    const cell = worksheet[cellAddress];
-    headers.push(cell ? String(cell.v) : `Column_${col}`);
-  }
-  
-  console.log(`📋 Excel headers:`, headers);
-  
-  // Process rows in chunks
-  let totalProcessed = 0;
-  for (let startRow = range.s.r + 1; startRow <= range.e.r; startRow += PROCESSING_CHUNK_SIZE) {
-    const endRow = Math.min(startRow + PROCESSING_CHUNK_SIZE - 1, range.e.r);
+    console.log(`📊 Processing Excel file (${arrayBuffer.byteLength} bytes)`);
     
-    console.log(`🔄 Processing Excel rows ${startRow} to ${endRow}`);
+    // Read workbook with minimal memory usage options
+    const workbook = XLSX.read(arrayBuffer, { 
+      type: 'array',
+      cellText: false,
+      cellDates: true,
+      cellNF: false,
+      sheetStubs: false,
+      WTF: false
+    });
     
-    const chunkRows: any[] = [];
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
     
-    for (let row = startRow; row <= endRow; row++) {
-      const rowObj: any = {};
-      let hasData = false;
+    // Get range to process in chunks
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+    console.log(`📋 Excel range: ${range.s.r} to ${range.e.r} rows`);
+    
+    // Extract headers from first row
+    const headers: string[] = [];
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: range.s.r, c: col });
+      const cell = worksheet[cellAddress];
+      headers.push(cell ? String(cell.v) : `Column_${col}`);
+    }
+    
+    console.log(`📋 Excel headers:`, headers);
+    
+    // Process rows in chunks
+    let totalProcessed = 0;
+    for (let startRow = range.s.r + 1; startRow <= range.e.r; startRow += PROCESSING_CHUNK_SIZE) {
+      const endRow = Math.min(startRow + PROCESSING_CHUNK_SIZE - 1, range.e.r);
       
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-        const cell = worksheet[cellAddress];
-        const value = cell ? cell.v : '';
+      console.log(`🔄 Processing Excel rows ${startRow} to ${endRow}`);
+      
+      const chunkRows: any[] = [];
+      
+      for (let row = startRow; row <= endRow; row++) {
+        const rowObj: any = {};
+        let hasData = false;
         
-        if (value !== '' && value !== null && value !== undefined) {
-          hasData = true;
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = worksheet[cellAddress];
+          const value = cell ? cell.v : '';
+          
+          if (value !== '' && value !== null && value !== undefined) {
+            hasData = true;
+          }
+          
+          rowObj[headers[col - range.s.c]] = value;
         }
         
-        rowObj[headers[col - range.s.c]] = value;
+        if (hasData) {
+          chunkRows.push(rowObj);
+        }
       }
       
-      if (hasData) {
-        chunkRows.push(rowObj);
+      if (chunkRows.length > 0) {
+        await onChunk(chunkRows);
+        totalProcessed += chunkRows.length;
+        
+        // Force garbage collection
+        if (globalThis.gc) {
+          globalThis.gc();
+        }
       }
     }
     
-    if (chunkRows.length > 0) {
-      await onChunk(chunkRows);
-      totalProcessed += chunkRows.length;
-      
-      // Force garbage collection
-      if (globalThis.gc) {
-        globalThis.gc();
-      }
-    }
+    console.log(`✅ Excel processing completed. Total processed: ${totalProcessed} rows`);
+  } catch (error: any) {
+    throw new Error(`Failed to download Excel file: ${error.message}`);
   }
-  
-  console.log(`✅ Excel processing completed. Total processed: ${totalProcessed} rows`);
 }
 
 // Helper function to map raw data to ShareholderRow format
@@ -370,12 +396,13 @@ async function processShareholderImportQueue() {
         // Clear staging table after each batch to prevent accumulation
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
         
-        // Update job progress (use processed count as total for now, will update at end)
+        // Update job progress with better status tracking
         await supabase
           .from('import_jobs')
           .update({ 
             rows_loaded: totalProcessed,
-            total_rows: Math.max(totalProcessed, estimatedTotalRows)
+            total_rows: Math.max(totalProcessed, estimatedTotalRows),
+            status: 'processing' // Ensure status shows processing
           })
           .eq('id', queueItem.job_id);
       }
@@ -399,41 +426,49 @@ async function processShareholderImportQueue() {
       })
       .eq('id', queueItem.id);
     
-    // Final job update
+    // Mark job as completed
     await supabase
       .from('import_jobs')
       .update({ 
         status: 'completed',
+        total_rows: totalProcessed,
         rows_loaded: totalProcessed
       })
       .eq('id', queueItem.job_id);
     
-    console.log(`✅ Successfully completed import job ${queueItem.job_id} with ${totalProcessed} rows processed`);
-    return { success: true, message: `Processed ${totalProcessed} rows successfully` };
+    console.log(`✅ Import completed successfully! Total processed: ${totalProcessed} rows`);
+    return { success: true, message: `Successfully processed ${totalProcessed} rows` };
     
   } catch (error: any) {
-    console.error(`❌ Error processing queue item ${queueItem.id}:`, error);
+    console.error(`❌ Import failed:`, error);
     
-    // Mark queue item as failed
+    // Mark queue item as failed with detailed error
     await supabase
       .from('shareholder_import_queue')
       .update({ 
         status: 'failed',
-        error_message: error.message,
+        error_message: error.message || 'Unknown error occurred',
         processed_at: new Date().toISOString()
       })
       .eq('id', queueItem.id);
     
-    // Mark job as failed  
+    // Mark job as failed with detailed error
     await supabase
       .from('import_jobs')
       .update({ 
         status: 'error',
-        error: error.message
+        error: error.message || 'Import failed due to unknown error'
       })
       .eq('id', queueItem.job_id);
     
-    return { success: false, message: error.message };
+    // Log the full error for debugging
+    console.error('Full error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    return { success: false, message: error.message || 'Import failed' };
   }
 }
 
