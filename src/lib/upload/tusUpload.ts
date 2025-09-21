@@ -49,9 +49,9 @@ export async function tusUpload(
   }
 
   // Construct the TUS resumable endpoint dynamically from environment
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
   if (!SUPABASE_URL) {
-    throw new Error('VITE_SUPABASE_URL environment variable is not configured');
+    throw new Error('Neither VITE_SUPABASE_URL nor SUPABASE_URL environment variable is configured');
   }
   const projectRef = new URL(SUPABASE_URL).hostname.split('.')[0];
   const endpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
