@@ -91,53 +91,93 @@ export async function uploadAndStartImport(
 
   console.log('✅ Import job created:', jobId);
 
-  // 3) Poll import job for progress updates
-  console.log('🔄 Starting job polling...');
+  // 3) Subscribe to real-time progress updates
+  console.log('🔄 Setting up real-time progress tracking...');
   
   let totalProcessed = 0;
   let totalRows = 0;
   
-  while (true) {
-    // Poll the import_jobs table for progress
-    const { data: jobData, error: jobError } = await supabase
-      .from('import_jobs')
-      .select('status, rows_loaded, total_rows, error')
-      .eq('id', jobId)
-      .single();
-    
-    if (jobError) {
-      throw new Error(`Failed to check job status: ${jobError.message}`);
-    }
-    
-    if (!jobData) {
-      throw new Error('Job not found');
-    }
-    
-    totalProcessed = jobData.rows_loaded || 0;
-    totalRows = jobData.total_rows || 0;
-    
-    console.log(`📊 Job status: ${jobData.status}, processed: ${totalProcessed}/${totalRows}`);
-    
-    // Report progress to callback
-    if (opts.onProcessProgress && totalRows > 0) {
-      opts.onProcessProgress(totalProcessed, totalRows);
-    }
-    
-    // Check job status
-    if (jobData.status === 'completed') {
-      console.log('🎉 Import completed!');
-      break;
-    } else if (jobData.status === 'error' || jobData.status === 'failed') {
-      throw new Error(`Import failed: ${jobData.error || 'Unknown error'}`);
-    }
-    
-    // Wait 2 seconds before polling again
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
+  return new Promise((resolve, reject) => {
+    const channel = supabase
+      .channel('import-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'import_jobs',
+          filter: `id=eq.${jobId}`
+        },
+        (payload) => {
+          const jobData = payload.new;
+          console.log(`📊 Real-time update: ${jobData.status}, processed: ${jobData.rows_loaded}/${jobData.total_rows}`);
+          
+          totalProcessed = jobData.rows_loaded || 0;
+          totalRows = jobData.total_rows || 0;
+          
+          // Report progress to callback
+          if (opts.onProcessProgress && totalRows > 0) {
+            opts.onProcessProgress(totalProcessed, totalRows);
+          }
+          
+          // Check job status
+          if (jobData.status === 'completed') {
+            console.log('🎉 Import completed!');
+            channel.unsubscribe();
+            resolve({ 
+              storagePath: `${bucket}/${uploadPath}`,
+              jobId,
+              totalProcessed 
+            });
+          } else if (jobData.status === 'error' || jobData.status === 'failed') {
+            channel.unsubscribe();
+            reject(new Error(`Import failed: ${jobData.error || 'Unknown error'}`));
+          }
+        }
+      )
+      .subscribe();
 
-  return { 
-    storagePath: `${bucket}/${uploadPath}`,
-    jobId,
-    totalProcessed 
-  };
-}
+    // Initial status check in case the job is already completed
+    const checkInitialStatus = async () => {
+      const { data: jobData, error: jobError } = await supabase
+        .from('import_jobs')
+        .select('status, rows_loaded, total_rows, error')
+        .eq('id', jobId)
+        .single();
+      
+      if (jobError) {
+        channel.unsubscribe();
+        reject(new Error(`Failed to check job status: ${jobError.message}`));
+        return;
+      }
+      
+      if (!jobData) {
+        channel.unsubscribe();
+        reject(new Error('Job not found'));
+        return;
+      }
+      
+      totalProcessed = jobData.rows_loaded || 0;
+      totalRows = jobData.total_rows || 0;
+      
+      if (opts.onProcessProgress && totalRows > 0) {
+        opts.onProcessProgress(totalProcessed, totalRows);
+      }
+      
+      if (jobData.status === 'completed') {
+        console.log('🎉 Import already completed!');
+        channel.unsubscribe();
+        resolve({ 
+          storagePath: `${bucket}/${uploadPath}`,
+          jobId,
+          totalProcessed 
+        });
+      } else if (jobData.status === 'error' || jobData.status === 'failed') {
+        channel.unsubscribe();
+        reject(new Error(`Import failed: ${jobData.error || 'Unknown error'}`));
+      }
+    };
+
+     checkInitialStatus();
+   });
+ }

@@ -48,9 +48,10 @@ export async function tusUpload(
     await supabase.auth.refreshSession();
   }
 
-  // Construct the TUS resumable endpoint
-  const projectId = 'fxelhfwaoizqyecikscu';
-  const endpoint = `https://${projectId}.supabase.co/storage/v1/upload/resumable`;
+  // Construct the TUS resumable endpoint dynamically
+  const SUPABASE_URL = 'https://fxelhfwaoizqyecikscu.supabase.co';
+  const projectRef = new URL(SUPABASE_URL).hostname.split('.')[0];
+  const endpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
 
   let retryCount = 0;
   let authRetryCount = 0;

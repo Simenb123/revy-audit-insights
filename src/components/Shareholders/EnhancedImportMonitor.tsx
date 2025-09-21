@@ -83,14 +83,53 @@ export function EnhancedImportMonitor({ sessionId, year, totalFileRows, onComple
     }
   }, [sessionId, year, totalFileRows, onComplete, startTime])
 
-  // Auto-refresh every 2 seconds during active import
-  useEffect(() => {
-    fetchDetailedProgress()
-    
-    const interval = setInterval(fetchDetailedProgress, 2000)
-    
-    return () => clearInterval(interval)
-  }, [fetchDetailedProgress])
+   // Auto-refresh every 2 seconds during active import
+   useEffect(() => {
+     fetchDetailedProgress()
+     
+     // Set up real-time subscription for import progress
+     const channel = supabase
+       .channel('enhanced-import-progress')
+       .on(
+         'postgres_changes',
+         {
+           event: '*',
+           schema: 'public',
+           table: 'share_holdings',
+           filter: `year=eq.${year}`
+         },
+         () => {
+           fetchDetailedProgress()
+         }
+       )
+       .on(
+         'postgres_changes', 
+         {
+           event: '*',
+           schema: 'public',
+           table: 'import_sessions'
+         },
+         () => {
+           fetchDetailedProgress()
+         }
+       )
+       .on(
+         'postgres_changes',
+         {
+           event: 'UPDATE',
+           schema: 'public', 
+           table: 'import_jobs'
+         },
+         () => {
+           fetchDetailedProgress()
+         }
+       )
+       .subscribe()
+     
+     return () => {
+       channel.unsubscribe()
+     }
+   }, [fetchDetailedProgress, year])
 
   // Real-time subscription to database changes
   useEffect(() => {
