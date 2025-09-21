@@ -48,8 +48,11 @@ export async function tusUpload(
     await supabase.auth.refreshSession();
   }
 
-  // Construct the TUS resumable endpoint dynamically
-  const SUPABASE_URL = 'https://fxelhfwaoizqyecikscu.supabase.co';
+  // Construct the TUS resumable endpoint dynamically from environment
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  if (!SUPABASE_URL) {
+    throw new Error('VITE_SUPABASE_URL environment variable is not configured');
+  }
   const projectRef = new URL(SUPABASE_URL).hostname.split('.')[0];
   const endpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
 
