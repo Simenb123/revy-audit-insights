@@ -17,165 +17,258 @@ interface ShareholderRow {
   user_id: string;
 }
 
-const PROCESSING_CHUNK_SIZE = 1000; // Reduced chunk size for better memory management
+const PROCESSING_CHUNK_SIZE = 200; // Reduced chunk size to prevent memory issues
 
-// Helper function to download file with retry logic and signed URLs
-async function downloadFileWithRetry(
+// Memory monitoring function
+function checkMemoryUsage(): void {
+  if (Deno && Deno.memoryUsage) {
+    const memory = Deno.memoryUsage();
+    const usedMB = Math.round(memory.heapUsed / 1024 / 1024);
+    console.log(`🧠 Memory usage: ${usedMB}MB`);
+    
+    // Circuit breaker - abort if memory too high (>400MB)
+    if (memory.heapUsed > 400 * 1024 * 1024) {
+      throw new Error(`Memory usage too high (${usedMB}MB), aborting import to prevent timeout`);
+    }
+  }
+}
+
+// HTTP Range-based streaming download function
+async function downloadFileInChunks(
   supabase: any,
   bucket: string,
   path: string,
-  maxRetries = 3
-): Promise<ArrayBuffer> {
-  console.log(`📥 Downloading file ${bucket}/${path} with retry logic`);
+  onChunk: (chunk: string) => Promise<void>
+): Promise<void> {
+  console.log(`📥 Starting HTTP Range-based streaming download for ${bucket}/${path}`);
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  const chunkSize = 2 * 1024 * 1024; // 2MB chunks
+  let offset = 0;
+  let leftover = '';
+  
+  // Create signed URL once
+  const { data: signedUrlData, error: urlError } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, 3600); // 1 hour expiry
+  
+  if (urlError) {
+    throw new Error(`Failed to create signed URL: ${urlError.message}`);
+  }
+  
+  console.log(`📦 Starting chunked download with ${chunkSize} byte chunks`);
+  
+  while (true) {
     try {
-      // Create signed URL for secure download
-      const { data: signedUrlData, error: urlError } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(path, 3600); // 1 hour expiry
+      // Check memory before each chunk
+      checkMemoryUsage();
       
-      if (urlError) {
-        throw new Error(`Failed to create signed URL: ${urlError.message}`);
-      }
-
-      console.log(`📦 Attempt ${attempt}: Downloading from signed URL`);
+      console.log(`📥 Downloading chunk at offset ${offset}`);
       
-      // Download using native fetch with better error handling
+      // Download chunk using Range header
       const response = await fetch(signedUrlData.signedUrl, {
-        method: 'GET',
         headers: {
+          'Range': `bytes=${offset}-${offset + chunkSize - 1}`,
           'User-Agent': 'Supabase-Edge-Function'
         }
       });
-
-      if (!response.ok) {
+      
+      if (!response.ok && response.status !== 206) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-
-      const arrayBuffer = await response.arrayBuffer();
-      console.log(`✅ Successfully downloaded file (${arrayBuffer.byteLength} bytes)`);
-      return arrayBuffer;
-
-    } catch (error: any) {
-      console.error(`❌ Download attempt ${attempt} failed:`, error.message);
       
-      if (attempt === maxRetries) {
-        throw new Error(`Failed to download after ${maxRetries} attempts: ${error.message}`);
+      const chunkBuffer = await response.arrayBuffer();
+      let chunkText = new TextDecoder('utf-8').decode(chunkBuffer);
+      
+      console.log(`📄 Processing chunk: ${chunkText.length} characters`);
+      
+      // Handle partial lines at chunk boundaries
+      chunkText = leftover + chunkText;
+      const lines = chunkText.split('\n');
+      leftover = lines.pop() || ''; // Save incomplete line for next chunk
+      
+      // Process complete lines
+      if (lines.length > 0) {
+        const completeText = lines.join('\n');
+        if (completeText.trim()) {
+          await onChunk(completeText);
+        }
       }
       
-      // Wait before retry (exponential backoff)
-      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-      console.log(`⏱️ Waiting ${delay}ms before retry...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Force garbage collection after each chunk
+      if (globalThis.gc) {
+        globalThis.gc();
+        console.log(`🗑️ Forced garbage collection`);
+      }
+      
+      // Check if this was the last chunk (status 200) or partial content (206)
+      if (response.status !== 206) {
+        console.log(`✅ Reached end of file`);
+        break;
+      }
+      
+      offset += chunkSize;
+      
+      // Small delay to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+    } catch (error: any) {
+      console.error(`❌ Chunk download failed at offset ${offset}:`, error.message);
+      throw new Error(`Failed to download chunk at offset ${offset}: ${error.message}`);
     }
   }
   
-  throw new Error('Unexpected error in download retry logic');
+  // Process final leftover content if any
+  if (leftover.trim()) {
+    console.log(`📄 Processing final leftover content`);
+    await onChunk(leftover);
+  }
+  
+  console.log(`✅ Streaming download completed successfully`);
 }
 
-// Optimized CSV processing using streaming approach with retry logic
+// True streaming CSV processing using HTTP Range headers
 async function streamParseCSV(
   supabase: any,
   bucket: string,
   path: string,
   onChunk: (chunk: any[]) => Promise<void>
 ): Promise<void> {
-  console.log(`📥 Starting streaming CSV processing for ${bucket}/${path}`);
+  console.log(`📥 Starting true streaming CSV processing for ${bucket}/${path}`);
   
-  try {
-    // Download file with retry logic
-    const arrayBuffer = await downloadFileWithRetry(supabase, bucket, path);
-    const csvText = new TextDecoder('utf-8').decode(arrayBuffer);
+  let isHeaderParsed = false;
+  let csvHeaders: string[] = [];
+  let totalProcessed = 0;
+  
+  // Process each chunk from HTTP Range streaming
+  const processChunk = async (chunkText: string): Promise<void> => {
+    if (!chunkText.trim()) return;
     
-    console.log(`📄 Processing CSV file in streaming chunks (${csvText.length} chars total)`);
+    // Check memory before processing each chunk
+    checkMemoryUsage();
     
-    // Process CSV in streaming fashion using Papa Parse streaming
-    return new Promise((resolve, reject) => {
-      const chunkBuffer: any[] = [];
-      let headerSet = false;
-      let totalProcessed = 0;
-      
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        step: async (row: any, parser: any) => {
-          try {
-            if (!headerSet) {
-              console.log(`📋 CSV Headers found:`, Object.keys(row.data));
-              headerSet = true;
-            }
-            
-            chunkBuffer.push(row.data);
-            totalProcessed++;
-            
-            // Process in chunks to prevent memory buildup
-            if (chunkBuffer.length >= PROCESSING_CHUNK_SIZE) {
-              console.log(`🔄 Processing chunk of ${chunkBuffer.length} rows (total processed: ${totalProcessed})`);
-              
-              // Pause parsing while processing chunk
-              parser.pause();
-              
-              try {
-                await onChunk([...chunkBuffer]);
-                chunkBuffer.length = 0; // Clear buffer
-                
-                // Force garbage collection
-                if (globalThis.gc) {
-                  globalThis.gc();
-                }
-                
-                // Resume parsing
-                parser.resume();
-              } catch (error) {
-                parser.abort();
-                reject(error);
-                return;
-              }
-            }
-          } catch (error) {
-            parser.abort();
-            reject(error);
-          }
-        },
-        complete: async () => {
-          try {
-            // Process remaining rows in buffer
-            if (chunkBuffer.length > 0) {
-              console.log(`🔄 Processing final chunk of ${chunkBuffer.length} rows`);
-              await onChunk([...chunkBuffer]);
-            }
-            
-            console.log(`✅ Streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        },
-        error: (error: any) => {
-          reject(new Error(`CSV parsing failed: ${error.message}`));
-        }
-      });
+    console.log(`📄 Processing CSV chunk (${chunkText.length} chars)`);
+    
+    // Parse CSV chunk using Papa Parse in synchronous mode
+    const parseResult = Papa.parse(chunkText, {
+      header: isHeaderParsed,
+      skipEmptyLines: true,
+      dynamicTyping: false // Keep as strings to avoid type issues
     });
-  } catch (error: any) {
-    throw new Error(`Failed to download chunk: ${error.message}`);
-  }
+    
+    if (parseResult.errors.length > 0) {
+      console.warn(`⚠️ CSV parsing warnings:`, parseResult.errors);
+    }
+    
+    // Handle header detection on first chunk
+    if (!isHeaderParsed && parseResult.data.length > 0) {
+      if (Array.isArray(parseResult.data[0])) {
+        // First row contains headers
+        csvHeaders = parseResult.data[0] as string[];
+        console.log(`📋 CSV Headers detected:`, csvHeaders);
+        
+        // Convert remaining rows to objects
+        const dataRows = parseResult.data.slice(1) as string[][];
+        const objectRows = dataRows.map((row: string[]) => {
+          const obj: any = {};
+          csvHeaders.forEach((header, index) => {
+            obj[header] = row[index] || '';
+          });
+          return obj;
+        });
+        
+        isHeaderParsed = true;
+        if (objectRows.length > 0) {
+          await processDataRows(objectRows);
+        }
+      }
+    } else if (isHeaderParsed) {
+      // Process data rows
+      if (Array.isArray(parseResult.data) && parseResult.data.length > 0) {
+        await processDataRows(parseResult.data as any[]);
+      }
+    }
+  };
+  
+  // Process parsed data rows in smaller batches
+  const processDataRows = async (rows: any[]): Promise<void> => {
+    if (rows.length === 0) return;
+    
+    console.log(`🔄 Processing ${rows.length} CSV rows`);
+    
+    // Process in small batches to prevent memory buildup
+    for (let i = 0; i < rows.length; i += PROCESSING_CHUNK_SIZE) {
+      const batch = rows.slice(i, i + PROCESSING_CHUNK_SIZE);
+      console.log(`📊 Processing batch ${Math.floor(i / PROCESSING_CHUNK_SIZE) + 1}: ${batch.length} rows`);
+      
+      await onChunk(batch);
+      totalProcessed += batch.length;
+      
+      // Backpressure: small delay between batches to let system breathe
+      if (i + PROCESSING_CHUNK_SIZE < rows.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      // Force garbage collection between batches
+      if (globalThis.gc) {
+        globalThis.gc();
+      }
+      
+      checkMemoryUsage();
+    }
+  };
+  
+  // Start streaming download with chunk processor
+  await downloadFileInChunks(supabase, bucket, path, processChunk);
+  
+  console.log(`✅ True streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
 }
 
-// Optimized Excel processing for large files with retry logic
+// Memory-optimized Excel processing for large files
 async function streamParseExcel(
   supabase: any,
   bucket: string,
   path: string,
   onChunk: (chunk: any[]) => Promise<void>
 ): Promise<void> {
-  console.log(`📊 Starting Excel file processing for ${bucket}/${path}`);
+  console.log(`📊 Starting memory-optimized Excel processing for ${bucket}/${path}`);
+  
+  // For Excel files, we still need to download completely due to XLSX library limitations
+  // But we process in smaller chunks and monitor memory closely
+  console.log(`⚠️ Excel files require full download due to format constraints`);
+  
+  let totalProcessed = 0;
+  
+  // Process Excel file in small chunks from storage
+  const processExcelChunk = async (chunkText: string): Promise<void> => {
+    // For Excel, we need the complete file, so we'll collect all chunks first
+    console.log(`📊 Collecting Excel chunk (${chunkText.length} chars)`);
+  };
   
   try {
-    // Download file with retry logic
-    const arrayBuffer = await downloadFileWithRetry(supabase, bucket, path);
+    // Check memory before starting
+    checkMemoryUsage();
     
+    // Create signed URL for direct download
+    const { data: signedUrlData, error: urlError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 3600);
+    
+    if (urlError) {
+      throw new Error(`Failed to create signed URL: ${urlError.message}`);
+    }
+    
+    // Download Excel file
+    console.log(`📥 Downloading Excel file for processing`);
+    const response = await fetch(signedUrlData.signedUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
     console.log(`📊 Processing Excel file (${arrayBuffer.byteLength} bytes)`);
+    
+    // Check memory after download
+    checkMemoryUsage();
     
     // Read workbook with minimal memory usage options
     const workbook = XLSX.read(arrayBuffer, { 
@@ -190,7 +283,7 @@ async function streamParseExcel(
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     
-    // Get range to process in chunks
+    // Get range to process in small chunks
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
     console.log(`📋 Excel range: ${range.s.r} to ${range.e.r} rows`);
     
@@ -204,12 +297,14 @@ async function streamParseExcel(
     
     console.log(`📋 Excel headers:`, headers);
     
-    // Process rows in chunks
-    let totalProcessed = 0;
+    // Process rows in very small chunks to prevent memory issues
     for (let startRow = range.s.r + 1; startRow <= range.e.r; startRow += PROCESSING_CHUNK_SIZE) {
       const endRow = Math.min(startRow + PROCESSING_CHUNK_SIZE - 1, range.e.r);
       
       console.log(`🔄 Processing Excel rows ${startRow} to ${endRow}`);
+      
+      // Check memory before each chunk
+      checkMemoryUsage();
       
       const chunkRows: any[] = [];
       
@@ -238,16 +333,20 @@ async function streamParseExcel(
         await onChunk(chunkRows);
         totalProcessed += chunkRows.length;
         
-        // Force garbage collection
+        // Force garbage collection after each chunk
         if (globalThis.gc) {
           globalThis.gc();
         }
+        
+        // Small delay to prevent overwhelming the system
+        await new Promise(resolve => setTimeout(resolve, 25));
       }
     }
     
     console.log(`✅ Excel processing completed. Total processed: ${totalProcessed} rows`);
   } catch (error: any) {
-    throw new Error(`Failed to download Excel file: ${error.message}`);
+    console.error(`❌ Excel processing failed:`, error);
+    throw new Error(`Failed to process Excel file: ${error.message}`);
   }
 }
 
@@ -354,11 +453,14 @@ async function processShareholderImportQueue() {
     // Detect file type for streaming approach
     const isExcel = queueItem.path.toLowerCase().endsWith('.xlsx') || queueItem.path.toLowerCase().endsWith('.xls');
     
-    // Streaming chunk processor function
+    // Streaming chunk processor function with backpressure
     const processChunk = async (chunk: any[]): Promise<void> => {
       if (chunk.length === 0) return;
       
       console.log(`📋 Processing streaming chunk of ${chunk.length} rows`);
+      
+      // Check memory before processing each chunk
+      checkMemoryUsage();
       
       // Map rows to ShareholderRow format
       const mappedRows: ShareholderRow[] = chunk
@@ -366,14 +468,26 @@ async function processShareholderImportQueue() {
         .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, defaultYear));
       
       if (mappedRows.length > 0) {
-        // Insert chunk to staging table
-        console.log(`📥 Inserting ${mappedRows.length} rows to staging`);
-        const { error: insertError } = await supabase
-          .from('shareholders_staging')
-          .insert(mappedRows, { returning: 'minimal' });
+        // Insert chunk to staging table in smaller batches
+        const batchSize = Math.min(mappedRows.length, 100); // Even smaller batches for staging
+        
+        for (let i = 0; i < mappedRows.length; i += batchSize) {
+          const batch = mappedRows.slice(i, i + batchSize);
           
-        if (insertError) {
-          throw new Error(`Failed to insert chunk to staging: ${insertError.message}`);
+          console.log(`📥 Inserting batch ${Math.floor(i / batchSize) + 1}: ${batch.length} rows to staging`);
+          
+          const { error: insertError } = await supabase
+            .from('shareholders_staging')
+            .insert(batch, { returning: 'minimal' });
+            
+          if (insertError) {
+            throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
+          }
+          
+          // Small delay for backpressure
+          if (i + batchSize < mappedRows.length) {
+            await new Promise(resolve => setTimeout(resolve, 25));
+          }
         }
         
         // Process the batch from staging to production tables
@@ -405,6 +519,14 @@ async function processShareholderImportQueue() {
             status: 'processing' // Ensure status shows processing
           })
           .eq('id', queueItem.job_id);
+        
+        // Force garbage collection after each chunk
+        if (globalThis.gc) {
+          globalThis.gc();
+        }
+        
+        // Check memory again after processing
+        checkMemoryUsage();
       }
     };
     
