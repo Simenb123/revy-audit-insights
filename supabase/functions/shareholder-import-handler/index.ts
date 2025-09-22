@@ -146,7 +146,8 @@ async function streamParseCSV(
     // Check memory before processing each chunk
     checkMemoryUsage();
     
-    console.log(`📄 Processing CSV chunk (${chunkText.length} chars)`);
+    // LOG: Chunk details before parsing
+    console.log(`📄 Processing CSV chunk: ${chunkText.length} characters`);
     
     // Parse CSV chunk using Papa Parse in synchronous mode
     const parseResult = Papa.parse(chunkText, {
@@ -154,6 +155,12 @@ async function streamParseCSV(
       skipEmptyLines: true,
       dynamicTyping: false // Keep as strings to avoid type issues
     });
+    
+    // LOG: Parse result details
+    console.log(`📊 Parse result: ${parseResult.data.length} records/lines found`);
+    if (parseResult.data.length > 0) {
+      console.log(`📋 First few parse results:`, parseResult.data.slice(0, 3));
+    }
     
     if (parseResult.errors.length > 0) {
       console.warn(`⚠️ CSV parsing warnings:`, parseResult.errors);
@@ -164,7 +171,7 @@ async function streamParseCSV(
       if (Array.isArray(parseResult.data[0])) {
         // First row contains headers
         csvHeaders = parseResult.data[0] as string[];
-        console.log(`📋 CSV Headers detected:`, csvHeaders);
+        console.log(`📋 CSV Headers detected (${csvHeaders.length} columns):`, csvHeaders);
         
         // Convert remaining rows to objects
         const dataRows = parseResult.data.slice(1) as string[][];
@@ -177,7 +184,9 @@ async function streamParseCSV(
         });
         
         isHeaderParsed = true;
+        console.log(`🔄 Converted ${objectRows.length} data rows to objects`);
         if (objectRows.length > 0) {
+          console.log(`📝 First converted row example:`, objectRows[0]);
           await processDataRows(objectRows);
         }
       }
@@ -459,6 +468,16 @@ async function processShareholderImportQueue() {
       
       console.log(`📋 Processing streaming chunk of ${chunk.length} rows`);
       
+      // LOG: Debug queue item details
+      console.log(`🔧 Queue item mapping:`, queueItem.mapping);
+      console.log(`👤 User ID:`, queueItem.user_id);
+      console.log(`📊 Chunk size:`, chunk.length, 'rows');
+      
+      // Show first few rows from chunk for debugging
+      if (chunk.length > 0) {
+        console.log(`📝 First few raw rows from chunk:`, chunk.slice(0, 3));
+      }
+      
       // Check memory before processing each chunk
       checkMemoryUsage();
       
@@ -466,6 +485,25 @@ async function processShareholderImportQueue() {
       const mappedRows: ShareholderRow[] = chunk
         .filter(row => row && Object.keys(row).length > 0) // Skip empty rows
         .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, defaultYear));
+      
+      // LOG: Show mapped rows for debugging
+      console.log(`🔄 Mapped ${mappedRows.length} rows after filtering and mapping`);
+      if (mappedRows.length > 0) {
+        console.log(`📝 First few mapped rows:`, mappedRows.slice(0, 3));
+      }
+      
+      // LOG: Check if mapping is working correctly
+      const csvColumns = chunk.length > 0 ? Object.keys(chunk[0]) : [];
+      const mappingKeys = Object.keys(queueItem.mapping);
+      console.log(`🗂️ Available CSV columns:`, csvColumns);
+      console.log(`🔗 Mapping keys:`, mappingKeys);
+      
+      const missingColumns = mappingKeys.filter(key => !csvColumns.includes(key));
+      if (missingColumns.length > 0) {
+        console.error(`❌ MAPPING ERROR: CSV columns missing for mapping keys:`, missingColumns);
+        console.error(`❌ Available columns:`, csvColumns);
+        console.error(`❌ Required mapping keys:`, mappingKeys);
+      }
       
       if (mappedRows.length > 0) {
         // Insert chunk to staging table in smaller batches
@@ -505,7 +543,18 @@ async function processShareholderImportQueue() {
         
         const processedCount = batchResult?.processed_count || 0;
         totalProcessed += processedCount;
-        console.log(`✅ Processed ${processedCount} rows (total processed so far: ${totalProcessed})`);
+        
+        // LOG: Detailed batch processing results
+        console.log(`✅ Batch processing result: processed ${processedCount} rows (total so far: ${totalProcessed})`);
+        console.log(`📊 Batch result data:`, batchResult);
+        
+        // LOG: Warning if no rows were processed
+        if (processedCount === 0) {
+          console.warn(`⚠️ WARNING: Zero rows processed in this batch! This indicates a problem.`);
+          console.warn(`🔍 Debugging info - mappedRows.length: ${mappedRows.length}`);
+          console.warn(`🔍 Debugging info - raw chunk size: ${chunk.length}`);
+          console.warn(`🔍 Debugging info - mapping object:`, queueItem.mapping);
+        }
         
         // Clear staging table after each batch to prevent accumulation
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
