@@ -1,0 +1,4 @@
+company_orgnr,company_name,holder_name,birth_year,country_code,holder_orgnr,share_class,shares,year
+123456789,Test AS,Ola Nordmann,1985,NO,,A,100,2023
+123456789,Test AS,Kari Hansen,1990,NO,,A,50,2023
+987654321,Demo ASA,TestSelskap AS,,,987654321,B,200,2023
