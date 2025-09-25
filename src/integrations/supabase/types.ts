@@ -13796,12 +13796,6 @@ export type Database = {
         Args:
           | { p_batch_size?: number; p_user_id: string; p_year: number }
           | {
-              p_job_id: number
-              p_limit?: number
-              p_offset?: number
-              p_user_id: string
-            }
-          | {
               p_job_id: string
               p_limit: number
               p_offset: number
