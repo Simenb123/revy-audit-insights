@@ -33,7 +33,7 @@ function checkMemoryUsage(): void {
   }
 }
 
-// HTTP Range-based streaming download function
+// HTTP Range-based streaming download function with retry logic
 async function downloadFileInChunks(
   supabase: any,
   bucket: string,
@@ -42,17 +42,86 @@ async function downloadFileInChunks(
 ): Promise<void> {
   console.log(`📥 Starting HTTP Range-based streaming download for ${bucket}/${path}`);
   
+  // Initial delay to allow TUS upload to finalize in storage
+  console.log(`⏰ Waiting 3 seconds for TUS upload to finalize...`);
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Debug storage state before attempting download
+  console.log(`🔍 Debugging storage state for bucket: ${bucket}`);
+  try {
+    const { data: bucketFiles, error: listError } = await supabase.storage
+      .from(bucket)
+      .list('', { limit: 100, offset: 0 });
+    
+    if (listError) {
+      console.error(`❌ Failed to list bucket contents:`, listError);
+    } else {
+      console.log(`📁 Found ${bucketFiles?.length || 0} files in bucket root`);
+      
+      // List contents of specific directory if path contains a directory
+      const pathDir = path.split('/').slice(0, -1).join('/');
+      if (pathDir) {
+        const { data: dirFiles, error: dirError } = await supabase.storage
+          .from(bucket)
+          .list(pathDir, { limit: 100, offset: 0 });
+        
+        if (!dirError && dirFiles) {
+          console.log(`📂 Found ${dirFiles.length} files in directory "${pathDir}":`, 
+            dirFiles.map(f => f.name));
+          
+          // Check if our specific file exists
+          const fileName = path.split('/').pop();
+          const fileExists = dirFiles.some(f => f.name === fileName);
+          console.log(`🎯 Target file "${fileName}" exists in directory: ${fileExists}`);
+        }
+      }
+    }
+  } catch (debugError) {
+    console.warn(`⚠️ Storage debug failed, continuing with download attempt:`, debugError);
+  }
+  
   const chunkSize = 2 * 1024 * 1024; // 2MB chunks
   let offset = 0;
   let leftover = '';
   
-  // Create signed URL once
-  const { data: signedUrlData, error: urlError } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, 3600); // 1 hour expiry
+  // Create signed URL with retry logic and exponential backoff
+  let signedUrlData: any = null;
+  const maxRetries = 5;
+  let retryDelay = 2000; // Start with 2 seconds
   
-  if (urlError) {
-    throw new Error(`Failed to create signed URL: ${urlError.message}`);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔗 Attempting to create signed URL (attempt ${attempt}/${maxRetries})...`);
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 3600); // 1 hour expiry
+      
+      if (error) {
+        throw new Error(`Failed to create signed URL: ${error.message}`);
+      }
+      
+      signedUrlData = data;
+      console.log(`✅ Successfully created signed URL on attempt ${attempt}`);
+      break;
+      
+    } catch (error: any) {
+      console.error(`❌ Signed URL attempt ${attempt} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        // Final attempt failed - provide detailed error information
+        console.error(`❌ All ${maxRetries} signed URL attempts failed`);
+        console.error(`🔍 Bucket: ${bucket}`);
+        console.error(`🔍 Path: ${path}`);
+        console.error(`🔍 Error: ${error.message}`);
+        throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${error.message}`);
+      }
+      
+      // Wait before retry with exponential backoff
+      console.log(`⏳ Waiting ${retryDelay}ms before retry ${attempt + 1}...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      retryDelay *= 1.5; // Exponential backoff
+    }
   }
   
   console.log(`📦 Starting chunked download with ${chunkSize} byte chunks`);
@@ -257,13 +326,82 @@ async function streamParseExcel(
     // Check memory before starting
     checkMemoryUsage();
     
-    // Create signed URL for direct download
-    const { data: signedUrlData, error: urlError } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(path, 3600);
+    // Initial delay to allow TUS upload to finalize in storage
+    console.log(`⏰ Waiting 3 seconds for TUS upload to finalize...`);
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    if (urlError) {
-      throw new Error(`Failed to create signed URL: ${urlError.message}`);
+    // Debug storage state before attempting download
+    console.log(`🔍 Debugging storage state for bucket: ${bucket}`);
+    try {
+      const { data: bucketFiles, error: listError } = await supabase.storage
+        .from(bucket)
+        .list('', { limit: 100, offset: 0 });
+      
+      if (listError) {
+        console.error(`❌ Failed to list bucket contents:`, listError);
+      } else {
+        console.log(`📁 Found ${bucketFiles?.length || 0} files in bucket root`);
+        
+        // List contents of specific directory if path contains a directory
+        const pathDir = path.split('/').slice(0, -1).join('/');
+        if (pathDir) {
+          const { data: dirFiles, error: dirError } = await supabase.storage
+            .from(bucket)
+            .list(pathDir, { limit: 100, offset: 0 });
+          
+          if (!dirError && dirFiles) {
+            console.log(`📂 Found ${dirFiles.length} files in directory "${pathDir}":`, 
+              dirFiles.map(f => f.name));
+            
+            // Check if our specific file exists
+            const fileName = path.split('/').pop();
+            const fileExists = dirFiles.some(f => f.name === fileName);
+            console.log(`🎯 Target file "${fileName}" exists in directory: ${fileExists}`);
+          }
+        }
+      }
+    } catch (debugError) {
+      console.warn(`⚠️ Storage debug failed, continuing with download attempt:`, debugError);
+    }
+    
+    // Create signed URL with retry logic and exponential backoff
+    let signedUrlData: any = null;
+    const maxRetries = 5;
+    let retryDelay = 2000; // Start with 2 seconds
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔗 Attempting to create signed URL (attempt ${attempt}/${maxRetries})...`);
+        
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .createSignedUrl(path, 3600);
+        
+        if (error) {
+          throw new Error(`Failed to create signed URL: ${error.message}`);
+        }
+        
+        signedUrlData = data;
+        console.log(`✅ Successfully created signed URL on attempt ${attempt}`);
+        break;
+        
+      } catch (error: any) {
+        console.error(`❌ Signed URL attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === maxRetries) {
+          // Final attempt failed - provide detailed error information
+          console.error(`❌ All ${maxRetries} signed URL attempts failed`);
+          console.error(`🔍 Bucket: ${bucket}`);
+          console.error(`🔍 Path: ${path}`);
+          console.error(`🔍 Error: ${error.message}`);
+          throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${error.message}`);
+        }
+        
+        // Wait before retry with exponential backoff
+        console.log(`⏳ Waiting ${retryDelay}ms before retry ${attempt + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        retryDelay *= 1.5; // Exponential backoff
+      }
     }
     
     // Download Excel file
