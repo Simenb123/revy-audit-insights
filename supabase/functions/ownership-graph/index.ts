@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
           .is('user_id', null)
 
         for (const holding of upstreamHoldings || []) {
-          const entity = holding.share_entities
+          const entity = holding.share_entities as any
           if (!entity) continue
 
           const entityId = entity.entity_type === 'company' && entity.orgnr 
@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Ownership graph error:', error)
     return new Response(JSON.stringify({
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

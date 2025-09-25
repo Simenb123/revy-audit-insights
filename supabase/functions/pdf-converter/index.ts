@@ -238,19 +238,14 @@ async function createKnowledgeArticle(
     .replace(/\s+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('knowledge_articles')
     .insert({
-      title: conversionData.title,
-      slug: `${slug}-${Date.now()}`,
-      summary: structuredContent.type === 'summary' 
-        ? structuredContent.summary 
-        : `Strukturert artikkel basert på PDF-konvertering av ${conversionData.title}`,
       content: JSON.stringify(structuredContent),
+      content_type_id: conversionData.category_id,
       category_id: conversionData.category_id,
-      status: 'published',
       author_id: conversionData.user_id,
-      tags: [`pdf-konvertert`, structuredContent.type, 'automatisk-generert', 'revisjonsstandard'],
+      status: 'published',
       published_at: new Date().toISOString()
     })
     .select('id')

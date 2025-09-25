@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
         supabaseAdmin,
         documentId,
         'failed',
-        `[Tekstekstraksjon feilet: ${extractionError.message}]`
+        `[Tekstekstraksjon feilet: ${(extractionError as Error).message}]`
       );
 
       return new Response(JSON.stringify({ 
