@@ -231,7 +231,7 @@ serve(async (req) => {
     console.error('Optimized analysis error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Feil ved optimalisert analyse'
+        error: (error as Error).message || 'Feil ved optimalisert analyse'
       }),
       { 
         status: 500,

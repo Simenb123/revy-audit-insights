@@ -207,9 +207,9 @@ Deno.serve(async (req) => {
       
       // Look for employee identifiers in the complete structure
       const allVirksomheterData = payroll_data.mottatt?.opplysningspliktig?.virksomhet || []
-      allVirksomheterData.forEach(virk => {
+      allVirksomheterData.forEach((virk: any) => {
         const mottakere = virk.inntektsmottaker || []
-        mottakere.forEach(mottaker => {
+        mottakere.forEach((mottaker: any) => {
           if (mottaker.norskIdentifikator) {
             actualEmployees.add(mottaker.norskIdentifikator)
           }
@@ -334,15 +334,15 @@ Deno.serve(async (req) => {
       
       // Count unique employees and calculate total gross salary from virksomhet
       const virksomheter = oppgave?.virksomhet || []
-      virksomheter.forEach(virksomhet => {
+      virksomheter.forEach((virksomhet: any) => {
         const inntektsmottakere = virksomhet.inntektsmottaker || []
-        inntektsmottakere.forEach(mottaker => {
+        inntektsmottakere.forEach((mottaker: any) => {
           if (mottaker.norskIdentifikator) {
             uniqueEmployees.add(mottaker.norskIdentifikator)
             
             // Sum all income for this employee
             const inntekter = mottaker.inntekt || []
-            inntekter.forEach(inntekt => {
+            inntekter.forEach((inntekt: any) => {
               if (inntekt.beloep && inntekt.beloep > 0) {
                 totalBruttolonn += parseFloat(inntekt.beloep)
               }
@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
       })
       
       // Sum up totals from monthly submissions for taxes and contributions
-      innsendinger.forEach(innsending => {
+      innsendinger.forEach((innsending: any) => {
         const mottatt = innsending.mottattAvgiftOgTrekkTotalt
         if (mottatt) {
           totalForskuddstrekk += mottatt.sumForskuddstrekk || 0
@@ -366,7 +366,7 @@ Deno.serve(async (req) => {
         { name: 'antall.virksomheter', value: oppgave?.virksomhet?.length || 1 },
         { name: 'antall.mottakere', value: totalInntektsmottakere },
         { name: 'sum.bruttolonn', value: totalBruttolonn },
-        { name: 'sum.forskuddstrekk.person', value: oppsummerte.forskuddstrekk?.reduce((sum, f) => sum + Math.abs(f.beloep || 0), 0) || 0 },
+        { name: 'sum.forskuddstrekk.person', value: oppsummerte.forskuddstrekk?.reduce((sum: number, f: any) => sum + Math.abs(f.beloep || 0), 0) || 0 },
         { name: 'sum.forskuddstrekk.innsendinger', value: totalForskuddstrekk },
         { name: 'sum.aga.innsendinger', value: totalArbeidsgiveravgift },
         { name: 'opp.sum.antallPersonerInnrapportert', value: oppsummerte.antallPersonerInnrapportert?.antall || 0 },
@@ -375,8 +375,8 @@ Deno.serve(async (req) => {
 
       // Process AGA by zone if available
       if (oppsummerte.arbeidsgiveravgift?.loennOgGodtgjoerelse) {
-        const agaSoner = {}
-        oppsummerte.arbeidsgiveravgift.loennOgGodtgjoerelse.forEach(aga => {
+        const agaSoner: { [key: string]: any } = {}
+        oppsummerte.arbeidsgiveravgift.loennOgGodtgjoerelse.forEach((aga: any) => {
           agaSoner[aga.sone] = {
             grunnlag: aga.avgiftsgrunnlagBeloep || 0,
             sats: aga.prosentsats || 0,
@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
       // Store monthly submissions data
       variables.push({
         name: 'innsendinger.detaljer',
-        value: innsendinger.map(i => ({
+        value: innsendinger.map((i: any) => ({
           maaned: i.kalendermaaned,
           leveringstidspunkt: i.leveringstidspunkt,
           status: i.status,

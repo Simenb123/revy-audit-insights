@@ -127,7 +127,7 @@ Gi meg følgende informasjon som JSON:
     console.error('💥 Document analysis error:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       suggested_category: 'Ukategorisert',
       confidence_score: 0.3,
       analysis_summary: 'Automatisk analyse feilet'

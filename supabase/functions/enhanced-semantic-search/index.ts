@@ -71,7 +71,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Enhanced semantic search error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -234,6 +234,10 @@ async function handleGenerateSuggestions(supabase: any, openAIApiKey: string, re
 
 async function handleCrossClientAnalysis(supabase: any, openAIApiKey: string, request: EnhancedSearchRequest) {
   const { baseClientId, compareClientIds = [], analysisType = 'patterns' } = request;
+
+  if (!baseClientId) {
+    throw new Error('baseClientId is required for cross-client analysis');
+  }
 
   console.log('Performing cross-client analysis:', { baseClientId, compareClientIds, analysisType });
 

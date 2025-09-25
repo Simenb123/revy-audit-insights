@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Invalid JSON in request body',
-        details: parseError.message
+        details: (parseError as Error).message
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
               textParts.push(...chunkTexts);
             }
           } catch (chunkError) {
-            console.warn('⚠️ Error processing chunk, skipping:', chunkError.message);
+            console.warn('⚠️ Error processing chunk, skipping:', (chunkError as Error).message);
             continue;
           }
         }
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
               }
             }
           } catch (fallbackError) {
-            console.warn('⚠️ Fallback extraction failed:', fallbackError.message);
+            console.warn('⚠️ Fallback extraction failed:', (fallbackError as Error).message);
           }
         }
         
@@ -385,7 +385,7 @@ Deno.serve(async (req) => {
       console.error('❌ [ENHANCED-PDF-EXTRACTOR] Text extraction failed:', extractionError);
       
       // Provide meaningful error text instead of failing
-      extractedText = `[Forbedret tekstekstraksjon feilet: ${extractionError.message}. Dokumentet kan være skannet eller kryptert.]`;
+      extractedText = `[Forbedret tekstekstraksjon feilet: ${(extractionError as Error).message}. Dokumentet kan være skannet eller kryptert.]`;
     }
 
     // Step 6: Update document with extracted text and 'completed' status
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
           supabaseAdmin,
           documentId,
           'completed',
-          `[Systemfeil under tekstekstraksjon: ${error.message}]`
+          `[Systemfeil under tekstekstraksjon: ${(error as Error).message}]`
         );
         
         log('🔄 [ENHANCED-PDF-EXTRACTOR] Status updated with error message for document:', documentId);
@@ -453,7 +453,7 @@ Deno.serve(async (req) => {
       success: false,
       error: 'Unexpected server error',
       documentId: documentId || 'unknown',
-      details: error.message
+      details: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

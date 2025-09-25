@@ -131,9 +131,9 @@ Deno.serve(async (req) => {
     log('🚀 Starting embedding generation for articles');
 
     // Get articles that need embeddings
-    const { data: articles, error: fetchError } = await supabase.rpc<
-      Pick<Database["public"]["Tables"]["knowledge_articles"]["Row"], 'id' | 'title' | 'content'>[]
-    >('queue_articles_for_embedding');
+    const { data: articles, error: fetchError } = await supabase.rpc(
+      'queue_articles_for_embedding'
+    );
     
     if (fetchError) {
       console.error('Error fetching articles:', fetchError);
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('💥 Error in generate-embeddings function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       message: 'Failed to generate embeddings'
     }), {
       status: 500,
