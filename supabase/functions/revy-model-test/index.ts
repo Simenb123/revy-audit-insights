@@ -74,7 +74,7 @@ serve(async (req) => {
     console.error('Model test error:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message,
+      error: (error as Error).message,
       details: 'Se edge function logs for mer info'
     }), {
       status: 200, // Gi 200 så frontend kan se feilen

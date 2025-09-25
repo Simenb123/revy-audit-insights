@@ -61,17 +61,19 @@ Deno.serve(async (req) => {
           log(`🎓 [REVY-AI-CHAT] Using ${knowledgeArticles.length} curated articles from training library`);
         }
       } catch (error) {
-        log(`⚠️ [REVY-AI-CHAT] Training context failed: ${error.message}`);
+        log(`⚠️ [REVY-AI-CHAT] Training context failed: ${(error as Error).message}`);
       }
     } else {
       // Normal mode - use knowledge search
       try {
-        const { data: knowledgeData, error: knowledgeError } = await Promise.race([
+        const result = await Promise.race([
           supabase.functions.invoke('knowledge-search', {
             body: { query: message, matchThreshold: 0.3, matchCount: 5 }
           }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Knowledge search timeout')), 5000))
-        ]);
+        ]) as { data: any, error: any };
+        
+        const { data: knowledgeData, error: knowledgeError } = result;
         
         if (knowledgeError) {
           log(`⚠️ [REVY-AI-CHAT] Knowledge search error: ${knowledgeError.message}`);
@@ -80,14 +82,14 @@ Deno.serve(async (req) => {
           log(`📚 [REVY-AI-CHAT] Found ${knowledgeArticles.length} relevant knowledge articles`);
         }
       } catch (error) {
-        log(`⚠️ [REVY-AI-CHAT] Knowledge search failed: ${error.message}`);
+        log(`⚠️ [REVY-AI-CHAT] Knowledge search failed: ${(error as Error).message}`);
       }
     }
 
     // Enhanced document context formatting
     let documentsContext = '';
     if (clientDocuments && clientDocuments.length > 0) {
-      const readableDocuments = clientDocuments.filter(doc => 
+      const readableDocuments = clientDocuments.filter((doc: any) => 
         doc.extracted_text && 
         doc.extracted_text.length > 50 &&
         doc.text_extraction_status === 'completed' &&
@@ -97,7 +99,7 @@ Deno.serve(async (req) => {
       log(`📄 [REVY-AI-CHAT] Processing ${readableDocuments.length}/${clientDocuments.length} readable documents`);
       
       if (readableDocuments.length > 0) {
-        documentsContext = `TILGJENGELIGE KLIENTDOKUMENTER (${readableDocuments.length} av ${clientDocuments.length} kan leses):\n\n${readableDocuments.map(doc => {
+        documentsContext = `TILGJENGELIGE KLIENTDOKUMENTER (${readableDocuments.length} av ${clientDocuments.length} kan leses):\n\n${readableDocuments.map((doc: any) => {
           const preview = cleanDocumentText(doc.extracted_text).substring(0, 400);
           const category = doc.ai_suggested_category || doc.category || 'Ukategorisert';
           const analysis = doc.ai_analysis_summary ? `\nAI-analyse: ${doc.ai_analysis_summary.substring(0, 200)}` : '';
@@ -145,7 +147,7 @@ ${readableDocuments.length === 0 ? '\n💡 For å gjøre dokumenter lesbare for 
       
       // Add knowledge context to enhanced prompt
       if (knowledgeArticles.length > 0) {
-        systemPrompt += `\n\nRELEVANT FAGKUNNSKAP:\n${knowledgeArticles.map(article => 
+        systemPrompt += `\n\nRELEVANT FAGKUNNSKAP:\n${knowledgeArticles.map((article: any) => 
           `📖 ${article.title}\n${article.summary || article.content.substring(0, 300)}...\n`
         ).join('\n')}\n`;
       }
@@ -189,7 +191,7 @@ ${clientData ? `KLIENT: ${clientData.company_name || 'Ukjent'} (${clientData.org
 
 ${documentsContext}
 
-${knowledgeArticles.length > 0 ? `RELEVANT FAGKUNNSKAP:\n${knowledgeArticles.map(article => 
+${knowledgeArticles.length > 0 ? `RELEVANT FAGKUNNSKAP:\n${knowledgeArticles.map((article: any) => 
   `📖 ${article.title}\n${article.summary || article.content.substring(0, 300)}...\n`
 ).join('\n')}\n` : ''}
 
@@ -247,11 +249,11 @@ Vær alltid konkret, faglig korrekt og konstruktiv i dine svar. Kombiner dokumen
     });
 
   } catch (error) {
-    log(`❌ [REVY-AI-CHAT] Error: ${error.message}`);
+    log(`❌ [REVY-AI-CHAT] Error: ${(error as Error).message}`);
     
     return new Response(JSON.stringify({ 
       error: 'Kunne ikke behandle forespørselen',
-      details: error.message,
+      details: (error as Error).message,
       response: `Beklager, jeg hadde problemer med å behandle forespørselen din. 
 
 Dette kan skyldes:

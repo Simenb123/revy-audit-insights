@@ -77,7 +77,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in shareholders-batch-processor:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -313,7 +313,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
 
       } catch (rowError) {
         console.error('Error processing row:', rowError)
-        errors.push(`Feil ved prosessering av rad: ${rowError.message}`)
+        errors.push(`Feil ved prosessering av rad: ${(rowError as Error).message}`)
       }
     }
 
@@ -347,7 +347,7 @@ async function processBatch(supabaseClient: any, sessionId: string, year: number
 
   } catch (error) {
     console.error('Error in processBatch:', error)
-    throw new Error(`Batch processing failed: ${error.message}`)
+    throw new Error(`Batch processing failed: ${(error as Error).message}`)
   }
 }
 
@@ -469,7 +469,7 @@ async function finishSession(supabaseClient: any, sessionId: string, year: numbe
       .from('import_sessions')
       .update({ 
         status: 'failed',
-        error_message: error.message,
+        error_message: (error as Error).message,
         updated_at: new Date().toISOString()
       })
       .eq('id', sessionId)

@@ -212,8 +212,8 @@ serve(async (req) => {
         }
         throw new Error('Tomt svar fra modell');
       } catch (error) {
-        console.error(`❌ Modell ${primaryModel} feilet:`, error.message);
-        throw new Error(`AI-modell utilgjengelig: ${error.message}`);
+        console.error(`❌ Modell ${primaryModel} feilet:`, (error as Error).message);
+        throw new Error(`AI-modell utilgjengelig: ${(error as Error).message}`);
       }
     };
 

@@ -94,7 +94,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Predictive analytics error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -591,7 +591,13 @@ function detectStatisticalAnomalies(transactions: any[]) {
   const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / amounts.length;
   const stdDev = Math.sqrt(variance);
 
-  const anomalies = [];
+  const anomalies: Array<{
+    transactionId: string;
+    amount: number;
+    date: string;
+    description: string;
+    deviationFromMean: number;
+  }> = [];
   const threshold = mean + (2 * stdDev); // 2 standard deviations
 
   transactions.forEach(tx => {

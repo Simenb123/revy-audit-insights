@@ -237,7 +237,7 @@ serve(async (req) => {
                 await new Promise(resolve => setTimeout(resolve, retryDelay))
               } else {
                 console.error(`💥 Batch ${batchIndex + 1} failed after ${maxRetries} attempts`)
-                totalErrors.push(`Batch ${batchIndex + 1} failed: ${batchError.message}`)
+                totalErrors.push(`Batch ${batchIndex + 1} failed: ${(batchError as Error).message}`)
               }
             }
           }
@@ -274,7 +274,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false,
-            error: `Excel processing failed: ${error.message}`,
+            error: `Excel processing failed: ${(error as Error).message}`,
             sessionId: sessionId
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -290,7 +290,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in shareholders-bulk-import:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -527,7 +527,7 @@ async function processBatchDirect(supabaseClient: any, batchData: any[], year: n
 
     } catch (rowError) {
       console.error('Error processing row:', rowError)
-      errors.push(`Feil ved prosessering av rad: ${rowError.message}`)
+      errors.push(`Feil ved prosessering av rad: ${(rowError as Error).message}`)
     }
   }
 

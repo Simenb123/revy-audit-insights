@@ -238,9 +238,11 @@ async function createKnowledgeArticle(
     .replace(/\s+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-  const { data, error } = await supabaseClient
+  const { data, error } = await supabase
     .from('knowledge_articles')
     .insert({
+      title: conversionData.title,
+      slug: `${slug}-${Date.now()}`,
       content: JSON.stringify(structuredContent),
       content_type_id: conversionData.category_id,
       category_id: conversionData.category_id,
@@ -351,11 +353,12 @@ Deno.serve(async (req) => {
     try {
       const body = await req.clone().json();
       if (body.conversionId) {
+        const supabase = getSupabase(req);
         await supabase
           .from('pdf_conversions')
           .update({
             status: 'failed',
-            error_message: error.message,
+            error_message: (error as Error).message,
             updated_at: new Date().toISOString()
           })
           .eq('id', body.conversionId);
@@ -367,7 +370,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: (error as Error).message 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

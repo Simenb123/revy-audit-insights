@@ -67,11 +67,11 @@ async function downloadFileInChunks(
         
         if (!dirError && dirFiles) {
           console.log(`📂 Found ${dirFiles.length} files in directory "${pathDir}":`, 
-            dirFiles.map(f => f.name));
+            dirFiles.map((f: any) => f.name));
           
           // Check if our specific file exists
           const fileName = path.split('/').pop();
-          const fileExists = dirFiles.some(f => f.name === fileName);
+          const fileExists = dirFiles.some((f: any) => f.name === fileName);
           console.log(`🎯 Target file "${fileName}" exists in directory: ${fileExists}`);
         }
       }
@@ -164,8 +164,8 @@ async function downloadFileInChunks(
       }
       
       // Force garbage collection after each chunk
-      if (globalThis.gc) {
-        globalThis.gc();
+      if ((globalThis as any).gc) {
+        (globalThis as any).gc();
         console.log(`🗑️ Forced garbage collection`);
       }
       
@@ -287,8 +287,8 @@ async function streamParseCSV(
       }
       
       // Force garbage collection between batches
-      if (globalThis.gc) {
-        globalThis.gc();
+      if ((globalThis as any).gc) {
+        (globalThis as any).gc();
       }
       
       checkMemoryUsage();
@@ -351,11 +351,11 @@ async function streamParseExcel(
           
           if (!dirError && dirFiles) {
             console.log(`📂 Found ${dirFiles.length} files in directory "${pathDir}":`, 
-              dirFiles.map(f => f.name));
+              dirFiles.map((f: any) => f.name));
             
             // Check if our specific file exists
             const fileName = path.split('/').pop();
-            const fileExists = dirFiles.some(f => f.name === fileName);
+            const fileExists = dirFiles.some((f: any) => f.name === fileName);
             console.log(`🎯 Target file "${fileName}" exists in directory: ${fileExists}`);
           }
         }
@@ -481,8 +481,8 @@ async function streamParseExcel(
         totalProcessed += chunkRows.length;
         
         // Force garbage collection after each chunk
-        if (globalThis.gc) {
-          globalThis.gc();
+        if ((globalThis as any).gc) {
+          (globalThis as any).gc();
         }
         
         // Small delay to prevent overwhelming the system
@@ -654,7 +654,7 @@ async function processShareholderImportQueue() {
           
           const { error: insertError } = await supabase
             .from('shareholders_staging')
-            .insert(batch, { returning: 'minimal' });
+            .insert(batch);
             
           if (insertError) {
             throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
@@ -708,8 +708,8 @@ async function processShareholderImportQueue() {
           .eq('id', queueItem.job_id);
         
         // Force garbage collection after each chunk
-        if (globalThis.gc) {
-          globalThis.gc();
+        if ((globalThis as any).gc) {
+          (globalThis as any).gc();
         }
         
         // Check memory again after processing

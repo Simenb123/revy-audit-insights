@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Invalid JSON in request body',
-        details: parseError.message
+        details: (parseError as Error).message
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Text extraction failed',
-        details: extractionError.message
+        details: (extractionError as Error).message
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
           supabaseAdmin,
           documentId,
           'failed',
-          `[Tekstekstraksjon feilet: ${error.message}]`
+          `[Tekstekstraksjon feilet: ${(error as Error).message}]`
         );
         
         log('🔄 [PDF-EXTRACTOR] Status updated to failed for document:', documentId);
@@ -343,7 +343,7 @@ Deno.serve(async (req) => {
       success: false,
       error: 'Unexpected server error',
       documentId: documentId || 'unknown',
-      details: error.message
+      details: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
