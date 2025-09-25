@@ -13801,12 +13801,6 @@ export type Database = {
               p_offset?: number
               p_user_id: string
             }
-          | {
-              p_job_id: string
-              p_limit: number
-              p_offset: number
-              p_user_id: string
-            }
         Returns: Json
       }
       queue_articles_for_embedding: {

@@ -1,0 +1,2 @@
+-- Drop the UUID version of process_shareholders_batch function that conflicts with bigint version
+DROP FUNCTION IF EXISTS public.process_shareholders_batch(p_job_id uuid, p_user_id uuid, p_offset integer, p_limit integer);
