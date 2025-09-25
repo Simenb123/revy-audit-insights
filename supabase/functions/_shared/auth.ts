@@ -2,6 +2,10 @@ export interface JwtPayload {
   sub?: string;
   role?: string;
   user_role?: string;
+  user_metadata?: {
+    user_role?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 

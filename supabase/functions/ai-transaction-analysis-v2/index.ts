@@ -139,20 +139,25 @@ serve(async (req) => {
       voucherCounts.set(voucherNumber, currentCount + 1);
 
       // Account summary
-      if (accountInfo) {
-        const key = `${accountInfo.account_number}-${accountInfo.account_name}`;
-        const existing = accountSummary.get(key) || { debit: 0, credit: 0, count: 0, type: accountInfo.account_type || 'unknown' };
+      if (accountInfo && typeof accountInfo === 'object' && !Array.isArray(accountInfo)) {
+        const info = accountInfo as any;
+        const key = `${info.account_number}-${info.account_name}`;
+        const existing = accountSummary.get(key) || { debit: 0, credit: 0, count: 0, type: info.account_type || 'unknown' };
         accountSummary.set(key, {
           debit: existing.debit + (transaction.debit_amount || 0),
           credit: existing.credit + (transaction.credit_amount || 0),
           count: existing.count + 1,
-          type: accountInfo.account_type || 'unknown'
+          type: info.account_type || 'unknown'
         });
       }
     });
 
     // Find validation issues
-    const vouchersWithImbalance = [];
+    const vouchersWithImbalance: Array<{
+      voucherNumber: string;
+      balance: number;
+      transactionCount: number;
+    }> = [];
     voucherGroups.forEach((balance, voucherNumber) => {
       if (Math.abs(balance) > 0.01) {
         vouchersWithImbalance.push({
@@ -180,8 +185,8 @@ serve(async (req) => {
         balance: t.balance_amount,
         description: t.description,
         voucher: t.voucher_number,
-        account: `${t.client_chart_of_accounts?.account_number || 'N/A'} - ${t.client_chart_of_accounts?.account_name || 'Unknown'}`,
-        accountType: t.client_chart_of_accounts?.account_type
+        account: `${(t.client_chart_of_accounts as any)?.account_number || 'N/A'} - ${(t.client_chart_of_accounts as any)?.account_name || 'Unknown'}`,
+        accountType: (t.client_chart_of_accounts as any)?.account_type
       })),
       validationIssues: {
         vouchersWithImbalance,
@@ -461,7 +466,7 @@ Please provide a professional audit analysis following the structured format. Fo
             category: 'System Error',
             observation: 'Analysis system encountered an error',
             significance: 'high',
-            details: error.message
+            details: (error as Error).message
           }
         ],
         recommendations: [
@@ -481,7 +486,7 @@ Please provide a professional audit analysis following the structured format. Fo
           compliance_status: 'major_concerns'
         },
         confidence_score: 1,
-        error: error.message
+        error: (error as Error).message
       };
     }
 
@@ -537,7 +542,7 @@ Please provide a professional audit analysis following the structured format. Fo
     console.error('❌ AI transaction analysis V2 failed:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       status: 'failed',
       timestamp: new Date().toISOString()
     }), {

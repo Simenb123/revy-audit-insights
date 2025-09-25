@@ -74,7 +74,7 @@ serve(async (req) => {
       date: t.transaction_date,
       amount: t.debit_amount || t.credit_amount || 0,
       description: t.description?.substring(0, 50), // Shorter descriptions
-      account: t.client_chart_of_accounts?.account_number,
+      account: (t.client_chart_of_accounts as any)?.account_number,
       voucher: t.voucher_number
     }));
 
@@ -148,7 +148,7 @@ Svar kun med gyldig JSON i dette formatet:
         risikoområder: ['Teknisk feil i AI-behandling'],
         anbefalinger: ['Kontakt systemadministrator', 'Prøv igjen senere'],
         konfidensnivå: 1,
-        feilmelding: error.message
+        feilmelding: (error as Error).message
       };
     }
 
@@ -175,7 +175,7 @@ Svar kun med gyldig JSON i dette formatet:
     console.error('❌ AI transaction analysis failed:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       sammendrag: 'Analyse feilet på grunn av teknisk feil',
       risikoområder: ['Systemfeil', 'API-kommunikasjonsfeil'],
       anbefalinger: ['Prøv igjen senere', 'Kontakt support hvis problemet vedvarer'],

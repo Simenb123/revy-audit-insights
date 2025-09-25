@@ -53,7 +53,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in account-data-manager:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ error: 'Internal server error', details: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -109,7 +109,7 @@ async function handleExport(supabaseClient: any, userId: string, fileName: strin
     }
 
     // Transform data for CSV format
-    const csvData = accounts.map(account => {
+    const csvData = accounts.map((account: any) => {
       const auditArea = account.standard_account_audit_area_mappings?.[0]
       const riskMapping = account.account_risk_mappings?.[0]
       const relatedParty = account.related_party_indicators?.[0]
@@ -180,7 +180,7 @@ async function handleExport(supabaseClient: any, userId: string, fileName: strin
       .from('data_import_exports')
       .update({
         status: 'failed',
-        error_details: { message: error.message }
+        error_details: { message: (error as Error).message }
       })
       .eq('id', exportRecord.id)
 
@@ -223,7 +223,7 @@ async function handleImport(supabaseClient: any, userId: string, data: any[], fi
         failureCount++
         errors.push({
           row: row,
-          error: error.message
+          error: (error as Error).message
         })
         console.error('Error processing row:', error, 'Row data:', row)
       }
@@ -260,7 +260,7 @@ async function handleImport(supabaseClient: any, userId: string, data: any[], fi
       .from('data_import_exports')
       .update({
         status: 'failed',
-        error_details: { message: error.message }
+        error_details: { message: (error as Error).message }
       })
       .eq('id', importRecord.id)
 
