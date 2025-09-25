@@ -35,10 +35,10 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to fetch categories: ${categoriesError.message}`);
     }
 
-    // Enhanced AI-based categorization
-    let bestMatch = null;
+    // Variables to handle AI categorization  
+    let bestMatch: any = null;
     let highestScore = 0;
-    let aiCategory = null;
+    let aiCategory: string | null = null;
     let aiConfidence = 0.5;
 
     const lowerFileName = fileName.toLowerCase();
@@ -96,7 +96,8 @@ Deno.serve(async (req: Request) => {
         log(`✅ [DOCUMENT-AI-CATEGORIZER] AI categorized as: ${aiCategory} (${Math.round(aiConfidence * 100)}%)`);
         
       } catch (aiError) {
-        log(`⚠️ [DOCUMENT-AI-CATEGORIZER] AI categorization failed: ${aiError.message}`);
+        log(`⚠️ [DOCUMENT-AI-CATEGORIZER] AI categorization failed: ${(aiError as Error).message}`);
+        // Continue to fallback method
       }
     }
 
@@ -167,7 +168,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error in document-ai-categorizer:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { 
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
         status: 500 

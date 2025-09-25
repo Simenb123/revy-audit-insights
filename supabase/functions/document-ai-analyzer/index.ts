@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('💥 Error in document-ai-analyzer function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       message: 'Failed to analyze document'
     }), {
       status: 500,

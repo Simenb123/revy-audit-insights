@@ -162,7 +162,7 @@ async function fetchStandardAccountBalances(
   // 4) Build mapping lookup by account_number (explicit mappings)
   const mappingLookup = new Map<string, { standard_number: string }>();
   mappings?.forEach((m: any) => {
-    const target = standardByNumber.get(m.statement_line_number);
+    const target = standardByNumber.get(m.statement_line_number) as any;
     if (target) {
       mappingLookup.set(m.account_number, { standard_number: target.standard_number });
     }
@@ -179,7 +179,7 @@ async function fetchStandardAccountBalances(
   }
   const classificationLookup = new Map<string, { standard_number: string }>();
   (classifications || []).forEach((c: any) => {
-    const std = standardByName.get(String(c.new_category || '').toLowerCase().trim());
+    const std = standardByName.get(String(c.new_category || '').toLowerCase().trim()) as any;
     if (std) {
       classificationLookup.set(c.account_number, { standard_number: std.standard_number });
     }
@@ -236,7 +236,7 @@ async function fetchStandardAccountBalances(
 
   // Apply sign multipliers to normalize display conventions
   for (const [key, val] of grouped.entries()) {
-    const meta = standardByNumber.get(key);
+    const meta = standardByNumber.get(key) as any;
     const mult = Number(meta?.sign_multiplier ?? 1);
     if (Number.isFinite(mult) && mult !== 1) {
       grouped.set(key, val * mult);

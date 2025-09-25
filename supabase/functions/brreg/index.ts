@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
     
     // Log the found roles for better debugging
     if (processedRoles.ceo || processedRoles.chair || processedRoles.boardMembers.length > 0) {
-      log(`[BRREG] Saved CEO: ${processedRoles.ceo?.name || 'None'}, Chair: ${processedRoles.chair?.name || 'None'}, boardRoles: ${processedRoles.boardMembers.length}`);
+      log(`[BRREG] Saved CEO: ${(processedRoles.ceo as any)?.name || 'None'}, Chair: ${(processedRoles.chair as any)?.name || 'None'}, boardRoles: ${processedRoles.boardMembers.length}`);
     } else {
       log(`[BRREG] No roles found for ${query}`);
     }
@@ -339,7 +339,7 @@ const enhancedData = {
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error', 
-        details: error.message 
+        details: (error as Error).message 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -349,8 +349,13 @@ const enhancedData = {
 /**
  * Strikt og eksplisitt mapping til CEO, Chair, BoardMembers og Regnskapsfører
  */
-function processRolesStrict(roller) {
-  const result = {
+function processRolesStrict(roller: any) {
+  const result: {
+    ceo: { name: string; fromDate: any; toDate: any; roleType: string } | null;
+    chair: { name: string; fromDate: any; toDate: any; roleType: string } | null;
+    boardMembers: { name: string; fromDate: any; toDate: any; roleType: string; description: string }[];
+    accountantName: string | null;
+  } = {
     ceo: null,
     chair: null,
     boardMembers: [],

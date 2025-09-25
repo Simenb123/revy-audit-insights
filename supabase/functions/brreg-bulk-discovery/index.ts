@@ -292,7 +292,7 @@ serve(async (req) => {
     console.error('Error in brreg-bulk-discovery:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         details: 'Se server logs for mer informasjon'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

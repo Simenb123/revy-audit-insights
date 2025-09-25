@@ -188,7 +188,7 @@ serve(async (req) => {
     logError('❌ Audit sampling failed:', error);
     return new Response(JSON.stringify({ 
       error: 'Sampling failed', 
-      details: error.message 
+      details: (error as Error).message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -289,7 +289,7 @@ async function fetchTransactionData(supabase: any, payload: SamplingRequest): Pr
 
   } catch (error) {
     logError('❌ Failed to fetch transaction data:', error);
-    throw new Error(`Transaction data fetch failed: ${error.message}`);
+    throw new Error(`Transaction data fetch failed: ${(error as Error).message}`);
   }
 }
 
@@ -525,8 +525,8 @@ function getZScore(confidence: number): number {
   return 1.96;
 }
 
-function getMethodDetails(method: string): any {
-  const details = {
+function getMethodDetails(method: string): { name: string; description: string } {
+  const details: Record<string, { name: string; description: string }> = {
     'SRS': { name: 'Simple Random Sampling', description: 'Tilfeldig utvalg uten stratifisering' },
     'SYSTEMATIC': { name: 'Systematic Sampling', description: 'Systematisk utvalg med fast intervall' },
     'MUS': { name: 'Monetary Unit Sampling', description: 'Pengeenhetsutvalg med sannsynlighet proporsjonal med beløp' },

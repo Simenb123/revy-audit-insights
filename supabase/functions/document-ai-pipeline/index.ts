@@ -94,8 +94,8 @@ Deno.serve(async (req: Request) => {
         log('✅ [DOCUMENT-AI-PIPELINE] AI analysis completed');
         
       } catch (error) {
-        log(`❌ [DOCUMENT-AI-PIPELINE] AI analysis failed: ${error.message}`);
-        result.steps.analysis.error = error.message;
+        log(`❌ [DOCUMENT-AI-PIPELINE] AI analysis failed: ${(error as Error).message}`);
+        result.steps.analysis.error = (error as Error).message;
         
         // Continue with categorization even if analysis fails
       }
@@ -125,8 +125,8 @@ Deno.serve(async (req: Request) => {
         log('✅ [DOCUMENT-AI-PIPELINE] AI categorization completed');
         
       } catch (error) {
-        log(`❌ [DOCUMENT-AI-PIPELINE] AI categorization failed: ${error.message}`);
-        result.steps.categorization.error = error.message;
+        log(`❌ [DOCUMENT-AI-PIPELINE] AI categorization failed: ${(error as Error).message}`);
+        result.steps.categorization.error = (error as Error).message;
       }
     } else {
       log('⏭️ [DOCUMENT-AI-PIPELINE] AI categorization already exists, skipping');
@@ -163,7 +163,7 @@ Deno.serve(async (req: Request) => {
 
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    log(`❌ [DOCUMENT-AI-PIPELINE] Error processing document ${documentId}: ${error.message}`);
+    log(`❌ [DOCUMENT-AI-PIPELINE] Error processing document ${documentId}: ${(error as Error).message}`);
     
     // Try to update document with error status if we have documentId
     if (documentId) {
@@ -176,13 +176,13 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', documentId);
       } catch (updateError) {
-        log(`❌ [DOCUMENT-AI-PIPELINE] Failed to update document status: ${updateError.message}`);
+        log(`❌ [DOCUMENT-AI-PIPELINE] Failed to update document status: ${(updateError as Error).message}`);
       }
     }
 
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
+      error: (error as Error).message,
       documentId,
       processingTime
     }), {

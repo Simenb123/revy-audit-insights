@@ -211,7 +211,7 @@ serve(async (req) => {
     console.error('Error in calculate-population-from-accounts function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         size: 0,
         sum: 0,
         accounts: []

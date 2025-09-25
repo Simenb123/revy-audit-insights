@@ -205,7 +205,7 @@ serve(async (req) => {
       success: false,
       processed: 0,
       errors: 1,
-      message: `Error: ${error.message}`,
+      message: `Error: ${(error as Error).message}`,
     };
 
     return new Response(JSON.stringify(response), {
