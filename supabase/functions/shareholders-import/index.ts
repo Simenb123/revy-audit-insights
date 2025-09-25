@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
               orgnr: row.companyOrgnr,
               name: row.companyName,
               year,
-              user_id: isGlobal ? null : user.id,
+              user_id: isGlobal ? null : user?.id,
               total_shares: 0
             }, { onConflict: 'orgnr,year,user_id', ignoreDuplicates: false })
 
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
               entity_type: row.holderType,
               name: row.holderName,
               orgnr: row.holderOrgnr || null,
-              user_id: isGlobal ? null : user.id
+              user_id: isGlobal ? null : user?.id
             }, { onConflict: 'entity_type,name,orgnr,user_id', ignoreDuplicates: false })
 
           if (entityError) {
@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
             .eq('entity_type', row.holderType)
             .eq('name', row.holderName)
             .eq('orgnr', row.holderOrgnr)
-            .eq('user_id', isGlobal ? null : user.id)
+            .eq('user_id', isGlobal ? null : user?.id)
             .single()
 
           if (entityLookupError || !entityData) {
@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
               share_class: row.shareClass,
               shares: row.shares,
               year,
-              user_id: isGlobal ? null : user.id
+              user_id: isGlobal ? null : user?.id
             })
 
           if (holdingError) {
@@ -244,8 +244,8 @@ Deno.serve(async (req) => {
       currentBatch = []
       
       // Force garbage collection hint
-      if (typeof globalThis.gc === 'function') {
-        globalThis.gc()
+      if (typeof (globalThis as any).gc === 'function') {
+        (globalThis as any).gc()
       }
     }
     // Process file stream chunk by chunk with minimal memory usage
@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Import error:', error)
     return new Response(JSON.stringify({
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

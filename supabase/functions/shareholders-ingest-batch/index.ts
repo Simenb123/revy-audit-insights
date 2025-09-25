@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
       // Add holding
       const shares = parseNumber(row.antall_aksjer) ?? 0
-      const shareClass = normalizeClassName(row.aksjeklasse)
+      const shareClass = normalizeClassName(row.aksjeklasse || undefined)
       
       console.log(`Processing holding: orgnr=${orgnr}, holder=${holderName}, shares=${shares}, class=${shareClass}`)
       
@@ -251,8 +251,8 @@ Deno.serve(async (req) => {
       for (const { data: existingEntities } of existingResults) {
         for (const entity of existingEntities || []) {
           let key = ''
-          if (entity.orgnr) {
-            key = `org:${entity.orgnr}`
+          if ((entity as any).orgnr) {
+            key = `org:${(entity as any).orgnr}`
           } else if (entity.birth_year) {
             key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
           } else {
@@ -286,8 +286,8 @@ Deno.serve(async (req) => {
         // Add newly inserted entities to the mapping
         for (const entity of insertedEntities || []) {
           let key = ''
-          if (entity.orgnr) {
-            key = `org:${entity.orgnr}`
+          if ((entity as any).orgnr) {
+            key = `org:${(entity as any).orgnr}`
           } else if (entity.birth_year) {
             key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
           } else {
