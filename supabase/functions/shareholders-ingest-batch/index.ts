@@ -253,8 +253,8 @@ Deno.serve(async (req) => {
           let key = ''
           if ((entity as any).orgnr) {
             key = `org:${(entity as any).orgnr}`
-          } else if (entity.birth_year) {
-            key = `p:${entity.name.toUpperCase()}:${entity.birth_year}`
+          } else if ((entity as any).birth_year) {
+            key = `p:${entity.name.toUpperCase()}:${(entity as any).birth_year}`
           } else {
             key = `p:${entity.name.toUpperCase()}:`
           }
@@ -372,16 +372,16 @@ Deno.serve(async (req) => {
     console.error('Batch processing error:', error)
     
     // Provide more specific error messages
-    let errorMessage = error.message
+    let errorMessage = (error as Error).message
     let errorType = 'UNKNOWN_ERROR'
     
-    if (error.message?.includes('duplicate key value')) {
+    if ((error as Error).message?.includes('duplicate key value')) {
       errorMessage = 'Data already exists. This might happen when importing the same data multiple times.'
       errorType = 'DUPLICATE_DATA'
-    } else if (error.message?.includes('violates row-level security')) {
+    } else if ((error as Error).message?.includes('violates row-level security')) {
       errorMessage = 'Permission denied. Make sure you have the right permissions to import this data.'
       errorType = 'PERMISSION_DENIED'
-    } else if (error.message?.includes('Invalid token')) {
+    } else if ((error as Error).message?.includes('Invalid token')) {
       errorMessage = 'Authentication failed. Please try logging in again.'
       errorType = 'AUTH_ERROR'
     }
@@ -389,7 +389,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       error: errorMessage,
       error_type: errorType,
-      original_error: error.message
+      original_error: (error as Error).message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

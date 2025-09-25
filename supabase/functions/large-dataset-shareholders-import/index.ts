@@ -118,11 +118,11 @@ serve(async (req) => {
 
     throw new Error("Unsupported action. Only 'init' is supported in this version.");
 
-  } catch (e: any) {
-    const errorMessage = String(e?.message ?? e);
+  } catch (e) {
+    const errorMessage = String((e as Error)?.message ?? e);
     console.error('❌ Import error:', errorMessage);
     console.error('❌ Full error object:', e);
-    console.error('❌ Stack trace:', e?.stack);
+    console.error('❌ Stack trace:', (e as Error)?.stack);
     
     // Update job status on error with detailed error info
     try {
@@ -157,7 +157,7 @@ serve(async (req) => {
       error: errorMessage,
       details: {
         type: e?.constructor?.name || 'UnknownError',
-        stack: e?.stack?.split('\n').slice(0, 5) // First 5 lines of stack
+        stack: (e as Error)?.stack?.split('\n').slice(0, 5) // First 5 lines of stack
       }
     }), { 
       status: 500,

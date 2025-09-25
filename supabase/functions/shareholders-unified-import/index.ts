@@ -76,7 +76,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'Import feilet'
+        error: (error as Error).message || 'Import feilet'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -242,7 +242,7 @@ async function processLargeFile(
         .from('import_sessions')
         .update({
           status: 'error',
-          error_message: error.message,
+          error_message: (error as Error).message,
           updated_at: new Date().toISOString()
         })
         .eq('id', sessionId)
@@ -250,7 +250,7 @@ async function processLargeFile(
   }
 
   // Start background processing
-  EdgeRuntime.waitUntil(backgroundTask())
+  backgroundTask()
 
   return new Response(
     JSON.stringify({
@@ -295,7 +295,7 @@ async function processBatch(
         })
       }
     } catch (rowError) {
-      batchErrors.push(`Row error: ${rowError.message}`)
+      batchErrors.push(`Row error: ${(rowError as Error).message}`)
     }
   }
 
@@ -307,13 +307,13 @@ async function processBatch(
     // Insert data in optimized batches
     await insertCompanies(supabaseClient, Array.from(companies.entries()), year, userId)
     await insertEntities(supabaseClient, Array.from(entities.values()))
-    await insertHoldings(supabaseClient, processedRows, userId)
+    await insertHoldings(supabaseClient, processedRows, year, userId)
 
     return { processed: processedRows.length, batchErrors }
 
   } catch (error) {
     console.error('Batch insert error:', error)
-    batchErrors.push(`Batch insert failed: ${error.message}`)
+    batchErrors.push(`Batch insert failed: ${(error as Error).message}`)
     return { processed: processedRows.length, batchErrors }
   }
 }
@@ -423,7 +423,7 @@ async function insertEntities(supabaseClient: any, entities: any[]) {
   }
 }
 
-async function insertHoldings(supabaseClient: any, holdings: ProcessedRow[], userId: string) {
+async function insertHoldings(supabaseClient: any, holdings: ProcessedRow[], year: number, userId: string) {
   // Get entity IDs for holders
   const entityNames = holdings.map(h => h.holder_name)
   const { data: entities } = await supabaseClient

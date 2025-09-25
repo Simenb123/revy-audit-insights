@@ -105,16 +105,16 @@ async function downloadFileInChunks(
       console.log(`✅ Successfully created signed URL on attempt ${attempt}`);
       break;
       
-    } catch (error: any) {
-      console.error(`❌ Signed URL attempt ${attempt} failed:`, error.message);
+    } catch (error) {
+      console.error(`❌ Signed URL attempt ${attempt} failed:`, (error as Error).message);
       
       if (attempt === maxRetries) {
         // Final attempt failed - provide detailed error information
         console.error(`❌ All ${maxRetries} signed URL attempts failed`);
         console.error(`🔍 Bucket: ${bucket}`);
         console.error(`🔍 Path: ${path}`);
-        console.error(`🔍 Error: ${error.message}`);
-        throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${error.message}`);
+        console.error(`🔍 Error: ${(error as Error).message}`);
+        throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${(error as Error).message}`);
       }
       
       // Wait before retry with exponential backoff
@@ -385,16 +385,16 @@ async function streamParseExcel(
         console.log(`✅ Successfully created signed URL on attempt ${attempt}`);
         break;
         
-      } catch (error: any) {
-        console.error(`❌ Signed URL attempt ${attempt} failed:`, error.message);
+      } catch (error) {
+        console.error(`❌ Signed URL attempt ${attempt} failed:`, (error as Error).message);
         
         if (attempt === maxRetries) {
           // Final attempt failed - provide detailed error information
           console.error(`❌ All ${maxRetries} signed URL attempts failed`);
           console.error(`🔍 Bucket: ${bucket}`);
           console.error(`🔍 Path: ${path}`);
-          console.error(`🔍 Error: ${error.message}`);
-          throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${error.message}`);
+          console.error(`🔍 Error: ${(error as Error).message}`);
+          throw new Error(`Failed to create signed URL after ${maxRetries} attempts: ${(error as Error).message}`);
         }
         
         // Wait before retry with exponential backoff

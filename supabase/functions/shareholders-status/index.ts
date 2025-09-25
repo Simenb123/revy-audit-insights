@@ -67,7 +67,7 @@ serve(async (req) => {
     console.error('Status check failed:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         status: 'error'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
