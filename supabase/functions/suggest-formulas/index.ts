@@ -119,7 +119,7 @@ Regler:
     console.error('Error in suggest-formulas function:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         suggestions: []
       }),
       {

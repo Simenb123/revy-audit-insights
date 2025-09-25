@@ -45,7 +45,7 @@ async function extractTextFromPDF(fileUrl: string, options: any = {}): Promise<s
     return "Extracted text content from PDF";
   } catch (error) {
     console.error('Error extracting text from PDF:', error);
-    throw new Error(`PDF text extraction failed: ${error.message}`);
+    throw new Error(`PDF text extraction failed: ${(error as Error).message}`);
   }
 }
 
@@ -256,7 +256,7 @@ serve(async (req) => {
       processing_type: 'error',
       results: {},
       processing_time_ms: Date.now() - startTime,
-      message: `Error: ${error.message}`
+      message: `Error: ${(error as Error).message}`
     };
 
     return new Response(JSON.stringify(response), {

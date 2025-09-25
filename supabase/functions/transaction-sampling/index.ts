@@ -137,8 +137,8 @@ serve(async (req) => {
       credit_amount: tx.credit_amount,
       description: tx.description,
       voucher_number: tx.voucher_number,
-      account_number: tx.client_chart_of_accounts.account_number,
-      account_name: tx.client_chart_of_accounts.account_name,
+      account_number: (tx.client_chart_of_accounts as any).account_number,
+      account_name: (tx.client_chart_of_accounts as any).account_name,
     }));
 
     console.log(`Processing ${processedTransactions.length} transactions`);
@@ -190,7 +190,7 @@ serve(async (req) => {
     console.error('Transaction sampling error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Ukjent feil ved transaksjonsutvalg'
+        error: (error as Error).message || 'Ukjent feil ved transaksjonsutvalg'
       }),
       { 
         status: 500,

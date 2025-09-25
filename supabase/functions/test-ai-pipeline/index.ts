@@ -55,8 +55,8 @@ Deno.serve(async (req) => {
         log('✅ [TEST-AI-PIPELINE] AI analysis completed');
         
       } catch (error) {
-        log(`❌ [TEST-AI-PIPELINE] AI analysis failed: ${error.message}`);
-        analysisResult = { error: error.message };
+        log(`❌ [TEST-AI-PIPELINE] AI analysis failed: ${(error as Error).message}`);
+        analysisResult = { error: (error as Error).message };
       }
     }
 
@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
         log('✅ [TEST-AI-PIPELINE] AI categorization completed');
         
       } catch (error) {
-        log(`❌ [TEST-AI-PIPELINE] AI categorization failed: ${error.message}`);
-        categorizationResult = { error: error.message };
+        log(`❌ [TEST-AI-PIPELINE] AI categorization failed: ${(error as Error).message}`);
+        categorizationResult = { error: (error as Error).message };
       }
     }
 
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('💥 Error in test-ai-pipeline function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       message: 'AI pipeline test failed'
     }), {
       status: 500,

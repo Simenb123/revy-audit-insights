@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
           log('ElevenLabs failed, falling back to OpenAI')
         }
       } catch (error) {
-        log('ElevenLabs error, falling back to OpenAI:', error.message)
+        log('ElevenLabs error, falling back to OpenAI:', (error as Error).message)
       }
     } else if (voiceId && !elevenLabsApiKey) {
       return new Response(JSON.stringify({ error: 'ElevenLabs API key not configured' }), {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         },
       })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ error: (error as Error).message }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in text-to-speech function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

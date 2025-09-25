@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
           if (fetchedFrom === "json") {
             const json = await response.json();
             if (Array.isArray(json.resultat)) {
-              announcements = json.resultat.slice(0, 100).map(entry => ({
+              announcements = json.resultat.slice(0, 100).map((entry: any) => ({
                 client_id: client.id,
                 announcement_id: entry.kunngjormingsId || entry.KID || crypto.randomUUID(),
                 org_number: orgNumber,
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
             totalInserted += announcements.length;
           } catch (error) {
             console.error(`Error processing org number ${orgNumber}:`, error);
-            results.push({ orgNumber, status: "error", error: error.message });
+            results.push({ orgNumber, status: "error", error: (error as Error).message });
           }
         }
       } else {
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
             totalInserted += announcements.length;
           } catch (error) {
             console.error(`Error processing client ${client.name}:`, error);
-            results.push({ orgNumber: client.org_number, status: "error", error: error.message });
+            results.push({ orgNumber: client.org_number, status: "error", error: (error as Error).message });
           }
         }
       }
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: (error as Error).message 
       }),
       { 
         status: 500, 
@@ -246,7 +246,7 @@ function parseAnnouncementsHtml(html: string, clientId: string, orgNumber: strin
       if (cells.length < 3) continue;
       
       // Extract date from first cell
-      const dateMatch = cells[0].match(/(\d{2}\.\d{2}\.\d{4})/);
+      const dateMatch = cells[0]?.match(/(\d{2}\.\d{2}\.\d{4})/);
       if (!dateMatch || !dateMatch[1]) continue;
       
       const dateStr = dateMatch[1];

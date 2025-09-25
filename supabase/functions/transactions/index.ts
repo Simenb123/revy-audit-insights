@@ -98,11 +98,11 @@ Deno.serve(async (req) => {
 
     // Server-calculated totals (no client-side loops)
     const totals = {
-      totalDebit: parseFloat(totalsData?.total_debit || '0'),
-      totalCredit: parseFloat(totalsData?.total_credit || '0'),
-      totalBalance: parseFloat(totalsData?.total_balance || '0'),
-      totalNet: parseFloat(totalsData?.total_net || '0'),
-      totalCount: parseInt(totalsData?.total_count || '0', 10)
+      totalDebit: parseFloat((totalsData as any)?.total_debit || '0'),
+      totalCredit: parseFloat((totalsData as any)?.total_credit || '0'),
+      totalBalance: parseFloat((totalsData as any)?.total_balance || '0'),
+      totalNet: parseFloat((totalsData as any)?.total_net || '0'),
+      totalCount: parseInt((totalsData as any)?.total_count || '0', 10)
     };
 
     return new Response(JSON.stringify({ data, count, totals }), {

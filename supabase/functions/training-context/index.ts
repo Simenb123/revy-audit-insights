@@ -118,9 +118,9 @@ serve(async (req) => {
 
     // Flatten library structure for easier consumption
     const flatLibrary = library?.flatMap(item => 
-      item.training_library_collections?.training_library_items?.map(libraryItem => ({
+      (item.training_library_collections as any)?.training_library_items?.map((libraryItem: any) => ({
         ...libraryItem.knowledge_articles,
-        collection_name: item.training_library_collections?.name
+        collection_name: (item.training_library_collections as any)?.name
       })) || []
     ) || [];
 
@@ -138,7 +138,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in training-context function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
