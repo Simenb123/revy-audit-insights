@@ -11469,6 +11469,7 @@ export type Database = {
           fodselsaar_orgnr: string | null
           id: number
           import_metadata: Json | null
+          job_id: number | null
           landkode: string | null
           navn_aksjonaer: string | null
           orgnr: string | null
@@ -11483,6 +11484,7 @@ export type Database = {
           fodselsaar_orgnr?: string | null
           id?: number
           import_metadata?: Json | null
+          job_id?: number | null
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
@@ -11497,6 +11499,7 @@ export type Database = {
           fodselsaar_orgnr?: string | null
           id?: number
           import_metadata?: Json | null
+          job_id?: number | null
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
@@ -13800,12 +13803,6 @@ export type Database = {
               p_limit?: number
               p_offset?: number
               p_user_id: string
-            }
-          | {
-              p_job_id: number
-              p_mapping: Json
-              p_user_id?: string
-              p_year?: number
             }
         Returns: Json
       }

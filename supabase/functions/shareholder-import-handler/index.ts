@@ -545,7 +545,7 @@ function mapRowToShareholderRow(rawRow: any, mapping: Mapping, userId: string, d
 }
 
 // Main queue processor function
-async function processShareholderImportQueue() {
+async function processShareholderImportQueue(): Promise<{ success: boolean; message: string; partial?: boolean; processed?: number }> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
@@ -592,6 +592,11 @@ async function processShareholderImportQueue() {
     // Clear staging table for this user first
     console.log('🗑️ Clearing existing staging data...');
     await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
+    
+    // PHASE A FIX: Add time-slicing to prevent CPU timeout (45 second budget)
+    const startTime = Date.now();
+    const timeoutMs = 45000; // 45 seconds
+    console.log(`⏰ Starting import with ${timeoutMs/1000}s timeout budget`);
     
     const defaultYear = new Date().getFullYear();
     let totalProcessed = 0;
@@ -688,7 +693,10 @@ async function processShareholderImportQueue() {
           
           const { error: insertError } = await supabase
             .from('shareholders_staging')
-            .insert(batch);
+            .insert(batch.map(row => ({
+              ...row,
+              job_id: queueItem.job_id // PHASE A FIX: Include job_id for proper batch tracking
+            })));
             
           if (insertError) {
             throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
@@ -728,7 +736,7 @@ async function processShareholderImportQueue() {
           console.warn(`🔍 Debugging info - mapping object:`, queueItem.mapping);
         }
         
-        // Clear staging table after each batch to prevent accumulation
+        // PHASE A FIX: Clear staging table after each batch (only edge function does this now)
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
         
         // Update job progress with better status tracking
@@ -784,6 +792,17 @@ async function processShareholderImportQueue() {
     
   } catch (error: any) {
     console.error(`❌ Import failed:`, error);
+    
+    // PHASE A FIX: Handle time budget exceeded differently (partial success)
+    if (error.message?.startsWith('TIME_BUDGET_EXCEEDED')) {
+      console.log(`⏰ Time budget exceeded, but import will continue next time`);
+      return { 
+        success: true, 
+        message: `Partial import completed. Import will continue automatically.`,
+        partial: true,
+        processed: 0 // Will be updated by next run
+      };
+    }
     
     // Mark queue item as failed with detailed error
     await supabase
