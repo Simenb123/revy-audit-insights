@@ -619,28 +619,62 @@ async function processShareholderImportQueue() {
       // Check memory before processing each chunk
       checkMemoryUsage();
       
-      // Map rows to ShareholderRow format
-      const mappedRows: ShareholderRow[] = chunk
-        .filter(row => row && Object.keys(row).length > 0) // Skip empty rows
-        .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, defaultYear));
-      
-      // LOG: Show mapped rows for debugging
-      console.log(`🔄 Mapped ${mappedRows.length} rows after filtering and mapping`);
-      if (mappedRows.length > 0) {
-        console.log(`📝 First few mapped rows:`, mappedRows.slice(0, 3));
-      }
-      
-      // LOG: Check if mapping is working correctly
+      // Check if we need to auto-map columns (CSV without proper headers)
       const csvColumns = chunk.length > 0 ? Object.keys(chunk[0]) : [];
       const mappingKeys = Object.keys(queueItem.mapping);
       console.log(`🗂️ Available CSV columns:`, csvColumns);
       console.log(`🔗 Mapping keys:`, mappingKeys);
       
+      // Auto-detect if CSV has data as column names (common issue)
+      const needsAutoMapping = csvColumns.some(col => 
+        /^\d+$/.test(col) || // Pure numbers like "385", "1979"
+        /^\d{9}$/.test(col) || // Org numbers like "827053392"
+        col.includes(' AS') || // Company names
+        col.includes('OSLO') || col.includes('BERGEN') // Location indicators
+      );
+      
+      let effectiveMapping = queueItem.mapping;
+      
+      if (needsAutoMapping) {
+        console.log(`🔧 Auto-mapping detected - CSV appears to have data as column names`);
+        console.log(`📋 Column count: ${csvColumns.length}, expected fields: ${mappingKeys.length}`);
+        
+        // Create position-based mapping for Norwegian shareholder files
+        // Expected order: [antall_aksjer, fodselsaar_orgnr, ?, orgnr, selskap, aksjeklasse, navn_aksjonaer, adresse, landkode]
+        const positionMapping: Record<string, string> = {};
+        
+        if (csvColumns.length >= 9) {
+          positionMapping[csvColumns[0]] = 'antall_aksjer';  // "385"
+          positionMapping[csvColumns[1]] = 'fodselsaar_orgnr'; // "1979" 
+          positionMapping[csvColumns[2]] = '';  // Skip unknown field "3965"
+          positionMapping[csvColumns[3]] = 'orgnr';  // "827053392"
+          positionMapping[csvColumns[4]] = 'selskap';  // "UNI MICRO HOLDING ANSATT AS"
+          positionMapping[csvColumns[5]] = 'aksjeklasse';  // "Ordinære aksjer"
+          positionMapping[csvColumns[6]] = 'navn_aksjonaer';  // "MAGRIT JOFRID GILJARHUS"
+          positionMapping[csvColumns[7]] = '';  // Skip address field "5130 NYBORG"
+          positionMapping[csvColumns[8]] = 'landkode';  // "NOR"
+        }
+        
+        effectiveMapping = positionMapping;
+        console.log(`🔄 Using auto-mapping:`, effectiveMapping);
+      }
+      
       const missingColumns = mappingKeys.filter(key => !csvColumns.includes(key));
-      if (missingColumns.length > 0) {
+      if (missingColumns.length > 0 && !needsAutoMapping) {
         console.error(`❌ MAPPING ERROR: CSV columns missing for mapping keys:`, missingColumns);
         console.error(`❌ Available columns:`, csvColumns);
         console.error(`❌ Required mapping keys:`, mappingKeys);
+      }
+      
+      // Map rows to ShareholderRow format using effective mapping
+      const mappedRows: ShareholderRow[] = chunk
+        .filter(row => row && Object.keys(row).length > 0) // Skip empty rows
+        .map(row => mapRowToShareholderRow(row, effectiveMapping, queueItem.user_id, defaultYear));
+      
+      // LOG: Show mapped rows for debugging
+      console.log(`🔄 Mapped ${mappedRows.length} rows after filtering and mapping`);
+      if (mappedRows.length > 0) {
+        console.log(`📝 First few mapped rows:`, mappedRows.slice(0, 3));
       }
       
       if (mappedRows.length > 0) {
