@@ -440,16 +440,16 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     let isPartialComplete = false;
     
     // Clear existing staging data for this job
-    console.log(`🗑️ Clearing existing staging data for job ${queueItem.id}...`);
+    console.log(`🗑️ Clearing existing staging data for job ${queueItem.job_id}...`);
     const { error: clearError } = await supabase
       .from('shareholders_staging')
       .delete()
-      .eq('job_id', queueItem.id);
+      .eq('job_id', queueItem.job_id);
     
     if (clearError) {
       console.error('❌ Error clearing staging:', clearError);
     } else {
-      console.log(`✅ Staging cleared - rows deleted for job_id: ${queueItem.id}`);
+      console.log(`✅ Staging cleared - rows deleted for job_id: ${queueItem.job_id}`);
     }
     
     const fileExtension = queueItem.path.toLowerCase().split('.').pop();
@@ -499,7 +499,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       // Map the chunk data
       const mappedRows = chunk
         .filter(row => row && Object.keys(row).length > 0)
-        .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, queueItem.id, defaultYear));
+        .map(row => mapRowToShareholderRow(row, queueItem.mapping, queueItem.user_id, queueItem.job_id, defaultYear));
       
       console.log(`🔄 Mapped ${mappedRows.length} rows after filtering and mapping`);
       console.log(`📝 First few mapped rows:`, JSON.stringify(mappedRows.slice(0, 3), null, 2));
@@ -540,12 +540,12 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           }
         }
         
-        console.log(`🚀 Processing batch from staging using job_id ${queueItem.id}...`);
+        console.log(`🚀 Processing batch from staging using job_id ${queueItem.job_id}...`);
         
         // Process from staging using database procedure
         const dbProcessStartTime = Date.now();
         const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
-          p_job_id: queueItem.id, // bigint job_id
+          p_job_id: queueItem.job_id, // bigint job_id
           p_user_id: queueItem.user_id, // uuid user_id  
           p_offset: 0, // Always 0 since we process all staging rows for this job_id
           p_limit: mappedRows.length // Current batch size
@@ -573,7 +573,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           console.warn(`⚠️ WARNING: Zero rows processed in this batch!`);
           console.warn(`🔍 Debug - raw chunk size: ${chunk.length}`);
           console.warn(`🔍 Debug - mappedRows.length: ${mappedRows.length}`);
-          console.warn(`🔍 Debug - job_id used: ${queueItem.id}`);
+          console.warn(`🔍 Debug - job_id used: ${queueItem.job_id}`);
           console.warn(`🔍 Debug - mapping object:`, JSON.stringify(queueItem.mapping));
         }
       }
@@ -616,12 +616,12 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           last_updated: new Date().toISOString()
         }
       })
-      .eq('id', queueItem.id);
+      .eq('id', queueItem.job_id);
     
     if (completeError) {
       console.error('❌ Error updating job status:', completeError);
     } else {
-      console.log(`✅ Job ${queueItem.id} marked as ${statusUpdate}. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
+      console.log(`✅ Job ${queueItem.job_id} marked as ${statusUpdate}. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
     }
     
     const { error: queueCompleteError } = await supabase
@@ -655,7 +655,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     const isTimeoutError = error.message && error.message.includes('Time budget exceeded');
     
     if (isTimeoutError) {
-      console.log(`⏰ Job ${queueItem.id} paused due to time budget - will resume later`);
+      console.log(`⏰ Job ${queueItem.job_id} paused due to time budget - will resume later`);
       
       const { error: pauseError } = await supabase
         .from('import_jobs')
@@ -670,7 +670,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
             reason: 'time_budget_exceeded'
           }
         })
-        .eq('id', queueItem.id);
+        .eq('id', queueItem.job_id);
         
       if (pauseError) {
         console.error('❌ Error updating job to paused status:', pauseError);
@@ -691,7 +691,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           error: error.message,
           completed_at: new Date().toISOString()
         })
-        .eq('id', queueItem.id);
+        .eq('id', queueItem.job_id);
       
       if (updateError) {
         console.error('❌ Error updating job status to failed:', updateError);
