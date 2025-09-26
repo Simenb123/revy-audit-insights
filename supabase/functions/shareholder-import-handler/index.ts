@@ -466,7 +466,6 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     };
     
     const defaultYear = new Date().getFullYear();
-    let isPartialComplete = false;
     
     // Process chunk function
     const processChunk = async (chunk: any[]): Promise<void> => {
