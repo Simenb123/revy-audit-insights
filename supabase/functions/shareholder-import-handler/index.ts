@@ -46,8 +46,8 @@ async function downloadFileInChunks(
   console.log(`⏰ Waiting 3 seconds for TUS upload to finalize...`);
   await new Promise(resolve => setTimeout(resolve, 3000));
   
-  // Debug storage state before attempting download
-  console.log(`🔍 Debugging storage state for bucket: ${bucket}`);
+  // LOG 1: Before createSignedUrl - log bucket, path and list prefix
+  console.log(`🔧 DEBUG: Pre-signed URL debug`, { bucket, path });
   try {
     const { data: bucketFiles, error: listError } = await supabase.storage
       .from(bucket)
@@ -141,6 +141,9 @@ async function downloadFileInChunks(
         }
       });
       
+      // LOG 2: After fetch - log HTTP status and if body exists
+      console.log(`🌐 HTTP fetch status:`, response.status, response.statusText, 'has body?', !!response.body);
+      
       if (!response.ok && response.status !== 206) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -215,8 +218,8 @@ async function streamParseCSV(
     // Check memory before processing each chunk
     checkMemoryUsage();
     
-    // LOG: Chunk details before parsing
-    console.log(`📄 Processing CSV chunk: ${chunkText.length} characters`);
+    // LOG 3: First time processing a chunk - log chunk text length
+    console.log(`📄 parse chunk`, { chunkChars: chunkText.length });
     
     // Parse CSV chunk using Papa Parse in synchronous mode
     const parseResult = Papa.parse(chunkText, {
@@ -589,14 +592,22 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       .update({ status: 'processing' })
       .eq('id', queueItem.job_id);
     
-    // Clear staging table for this user first
-    console.log('🗑️ Clearing existing staging data...');
+    // Clear staging table for this user first (initial cleanup)
+    console.log('🗑️ Clearing existing staging data at start...');
     await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
     
-    // PHASE A FIX: Add time-slicing to prevent CPU timeout (45 second budget)
+    // Time-slicing to prevent CPU timeout (45 second budget)
     const startTime = Date.now();
     const timeoutMs = 45000; // 45 seconds
     console.log(`⏰ Starting import with ${timeoutMs/1000}s timeout budget`);
+    
+    const checkTimeout = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > timeoutMs) {
+        throw new Error(`TIME_BUDGET_EXCEEDED: Processing stopped after ${elapsed}ms to prevent timeout`);
+      }
+      return elapsed;
+    };
     
     const defaultYear = new Date().getFullYear();
     let totalProcessed = 0;
@@ -608,6 +619,9 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     // Streaming chunk processor function with backpressure
     const processChunk = async (chunk: any[]): Promise<void> => {
       if (chunk.length === 0) return;
+      
+      // Check timeout budget before processing each chunk
+      checkTimeout();
       
       console.log(`📋 Processing streaming chunk of ${chunk.length} rows`);
       
@@ -699,14 +713,21 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
             })));
             
           if (insertError) {
+            console.error(`❌ Insert staging error:`, insertError);
             throw new Error(`Failed to insert batch to staging: ${insertError.message}`);
           }
+          
+          // LOG 4: After insert in staging - log number of rows inserted
+          console.log(`✅ insert staging ok`, { inserted: batch.length });
           
           // Small delay for backpressure
           if (i + batchSize < mappedRows.length) {
             await new Promise(resolve => setTimeout(resolve, 25));
           }
         }
+        
+        // LOG 5a: Before call to process_shareholders_batch - log mapped rows count
+        console.log(`🔄 call DB batch`, { rows: mappedRows.length });
         
         // Process the batch from staging to production tables
         console.log(`🚀 Processing batch from staging...`);
@@ -724,9 +745,9 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
         const processedCount = batchResult?.processed_count || 0;
         totalProcessed += processedCount;
         
-        // LOG: Detailed batch processing results
+        // LOG 5b: After call to process_shareholders_batch - log processed_count
+        console.log(`📊 db batch result`, batchResult);
         console.log(`✅ Batch processing result: processed ${processedCount} rows (total so far: ${totalProcessed})`);
-        console.log(`📊 Batch result data:`, batchResult);
         
         // LOG: Warning if no rows were processed
         if (processedCount === 0) {
@@ -736,7 +757,8 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           console.warn(`🔍 Debugging info - mapping object:`, queueItem.mapping);
         }
         
-        // PHASE A FIX: Clear staging table after each batch (only edge function does this now)
+        // Clear staging table after each batch (only edge function does this now - consolidated cleanup)
+        console.log(`🗑️ Clearing staging after batch processing...`);
         await supabase.rpc('clear_shareholders_staging', { p_user_id: queueItem.user_id });
         
         // Update job progress with better status tracking
