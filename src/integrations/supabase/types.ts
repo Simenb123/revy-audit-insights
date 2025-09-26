@@ -11306,6 +11306,7 @@ export type Database = {
       }
       share_companies: {
         Row: {
+          calculated_total: number | null
           created_at: string | null
           id: string
           name: string
@@ -11315,6 +11316,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          calculated_total?: number | null
           created_at?: string | null
           id?: string
           name: string
@@ -11324,6 +11326,7 @@ export type Database = {
           year: number
         }
         Update: {
+          calculated_total?: number | null
           created_at?: string | null
           id?: string
           name?: string
@@ -11401,15 +11404,7 @@ export type Database = {
           user_id?: string | null
           year?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "share_holdings_holder_id_fkey"
-            columns: ["holder_id"]
-            isOneToOne: false
-            referencedRelation: "share_entities"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       shareholder_import_queue: {
         Row: {
