@@ -38,7 +38,8 @@ async function downloadFileInChunks(
   supabase: any,
   bucket: string,
   path: string,
-  onChunk: (chunk: string) => Promise<void>
+  onChunk: (chunk: string) => Promise<void>,
+  checkTimeout: () => number
 ): Promise<void> {
   console.log(`📥 Starting HTTP Range-based streaming download for ${bucket}/${path}`);
   
@@ -128,6 +129,9 @@ async function downloadFileInChunks(
   
   while (true) {
     try {
+      // Check timeout at start of each download loop iteration
+      checkTimeout();
+      
       // Check memory before each chunk
       checkMemoryUsage();
       
@@ -203,7 +207,8 @@ async function streamParseCSV(
   supabase: any,
   bucket: string,
   path: string,
-  onChunk: (chunk: any[]) => Promise<void>
+  onChunk: (chunk: any[]) => Promise<void>,
+  checkTimeout: () => number
 ): Promise<void> {
   console.log(`📥 Starting true streaming CSV processing for ${bucket}/${path}`);
   
@@ -214,6 +219,9 @@ async function streamParseCSV(
   // Process each chunk from HTTP Range streaming
   const processChunk = async (chunkText: string): Promise<void> => {
     if (!chunkText.trim()) return;
+    
+    // Check timeout before processing each chunk
+    checkTimeout();
     
     // Check memory before processing each chunk
     checkMemoryUsage();
@@ -278,6 +286,9 @@ async function streamParseCSV(
     
     // Process in small batches to prevent memory buildup
     for (let i = 0; i < rows.length; i += PROCESSING_CHUNK_SIZE) {
+      // Check timeout at start of each batch
+      checkTimeout();
+      
       const batch = rows.slice(i, i + PROCESSING_CHUNK_SIZE);
       console.log(`📊 Processing batch ${Math.floor(i / PROCESSING_CHUNK_SIZE) + 1}: ${batch.length} rows`);
       
@@ -299,7 +310,7 @@ async function streamParseCSV(
   };
   
   // Start streaming download with chunk processor
-  await downloadFileInChunks(supabase, bucket, path, processChunk);
+  await downloadFileInChunks(supabase, bucket, path, processChunk, checkTimeout);
   
   console.log(`✅ True streaming CSV parsing completed. Total processed: ${totalProcessed} rows`);
 }
@@ -309,7 +320,8 @@ async function streamParseExcel(
   supabase: any,
   bucket: string,
   path: string,
-  onChunk: (chunk: any[]) => Promise<void>
+  onChunk: (chunk: any[]) => Promise<void>,
+  checkTimeout: () => number
 ): Promise<void> {
   console.log(`📊 Starting memory-optimized Excel processing for ${bucket}/${path}`);
   
@@ -449,6 +461,9 @@ async function streamParseExcel(
     
     // Process rows in very small chunks to prevent memory issues
     for (let startRow = range.s.r + 1; startRow <= range.e.r; startRow += PROCESSING_CHUNK_SIZE) {
+      // Check timeout at start of each Excel processing batch
+      checkTimeout();
+      
       const endRow = Math.min(startRow + PROCESSING_CHUNK_SIZE - 1, range.e.r);
       
       console.log(`🔄 Processing Excel rows ${startRow} to ${endRow}`);
@@ -784,10 +799,10 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     // Stream parse the file based on type
     if (isExcel) {
       console.log('📊 Starting streaming Excel processing...');
-      await streamParseExcel(supabase, queueItem.bucket, queueItem.path, processChunk);
+      await streamParseExcel(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
     } else {
       console.log('📄 Starting streaming CSV processing...');
-      await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk);
+      await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
     }
     
     // Mark queue item as completed
