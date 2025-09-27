@@ -226,22 +226,57 @@ export async function getCompanyShareholders(
   orgnr: string, 
   year: number
 ): Promise<Array<ShareHolding & { share_entities: ShareEntity }>> {
-  const { data, error } = await supabase
+  // First, get the share holdings
+  const { data: holdings, error: holdingsError } = await supabase
     .from('share_holdings')
-    .select(`
-      *,
-      share_entities (*)
-    `)
+    .select('*')
     .eq('company_orgnr', orgnr)
     .eq('year', year)
     .order('shares', { ascending: false })
   
-  if (error) {
-    throw new Error(`Failed to fetch shareholders: ${error.message}`)
+  if (holdingsError) {
+    throw new Error(`Failed to fetch shareholders: ${holdingsError.message}`)
   }
   
-  // Type assertion siden Supabase returnerer entity_type som string
-  return (data || []) as Array<ShareHolding & { share_entities: ShareEntity }>
+  if (!holdings || holdings.length === 0) {
+    return []
+  }
+  
+  // Get unique holder IDs
+  const holderIds = [...new Set(holdings.map(h => h.holder_id))]
+  
+  // Get the corresponding entities
+  const { data: entities, error: entitiesError } = await supabase
+    .from('share_entities')
+    .select('*')
+    .in('id', holderIds)
+  
+  if (entitiesError) {
+    throw new Error(`Failed to fetch entities: ${entitiesError.message}`)
+  }
+  
+  // Create a map for quick lookup
+  const entitiesMap = new Map(
+    (entities || []).map(entity => [entity.id, entity])
+  )
+  
+  // Join the data manually
+  const result = holdings.map(holding => ({
+    ...holding,
+    share_entities: entitiesMap.get(holding.holder_id) || {
+      id: holding.holder_id,
+      name: 'Unknown Entity',
+      entity_type: 'unknown',
+      orgnr: null,
+      birth_year: null,
+      country_code: null,
+      user_id: null,
+      created_at: null,
+      entity_key: null
+    }
+  }))
+  
+  return result as Array<ShareHolding & { share_entities: ShareEntity }>
 }
 
 /**
