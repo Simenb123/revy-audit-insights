@@ -396,12 +396,42 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
 
   console.log('🔍 Checking for pending shareholder import jobs...');
   
-  const { data: queueItems, error: queueError } = await supabase
+  // First check for pending jobs
+  let { data: queueItems, error: queueError } = await supabase
     .from('shareholder_import_queue')
     .select('*')
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
     .limit(1);
+  
+  // If no pending jobs, check for processing jobs with staging data
+  if (!queueItems || queueItems.length === 0) {
+    console.log('🔍 No pending jobs found, checking for processing jobs with staging data...');
+    
+    const { data: processingJobs, error: processingError } = await supabase
+      .from('shareholder_import_queue')
+      .select(`
+        *,
+        staging_count:shareholders_staging(count)
+      `)
+      .eq('status', 'processing')
+      .order('created_at', { ascending: true });
+    
+    if (processingError) {
+      console.error('❌ Failed to fetch processing jobs:', processingError);
+      return { success: false, message: 'Failed to fetch processing jobs' };
+    }
+    
+    // Find a processing job that has staging rows to process
+    const jobWithStaging = processingJobs?.find(job => {
+      // We need to check staging count - this is a rough approximation
+      return true; // We'll check staging count in the processing logic
+    });
+    
+    if (jobWithStaging) {
+      queueItems = [jobWithStaging];
+    }
+  }
   
   if (queueError) {
     console.error('❌ Failed to fetch queue items:', queueError);
@@ -409,16 +439,26 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
   }
   
   if (!queueItems || queueItems.length === 0) {
-    console.log('📭 No pending jobs in queue');
-    return { success: true, message: 'No pending jobs in queue' };
+    console.log('📭 No pending or processing jobs in queue');
+    return { success: true, message: 'No pending or processing jobs in queue' };
   }
   
   const queueItem = queueItems[0];
   console.log(`🚀 Processing queue item ${queueItem.id} for job ${queueItem.job_id}`);
   
+  // Check if this job already has staging data to process
+  const { data: stagingCount, error: stagingError } = await supabase
+    .from('shareholders_staging')
+    .select('*', { count: 'exact', head: true })
+    .eq('job_id', queueItem.job_id);
+  
+  const hasStagingData = (stagingCount as any)?.count > 0;
+  console.log(`📊 Job ${queueItem.job_id} has ${(stagingCount as any)?.count || 0} staging rows`);
+  
   let totalProcessed = 0;
   let totalErrors = 0;
   let isPartialComplete = false;
+  let skipFileProcessing = hasStagingData;
   
   try {
     // Mark as processing
@@ -436,20 +476,27 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       .eq('id', queueItem.job_id);
     
     console.log(`🎯 Processing import job ${queueItem.id} for user ${queueItem.user_id}`);
-    console.log(`📂 File location: ${queueItem.bucket}/${queueItem.path}`);
-    console.log(`🗂️ File mapping:`, JSON.stringify(queueItem.mapping));
     
-    // Clear existing staging data for this job
-    console.log(`🗑️ Clearing existing staging data for job ${queueItem.job_id}...`);
-    const { error: clearError } = await supabase
-      .from('shareholders_staging')
-      .delete()
-      .eq('job_id', queueItem.job_id);
-    
-    if (clearError) {
-      console.error('❌ Error clearing staging:', clearError);
+    if (!skipFileProcessing) {
+      console.log(`📂 File location: ${queueItem.bucket}/${queueItem.path}`);
+      console.log(`🗂️ File mapping:`, JSON.stringify(queueItem.mapping));
     } else {
-      console.log(`✅ Staging cleared - rows deleted for job_id: ${queueItem.job_id}`);
+      console.log(`⏭️ Skipping file processing - using existing staging data`);
+    }
+    
+    // Only clear staging if we're doing fresh file processing
+    if (!skipFileProcessing) {
+      console.log(`🗑️ Clearing existing staging data for job ${queueItem.job_id}...`);
+      const { error: clearError } = await supabase
+        .from('shareholders_staging')
+        .delete()
+        .eq('job_id', queueItem.job_id);
+      
+      if (clearError) {
+        console.error('❌ Error clearing staging:', clearError);
+      } else {
+        console.log(`✅ Staging cleared - rows deleted for job_id: ${queueItem.job_id}`);
+      }
     }
     
     const fileExtension = queueItem.path.toLowerCase().split('.').pop();
@@ -544,23 +591,25 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       }
     };
     
-    // Stream parse based on file type with timeout handling
-    try {
-      console.log(`📂 About to fetch file from bucket: ${queueItem.bucket}, path: ${queueItem.path}`);
-      
-      if (isExcel) {
-        console.log('📊 Starting streaming Excel processing...');
-        await streamParseExcel(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
-      } else {
-        console.log('📄 Starting streaming CSV processing...');
-        await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
-      }
-    } catch (error: any) {
-      if (error.message && error.message.includes('Time budget exceeded')) {
-        console.log(`⏰ Processing paused due to time budget. Will continue with batch processing...`);
-        isPartialComplete = true;
-      } else {
-        throw error;
+    // Stream parse based on file type with timeout handling (only if no existing staging data)
+    if (!skipFileProcessing) {
+      try {
+        console.log(`📂 About to fetch file from bucket: ${queueItem.bucket}, path: ${queueItem.path}`);
+        
+        if (isExcel) {
+          console.log('📊 Starting streaming Excel processing...');
+          await streamParseExcel(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
+        } else {
+          console.log('📄 Starting streaming CSV processing...');
+          await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
+        }
+      } catch (error: any) {
+        if (error.message && error.message.includes('Time budget exceeded')) {
+          console.log(`⏰ Processing paused due to time budget. Will continue with batch processing...`);
+          isPartialComplete = true;
+        } else {
+          throw error;
+        }
       }
     }
     
@@ -630,6 +679,15 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       } else {
         console.log(`✅ Job ${queueItem.job_id} marked as completed with ${totalProcessed} rows processed`);
       }
+      
+      // Also mark queue item as completed
+      await supabase
+        .from('shareholder_import_queue')
+        .update({ 
+          status: 'completed',
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', queueItem.id);
     }
     
     // Update final status
