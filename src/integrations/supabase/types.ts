@@ -11417,6 +11417,7 @@ export type Database = {
           bucket: string
           created_at: string | null
           error_message: string | null
+          file_streamed: boolean | null
           id: string
           job_id: number
           mapping: Json
@@ -11430,6 +11431,7 @@ export type Database = {
           bucket: string
           created_at?: string | null
           error_message?: string | null
+          file_streamed?: boolean | null
           id?: string
           job_id: number
           mapping: Json
@@ -11443,6 +11445,7 @@ export type Database = {
           bucket?: string
           created_at?: string | null
           error_message?: string | null
+          file_streamed?: boolean | null
           id?: string
           job_id?: number
           mapping?: Json

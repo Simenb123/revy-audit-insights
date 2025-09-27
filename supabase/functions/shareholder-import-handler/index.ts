@@ -458,7 +458,17 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
   let totalProcessed = 0;
   let totalErrors = 0;
   let isPartialComplete = false;
-  let skipFileProcessing = hasStagingData;
+  
+  // Only skip file processing if we have staging data AND the file has been fully streamed
+  const skipFileProcessing = hasStagingData && queueItem.file_streamed;
+  
+  if (skipFileProcessing) {
+    console.log(`⏭️ Skipping file processing - file already streamed (file_streamed=${queueItem.file_streamed}) and has staging data`);
+  } else if (hasStagingData && !queueItem.file_streamed) {
+    console.log(`📂 Continuing file streaming - has staging data but file not fully streamed yet (file_streamed=${queueItem.file_streamed})`);
+  } else {
+    console.log(`📂 Starting fresh file processing - no staging data yet`);
+  }
   
   try {
     // Mark as processing
@@ -603,10 +613,19 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           console.log('📄 Starting streaming CSV processing...');
           await streamParseCSV(supabase, queueItem.bucket, queueItem.path, processChunk, checkTimeout);
         }
+        
+        // Mark file as fully streamed when we reach here without timeout
+        console.log(`✅ File streaming completed successfully, marking file_streamed=true for job ${queueItem.job_id}`);
+        await supabase
+          .from('shareholder_import_queue')
+          .update({ file_streamed: true })
+          .eq('id', queueItem.id);
+          
       } catch (error: any) {
         if (error.message && error.message.includes('Time budget exceeded')) {
-          console.log(`⏰ Processing paused due to time budget. Will continue with batch processing...`);
+          console.log(`⏰ Processing paused due to time budget. File streaming will continue in next invocation...`);
           isPartialComplete = true;
+          // Don't set file_streamed=true yet since we haven't finished streaming
         } else {
           throw error;
         }
@@ -660,9 +679,9 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       }
     } while (processedCount > 0);
     
-    // Mark job as completed when no more staging rows to process (unless partial due to timeout)
-    if (!isPartialComplete) {
-      console.log(`🏁 All staging rows processed, marking job as completed`);
+    // Mark job as completed when no more staging rows to process and file is fully streamed (unless partial due to timeout)
+    if (!isPartialComplete && (skipFileProcessing || queueItem.file_streamed)) {
+      console.log(`🏁 All staging rows processed and file fully streamed, marking job as completed`);
       
       const { error: finalCompleteError } = await supabase
         .from('import_jobs')
@@ -688,6 +707,8 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           processed_at: new Date().toISOString()
         })
         .eq('id', queueItem.id);
+    } else if (!isPartialComplete) {
+      console.log(`🔄 File streaming completed but still processing staging data in next invocation`);
     }
     
     // Update final status
