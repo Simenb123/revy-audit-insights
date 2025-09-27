@@ -586,7 +586,8 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
               .update({
                 status: 'completed',
                 completed_at: new Date().toISOString(),
-                rows_loaded: totalProcessed
+                rows_loaded: totalProcessed,
+                needs_aggregation: true
               })
               .eq('id', queueItem.job_id);
             
