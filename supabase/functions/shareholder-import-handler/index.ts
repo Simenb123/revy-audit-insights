@@ -418,6 +418,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
   
   let totalProcessed = 0;
   let totalErrors = 0;
+  let isPartialComplete = false;
   
   try {
     // Mark as processing
@@ -437,8 +438,6 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     console.log(`🎯 Processing import job ${queueItem.id} for user ${queueItem.user_id}`);
     console.log(`📂 File location: ${queueItem.bucket}/${queueItem.path}`);
     console.log(`🗂️ File mapping:`, JSON.stringify(queueItem.mapping));
-    
-    let isPartialComplete = false;
     
     // Clear existing staging data for this job
     console.log(`🗑️ Clearing existing staging data for job ${queueItem.job_id}...`);
@@ -468,7 +467,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     
     const defaultYear = new Date().getFullYear();
     
-    // Process chunk function
+    // Process chunk function - just inserts to staging
     const processChunk = async (chunk: any[]): Promise<void> => {
       if (chunk.length === 0) return;
       
@@ -541,63 +540,7 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           }
         }
         
-        console.log(`🚀 Processing batch from staging using job_id ${queueItem.job_id}...`);
-        
-        // Process from staging using database procedure in a loop until all rows are processed
-        let remainingRows = mappedRows.length;
-        while (remainingRows > 0) {
-          // Check timeout before each batch
-          const elapsed = checkTimeout();
-          if (elapsed > TIME_BUDGET_MS) {
-            console.log(`⏰ Time budget exceeded during DB processing: ${elapsed}ms > ${TIME_BUDGET_MS}ms`);
-            throw new Error(`Time budget exceeded after ${elapsed}ms`);
-          }
-          
-          const dbProcessStartTime = Date.now();
-          const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
-            p_job_id: queueItem.job_id,
-            p_limit: DB_CHUNK_SIZE
-          });
-          
-          const dbProcessDuration = Date.now() - dbProcessStartTime;
-          console.log(`🔄 DB batch processing took: ${dbProcessDuration}ms`);
-          
-          if (processError) {
-            console.error(`❌ DB batch processing error:`, processError);
-            throw new Error(`Failed to process batch: ${processError.message}`);
-          }
-          
-          const processedCount = batchResult?.processed_count ?? 0;
-          const errorsCount = batchResult?.errors_count ?? 0;
-          
-          console.log(`📊 DB batch result: processed ${processedCount}, errors ${errorsCount}`);
-          
-          if (processedCount > 0) {
-            totalProcessed += processedCount;
-            totalErrors += errorsCount;
-            remainingRows -= processedCount;
-            console.log(`✅ Batch processing result: processed ${processedCount} rows, errors: ${errorsCount} (remaining: ${remainingRows})`);
-          } else {
-            // No more rows to process - mark job as completed
-            console.log(`🏁 No more rows to process, marking job as completed`);
-            
-            const { error: completeError } = await supabase
-              .from('import_jobs')
-              .update({
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                rows_loaded: totalProcessed,
-                needs_aggregation: true
-              })
-              .eq('id', queueItem.job_id);
-            
-            if (completeError) {
-              console.error('❌ Error marking job as completed:', completeError);
-            }
-            
-            break;
-          }
-        }
+        console.log(`✅ Inserted ${mappedRows.length} rows to staging for job ${queueItem.job_id}`);
       }
     };
     
@@ -614,17 +557,85 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       }
     } catch (error: any) {
       if (error.message && error.message.includes('Time budget exceeded')) {
-        console.log(`⏰ Processing paused due to time budget. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
+        console.log(`⏰ Processing paused due to time budget. Will continue with batch processing...`);
         isPartialComplete = true;
       } else {
         throw error;
       }
     }
     
+    // After all file processing is complete, process all staging data for this job
+    console.log(`🚀 File processing complete. Now processing all staging data for job ${queueItem.job_id}...`);
+    
+    // Process from staging using database procedure in a loop until all rows are processed
+    let processedCount = 0;
+    do {
+      // Check timeout before each batch
+      const elapsed = checkTimeout();
+      if (elapsed > TIME_BUDGET_MS) {
+        console.log(`⏰ Time budget exceeded during DB processing: ${elapsed}ms > ${TIME_BUDGET_MS}ms`);
+        isPartialComplete = true;
+        break;
+      }
+      
+      const dbProcessStartTime = Date.now();
+      const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
+        p_job_id: queueItem.job_id,
+        p_limit: DB_CHUNK_SIZE
+      });
+      
+      const dbProcessDuration = Date.now() - dbProcessStartTime;
+      console.log(`🔄 DB batch processing took: ${dbProcessDuration}ms`);
+      
+      if (processError) {
+        console.error(`❌ DB batch processing error:`, processError);
+        throw new Error(`Failed to process batch: ${processError.message}`);
+      }
+      
+      processedCount = batchResult?.processed_count ?? 0;
+      const errorsCount = batchResult?.errors_count ?? 0;
+      
+      console.log(`📊 DB batch result: processed ${processedCount}, errors ${errorsCount}`);
+      
+      if (processedCount > 0) {
+        totalProcessed += processedCount;
+        totalErrors += errorsCount;
+        
+        // Update job with current progress
+        await supabase
+          .from('import_jobs')
+          .update({ rows_loaded: totalProcessed })
+          .eq('id', queueItem.job_id);
+        
+        console.log(`✅ Batch processing result: processed ${processedCount} rows, errors: ${errorsCount} (total processed: ${totalProcessed})`);
+      }
+    } while (processedCount > 0);
+    
+    // Mark job as completed when no more staging rows to process (unless partial due to timeout)
+    if (!isPartialComplete) {
+      console.log(`🏁 All staging rows processed, marking job as completed`);
+      
+      const { error: finalCompleteError } = await supabase
+        .from('import_jobs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          rows_loaded: totalProcessed,
+          needs_aggregation: true
+        })
+        .eq('id', queueItem.job_id);
+      
+      if (finalCompleteError) {
+        console.error('❌ Error marking job as completed:', finalCompleteError);
+      } else {
+        console.log(`✅ Job ${queueItem.job_id} marked as completed with ${totalProcessed} rows processed`);
+      }
+    }
+    
     // Update final status
     const statusUpdate = isPartialComplete ? 'processing' : 'completed';
     
-    const { error: completeError } = await supabase
+    const { error: statusUpdateError } = await supabase
       .from('import_jobs')
       .update({
         status: statusUpdate,
@@ -640,8 +651,8 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       })
       .eq('id', queueItem.job_id);
     
-    if (completeError) {
-      console.error('❌ Error updating job status:', completeError);
+    if (statusUpdateError) {
+      console.error('❌ Error updating job status:', statusUpdateError);
     } else {
       console.log(`✅ Job ${queueItem.job_id} marked as ${statusUpdate}. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
     }
