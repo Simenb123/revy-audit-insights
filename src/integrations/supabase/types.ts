@@ -7110,10 +7110,12 @@ export type Database = {
       }
       import_jobs: {
         Row: {
+          completed_at: string | null
           created_at: string | null
           error: string | null
           id: number
           job_type: string
+          needs_aggregation: boolean | null
           rows_loaded: number | null
           source_path: string | null
           status: string
@@ -7121,10 +7123,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string | null
           error?: string | null
           id?: number
           job_type: string
+          needs_aggregation?: boolean | null
           rows_loaded?: number | null
           source_path?: string | null
           status?: string
@@ -7132,10 +7136,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          completed_at?: string | null
           created_at?: string | null
           error?: string | null
           id?: number
           job_type?: string
+          needs_aggregation?: boolean | null
           rows_loaded?: number | null
           source_path?: string | null
           status?: string
@@ -11468,6 +11474,7 @@ export type Database = {
           landkode: string | null
           navn_aksjonaer: string | null
           orgnr: string | null
+          processed_at: string | null
           selskap: string | null
           user_id: string | null
           year: number | null
@@ -11483,6 +11490,7 @@ export type Database = {
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
+          processed_at?: string | null
           selskap?: string | null
           user_id?: string | null
           year?: number | null
@@ -11498,6 +11506,7 @@ export type Database = {
           landkode?: string | null
           navn_aksjonaer?: string | null
           orgnr?: string | null
+          processed_at?: string | null
           selskap?: string | null
           user_id?: string | null
           year?: number | null
@@ -13791,12 +13800,14 @@ export type Database = {
         }[]
       }
       process_shareholders_batch: {
-        Args: {
-          p_job_id: number
-          p_limit?: number
-          p_offset?: number
-          p_user_id: string
-        }
+        Args:
+          | { p_job_id: number; p_limit: number }
+          | {
+              p_job_id: number
+              p_limit?: number
+              p_offset?: number
+              p_user_id: string
+            }
         Returns: Json
       }
       queue_articles_for_embedding: {
