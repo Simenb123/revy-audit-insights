@@ -11459,7 +11459,7 @@ export type Database = {
           {
             foreignKeyName: "shareholder_import_queue_job_id_fkey"
             columns: ["job_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "import_jobs"
             referencedColumns: ["id"]
           },
@@ -11514,7 +11514,15 @@ export type Database = {
           user_id?: string | null
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_shareholders_staging_job_id"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "shareholder_import_queue"
+            referencedColumns: ["job_id"]
+          },
+        ]
       }
       standard_account_audit_area_mappings: {
         Row: {
