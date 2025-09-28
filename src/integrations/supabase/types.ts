@@ -13670,7 +13670,6 @@ export type Database = {
         Returns: {
           bucket: string
           created_at: string
-          file_path: string
           file_streamed: boolean
           id: string
           job_id: number
