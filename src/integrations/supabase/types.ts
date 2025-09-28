@@ -13665,6 +13665,23 @@ export type Database = {
           total_potential: number
         }[]
       }
+      get_prioritized_import_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bucket: string
+          created_at: string
+          file_path: string
+          file_streamed: boolean
+          id: string
+          job_id: number
+          mapping: Json
+          path: string
+          processed_at: string
+          status: string
+          unprocessed_staging_count: number
+          user_id: string
+        }[]
+      }
       get_reports_summary: {
         Args: { p_client_id: string }
         Returns: Json

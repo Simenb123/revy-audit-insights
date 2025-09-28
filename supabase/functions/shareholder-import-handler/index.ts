@@ -745,14 +745,28 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     console.log(`🏁 DB processing complete. Final stats: processed ${totalProcessed}, errors: ${totalErrors}, remaining: ${remainingStagingCount}`);
     
     
-    // Mark job as completed when no staging rows remain and file is fully streamed
+    // Check final state for completion - get updated file_streamed status
     const finalRemainingCount = await getRemainingStaging(supabase, queueItem.job_id);
-    const shouldComplete = !isPartialComplete && finalRemainingCount === 0 && queueItem.file_streamed;
     
-    console.log(`🏁 Completion check: partial=${isPartialComplete}, remaining=${finalRemainingCount}, file_streamed=${queueItem.file_streamed}, shouldComplete=${shouldComplete}`);
+    // Get the current file_streamed status from database (it may have been updated during processing)
+    const { data: currentQueueItem } = await supabase
+      .from('shareholder_import_queue')
+      .select('file_streamed')
+      .eq('id', queueItem.id)
+      .single();
+    
+    const currentFileStreamed = currentQueueItem?.file_streamed ?? queueItem.file_streamed;
+    
+    console.log(`🏁 Completion check: partial=${isPartialComplete}, remaining=${finalRemainingCount}, file_streamed=${currentFileStreamed}, total_processed=${totalProcessed}`);
+    
+    // Mark as completed if:
+    // 1. Not partial AND no staging rows remain AND file fully streamed, OR
+    // 2. File already streamed AND no staging rows remain (even if no new processing)
+    const shouldComplete = (!isPartialComplete && finalRemainingCount === 0 && currentFileStreamed) ||
+                          (currentFileStreamed && finalRemainingCount === 0);
     
     if (shouldComplete) {
-      console.log(`🏁 All staging rows processed (${totalProcessed} processed, ${totalErrors} errors) and file fully streamed, marking job as completed`);
+      console.log(`🏁 Marking job as completed - processed ${totalProcessed} rows, ${totalErrors} errors, file_streamed=${currentFileStreamed}`);
       
       const { error: finalCompleteError } = await supabase
         .from('import_jobs')
@@ -778,64 +792,48 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           processed_at: new Date().toISOString()
         })
         .eq('id', queueItem.id);
-    } else if (finalRemainingCount > 0 && !isPartialComplete) {
-      console.log(`🔄 File streaming completed but ${finalRemainingCount} staging rows remain - will continue processing in next invocation`);
-    } else if (queueItem.file_streamed && finalRemainingCount === 0 && totalProcessed === 0) {
-      console.log(`✅ File already streamed and no staging rows remain, but no new processing - marking as completed`);
+        
+    } else if (finalRemainingCount > 0) {
+      console.log(`🔄 ${finalRemainingCount} staging rows remain - will continue processing in next invocation`);
+    }
+    
+    // Update final status only if not already completed
+    if (!shouldComplete) {
+      const statusUpdate = isPartialComplete ? 'processing' : 'completed';
       
-      await supabase
+      const { error: statusUpdateError } = await supabase
         .from('import_jobs')
         .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          needs_aggregation: true
+          status: statusUpdate,
+          rows_loaded: totalProcessed,
+          total_rows: totalProcessed + totalErrors,
+          completed_at: isPartialComplete ? null : new Date().toISOString(),
+          progress_details: {
+            partial: isPartialComplete,
+            processed: totalProcessed,
+            errors: totalErrors,
+            last_updated: new Date().toISOString()
+          }
         })
         .eq('id', queueItem.job_id);
-        
-      await supabase
+      
+      if (statusUpdateError) {
+        console.error('❌ Error updating job status:', statusUpdateError);
+      } else {
+        console.log(`✅ Job ${queueItem.job_id} marked as ${statusUpdate}. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
+      }
+      
+      const { error: queueCompleteError } = await supabase
         .from('shareholder_import_queue')
         .update({ 
-          status: 'completed',
+          status: isPartialComplete ? 'processing' : 'completed',
           processed_at: new Date().toISOString()
         })
         .eq('id', queueItem.id);
-    }
-    
-    // Update final status
-    const statusUpdate = isPartialComplete ? 'processing' : 'completed';
-    
-    const { error: statusUpdateError } = await supabase
-      .from('import_jobs')
-      .update({
-        status: statusUpdate,
-        rows_loaded: totalProcessed,
-        total_rows: totalProcessed + totalErrors,
-        completed_at: isPartialComplete ? null : new Date().toISOString(),
-        progress_details: {
-          partial: isPartialComplete,
-          processed: totalProcessed,
-          errors: totalErrors,
-          last_updated: new Date().toISOString()
-        }
-      })
-      .eq('id', queueItem.job_id);
-    
-    if (statusUpdateError) {
-      console.error('❌ Error updating job status:', statusUpdateError);
-    } else {
-      console.log(`✅ Job ${queueItem.job_id} marked as ${statusUpdate}. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
-    }
-    
-    const { error: queueCompleteError } = await supabase
-      .from('shareholder_import_queue')
-      .update({ 
-        status: isPartialComplete ? 'processing' : 'completed',
-        processed_at: new Date().toISOString()
-      })
-      .eq('id', queueItem.id);
-    
-    if (queueCompleteError) {
-      console.error('❌ Error updating queue status:', queueCompleteError);
+      
+      if (queueCompleteError) {
+        console.error('❌ Error updating queue status:', queueCompleteError);
+      }
     }
     
     const message = isPartialComplete 
