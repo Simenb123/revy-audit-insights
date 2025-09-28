@@ -679,9 +679,9 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       }
     } while (processedCount > 0);
     
-    // Mark job as completed when no more staging rows to process and file is fully streamed (unless partial due to timeout)
+    // Mark job as completed when no more staging rows to process (regardless of errors) and file is fully streamed (unless partial due to timeout)
     if (!isPartialComplete && (skipFileProcessing || queueItem.file_streamed)) {
-      console.log(`🏁 All staging rows processed and file fully streamed, marking job as completed`);
+      console.log(`🏁 All staging rows processed (processed: ${totalProcessed}, errors: ${totalErrors}) and file fully streamed, marking job as completed`);
       
       const { error: finalCompleteError } = await supabase
         .from('import_jobs')
@@ -696,7 +696,8 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       if (finalCompleteError) {
         console.error('❌ Error marking job as completed:', finalCompleteError);
       } else {
-        console.log(`✅ Job ${queueItem.job_id} marked as completed with ${totalProcessed} rows processed`);
+        console.log(`✅ Job ${queueItem.job_id} marked as completed with ${totalProcessed} rows processed (${totalErrors} errors)`);
+        console.log(`📊 Import completed - will trigger aggregation regardless of errors to ensure completion`);
       }
       
       // Also mark queue item as completed
