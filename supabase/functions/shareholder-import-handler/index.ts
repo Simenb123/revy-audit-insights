@@ -388,86 +388,119 @@ function mapRowToShareholderRow(rawRow: any, mapping: Mapping, userId: string, j
   return mapped;
 }
 
+// Helper function to get remaining staging count
+async function getRemainingStaging(supabase: any, jobId: number): Promise<number> {
+  const { data, error } = await supabase
+    .from('shareholders_staging')
+    .select('*', { count: 'exact', head: true })
+    .eq('job_id', jobId)
+    .is('processed_at', null);
+  
+  if (error) {
+    console.error(`❌ Failed to count staging rows for job ${jobId}:`, error);
+    return 0;
+  }
+  
+  return (data as any)?.count || 0;
+}
+
 // Main queue processor
 async function processShareholderImportQueue(): Promise<{ success: boolean; message: string; partial?: boolean; processed?: number }> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  console.log('🔍 Checking for pending shareholder import jobs...');
+  console.log('🔍 Checking for pending and processing shareholder import jobs...');
   
-  // First check for pending jobs
-  let { data: queueItems, error: queueError } = await supabase
-    .from('shareholder_import_queue')
-    .select('*')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: true })
+  // Get both pending and processing jobs, prioritized by staging data count
+  const { data: queueItems, error: queueError } = await supabase
+    .rpc('get_prioritized_import_jobs')
     .limit(1);
   
-  // If no pending jobs, check for processing jobs with staging data
-  if (!queueItems || queueItems.length === 0) {
-    console.log('🔍 No pending jobs found, checking for processing jobs with staging data...');
+  // Fallback to manual query if RPC fails
+  let finalQueueItems = queueItems;
+  
+  if (queueError || !queueItems) {
+    console.log('🔄 RPC failed, using fallback query...');
     
-    const { data: processingJobs, error: processingError } = await supabase
+    // First try pending jobs
+    let { data: pendingJobs, error: pendingError } = await supabase
       .from('shareholder_import_queue')
-      .select(`
-        *,
-        staging_count:shareholders_staging(count)
-      `)
-      .eq('status', 'processing')
-      .order('created_at', { ascending: true });
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(1);
     
-    if (processingError) {
-      console.error('❌ Failed to fetch processing jobs:', processingError);
-      return { success: false, message: 'Failed to fetch processing jobs' };
-    }
-    
-    // Find a processing job that has staging rows to process
-    const jobWithStaging = processingJobs?.find(job => {
-      // We need to check staging count - this is a rough approximation
-      return true; // We'll check staging count in the processing logic
-    });
-    
-    if (jobWithStaging) {
-      queueItems = [jobWithStaging];
+    if (pendingJobs && pendingJobs.length > 0) {
+      finalQueueItems = pendingJobs;
+    } else {
+      // Then try processing jobs with unprocessed staging data
+      console.log('🔍 No pending jobs, checking processing jobs with staging data...');
+      
+      const { data: processingJobs, error: processingError } = await supabase
+        .from('shareholder_import_queue')
+        .select('*')
+        .eq('status', 'processing')
+        .order('created_at', { ascending: true });
+      
+      if (processingError) {
+        console.error('❌ Failed to fetch processing jobs:', processingError);
+        return { success: false, message: 'Failed to fetch processing jobs' };
+      }
+      
+      // Check which processing jobs have unprocessed staging data
+      let jobWithMostStaging = null;
+      let maxStagingCount = 0;
+      
+      for (const job of processingJobs || []) {
+        const stagingCount = await getRemainingStaging(supabase, job.job_id);
+        console.log(`📊 Job ${job.job_id} has ${stagingCount} unprocessed staging rows`);
+        
+        if (stagingCount > maxStagingCount) {
+          maxStagingCount = stagingCount;
+          jobWithMostStaging = job;
+        }
+      }
+      
+      if (jobWithMostStaging && maxStagingCount > 0) {
+        finalQueueItems = [jobWithMostStaging];
+        console.log(`🎯 Selected job ${jobWithMostStaging.job_id} with ${maxStagingCount} staging rows`);
+      }
     }
   }
   
-  if (queueError) {
+  if (queueError && !finalQueueItems) {
     console.error('❌ Failed to fetch queue items:', queueError);
     return { success: false, message: 'Failed to fetch queue items' };
   }
   
-  if (!queueItems || queueItems.length === 0) {
-    console.log('📭 No pending or processing jobs in queue');
-    return { success: true, message: 'No pending or processing jobs in queue' };
+  if (!finalQueueItems || finalQueueItems.length === 0) {
+    console.log('📭 No pending or processing jobs with staging data in queue');
+    return { success: true, message: 'No pending or processing jobs with staging data' };
   }
   
-  const queueItem = queueItems[0];
-  console.log(`🚀 Processing queue item ${queueItem.id} for job ${queueItem.job_id}`);
+  const queueItem = finalQueueItems[0];
+  console.log(`🚀 Processing queue item ${queueItem.id} for job ${queueItem.job_id} (status: ${queueItem.status})`);
   
-  // Check if this job already has staging data to process
-  const { data: stagingCount, error: stagingError } = await supabase
-    .from('shareholders_staging')
-    .select('*', { count: 'exact', head: true })
-    .eq('job_id', queueItem.job_id);
-  
-  const hasStagingData = (stagingCount as any)?.count > 0;
-  console.log(`📊 Job ${queueItem.job_id} has ${(stagingCount as any)?.count || 0} staging rows`);
+  // Check current staging data count for this job
+  const initialStagingCount = await getRemainingStaging(supabase, queueItem.job_id);
+  console.log(`📊 Job ${queueItem.job_id} has ${initialStagingCount} unprocessed staging rows to start with`);
   
   let totalProcessed = 0;
   let totalErrors = 0;
   let isPartialComplete = false;
   
-  // Only skip file processing if we have staging data AND the file has been fully streamed
-  const skipFileProcessing = hasStagingData && queueItem.file_streamed;
+  // Only skip file processing if file has been fully streamed
+  // Continue streaming if file_streamed=false, even with existing staging data
+  const skipFileProcessing = queueItem.file_streamed;
   
   if (skipFileProcessing) {
-    console.log(`⏭️ Skipping file processing - file already streamed (file_streamed=${queueItem.file_streamed}) and has staging data`);
-  } else if (hasStagingData && !queueItem.file_streamed) {
-    console.log(`📂 Continuing file streaming - has staging data but file not fully streamed yet (file_streamed=${queueItem.file_streamed})`);
+    console.log(`⏭️ Skipping file processing - file already fully streamed (file_streamed=true)`);
   } else {
-    console.log(`📂 Starting fresh file processing - no staging data yet`);
+    console.log(`📂 Will process file - file not fully streamed yet (file_streamed=${queueItem.file_streamed})`);
+    if (initialStagingCount > 0) {
+      console.log(`📋 Note: Will continue streaming despite existing ${initialStagingCount} staging rows`);
+    }
   }
   
   try {
@@ -636,8 +669,14 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
     console.log(`🚀 File processing complete. Now processing all staging data for job ${queueItem.job_id}...`);
     
     // Process from staging using database procedure in a loop until all rows are processed
+    let remainingStagingCount = await getRemainingStaging(supabase, queueItem.job_id);
+    let maxAttempts = 10;
+    let attemptCount = 0;
     let processedCount = 0;
-    do {
+    
+    console.log(`📊 Starting DB processing with ${remainingStagingCount} staging rows remaining`);
+    
+    while (remainingStagingCount > 0 && attemptCount < maxAttempts) {
       // Check timeout before each batch
       const elapsed = checkTimeout();
       if (elapsed > TIME_BUDGET_MS) {
@@ -647,8 +686,11 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       }
       
       const dbProcessStartTime = Date.now();
+      console.log(`🔄 Processing batch - attempt ${attemptCount + 1}, ${remainingStagingCount} rows remaining`);
+      
       const { data: batchResult, error: processError } = await supabase.rpc('process_shareholders_batch', {
         p_job_id: queueItem.job_id,
+        p_user_id: queueItem.user_id,
         p_limit: DB_CHUNK_SIZE
       });
       
@@ -665,9 +707,25 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
       
       console.log(`📊 DB batch result: processed ${processedCount}, errors ${errorsCount}`);
       
-      if (processedCount > 0) {
-        totalProcessed += processedCount;
+      // Get actual remaining count to check for progress
+      const newRemainingCount = await getRemainingStaging(supabase, queueItem.job_id);
+      console.log(`📊 Staging rows: ${remainingStagingCount} -> ${newRemainingCount} (${remainingStagingCount - newRemainingCount} processed this batch)`);
+      
+      if (newRemainingCount >= remainingStagingCount) {
+        // No progress made, increment attempt counter
+        attemptCount++;
+        console.log(`⚠️ No progress made in attempt ${attemptCount}/${maxAttempts}`);
+        
+        if (attemptCount >= maxAttempts) {
+          console.log(`❌ Max attempts reached without progress, stopping`);
+          break;
+        }
+      } else {
+        // Progress made, reset attempt counter
+        attemptCount = 0;
+        totalProcessed += (remainingStagingCount - newRemainingCount);
         totalErrors += errorsCount;
+        remainingStagingCount = newRemainingCount;
         
         // Update job with current progress
         await supabase
@@ -675,13 +733,26 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           .update({ rows_loaded: totalProcessed })
           .eq('id', queueItem.job_id);
         
-        console.log(`✅ Batch processing result: processed ${processedCount} rows, errors: ${errorsCount} (total processed: ${totalProcessed})`);
+        console.log(`✅ Batch progress: processed ${remainingStagingCount - newRemainingCount} rows, total: ${totalProcessed}, errors: ${totalErrors}`);
       }
-    } while (processedCount > 0);
+      
+      // Small delay between batches to prevent overwhelming the database
+      if (remainingStagingCount > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
     
-    // Mark job as completed when no more staging rows to process (regardless of errors) and file is fully streamed (unless partial due to timeout)
-    if (!isPartialComplete && (skipFileProcessing || queueItem.file_streamed)) {
-      console.log(`🏁 All staging rows processed (processed: ${totalProcessed}, errors: ${totalErrors}) and file fully streamed, marking job as completed`);
+    console.log(`🏁 DB processing complete. Final stats: processed ${totalProcessed}, errors: ${totalErrors}, remaining: ${remainingStagingCount}`);
+    
+    
+    // Mark job as completed when no staging rows remain and file is fully streamed
+    const finalRemainingCount = await getRemainingStaging(supabase, queueItem.job_id);
+    const shouldComplete = !isPartialComplete && finalRemainingCount === 0 && queueItem.file_streamed;
+    
+    console.log(`🏁 Completion check: partial=${isPartialComplete}, remaining=${finalRemainingCount}, file_streamed=${queueItem.file_streamed}, shouldComplete=${shouldComplete}`);
+    
+    if (shouldComplete) {
+      console.log(`🏁 All staging rows processed (${totalProcessed} processed, ${totalErrors} errors) and file fully streamed, marking job as completed`);
       
       const { error: finalCompleteError } = await supabase
         .from('import_jobs')
@@ -697,7 +768,6 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
         console.error('❌ Error marking job as completed:', finalCompleteError);
       } else {
         console.log(`✅ Job ${queueItem.job_id} marked as completed with ${totalProcessed} rows processed (${totalErrors} errors)`);
-        console.log(`📊 Import completed - will trigger aggregation regardless of errors to ensure completion`);
       }
       
       // Also mark queue item as completed
@@ -708,8 +778,27 @@ async function processShareholderImportQueue(): Promise<{ success: boolean; mess
           processed_at: new Date().toISOString()
         })
         .eq('id', queueItem.id);
-    } else if (!isPartialComplete) {
-      console.log(`🔄 File streaming completed but still processing staging data in next invocation`);
+    } else if (finalRemainingCount > 0 && !isPartialComplete) {
+      console.log(`🔄 File streaming completed but ${finalRemainingCount} staging rows remain - will continue processing in next invocation`);
+    } else if (queueItem.file_streamed && finalRemainingCount === 0 && totalProcessed === 0) {
+      console.log(`✅ File already streamed and no staging rows remain, but no new processing - marking as completed`);
+      
+      await supabase
+        .from('import_jobs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          needs_aggregation: true
+        })
+        .eq('id', queueItem.job_id);
+        
+      await supabase
+        .from('shareholder_import_queue')
+        .update({ 
+          status: 'completed',
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', queueItem.id);
     }
     
     // Update final status
