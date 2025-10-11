@@ -7,6 +7,7 @@ import AccountCategoriesManager from '@/components/Admin/AccountCategoriesManage
 import MainGroupsManager from '@/components/Admin/MainGroupsManager';
 import FirmStandardAccountsManager from '@/components/Admin/FirmStandardAccountsManager';
 import { GlobalA07MappingRulesManager } from '@/components/StandardAccounts/GlobalA07MappingRulesManager';
+import StandardAccountPreview from '@/components/StandardAccounts/StandardAccountPreview';
 
 const StandardAccountsAdmin = () => {
   return (
@@ -47,9 +48,7 @@ const StandardAccountsAdmin = () => {
         </TabsContent>
         
         <TabsContent value="preview">
-          <div className="p-4 text-center text-muted-foreground">
-            <p>Velg en spesifikk klient for å se finansiell rapportforhåndsvisning</p>
-          </div>
+          <StandardAccountPreview />
         </TabsContent>
       </Tabs>
     </div>

@@ -196,7 +196,7 @@ const GlobalHeader = () => {
               </DropdownMenuItem>
               
               {/* Standard kontoer */}
-              <DropdownMenuItem onClick={() => handleSettingsItemClick('/admin/standard-accounts')}>
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/standard-accounts')}>
                 <Calculator className="mr-2 h-4 w-4" />
                 Standard kontoer
               </DropdownMenuItem>
