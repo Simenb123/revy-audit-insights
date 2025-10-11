@@ -167,10 +167,13 @@ Disse har dublert kode og bør migreres til `fileProcessing.ts`:
 
 ## 📋 Migrasjonsplan
 
-### Fase 1: Lag felles komponenter (NÅVÆRENDE)
+### Fase 1: Lag felles komponenter ✅ FULLFØRT
 - ✅ Audit-dokument (denne filen)
-- 🔄 Lag `FileUploadZone` komponent (generisk dropzone)
-- 🔄 Lag `FileProcessor` hook (wrapper for fileProcessing.ts)
+- ✅ Lag `FileUploadZone` komponent (generisk dropzone)
+- ✅ Lag `useFileProcessor` hook (wrapper for fileProcessing.ts)
+- ✅ Oppdater `UploadZone` (DataUpload) til å bruke FileUploadZone som adapter
+  - Legacy API bevart for bakoverkompatibilitet
+  - Alle eksisterende komponenter får nå forbedret validering automatisk
 
 ### Fase 2: Migrer høy-prioritet komponenter (Neste)
 1. CSVUploader → Bruk FileUploadZone + FileProcessor
