@@ -61,7 +61,7 @@ const ClientFilters = ({
         </SelectContent>
       </Select>
       
-      <Button className="gap-2 bg-revio-500 hover:bg-revio-600">
+      <Button variant="brand" className="gap-2">
         <Filter size={18} />
         <span>Flere filtre</span>
       </Button>

@@ -10,6 +10,19 @@ Denne guiden viser hvordan du migrerer komponenter fra hardkodede `revio-*` klas
 - ✅ `ClientSubHeader.tsx`  
 - ✅ `GlobalHeader.tsx`
 
+### UI-komponenter (Variants)
+- ✅ `button.tsx` - brand variant
+- ✅ `badge-variants.tsx` - brand og brand-solid variants
+
+### Upload-komponenter
+- ✅ `FileUploadZone.tsx` - ikoner, borders, hover states
+
+### Client-komponenter  
+- ✅ `ClientFilters.tsx` - filter button
+
+### Dashboard-komponenter
+- ✅ `ProjectCard.tsx` - badge og button
+
 ## 📋 Migreringstabeller
 
 ### Bakgrunnsfarger
@@ -158,12 +171,13 @@ import { extendedBadgeVariants } from "@/components/ui/badge-variants";
 | Kategori              | Antall filer | Migrert | Gjenstående |
 |-----------------------|--------------|---------|-------------|
 | Layout-komponenter    | 3            | 3 ✅    | 0           |
-| Badge-komponenter     | ?            | 0       | ?           |
-| Button-komponenter    | ?            | 0       | ?           |
-| Card-komponenter      | ?            | 0       | ?           |
-| Form-komponenter      | ?            | 0       | ?           |
-| Dashboard-komponenter | ?            | 0       | ?           |
-| **Totalt**            | **64+**      | **3**   | **61+**     |
+| UI-komponenter        | 2            | 2 ✅    | 0           |
+| Upload-komponenter    | 3            | 1 ✅    | 2           |
+| Client-komponenter    | 2            | 1 ✅    | 1           |
+| Dashboard-komponenter | 5            | 1 ✅    | 4           |
+| Training-komponenter  | 4            | 0       | 4           |
+| Admin-komponenter     | 1            | 0       | 1           |
+| **Totalt**            | **18**       | **8**   | **10**      |
 
 ## ⏭️ Neste steg
 

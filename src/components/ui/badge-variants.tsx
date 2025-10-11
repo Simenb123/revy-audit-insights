@@ -17,9 +17,9 @@ export const extendedBadgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
         outline: "text-foreground",
         brand:
-          "border-transparent bg-revio-100 text-revio-800 hover:bg-revio-200",
+          "border-transparent bg-brand-surface text-brand-text-muted hover:bg-brand-surface-hover",
         "brand-solid":
-          "border-transparent bg-revio-500 text-white hover:bg-revio-600",
+          "border-transparent bg-brand-primary text-white hover:bg-brand-primary-hover",
       },
     },
     defaultVariants: {

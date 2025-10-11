@@ -57,9 +57,9 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
 
   // Determine icon based on accepted file types
   const defaultIcon = acceptedFileTypes.some(type => type.includes('pdf')) ? (
-    <FileText className="h-12 w-12 text-revio-500 mx-auto mb-4" />
+    <FileText className="h-12 w-12 text-brand-primary mx-auto mb-4" />
   ) : (
-    <FileSpreadsheet className="h-12 w-12 text-revio-500 mx-auto mb-4" />
+    <FileSpreadsheet className="h-12 w-12 text-brand-primary mx-auto mb-4" />
   );
 
   // Default help text based on accepted types
@@ -141,8 +141,8 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       <div
         className={cn(
           'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
-          isDragging && !disabled && 'border-revio-500 bg-revio-50',
-          !isDragging && !disabled && 'border-gray-300 hover:border-revio-300',
+          isDragging && !disabled && 'border-brand-primary bg-brand-surface-light',
+          !isDragging && !disabled && 'border-gray-300 hover:border-brand-border',
           disabled && 'bg-gray-100 cursor-not-allowed border-gray-200',
           className
         )}

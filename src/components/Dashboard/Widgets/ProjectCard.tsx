@@ -101,7 +101,7 @@ const ProjectCard = ({ className }: ProjectCardProps) => {
             <CardTitle>Årsrevisjon {getYear(projectClient.year_end_date)}</CardTitle>
             <CardDescription>{projectClient.name}</CardDescription>
           </div>
-          <Badge className="bg-revio-100 text-revio-800 hover:bg-revio-200 capitalize">{projectClient.phase || 'Aktiv'}</Badge>
+          <Badge className="bg-brand-surface text-brand-text-muted hover:bg-brand-surface-hover capitalize">{projectClient.phase || 'Aktiv'}</Badge>
         </div>
       </CardHeader>
       <CardContent className="flex-1">
@@ -158,7 +158,7 @@ const ProjectCard = ({ className }: ProjectCardProps) => {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full bg-revio-500 hover:bg-revio-600">
+        <Button variant="brand" className="w-full">
           <span>Åpne prosjekt</span>
           <ArrowUpRight size={16} className="ml-2" />
         </Button>
