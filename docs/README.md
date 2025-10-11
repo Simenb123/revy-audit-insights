@@ -19,6 +19,7 @@ Velkommen til Revio-dokumentasjonen! Her finner du alt du trenger for å komme i
 
 ### Utilities
 - **[File Processing](./utilities/file-processing.md)** - Excel/CSV import med auto-mapping (brukt i 17+ uploaders)
+- **[Uploader Audit](./utilities/uploader-audit.md)** - Audit av alle uploaders og konsolideringsplan
 - **[Utilities Inventory](./utilities/README.md)** - Komplett oversikt over alle utilities
 
 ---

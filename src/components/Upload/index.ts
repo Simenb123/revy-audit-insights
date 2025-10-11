@@ -6,6 +6,11 @@ export { default as UploadProgressTracker } from './UploadProgressTracker';
 export { default as ValidationSummary } from './ValidationSummary';
 export { default as UploadTypeSelector } from './UploadTypeSelector';
 
+// New consolidated upload components (Fase 1)
+export { default as FileUploadZone } from './FileUploadZone';
+export { default as FileUploadZoneExample } from './FileUploadZoneExample';
+export type { FileUploadZoneProps } from './FileUploadZone';
+
 // New advanced upload components for large datasets
 export { AdvancedUploadProvider, useAdvancedUpload } from './AdvancedUploadProvider';
 export { default as UniversalDataTable } from './UniversalDataTable';
