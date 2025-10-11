@@ -71,10 +71,12 @@ Revio brand colors har ikke semantiske navn:
 3. ✅ Oppdater `docs/color-palette.md` med full dokumentasjon
 4. ✅ Verifiser at eksisterende komponenter fortsatt fungerer (bakoverkompatibelt)
 
-### Fase 2.2: Legg til semantic tokens
-1. Legg til semantic brand tokens i `index.css`
-2. Dokumenter bruksområder for hver token
-3. Lag utility classes for semantic tokens
+### Fase 2.2: Legg til semantic tokens ✅ FULLFØRT
+1. ✅ Semantic brand tokens i `index.css` (--brand-primary, etc.)
+2. ✅ Utility classes (.bg-brand-primary, .text-brand-text, etc.)
+3. ✅ Button variant="brand" for konsistent branding
+4. ✅ Extended badge variants (badge-variants.tsx)
+5. ✅ Dokumentasjon (docs/design/component-variants.md)
 
 ### Fase 2.3: Migrering (Gradvis)
 1. Lag migreringsguide

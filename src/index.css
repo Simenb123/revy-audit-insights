@@ -191,6 +191,15 @@
     max-width: var(--container-xl);
   }
 
+  /* Semantic Brand Utilities */
+  .bg-brand-primary { background-color: hsl(var(--brand-primary)); }
+  .bg-brand-primary-hover { background-color: hsl(var(--brand-primary-hover)); }
+  .bg-brand-surface { background-color: hsl(var(--brand-surface)); }
+  .text-brand-primary { color: hsl(var(--brand-primary)); }
+  .text-brand-text { color: hsl(var(--brand-text)); }
+  .text-brand-text-muted { color: hsl(var(--brand-text-muted)); }
+  .border-brand-border { border-color: hsl(var(--brand-border)); }
+
   /* Z-index utilities */
   .z-dropdown { z-index: var(--z-dropdown); }
   .z-sticky { z-index: var(--z-sticky); }
