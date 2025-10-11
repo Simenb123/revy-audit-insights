@@ -1,0 +1,121 @@
+# Design Token Audit og Standardisering
+
+## 🎯 Mål
+Standardisere alle design tokens til HSL-format og semantic naming conventions.
+
+## ❌ Nåværende problemer
+
+### 1. **KRITISK: Revio-farger i HEX-format**
+I `tailwind.config.ts`:
+```typescript
+revio: {
+  DEFAULT: '#2A9D8F',  // ❌ HEX
+  light: '#47B4A7',    // ❌ HEX
+  dark: '#1F756B',     // ❌ HEX
+  50: '#E6F3F1',       // ❌ HEX
+  // ... etc
+}
+```
+
+**Skal være HSL** (som alle andre farger i systemet).
+
+### 2. **Inkonsistent bruk av farger**
+- 64 komponenter bruker hardkodede klasser: `bg-revio-500`, `text-revio-800`
+- Mangler semantic tokens for brand colors
+- Duplikate definisjoner i `index.css` og `tailwind.config.ts`
+
+### 3. **Manglende semantic mapping**
+Revio brand colors har ikke semantiske navn:
+- `revio-500` → burde være `--brand-primary`
+- `revio-100` → burde være `--brand-surface`
+- `revio-900` → burde være `--brand-text`
+
+## ✅ Løsning: HSL-konvertering
+
+### Revio Brand Colors (HEX → HSL)
+
+| Token       | HEX       | HSL               | Bruk                |
+|-------------|-----------|-------------------|---------------------|
+| revio-50    | #E6F3F1   | 174 57% 93%       | Lys bakgrunn        |
+| revio-100   | #C2E1DE   | 174 57% 88%       | Surface, badge      |
+| revio-200   | #9ACECC   | 174 57% 78%       | Hover states        |
+| revio-300   | #72BDB9   | 174 57% 68%       | Borders             |
+| revio-400   | #55B0AB   | 174 57% 58%       | Disabled states     |
+| revio-500   | #2A9D8F   | 173 57% 39%       | **Primary brand**   |
+| revio-600   | #249082   | 173 49% 35%       | Hover primary       |
+| revio-700   | #1F7F71   | 173 49% 30%       | Active primary      |
+| revio-800   | #196F62   | 173 49% 26%       | Dark text           |
+| revio-900   | #105045   | 173 49% 15%       | Darkest text        |
+
+### Semantic Token Mapping
+
+```css
+:root {
+  /* Brand Colors (Semantic) */
+  --brand-primary: var(--revio-500);          /* 173 57% 39% */
+  --brand-primary-hover: var(--revio-600);    /* 173 49% 35% */
+  --brand-primary-active: var(--revio-700);   /* 173 49% 30% */
+  --brand-surface: var(--revio-100);          /* 174 57% 88% */
+  --brand-surface-hover: var(--revio-200);    /* 174 57% 78% */
+  --brand-text: var(--revio-900);             /* 173 49% 15% */
+  --brand-text-muted: var(--revio-800);       /* 173 49% 26% */
+  --brand-border: var(--revio-300);           /* 174 57% 68% */
+}
+```
+
+## 📋 Implementeringsplan
+
+### Fase 2.1: Konverter til HSL ✅ FULLFØRT
+1. ✅ Oppdater `tailwind.config.ts` - konverter revio HEX til HSL
+2. ✅ Oppdater `index.css` - sikre konsistens + semantic tokens
+3. ✅ Oppdater `docs/color-palette.md` med full dokumentasjon
+4. ✅ Verifiser at eksisterende komponenter fortsatt fungerer (bakoverkompatibelt)
+
+### Fase 2.2: Legg til semantic tokens
+1. Legg til semantic brand tokens i `index.css`
+2. Dokumenter bruksområder for hver token
+3. Lag utility classes for semantic tokens
+
+### Fase 2.3: Migrering (Gradvis)
+1. Lag migreringsguide
+2. Oppdater høy-prioritet komponenter til semantic tokens
+3. Deprecate direkte bruk av `revio-*` klasser
+
+### Fase 2.4: Validering
+1. Kjør visuell regresjon test
+2. Verifiser kontrast ratios (WCAG AA)
+3. Test dark mode konsistens
+
+## 🎨 Brukseksempler
+
+### ❌ Gammelt (hardkodet)
+```tsx
+<Button className="bg-revio-500 hover:bg-revio-600 text-white">
+  Klikk her
+</Button>
+```
+
+### ✅ Nytt (semantic)
+```tsx
+<Button variant="brand">
+  Klikk her
+</Button>
+
+// Eller med Tailwind:
+<div className="bg-brand-primary hover:bg-brand-primary-hover">
+  Innhold
+</div>
+```
+
+## 📊 Påvirkning
+
+- **18 filer** med hardkodede revio-klasser (64 treff)
+- **0 breaking changes** (bakoverkompatibilitet bevart)
+- **Forbedringer**: Konsistens, vedlikeholdbarhet, theme support
+
+## 🔗 Relaterte filer
+
+- `tailwind.config.ts` - Hovedkilde for fargedefinisjoner
+- `src/index.css` - CSS-variabler og utilities
+- `docs/color-palette.md` - Brand color dokumentasjon
+- `src/styles/theme.ts` - Theme system

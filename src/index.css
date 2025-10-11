@@ -78,11 +78,27 @@
     --sub-header-bg: 173 57% 39%;
     --sub-header-foreground: 0 0% 100%;
 
+    /* Revio Brand Colors (HSL) - Complete scale */
+    --revio-50: 174 57% 93%;
     --revio-100: 174 57% 88%;
+    --revio-200: 174 57% 78%;
+    --revio-300: 174 57% 68%;
+    --revio-400: 174 57% 58%;
     --revio-500: 173 57% 39%;
     --revio-600: 173 49% 35%;
     --revio-700: 173 49% 30%;
+    --revio-800: 173 49% 26%;
     --revio-900: 173 49% 15%;
+
+    /* Semantic Brand Tokens (uses Revio colors) */
+    --brand-primary: var(--revio-500);
+    --brand-primary-hover: var(--revio-600);
+    --brand-primary-active: var(--revio-700);
+    --brand-surface: var(--revio-100);
+    --brand-surface-hover: var(--revio-200);
+    --brand-text: var(--revio-900);
+    --brand-text-muted: var(--revio-800);
+    --brand-border: var(--revio-300);
   }
 
   @media (prefers-color-scheme: dark) {
