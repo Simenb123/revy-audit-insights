@@ -98,7 +98,7 @@ const GlobalHeader = () => {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-revio-500/95 backdrop-blur supports-[backdrop-filter]:bg-revio-500/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-brand-primary/95 backdrop-blur supports-[backdrop-filter]:bg-brand-primary/60">
       <div className="flex h-14 items-center px-4">
         {/* Logo og tittel */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">

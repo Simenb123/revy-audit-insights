@@ -78,10 +78,14 @@ Revio brand colors har ikke semantiske navn:
 4. ✅ Extended badge variants (badge-variants.tsx)
 5. ✅ Dokumentasjon (docs/design/component-variants.md)
 
-### Fase 2.3: Migrering (Gradvis)
-1. Lag migreringsguide
-2. Oppdater høy-prioritet komponenter til semantic tokens
-3. Deprecate direkte bruk av `revio-*` klasser
+### Fase 2.3: Migrering (Gradvis) ✅ PÅBEGYNT
+1. ✅ Migrer kritiske layout-komponenter:
+   - ✅ `GlobalSubHeader.tsx` - bg-revio-500 → bg-brand-primary
+   - ✅ `ClientSubHeader.tsx` - bg-revio-500 → bg-brand-primary
+   - ✅ `GlobalHeader.tsx` - bg-revio-500 → bg-brand-primary
+2. ⏳ Lag full migreringsguide
+3. ⏳ Oppdater øvrige komponenter gradvis
+4. ⏳ Deprecate direkte bruk av `revio-*` klasser
 
 ### Fase 2.4: Validering
 1. Kjør visuell regresjon test
