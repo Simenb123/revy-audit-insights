@@ -32,7 +32,7 @@ const ManagerDashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-revio-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Laster team-oversikt...</p>
         </div>
       </div>
@@ -94,7 +94,7 @@ const ManagerDashboard = () => {
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="bg-revio-600 hover:bg-revio-700">
+            <Button variant="brand">
               <Plus className="w-4 h-4 mr-2" />
               Meld på ansatt
             </Button>
@@ -105,7 +105,7 @@ const ManagerDashboard = () => {
             </DialogHeader>
             <div className="space-y-4">
               <Input placeholder="E-post til ansatt" />
-              <Button className="w-full bg-revio-600 hover:bg-revio-700">
+              <Button variant="brand" className="w-full">
                 Send påmelding
               </Button>
             </div>
@@ -214,8 +214,8 @@ const ManagerDashboard = () => {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-revio-100 rounded-full flex items-center justify-center">
-                      <span className="text-revio-700 font-medium">
+                    <div className="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center">
+                      <span className="text-brand-primary-active font-medium">
                         {profile.first_name?.[0]}{profile.last_name?.[0]}
                       </span>
                     </div>

@@ -45,7 +45,7 @@ const ClientStatsGrid = ({ clients, announcements, selectedClientId }: ClientSta
           footer={
             <div className="flex justify-between">
               <span>Uleste: {unreadCount}</span>
-              <Button variant="ghost" size="sm" className="p-0 h-auto text-revio-500 hover:text-revio-600 hover:bg-transparent">
+              <Button variant="ghost" size="sm" className="p-0 h-auto text-brand-primary hover:text-brand-primary-hover hover:bg-transparent">
                 <span>Se alle</span>
               </Button>
             </div>

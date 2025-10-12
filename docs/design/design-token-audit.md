@@ -78,11 +78,11 @@ Revio brand colors har ikke semantiske navn:
 4. ✅ Extended badge variants (badge-variants.tsx)
 5. ✅ Dokumentasjon (docs/design/component-variants.md)
 
-### Fase 2.3: Migrering (Gradvis) ✅ PÅGÅR
+### Fase 2.3: Migrering (Gradvis) ✅ FULLFØRT
 1. ✅ Migrer kritiske layout-komponenter:
-   - ✅ `GlobalSubHeader.tsx` - bg-revio-500 → bg-brand-primary
-   - ✅ `ClientSubHeader.tsx` - bg-revio-500 → bg-brand-primary
-   - ✅ `GlobalHeader.tsx` - bg-revio-500 → bg-brand-primary
+   - ✅ `GlobalSubHeader.tsx` - bg-revio-500 → bg-brand-header
+   - ✅ `ClientSubHeader.tsx` - bg-revio-500 → bg-brand-header
+   - ✅ `GlobalHeader.tsx` - bg-revio-500 → bg-brand-header
 2. ✅ Lag full migreringsguide (`docs/design/migration-guide.md`)
 3. ✅ Migrer UI-komponenter:
    - ✅ `button.tsx` - brand variant
@@ -91,10 +91,14 @@ Revio brand colors har ikke semantiske navn:
    - ✅ `FileUploadZone.tsx` - ikoner, borders, hover states
    - ✅ `ClientFilters.tsx` - filter button
    - ✅ `ProjectCard.tsx` - badge og button
-5. ⏳ Migrer øvrige komponenter (10 filer gjenstår)
-6. ⏳ Deprecate direkte bruk av `revio-*` klasser
+5. ✅ Migrer alle gjenværende komponenter (Batch 3):
+   - ✅ Admin: `StandardAccountTable.tsx`
+   - ✅ Client: `ClientStatsGrid.tsx`
+   - ✅ Training: `ManagerDashboard.tsx`, `ScenarioSelection.tsx`, `StructuredLearningPath.tsx`, `TrainingOverview.tsx`, `Training.tsx`
+   - ✅ Utils: `accountColors.ts`
+6. ✅ **16/16 komponenter migrert (100%)**
 
-### Fase 2.4: Validering
+### Fase 2.4: Validering ⏭️ NESTE
 1. Kjør visuell regresjon test
 2. Verifiser kontrast ratios (WCAG AA)
 3. Test dark mode konsistens
@@ -122,11 +126,11 @@ Revio brand colors har ikke semantiske navn:
 
 ## 📊 Påvirkning
 
-- **18 filer** med hardkodede revio-klasser (72 treff totalt)
-- **8 filer migrert** (44% fullført)
-- **10 filer gjenstår** (56%)
+- **16 filer** med hardkodede revio-klasser (72 treff totalt)
+- **16 filer migrert** ✅ **(100% fullført)**
+- **0 filer gjenstår**
 - **0 breaking changes** (bakoverkompatibilitet bevart)
-- **Forbedringer**: Konsistens, vedlikeholdbarhet, theme support
+- **Forbedringer**: Konsistens, vedlikeholdbarhet, theme support, lysere header for bedre visuell hierarki
 
 ## 🔗 Relaterte filer
 

@@ -83,7 +83,7 @@ export const getCategoryColor = (category: string) => {
     'Driftskostnader': 'bg-amber-100 text-amber-800 border-amber-200',
     'Finansinntekter': 'bg-green-100 text-green-800 border-green-200',
     'Finanskostnader': 'bg-orange-100 text-orange-800 border-orange-200',
-    'Resultat': 'bg-revio-100 text-revio-800 border-revio-200',
+    'Resultat': 'bg-brand-surface text-brand-text-muted border-brand-surface-hover',
     'Skattekostnad': 'bg-violet-100 text-violet-800 border-violet-200'
   };
   

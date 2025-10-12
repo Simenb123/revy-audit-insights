@@ -19,7 +19,7 @@ const StructuredLearningPath = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-revio-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Laster opplæringsprogrammer...</p>
         </div>
       </div>
@@ -72,12 +72,12 @@ const StructuredLearningPath = () => {
 
         <div className="grid gap-4">
           {learningPaths.map((path) => (
-            <Card key={path.id} className="border-2 hover:border-revio-300 transition-colors">
+            <Card key={path.id} className="border-2 hover:border-brand-border transition-colors">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-revio-600" />
+                      <BookOpen className="w-5 h-5 text-brand-primary-hover" />
                       {path.name}
                     </CardTitle>
                     <p className="text-muted-foreground">{path.description}</p>
@@ -118,7 +118,8 @@ const StructuredLearningPath = () => {
                 </div>
                 
                 <Button 
-                  className="w-full bg-revio-600 hover:bg-revio-700"
+                  variant="brand"
+                  className="w-full"
                   onClick={() => setSelectedPath(path.id)}
                 >
                   Se Programdetaljer
@@ -145,18 +146,18 @@ const StructuredLearningPath = () => {
   return (
     <div className="space-y-6">
       {/* Program Header */}
-      <Card className="bg-gradient-to-r from-revio-50 to-blue-50 border-revio-200">
+      <Card className="bg-gradient-to-r from-brand-surface to-blue-50 border-brand-surface-hover">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl text-revio-800 flex items-center gap-2">
+              <CardTitle className="text-2xl text-brand-text-muted flex items-center gap-2">
                 <BookOpen className="w-6 h-6" />
                 {currentPath.name}
               </CardTitle>
-              <p className="text-revio-600 mt-2">{currentPath.description}</p>
+              <p className="text-brand-primary-hover mt-2">{currentPath.description}</p>
             </div>
             <div className="text-right">
-              <Badge className="bg-revio-100 text-revio-800 mb-2">
+              <Badge className="bg-brand-surface text-brand-text-muted mb-2">
                 {activeEnrollment.status === 'active' ? 'Aktiv' : activeEnrollment.status}
               </Badge>
               <div className="text-sm text-muted-foreground">
@@ -195,7 +196,7 @@ const StructuredLearningPath = () => {
                   key={module.id} 
                   className={`transition-all ${
                     isCompleted ? 'border-green-200 bg-green-50' : 
-                    isUnlocked ? 'border-revio-200 hover:border-revio-300' : 
+                    isUnlocked ? 'border-brand-surface-hover hover:border-brand-border' : 
                     'border-gray-200 bg-gray-50'
                   }`}
                 >
@@ -204,7 +205,7 @@ const StructuredLearningPath = () => {
                       <div className="flex items-center gap-3">
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
                           isCompleted ? 'bg-green-500 text-white' :
-                          isUnlocked ? 'bg-revio-500 text-white' :
+                          isUnlocked ? 'bg-brand-primary text-white' :
                           'bg-gray-300 text-gray-600'
                         }`}>
                           {isCompleted ? (
@@ -247,7 +248,7 @@ const StructuredLearningPath = () => {
                       {isUnlocked && !isCompleted && (
                         <Button 
                           onClick={() => handleCompleteModule(module.id)}
-                          className="bg-revio-600 hover:bg-revio-700"
+                          variant="brand"
                         >
                           Start Modul
                         </Button>

@@ -137,7 +137,7 @@ const TrainingOverview = ({ userProgress, userBadges }: TrainingOverviewProps) =
                     <Button 
                       size="sm" 
                       onClick={() => navigate(`/training/module/${module.id}`)}
-                      className="bg-revio-500 hover:bg-revio-600"
+                      variant="brand"
                     >
                       {status === 'completed' ? 'Gjenta' : status === 'in-progress' ? 'Fortsett' : 'Start'}
                     </Button>

@@ -259,9 +259,9 @@ const StandardAccountTable = () => {
                   </TableCell>
                   <TableCell className="font-medium">
                     {account.standard_name}
-                    {account.is_total_line && (
-                      <Badge variant="secondary" className="ml-2 text-xs bg-revio-100 text-revio-800 border-revio-200">
-                        Sum
+                  {account.is_total_line && (
+                    <Badge variant="secondary" className="ml-2 text-xs bg-brand-surface text-brand-text-muted border-brand-surface-hover">
+                      Sum
                       </Badge>
                     )}
                   </TableCell>

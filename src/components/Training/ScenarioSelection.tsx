@@ -83,7 +83,7 @@ const ScenarioSelection = ({ scenarios, onScenarioSelect }: ScenarioSelectionPro
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-gray-600">Progresjon</div>
-                    <div className="text-lg font-bold text-revio-600">
+                    <div className="text-lg font-bold text-brand-primary-hover">
                       0%
                     </div>
                   </div>
@@ -125,7 +125,7 @@ const ScenarioSelection = ({ scenarios, onScenarioSelect }: ScenarioSelectionPro
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-revio-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-brand-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: '0%' }}
                     />
                   </div>
@@ -134,7 +134,8 @@ const ScenarioSelection = ({ scenarios, onScenarioSelect }: ScenarioSelectionPro
                 {/* Action buttons */}
                 <div className="flex gap-2 pt-2">
                   <Button 
-                    className="flex-1 bg-revio-500 hover:bg-revio-600"
+                    variant="brand"
+                    className="flex-1"
                     onClick={() => onScenarioSelect(scenario.id)}
                   >
                     <Play className="h-4 w-4 mr-2" />
