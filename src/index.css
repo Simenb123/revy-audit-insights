@@ -30,18 +30,24 @@
     --radius: 0.5rem;
     --font-family: 'Inter', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
 
-    /* Layout heights */
+    /* ===== Layout Heights ===== */
+    /* Global header (Nivå 1): Øverste navigasjonsbar - 45px */
     --global-header-height: 45px;
+    
+    /* Sub header (Nivå 2): Context-spesifikk bar under global header - 30px */
     --sub-header-height: 30px;
+    
+    /* Legacy client header tokens (deprecated - bruk sub-header-height) */
     --client-header-height: 45px;
     --client-sub-header-height: 30px;
 
-    /* Dynamic computed heights (fallbacks) */
+    /* Dynamic computed heights (settes av JS) */
     --global-header-current-height: var(--global-header-height);
     --sub-header-current-height: 0px;
 
-    /* Sidebar farger - lys variant */
-    --sidebar-background: var(--revio-500);
+    /* ===== Sidebar Colors (Nivå 3) ===== */
+    /* Mørkere teal (--revio-500) for visuell separasjon fra headers */
+    --sidebar-background: var(--revio-500);  /* HSL: 173 57% 39% */
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 174 57% 80%;
     --sidebar-primary-foreground: 159 85% 18%;
@@ -74,32 +80,35 @@
     --agent-custom: 175 80% 40%;
     --agent-custom-bg: 175 80% 95%;
 
-    /* Sub-header surface */
+    /* ===== Sub-header Surface (Legacy) ===== */
+    /* Deprecated: Bruk --brand-header i stedet */
     --sub-header-bg: 173 57% 39%;
     --sub-header-foreground: 0 0% 100%;
 
-    /* Revio Brand Colors (HSL) - Complete scale */
-    --revio-50: 174 57% 93%;
-    --revio-100: 174 57% 88%;
+    /* ===== Revio Brand Colors (HSL) - Complete Scale ===== */
+    /* Primær fargeskala for Revio-branding */
+    --revio-50: 174 57% 93%;   /* Veldig lys teal */
+    --revio-100: 174 57% 88%;  /* Lys teal */
     --revio-200: 174 57% 78%;
     --revio-300: 174 57% 68%;
-    --revio-400: 174 57% 58%;
-    --revio-500: 173 57% 39%;
+    --revio-400: 174 57% 58%;  /* Lysere teal - BRUKES TIL HEADERS (både global og sub) */
+    --revio-500: 173 57% 39%;  /* Mørkere teal - BRUKES TIL SIDEBAR */
     --revio-600: 173 49% 35%;
     --revio-700: 173 49% 30%;
     --revio-800: 173 49% 26%;
-    --revio-900: 173 49% 15%;
+    --revio-900: 173 49% 15%;  /* Veldig mørk teal */
 
-    /* Semantic Brand Tokens (uses Revio colors) */
-    --brand-primary: var(--revio-500);
-    --brand-primary-hover: var(--revio-600);
-    --brand-primary-active: var(--revio-700);
-    --brand-header: var(--revio-400);
-    --brand-surface: var(--revio-100);
-    --brand-surface-hover: var(--revio-200);
-    --brand-text: var(--revio-900);
-    --brand-text-muted: var(--revio-800);
-    --brand-border: var(--revio-300);
+    /* ===== Semantic Brand Tokens ===== */
+    /* Brukes i hele applikasjonen for konsistent branding */
+    --brand-primary: var(--revio-500);           /* Primær brand farge */
+    --brand-primary-hover: var(--revio-600);     /* Hover state */
+    --brand-primary-active: var(--revio-700);    /* Active state */
+    --brand-header: var(--revio-400);            /* BEGGE header-nivåer (Global + Sub) */
+    --brand-surface: var(--revio-100);           /* Lyse overflater */
+    --brand-surface-hover: var(--revio-200);     /* Surface hover */
+    --brand-text: var(--revio-900);              /* Mørk tekst */
+    --brand-text-muted: var(--revio-800);        /* Dempet tekst */
+    --brand-border: var(--revio-300);            /* Borders */
   }
 
   @media (prefers-color-scheme: dark) {

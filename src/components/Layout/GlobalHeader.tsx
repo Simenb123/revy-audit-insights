@@ -35,6 +35,29 @@ import { usePageTitle } from './PageTitleContext';
 import { Badge } from '@/components/ui/badge';
 import { RecentClientsDropdown } from './RecentClientsDropdown';
 
+/**
+ * GlobalHeader - Nivå 1: Øverste navigasjonsbar i applikasjonen
+ * 
+ * Denne komponenten vises alltid øverst på siden og inneholder:
+ * - Logo og appnavn (Revio)
+ * - Global søkefunksjon
+ * - Nylig besøkte klienter (RecentClientsDropdown)
+ * - Innstillinger-dropdown med tilgang til admin og verktøy
+ * - Bruker-dropdown med profil og logg ut
+ * 
+ * Layout:
+ * - Posisjon: sticky top-0, z-50
+ * - Høyde: 56px (h-14)
+ * - Token: --brand-header (--revio-400) - lysere teal
+ * - Styling: bg-brand-header/95 backdrop-blur
+ * 
+ * VIKTIG: Dette er IKKE sub-headeren. Sub-header rendres under denne
+ * via GlobalSubHeader.tsx eller ClientSubHeader.tsx.
+ * 
+ * @see GlobalSubHeader.tsx - Sub-header (Nivå 2)
+ * @see ClientSubHeader.tsx - Klient-spesifikk sub-header
+ * @see docs/design/layout-architecture.md - Full arkitektur-dokumentasjon
+ */
 const GlobalHeader = () => {
   const { signOut } = useAuth();
   const { data: userProfile } = useUserProfile();

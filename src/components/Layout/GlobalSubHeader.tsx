@@ -6,6 +6,34 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import AppBreadcrumb from './AppBreadcrumb';
 
+/**
+ * GlobalSubHeader - Nivå 2: Context-spesifikk sub-header under GlobalHeader
+ * 
+ * Denne komponenten rendres UNDER GlobalHeader og viser side-spesifikt innhold:
+ * - Breadcrumbs for navigasjon
+ * - Side-tittel
+ * - Actions (buttons, etc.)
+ * - Filters (optional, rendres under main sub-header line)
+ * - Module indicators
+ * 
+ * Layout:
+ * - Posisjon: sticky top-[var(--global-header-current-height)], z-40
+ * - Høyde: var(--sub-header-height) (30px)
+ * - Token: --brand-header (--revio-400) - samme som GlobalHeader
+ * - Styling: bg-brand-header text-white
+ * 
+ * Fleksibelt content-system:
+ * Komponenten støtter enten standard layout (breadcrumb + title + actions)
+ * eller custom layout via leftContent, centerContent, rightContent props.
+ * 
+ * VIKTIG: Dette er sub-headeren, IKKE main headeren (GlobalHeader).
+ * Sub-headeren vises alltid under GlobalHeader.
+ * 
+ * @see GlobalHeader.tsx - Main header (Nivå 1)
+ * @see ClientSubHeader.tsx - Alternativ sub-header for klient-sider
+ * @see SubHeaderContext.tsx - Context for dynamisk sub-header håndtering
+ * @see docs/design/layout-architecture.md - Full arkitektur-dokumentasjon
+ */
 interface GlobalSubHeaderProps {
   title?: string;
   actions?: React.ReactNode;
