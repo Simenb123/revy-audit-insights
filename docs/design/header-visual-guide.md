@@ -7,7 +7,7 @@ Dette dokumentet viser den visuelle strukturen til Revios header-system.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ GLOBAL HEADER (Nivå 1)                          z-index: 50     │
-│ Token: --brand-header (--revio-400 - lysere teal)               │
+│ Token: --brand-header (--revio-500 - mørkere teal)              │
 │ Height: 45px │ Sticky: top: 0                                   │
 │                                                                  │
 │ ┌──────┐ Revio  /  Side tittel    [Søk] [Klienter] [⚙] [👤]   │
@@ -16,7 +16,7 @@ Dette dokumentet viser den visuelle strukturen til Revios header-system.
 └─────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────┐
 │ SUB HEADER (Nivå 2)                              z-index: 40    │
-│ Token: --brand-header (--revio-400 - samme som global header)   │
+│ Token: --brand-header (--revio-500 - samme som global header)   │
 │ Height: 30px │ Sticky: top: 45px                                │
 │                                                                  │
 │ Breadcrumb > Trail    │    Side Tittel       [Actions] [Filter]│
@@ -76,28 +76,24 @@ Dette dokumentet viser den visuelle strukturen til Revios header-system.
 
 ```
 ┌─────────────────────────────────────────────┐
-│ Lysere Teal (--revio-400 / --brand-header)  │  ← Global Header
-│ HSL: 174 57% 58%                            │  ← Sub Header
-└─────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────┐
-│ Mørkere Teal (--revio-500 / --sidebar-bg)   │  ← Sidebar
-│ HSL: 173 57% 39%                            │
+│ Mørkere Teal (--revio-500)                  │  ← Global Header
+│ HSL: 173 57% 39%                            │  ← Sub Header
+│ Token: --brand-header                       │  ← Sidebar
 └─────────────────────────────────────────────┘
 ```
 
 **Design-rasjonale:**
-- Headers bruker **lysere** teal for å skille seg fra hovedinnhold
-- Sidebar bruker **mørkere** teal for tydelig visuell separasjon
-- Begge header-nivåer har samme farge for konsistens
+- Headers og sidebar bruker **samme mørkere teal** for konsistent navigasjonsopplevelse
+- Gir en enhetlig og profesjonell navigasjonsstruktur
+- Begge header-nivåer og sidebar har identisk farge for maksimal konsistens
 
 ## Token Mapping
 
 | Komponent        | Token                      | Revio Color | HSL           |
 |------------------|----------------------------|-------------|---------------|
-| GlobalHeader     | `--brand-header`           | `--revio-400` | 174 57% 58% |
-| GlobalSubHeader  | `--brand-header`           | `--revio-400` | 174 57% 58% |
-| ClientSubHeader  | `--brand-header`           | `--revio-400` | 174 57% 58% |
+| GlobalHeader     | `--brand-header`           | `--revio-500` | 173 57% 39% |
+| GlobalSubHeader  | `--brand-header`           | `--revio-500` | 173 57% 39% |
+| ClientSubHeader  | `--brand-header`           | `--revio-500` | 173 57% 39% |
 | Sidebar          | `--sidebar-background`     | `--revio-500` | 173 57% 39% |
 
 ## Z-Index Hierarchy

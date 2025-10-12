@@ -6,7 +6,7 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 
 ### Nivå 1: Global Header (GlobalHeader.tsx)
 - **Posisjon**: Øverst på siden, alltid synlig
-- **Token**: `--brand-header` (lysere: `--revio-400`)
+- **Token**: `--brand-header` (mørkere: `--revio-500`)
 - **Z-index**: 50
 - **Innhold**: 
   - Logo og appnavn
@@ -20,7 +20,7 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 
 ### Nivå 2: Sub Header (GlobalSubHeader.tsx / ClientSubHeader.tsx)
 - **Posisjon**: Under GlobalHeader, context-spesifikt innhold
-- **Token**: `--brand-header` (deler samme farge som GlobalHeader)
+- **Token**: `--brand-header` (mørkere: `--revio-500`, deler samme farge som GlobalHeader)
 - **Z-index**: 40
 - **Innhold**: Varierer basert på variant (se under)
 - **Høyde**: `--sub-header-height` (30px)
@@ -46,7 +46,7 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 - **Token**: `--sidebar-background` (mørkere: `--revio-500`)
 - **Z-index**: 30
 - **Innhold**: Hovednavigasjon, modul-meny
-- **Styling**: Mørkere teal-farge for visuell separasjon
+- **Styling**: Samme mørkere teal-farge som headers for konsistent navigasjonsopplevelse
 
 ## Token-bruk
 
@@ -55,12 +55,12 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 /* Definert i src/index.css */
 
 /* Revio-skala (HSL) */
---revio-400: 174 57% 58%;  /* Lysere teal - brukes til headers */
---revio-500: 173 57% 39%;  /* Mørkere teal - brukes til sidebar */
+--revio-400: 174 57% 58%;  /* Lysere teal */
+--revio-500: 173 57% 39%;  /* Mørkere teal - brukes til både headers og sidebar */
 
 /* Semantiske tokens */
---brand-header: var(--revio-400);           /* Begge header-nivåer */
---sidebar-background: var(--revio-500);     /* Sidebar */
+--brand-header: var(--revio-500);           /* Begge header-nivåer - matcher sidebar */
+--sidebar-background: var(--revio-500);     /* Sidebar - matcher headers */
 ```
 
 ### Høyder

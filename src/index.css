@@ -91,8 +91,8 @@
     --revio-100: 174 57% 88%;  /* Lys teal */
     --revio-200: 174 57% 78%;
     --revio-300: 174 57% 68%;
-    --revio-400: 174 57% 58%;  /* Lysere teal - BRUKES TIL HEADERS (både global og sub) */
-    --revio-500: 173 57% 39%;  /* Mørkere teal - BRUKES TIL SIDEBAR */
+    --revio-400: 174 57% 58%;  /* Lysere teal */
+    --revio-500: 173 57% 39%;  /* Mørkere teal - BRUKES TIL BÅDE HEADERS OG SIDEBAR */
     --revio-600: 173 49% 35%;
     --revio-700: 173 49% 30%;
     --revio-800: 173 49% 26%;
@@ -103,7 +103,7 @@
     --brand-primary: var(--revio-500);           /* Primær brand farge */
     --brand-primary-hover: var(--revio-600);     /* Hover state */
     --brand-primary-active: var(--revio-700);    /* Active state */
-    --brand-header: var(--revio-400);            /* BEGGE header-nivåer (Global + Sub) */
+    --brand-header: var(--revio-500);            /* BEGGE header-nivåer (Global + Sub) - matcher sidebar */
     --brand-surface: var(--revio-100);           /* Lyse overflater */
     --brand-surface-hover: var(--revio-200);     /* Surface hover */
     --brand-text: var(--revio-900);              /* Mørk tekst */
