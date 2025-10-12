@@ -42,7 +42,7 @@ const GlobalSubHeader: React.FC<GlobalSubHeaderProps> = ({
         )}
       >
       {/* Main subheader line */}
-      <div className="flex items-center justify-between px-6 h-[var(--sub-header-height)] bg-brand-primary text-white [&_*]:text-white [&_select]:z-50 [&_[role=tooltip]]:z-60">
+      <div className="flex items-center justify-between px-6 h-[var(--sub-header-height)] bg-brand-header text-white [&_*]:text-white [&_select]:z-50 [&_[role=tooltip]]:z-60">
         {/* Use flexible content if provided, otherwise fall back to default layout */}
         {leftContent || centerContent || rightContent ? (
           <>

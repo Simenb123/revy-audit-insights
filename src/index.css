@@ -94,6 +94,7 @@
     --brand-primary: var(--revio-500);
     --brand-primary-hover: var(--revio-600);
     --brand-primary-active: var(--revio-700);
+    --brand-header: var(--revio-400);
     --brand-surface: var(--revio-100);
     --brand-surface-hover: var(--revio-200);
     --brand-text: var(--revio-900);
@@ -194,6 +195,7 @@
   /* Semantic Brand Utilities */
   .bg-brand-primary { background-color: hsl(var(--brand-primary)); }
   .bg-brand-primary-hover { background-color: hsl(var(--brand-primary-hover)); }
+  .bg-brand-header { background-color: hsl(var(--brand-header)); }
   .bg-brand-surface { background-color: hsl(var(--brand-surface)); }
   .text-brand-primary { color: hsl(var(--brand-primary)); }
   .text-brand-text { color: hsl(var(--brand-text)); }
