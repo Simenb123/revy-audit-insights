@@ -33,7 +33,7 @@ const PDFDropzone = ({ onFileSelect, disabled }: PDFDropzoneProps) => {
     <div
       className={`
         border-2 border-dashed rounded-lg p-8 text-center transition-colors
-        ${isDragging ? 'border-revio-500 bg-revio-50' : 'border-gray-300 hover:border-revio-300'}
+        ${isDragging ? 'border-brand-primary bg-brand-surface/30' : 'border-gray-300 hover:border-brand-primary/70'}
         ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}
       `}
       onDragOver={handleDragOver}
@@ -50,7 +50,7 @@ const PDFDropzone = ({ onFileSelect, disabled }: PDFDropzoneProps) => {
         disabled={disabled}
       />
       <label htmlFor="pdf-upload" className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}>
-        <FileText className="h-12 w-12 text-revio-500 mx-auto mb-4" />
+        <FileText className="h-12 w-12 text-brand-primary mx-auto mb-4" />
         <p className="text-lg font-medium text-gray-900 mb-2">
           Dra og slipp PDF-filer her, eller klikk for å velge
         </p>

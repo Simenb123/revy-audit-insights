@@ -113,12 +113,12 @@ const DataUploadHub = () => {
         ))}
       </div>
 
-      <Card className="bg-revio-50 border-revio-200">
+      <Card className="bg-brand-surface/30 border-brand-surface-hover/50">
         <CardHeader>
-          <CardTitle className="text-revio-900">Tips for dataopplasting</CardTitle>
+          <CardTitle className="text-brand-text">Tips for dataopplasting</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-revio-800">
+          <ul className="space-y-2 text-sm text-brand-text-muted">
             <li>• Start med grunnlagsdata (kontoplan og saldobalanse)</li>
             <li>• SAF-T filer inneholder alle datatyper automatisk</li>
             <li>• CSV og Excel filer støttes for alle kategorier</li>

@@ -50,7 +50,7 @@ const RiskAssessment = ({ className }: RiskAssessmentProps) => {
       case 'medium':
         return <HelpCircle size={18} className="text-yellow-500" />;
       case 'low':
-        return <HelpCircle size={18} className="text-revio-300" />;
+        return <HelpCircle size={18} className="text-brand-primary/50" />;
       case 'none':
         return <CheckCircle size={18} className="text-green-500" />;
       default:
@@ -65,7 +65,7 @@ const RiskAssessment = ({ className }: RiskAssessmentProps) => {
       case 'medium':
         return 'border-yellow-200 bg-yellow-50';
       case 'low':
-        return 'border-revio-100 bg-revio-50';
+        return 'border-brand-surface-hover/50 bg-brand-surface/30';
       case 'none':
         return 'border-green-200 bg-green-50';
       default:

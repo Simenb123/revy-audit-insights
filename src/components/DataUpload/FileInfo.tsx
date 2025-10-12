@@ -12,7 +12,7 @@ const FileInfo = ({ showReset, onReset }: FileInfoProps) => {
   return (
     <div className="flex justify-between border-t p-4">
       <div className="flex items-center">
-        <FileType size={20} className="text-revio-500 mr-2" />
+        <FileType size={20} className="text-brand-primary mr-2" />
         <span className="text-sm">Støttede formater: Excel, CSV</span>
       </div>
       

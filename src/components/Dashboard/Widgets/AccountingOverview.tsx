@@ -100,7 +100,7 @@ const AccountingOverview = ({ className }: AccountingOverviewProps) => {
             <div className="mb-4 flex justify-center space-x-4">
               <button
                 className={`px-3 py-1 rounded-full text-sm ${
-                  activeLineType === 'inntekt' ? 'bg-revio-500 text-white' : 'bg-gray-200'
+                  activeLineType === 'inntekt' ? 'bg-brand-primary text-white' : 'bg-gray-200'
                 }`}
                 onClick={() => setActiveLineType('inntekt')}
               >
@@ -108,7 +108,7 @@ const AccountingOverview = ({ className }: AccountingOverviewProps) => {
               </button>
               <button
                 className={`px-3 py-1 rounded-full text-sm ${
-                  activeLineType === 'kostnad' ? 'bg-revio-500 text-white' : 'bg-gray-200'
+                  activeLineType === 'kostnad' ? 'bg-brand-primary text-white' : 'bg-gray-200'
                 }`}
                 onClick={() => setActiveLineType('kostnad')}
               >
