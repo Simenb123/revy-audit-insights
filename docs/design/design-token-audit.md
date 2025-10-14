@@ -98,10 +98,13 @@ Revio brand colors har ikke semantiske navn:
    - ✅ Utils: `accountColors.ts`
 6. ✅ **16/16 komponenter migrert (100%)**
 
-### Fase 2.4: Validering ⏭️ NESTE
-1. Kjør visuell regresjon test
-2. Verifiser kontrast ratios (WCAG AA)
-3. Test dark mode konsistens
+### Fase 2.4: Validering ✅ FULLFØRT
+1. ✅ Søk etter hardkodede revio-klasser - **0 treff funnet**
+2. ✅ Oppdatert JSDoc-kommentarer i header-komponenter
+3. ✅ Verifisert konsistent token-bruk
+4. ⏭️ Visuell regresjon test (krever manuell testing)
+5. ⏭️ Kontrast ratios WCAG AA (krever manuell testing)
+6. ⏭️ Dark mode konsistens (når implementert)
 
 ## 🎨 Brukseksempler
 
@@ -130,7 +133,7 @@ Revio brand colors har ikke semantiske navn:
 - **16 filer migrert** ✅ **(100% fullført)**
 - **0 filer gjenstår**
 - **0 breaking changes** (bakoverkompatibilitet bevart)
-- **Forbedringer**: Konsistens, vedlikeholdbarhet, theme support, lysere header for bedre visuell hierarki
+- **Forbedringer**: Konsistens, vedlikeholdbarhet, theme support, mørkere header som matcher sidebar for bedre visuell enhet
 
 ## 🔗 Relaterte filer
 

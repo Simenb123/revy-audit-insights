@@ -48,7 +48,7 @@ import { RecentClientsDropdown } from './RecentClientsDropdown';
  * Layout:
  * - Posisjon: sticky top-0, z-50
  * - Høyde: 56px (h-14)
- * - Token: --brand-header (--revio-400) - lysere teal
+ * - Token: --brand-header (--revio-500) - mørkere teal, matcher sidebar
  * - Styling: bg-brand-header/95 backdrop-blur
  * 
  * VIKTIG: Dette er IKKE sub-headeren. Sub-header rendres under denne
