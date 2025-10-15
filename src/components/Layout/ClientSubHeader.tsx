@@ -16,6 +16,23 @@ import { cn } from '@/lib/utils';
  * - Token: --brand-header (--revio-500) - mørkere teal, matcher sidebar
  * - Styling: bg-brand-header text-white
  * 
+ * Design Token Architecture:
+ * Komponenten bruker bg-brand-header Tailwind utility class.
+ * Dette krever at --brand-header er eksponert til Tailwind i tailwind.config.ts:
+ * 
+ *   CSS (src/index.css):
+ *     --brand-header: var(--revio-500);  // Semantic token
+ *     --revio-500: 173 57% 39%;          // Raw HSL value
+ * 
+ *   Tailwind (tailwind.config.ts):
+ *     brand: { header: 'hsl(var(--brand-header))' }  // ← KRITISK!
+ * 
+ *   Component:
+ *     className="bg-brand-header"  // Tailwind genererer denne klassen
+ * 
+ * VIKTIG: Uten Tailwind-mapping vil bg-brand-header ikke fungere!
+ * Se: docs/design/tailwind-brand-integration.md for full forklaring
+ * 
  * Bruksområde:
  * Typisk brukt via StickyClientLayout.tsx wrapper for klient-sider.
  * 
@@ -26,6 +43,8 @@ import { cn } from '@/lib/utils';
  * @see GlobalSubHeader.tsx - Standard sub-header variant
  * @see StickyClientLayout.tsx - Wrapper som bruker denne komponenten
  * @see docs/design/layout-architecture.md - Full arkitektur-dokumentasjon
+ * @see docs/design/tailwind-brand-integration.md - Design token arkitektur
+ * @see docs/design/README.md - Design system overview
  */
 interface ClientSubHeaderProps {
   leftContent?: React.ReactNode;

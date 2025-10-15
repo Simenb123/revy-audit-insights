@@ -1,5 +1,7 @@
 # Design Token Audit og Standardisering
 
+> 📘 **Ny til design systemet?** Start med [Design System Overview](./README.md)
+
 ## 🎯 Mål
 Standardisere alle design tokens til HSL-format og semantic naming conventions.
 

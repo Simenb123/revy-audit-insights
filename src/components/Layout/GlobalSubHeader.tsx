@@ -22,6 +22,23 @@ import AppBreadcrumb from './AppBreadcrumb';
  * - Token: --brand-header (--revio-500) - mørkere teal, matcher sidebar
  * - Styling: bg-brand-header text-white
  * 
+ * Design Token Architecture:
+ * Komponenten bruker bg-brand-header Tailwind utility class.
+ * Dette krever at --brand-header er eksponert til Tailwind i tailwind.config.ts:
+ * 
+ *   CSS (src/index.css):
+ *     --brand-header: var(--revio-500);  // Semantic token
+ *     --revio-500: 173 57% 39%;          // Raw HSL value
+ * 
+ *   Tailwind (tailwind.config.ts):
+ *     brand: { header: 'hsl(var(--brand-header))' }  // ← KRITISK!
+ * 
+ *   Component:
+ *     className="bg-brand-header"  // Tailwind genererer denne klassen
+ * 
+ * VIKTIG: Uten Tailwind-mapping vil bg-brand-header ikke fungere!
+ * Se: docs/design/tailwind-brand-integration.md for full forklaring
+ * 
  * Fleksibelt content-system:
  * Komponenten støtter enten standard layout (breadcrumb + title + actions)
  * eller custom layout via leftContent, centerContent, rightContent props.
@@ -33,6 +50,8 @@ import AppBreadcrumb from './AppBreadcrumb';
  * @see ClientSubHeader.tsx - Alternativ sub-header for klient-sider
  * @see SubHeaderContext.tsx - Context for dynamisk sub-header håndtering
  * @see docs/design/layout-architecture.md - Full arkitektur-dokumentasjon
+ * @see docs/design/tailwind-brand-integration.md - Design token arkitektur
+ * @see docs/design/README.md - Design system overview
  */
 interface GlobalSubHeaderProps {
   title?: string;

@@ -99,7 +99,30 @@
     --revio-900: 173 49% 15%;  /* Veldig mørk teal */
 
     /* ===== Semantic Brand Tokens ===== */
-    /* Brukes i hele applikasjonen for konsistent branding */
+    /* Brukes i hele applikasjonen for konsistent branding
+     * 
+     * VIKTIG: Disse tokens må OGSÅ eksponeres til Tailwind i tailwind.config.ts
+     * for at utility-klasser som bg-brand-header skal fungere!
+     * 
+     * Arkitektur (4 lag):
+     *   1. Raw colors defineres her (--revio-500: 173 57% 39%)
+     *   2. Semantic tokens refererer raw colors (--brand-header: var(--revio-500))
+     *   3. Tailwind mapper semantic tokens i config (brand.header: 'hsl(var(--brand-header))')
+     *   4. Komponenter bruker Tailwind-klasser (className="bg-brand-header")
+     * 
+     * Hvorfor 4 lag?
+     *   - Raw colors = Single source of truth for fargeverdier
+     *   - Semantic tokens = Gir mening til farger (header, surface, etc.)
+     *   - Tailwind mapping = Gjør tokens tilgjengelig som utility-klasser
+     *   - React components = Bruker klasser, ikke direkte CSS properties
+     * 
+     * KRITISK: CSS custom properties (--brand-*) ≠ Tailwind colors!
+     *   CSS properties må mappes i tailwind.config.ts for at Tailwind skal
+     *   generere klasser som bg-brand-header, text-brand-primary, etc.
+     *   Uten denne mappingen vil klassene ikke genereres!
+     * 
+     * Se: docs/design/tailwind-brand-integration.md for full forklaring
+     */
     --brand-primary: var(--revio-500);           /* Primær brand farge */
     --brand-primary-hover: var(--revio-600);     /* Hover state */
     --brand-primary-active: var(--revio-700);    /* Active state */

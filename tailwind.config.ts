@@ -86,12 +86,27 @@ export default {
           800: 'hsl(var(--revio-800))',
           900: 'hsl(var(--revio-900))',
         },
+        // ===== Brand Semantic Colors =====
+        // KRITISK: Disse må eksponeres til Tailwind for å generere utility-klasser!
+        // 
+        // CSS custom properties (--brand-*) er definert i src/index.css,
+        // men Tailwind kan IKKE bruke dem direkte. Vi må "mappe" dem her
+        // for at klasser som bg-brand-header, text-brand-primary, etc. skal fungere.
+        // 
+        // Arkitektur:
+        //   1. Raw colors defineres i src/index.css (--revio-500: 173 57% 39%)
+        //   2. Semantic tokens refererer raw colors (--brand-header: var(--revio-500))
+        //   3. Tailwind mapper semantic tokens her (brand.header: 'hsl(var(--brand-header))')
+        //   4. Komponenter bruker Tailwind-klasser (className="bg-brand-header")
+        // 
+        // Se: docs/design/tailwind-brand-integration.md for full forklaring
+        //
         brand: {
           DEFAULT: 'hsl(var(--brand-primary))',
           primary: 'hsl(var(--brand-primary))',
           'primary-hover': 'hsl(var(--brand-primary-hover))',
           'primary-active': 'hsl(var(--brand-primary-active))',
-          header: 'hsl(var(--brand-header))',
+          header: 'hsl(var(--brand-header))',            // ← Brukes av GlobalHeader og sub-headers
           surface: 'hsl(var(--brand-surface))',
           'surface-hover': 'hsl(var(--brand-surface-hover))',
           text: 'hsl(var(--brand-text))',
