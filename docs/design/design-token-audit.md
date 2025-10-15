@@ -100,11 +100,12 @@ Revio brand colors har ikke semantiske navn:
 
 ### Fase 2.4: Validering ✅ FULLFØRT
 1. ✅ Søk etter hardkodede revio-klasser - **0 treff funnet**
-2. ✅ Oppdatert JSDoc-kommentarer i header-komponenter
-3. ✅ Verifisert konsistent token-bruk
-4. ⏭️ Visuell regresjon test (krever manuell testing)
-5. ⏭️ Kontrast ratios WCAG AA (krever manuell testing)
-6. ⏭️ Dark mode konsistens (når implementert)
+2. ✅ Oppdatert alle JSDoc-kommentarer til `--revio-500` (GlobalHeader, GlobalSubHeader, ClientSubHeader)
+3. ✅ Verifisert konsistent token-bruk i `src/index.css` og `tailwind.config.ts`
+4. ✅ Bekreftet `--brand-header: var(--revio-500)` matcher sidebar-farge
+5. ⏭️ Visuell regresjon test (krever manuell testing + hard refresh)
+6. ⏭️ Kontrast ratios WCAG AA (krever manuell testing)
+7. ⏭️ Dark mode konsistens (når implementert)
 
 ## 🎨 Brukseksempler
 
