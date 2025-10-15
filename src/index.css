@@ -317,8 +317,10 @@
     position: relative;
   }
 
-  /* Sub-header surface styling */
-  [data-sub-header] {
+  /* Sub-header surface styling - Fallback hvis Tailwind-klasse ikke brukes */
+  /* VIKTIG: Tailwind utility-klasser (bg-brand-header) har høyere prioritet enn dette */
+  /* Denne regelen er kun en fallback for komponenter som mangler bg-klasse */
+  [data-sub-header]:not([class*="bg-"]) {
     background: hsl(var(--brand-header));
     color: hsl(var(--sub-header-foreground));
     border-bottom: 1px solid hsl(var(--revio-500) / 0.2);

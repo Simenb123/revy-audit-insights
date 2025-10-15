@@ -85,6 +85,18 @@ export default {
           700: 'hsl(var(--revio-700))',
           800: 'hsl(var(--revio-800))',
           900: 'hsl(var(--revio-900))',
+        },
+        brand: {
+          DEFAULT: 'hsl(var(--brand-primary))',
+          primary: 'hsl(var(--brand-primary))',
+          'primary-hover': 'hsl(var(--brand-primary-hover))',
+          'primary-active': 'hsl(var(--brand-primary-active))',
+          header: 'hsl(var(--brand-header))',
+          surface: 'hsl(var(--brand-surface))',
+          'surface-hover': 'hsl(var(--brand-surface-hover))',
+          text: 'hsl(var(--brand-text))',
+          'text-muted': 'hsl(var(--brand-text-muted))',
+          border: 'hsl(var(--brand-border))',
         }
       },
       spacing: {

@@ -177,7 +177,8 @@ Komponenter
 2. **`docs/design/migration-guide.md`** - Praktisk guide for utviklere
 3. **`docs/design/component-variants.md`** - Button og Badge variants
 4. **`docs/design/layout-architecture.md`** - Header-hierarki og layout-system
-5. **`docs/design/migration-complete-report.md`** (denne filen) - Sluttrapport
+5. **`docs/design/tailwind-brand-integration.md`** - CSS vs Tailwind token-arkitektur (KRITISK!)
+6. **`docs/design/migration-complete-report.md`** (denne filen) - Sluttrapport
 
 ### Oppdaterte dokumenter:
 - **`docs/color-palette.md`** - Full HSL-konvertering dokumentert
@@ -233,6 +234,73 @@ For å fullføre migreringen 100%, må følgende testes manuelt:
 - `--brand-header` tilpasses for dark mode (eventuelt lysere shade)
 - Kontrast ratios opprettholdes
 - Visuell hierarki bevares
+
+---
+
+## 💡 Lessons Learned: Kritiske Bugs og Fikser
+
+### **Bug: Header viste "blek" farge (2025-10-15)**
+
+**Symptom:**
+- Headers (`GlobalHeader`, `ClientSubHeader`, `GlobalSubHeader`) viste lys/blek farge
+- CSS token `--brand-header` var korrekt definert som `var(--revio-500)`
+- Attribute selector `[data-sub-header]` brukte korrekt token
+- Men fargen ble **ikke applisert** i DOM
+
+**Root Cause:**
+```
+CSS custom properties ≠ Tailwind utility klasser
+```
+
+Vi hadde definert semantic tokens i `src/index.css`:
+```css
+:root {
+  --brand-header: var(--revio-500);
+}
+```
+
+Men vi hadde **IKKE eksponert** dem til Tailwind's color system i `tailwind.config.ts`. Dette gjorde at:
+- ❌ Tailwind kunne ikke generere `bg-brand-header` utility-klasser
+- ❌ Komponenter som brukte `className="bg-brand-header"` fikk ingen styling
+- ❌ CSS attribute selector `[data-sub-header]` hadde lavere spesifisitet enn andre styles
+- ❌ Resultat: Headers fikk feil/ingen bakgrunnsfarge
+
+**Løsning:**
+
+1. **Lagt til `brand` color scale i `tailwind.config.ts`:**
+   ```typescript
+   colors: {
+     brand: {
+       header: 'hsl(var(--brand-header))',
+       primary: 'hsl(var(--brand-primary))',
+       'primary-hover': 'hsl(var(--brand-primary-hover))',
+       // ... alle semantic tokens
+     }
+   }
+   ```
+
+2. **Oppdatert CSS selector til fallback-only:**
+   ```css
+   [data-sub-header]:not([class*="bg-"]) {
+     background: hsl(var(--brand-header));
+   }
+   ```
+
+3. **Dokumentert full arkitektur:**
+   - Opprettet `docs/design/tailwind-brand-integration.md`
+   - Forklarer forskjellen mellom CSS custom properties og Tailwind colors
+
+**Kritiske lærdommer:**
+
+1. **CSS custom properties og Tailwind colors er to separate systemer** - begge må synkroniseres
+2. **Tailwind utility-klasser** har høyere CSS spesifisitet enn attribute selectors
+3. **Når du legger til nye semantic tokens:**
+   - ✅ Legg til i `:root` i `src/index.css`
+   - ✅ Legg til i `colors` i `tailwind.config.ts`
+   - ✅ Bruk `hsl(var(--token-name))` wrapper
+   - ✅ Dokumenter bruksområde
+
+**Se:** `docs/design/tailwind-brand-integration.md` for full dokumentasjon
 
 ---
 

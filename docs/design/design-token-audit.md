@@ -103,9 +103,14 @@ Revio brand colors har ikke semantiske navn:
 2. ✅ Oppdatert alle JSDoc-kommentarer til `--revio-500` (GlobalHeader, GlobalSubHeader, ClientSubHeader)
 3. ✅ Verifisert konsistent token-bruk i `src/index.css` og `tailwind.config.ts`
 4. ✅ Bekreftet `--brand-header: var(--revio-500)` matcher sidebar-farge
-5. ⏭️ Visuell regresjon test (krever manuell testing + hard refresh)
-6. ⏭️ Kontrast ratios WCAG AA (krever manuell testing)
-7. ⏭️ Dark mode konsistens (når implementert)
+5. ✅ **KRITISK FIX:** Lagt til `brand` colors i `tailwind.config.ts`
+   - **Problem:** Headers viste "blek" farge fordi Tailwind ikke kunne generere `bg-brand-header` klasser
+   - **Root cause:** CSS custom properties ≠ Tailwind colors (må synkroniseres!)
+   - **Løsning:** Eksponert alle `brand-*` tokens til Tailwind color system
+   - **Dokumentasjon:** `docs/design/tailwind-brand-integration.md`
+6. ⏭️ Visuell regresjon test (krever manuell testing + hard refresh)
+7. ⏭️ Kontrast ratios WCAG AA (krever manuell testing)
+8. ⏭️ Dark mode konsistens (når implementert)
 
 ## 🎨 Brukseksempler
 
