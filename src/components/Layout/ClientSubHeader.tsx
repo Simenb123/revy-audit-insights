@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * Layout:
  * - Posisjon: sticky top-[var(--global-header-current-height)], z-40
  * - Høyde: var(--sub-header-height) (30px)
- * - Token: --brand-header (--revio-400) - samme som GlobalHeader
+ * - Token: --brand-header (--revio-500) - mørkere teal, matcher sidebar
  * - Styling: bg-brand-header text-white
  * 
  * Bruksområde:

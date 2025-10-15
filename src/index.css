@@ -80,8 +80,8 @@
     --agent-custom: 175 80% 40%;
     --agent-custom-bg: 175 80% 95%;
 
-    /* ===== Sub-header Surface (Legacy) ===== */
-    /* Deprecated: Bruk --brand-header i stedet */
+    /* ===== Sub-header Surface (Legacy - DO NOT USE) ===== */
+    /* DEPRECATED: Bruk --brand-header i stedet. Denne vil bli fjernet i fremtiden. */
     --sub-header-bg: 173 57% 39%;
     --sub-header-foreground: 0 0% 100%;
 
@@ -113,6 +113,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
+      /* Legacy tokens - keep for backwards compatibility but prefer --brand-header */
       --sub-header-bg: 173 57% 30%;
       --sub-header-foreground: 0 0% 100%;
     }
@@ -318,14 +319,14 @@
 
   /* Sub-header surface styling */
   [data-sub-header] {
-    background: hsl(var(--sub-header-bg));
+    background: hsl(var(--brand-header));
     color: hsl(var(--sub-header-foreground));
     border-bottom: 1px solid hsl(var(--revio-500) / 0.2);
     box-shadow: 0 1px 3px hsl(0 0% 0% / 0.1);
   }
 
   [data-sub-header][data-variant="glass"] {
-    background: hsl(var(--sub-header-bg) / 0.6);
+    background: hsl(var(--brand-header) / 0.6);
     backdrop-filter: blur(8px);
   }
 
