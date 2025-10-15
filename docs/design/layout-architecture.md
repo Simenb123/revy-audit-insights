@@ -35,16 +35,17 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 #### Sub Header Varianter
 
 **GlobalSubHeader.tsx**
-- Standard subheader for globale sider
-- Innhold: Breadcrumbs, side-tittel, actions, filters
+Standard sub-header variant for ALLE sider (både globale og klient).
 - Fleksible content-områder: `leftContent`, `centerContent`, `rightContent`
+- Brukes direkte ELLER via StickyClientLayout
+- Viser breadcrumbs, page title, actions, filters
 - Støtter tilbake-knapp (optional)
 
-**ClientSubHeader.tsx**
-- Spesialisert subheader for klientvisninger
-- Innhold: Klientnavn, org.nummer, regnskapsårvelger, materialitetsoppsummering
-- Rendres via `StickyClientLayout.tsx`
-- Brukes typisk i klient-kontekst sider
+**ClientSubHeader.tsx** ⚠️
+Standalone komponent for klient-spesifikt innhold.
+- **IKKE brukt av StickyClientLayout** (som bruker GlobalSubHeader)
+- Kan brukes direkte hvis du trenger custom layout som ikke passer GlobalSubHeader
+- For nye klient-sider, bruk heller StickyClientLayout som bruker GlobalSubHeader
 
 ### Nivå 3: Sidebar
 - **Posisjon**: Venstre side
@@ -87,13 +88,15 @@ Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon
 - Rendres via `SubHeaderHost.tsx`
 
 ### SubHeaderHost.tsx
-- Rendrer subheader fra context ELLER GlobalSubHeader som fallback
-- Plasseres i `GridLayoutContainer.tsx`
+- Rendrer subheader fra SubHeaderContext
+- Hvis context har node → render den
+- Fallback til tom GlobalSubHeader hvis ingen custom content
+- Plasseres i `AppLayout.tsx`
 
 ### StickyClientLayout.tsx
 - Wrapper-komponent for klient-sider
-- Setter automatisk ClientSubHeader via SubHeaderContext
-- Håndterer klient-spesifikk informasjon (navn, org.nr, regnskapsår)
+- Setter automatisk **GlobalSubHeader** via SubHeaderContext (IKKE ClientSubHeader)
+- Håndterer klient-spesifikk informasjon (navn, org.nr, regnskapsår, materialitet)
 
 ## Best Practices
 

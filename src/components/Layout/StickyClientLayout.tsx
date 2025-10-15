@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import ClientSubHeader from './ClientSubHeader';
 import FiscalYearSelector from './FiscalYearSelector';
 import MaterialitySummary from './MaterialitySummary';
 import { useSubHeader } from './SubHeaderContext';

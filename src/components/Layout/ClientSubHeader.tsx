@@ -2,15 +2,23 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * ClientSubHeader - Nivå 2: Klient-spesifikk sub-header under GlobalHeader
+ * ClientSubHeader - Standalone klient-spesifikk sub-header komponent
  * 
- * Denne komponenten rendres UNDER GlobalHeader for klient-spesifikke sider.
- * Den viser klient-kontekst informasjon:
- * - Klientnavn og org.nummer (leftContent)
- * - Regnskapsårvelger (rightContent)
- * - Materialitetsoppsummering (rightContent)
+ * ⚠️ VIKTIG: Denne komponenten brukes IKKE av StickyClientLayout!
+ * StickyClientLayout bruker GlobalSubHeader med custom leftContent/rightContent.
  * 
- * Layout:
+ * Bruk denne komponenten kun hvis du trenger:
+ * - Custom layout som ikke passer GlobalSubHeader
+ * - Spesifikk styling eller struktur som krever egen komponent
+ * 
+ * For nye klient-sider, bruk heller StickyClientLayout:
+ * ```tsx
+ * <StickyClientLayout clientName="..." orgNumber="...">
+ *   <YourContent />
+ * </StickyClientLayout>
+ * ```
+ * 
+ * Layout specs:
  * - Posisjon: sticky top-[var(--global-header-current-height)], z-40
  * - Høyde: var(--sub-header-height) (30px)
  * - Token: --brand-header (--revio-500) - mørkere teal, matcher sidebar
@@ -33,15 +41,9 @@ import { cn } from '@/lib/utils';
  * VIKTIG: Uten Tailwind-mapping vil bg-brand-header ikke fungere!
  * Se: docs/design/tailwind-brand-integration.md for full forklaring
  * 
- * Bruksområde:
- * Typisk brukt via StickyClientLayout.tsx wrapper for klient-sider.
- * 
- * VIKTIG: Dette er sub-headeren, IKKE main headeren (GlobalHeader).
- * ClientSubHeader er en variant av GlobalSubHeader, spesialisert for klient-kontekst.
- * 
  * @see GlobalHeader.tsx - Main header (Nivå 1)
- * @see GlobalSubHeader.tsx - Standard sub-header variant
- * @see StickyClientLayout.tsx - Wrapper som bruker denne komponenten
+ * @see GlobalSubHeader.tsx - Standard sub-header variant (FORETRUKKET for klient-sider)
+ * @see StickyClientLayout.tsx - Wrapper som bruker GlobalSubHeader (IKKE denne komponenten)
  * @see docs/design/layout-architecture.md - Full arkitektur-dokumentasjon
  * @see docs/design/tailwind-brand-integration.md - Design token arkitektur
  * @see docs/design/README.md - Design system overview

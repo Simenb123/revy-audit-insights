@@ -52,10 +52,12 @@ const MyPage = () => {
 export default MyPage;
 ```
 
-### Klient-side med ClientSubHeader
+### Klient-side med StickyClientLayout
 ```tsx
 import StickyClientLayout from '@/components/Layout/StickyClientLayout';
 
+// StickyClientLayout bruker GlobalSubHeader "under panseret"
+// med klient-spesifikt innhold (navn, org.nr, regnskapsår, materialitet)
 const ClientPage = () => {
   const { clientId } = useParams();
   

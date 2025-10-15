@@ -17,7 +17,6 @@ graph TD
     A --> I[GridLayoutContainer]
     
     H --> J[GlobalSubHeader]
-    H --> K[ClientSubHeader]
     
     I --> L[ResizableLeftSidebar]
     I --> M[ResponsiveLayout]
@@ -28,6 +27,8 @@ graph TD
     
     L --> Q[Main Navigation]
     N --> R[AI/Chat/Figures/Docs]
+    
+    E -.StickyClientLayout.-> J
 ```
 
 ## 🏗️ Component Hierarchy
