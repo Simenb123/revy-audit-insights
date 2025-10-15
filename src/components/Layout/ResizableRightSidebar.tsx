@@ -1,3 +1,75 @@
+/**
+ * ResizableRightSidebar - AI/Chat context sidebar (høyre)
+ * 
+ * @description
+ * Multi-functional right sidebar that provides AI assistance, team chat,
+ * financial figures, and document panels. Context-aware and adapts to page type.
+ * 
+ * @features
+ * 1. Resizable width (320-600px) via drag handle
+ * 2. Collapsible to icon bar (44px)
+ * 3. Multiple tabs: AI, Chat, Figures, Documents
+ * 4. Context-aware: detects page type and client
+ * 5. Keyboard shortcuts (Ctrl+Shift+R/A/C/F/D)
+ * 
+ * @tabs
+ * - **AI**: AiRevyCard with variant based on page context
+ *   - Client pages: variant='client' (client assistant)
+ *   - Admin pages: variant='admin' (admin assistant)
+ *   - Knowledge pages: variant='knowledge' (knowledge assistant)
+ *   - Other: variant='general' (general assistant)
+ * - **Chat**: Team communication (GroupChatSidebar)
+ * - **Figures**: Client financial data (ClientFiguresPanel)
+ * - **Documents**: Document data panel (DocumentDataPanel)
+ * 
+ * @page-context-detection
+ * Uses detectPageType() and extractClientId() to determine:
+ * - Page type (client/admin/knowledge/general)
+ * - Client ID (if applicable)
+ * - Appropriate AI assistant variant
+ * 
+ * @mobile-behavior
+ * - Renders as Drawer (bottom sheet) via Radix UI
+ * - Fixed FAB button (bottom-right corner)
+ * - Full Radix UI Tabs component for tab switching
+ * - Height: 85vh
+ * 
+ * @desktop-behavior
+ * - Fixed positioning, right-aligned
+ * - Top: calc(globalHeaderHeight + subHeaderHeight)
+ * - Z-index: 10
+ * - No Radix Tabs wrapper (direct content rendering)
+ * - Resizable via drag handle (left edge)
+ * 
+ * @keyboard-shortcuts
+ * - Ctrl+Shift+R: Toggle sidebar
+ * - Ctrl+Shift+A: Open AI tab
+ * - Ctrl+Shift+C: Open Chat tab
+ * - Ctrl+Shift+F: Open Figures tab
+ * - Ctrl+Shift+D: Open Documents tab
+ * 
+ * @state-management
+ * - Width: Persisted via RightSidebarContext (localStorage)
+ * - Collapsed state: RightSidebarContext
+ * - Active tab: Local component state
+ * 
+ * @styling
+ * - Background: bg-background
+ * - Border: border-l (left edge)
+ * - Z-index: 10 (below headers, above main content)
+ * 
+ * @example
+ * ```tsx
+ * <RightSidebarProvider>
+ *   <ResizableRightSidebar />
+ * </RightSidebarProvider>
+ * ```
+ * 
+ * @see {@link https://docs/design/ui-architecture.md} - Right sidebar architecture
+ * @see {@link https://docs/sidebar-overview.md} - Detailed sidebar documentation
+ * @see {@link AiRevyCard} - AI assistant component
+ * @see {@link RightSidebarContext} - State management
+ */
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';

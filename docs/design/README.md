@@ -2,6 +2,14 @@
 
 Velkommen til Revio design system dokumentasjon! Dette er din "inngangsport" til å forstå hvordan farger, tokens og styling fungerer i applikasjonen.
 
+## 🏗️ UI Architecture
+
+For komplett forståelse av hvordan UI er bygget opp:
+
+- **[UI Architecture](./ui-architecture.md)** ⭐ **Komplett oversikt** - Komponenthierarki, contexts, grid system
+- **[Layout Architecture](./layout-architecture.md)** - Header/SubHeader spesifikk dokumentasjon
+- **[Quick Reference](./quick-reference.md)** - Hurtigreferanse for vanlige oppgaver
+
 ## 🎨 Fargessystem
 
 ### Arkitektur (4 lag)

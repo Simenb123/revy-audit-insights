@@ -21,11 +21,44 @@ import { SubHeaderProvider } from './SubHeaderContext';
 import SubHeaderHost from './SubHeaderHost';
 
 /**
- * Hovedlayout for hele app-skallet med responsivt design
- * - Sticky header på toppen
- * - Venstre kollapsbar sidebar 
- * - Responsivt hovedinnhold som tilpasser seg sidebar-bredder
- * - Høyre kontekst-sidebar som skjules på mobile
+ * AppLayout - Root layout component for entire application
+ * 
+ * @description
+ * Main application shell that provides authentication guards, context providers,
+ * and the core layout structure (headers, sidebars, main content area).
+ * 
+ * @responsibilities
+ * 1. Authentication guard (redirect to /auth if no session)
+ * 2. Profile loading and onboarding check
+ * 3. Context providers setup (Layout, PageTitle, SubHeader, Sidebar)
+ * 4. Root grid structure (GlobalHeader + SubHeader + GridLayoutContainer)
+ * 
+ * @structure
+ * ```
+ * <LayoutProvider>           ← Measures header heights via ResizeObserver
+ *   <PageTitleProvider>       ← Manages global page title
+ *     <SubHeaderProvider>     ← Manages dynamic subheader content
+ *       <GlobalHeader />      ← Nivå 1: Top navigation (z-50)
+ *       <SubHeaderHost />     ← Nivå 2: Context-specific header (z-40)
+ *       <SidebarProvider>     ← Manages left sidebar state
+ *         <GridLayoutContainer>  ← CSS Grid: left-sidebar | main | right-sidebar
+ *           <ResizableLeftSidebar />   ← Navigation sidebar (z-30)
+ *           <ResponsiveLayout>          ← Main content area
+ *             <Outlet />                 ← React Router outlet
+ *           </ResponsiveLayout>
+ *           <ResizableRightSidebar />   ← AI/Chat sidebar (z-10)
+ * ```
+ * 
+ * @authentication-flow
+ * 1. isLoading → PageLoader
+ * 2. connectionStatus === 'disconnected' → Demo mode
+ * 3. !session → Navigate('/auth')
+ * 4. profileLoading → PageLoader
+ * 5. !profile.firstName → OnboardingCheck
+ * 6. Success → Render full layout
+ * 
+ * @see {@link https://docs/design/ui-architecture.md} - Full UI architecture
+ * @see {@link https://docs/design/layout-architecture.md} - Header hierarchy
  */
 const AppLayout = () => {
   const { session, connectionStatus, isLoading } = useAuth();

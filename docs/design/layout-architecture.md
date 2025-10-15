@@ -1,5 +1,10 @@
 # Layout Architecture
 
+> 📘 **Ny til Revio UI?** Start med [UI Architecture Overview](./ui-architecture.md) for komplett system-forklaring.
+> 
+> Dette dokumentet fokuserer spesifikt på **header-hierarki og styling**. 
+> For full layout-struktur, contexts og komponenter, se [UI Architecture](./ui-architecture.md).
+
 ## Header Hierarchy
 
 Revio har en 2-nivås header-struktur med klar visuell og funksjonell separasjon:

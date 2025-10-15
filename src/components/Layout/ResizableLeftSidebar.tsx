@@ -1,3 +1,51 @@
+/**
+ * ResizableLeftSidebar - Main navigation sidebar (venstre)
+ * 
+ * @description
+ * Primary navigation component with collapsible sections, dynamic menu items
+ * based on user context (client, role, feature flags), and persistent state.
+ * 
+ * @features
+ * 1. Collapsible to icon mode (56px) via SidebarProvider
+ * 2. Collapsible sections with localStorage persistence
+ * 3. Dynamic menu items based on:
+ *    - Client context (clientId from route params)
+ *    - User role (admin, partner, employee)
+ *    - Feature flags (payroll, AI-studio, report builder)
+ * 
+ * @sections
+ * - **Klientarbeid**: Client-specific pages OR general work pages
+ *   - Lønn: Payroll subsection (feature flag: isPayrollEnabled)
+ *   - Investeringer: Investment subsection (client-specific only)
+ * - **Ressurser**: Global resources (always available)
+ *   - Klienter, Rapporter, Kunnskapsbase, Kommunikasjon, etc.
+ * - **Admin**: Role-based access (admin, partner, employee)
+ *   - User management, partner management, settings
+ * 
+ * @styling
+ * - Token: --sidebar-background (--revio-500) - matches headers
+ * - Z-index: 30
+ * - Width: CSS vars (--sidebar-width: 240px, --sidebar-width-icon: 56px)
+ * - Background: bg-sidebar (from design tokens)
+ * 
+ * @state-persistence
+ * Section collapse state stored in localStorage as 'sidebar-collapsed-sections'
+ * 
+ * @responsive
+ * - Desktop: Persistent sidebar with hover effects
+ * - Mobile: Overlay drawer (handled by SidebarProvider)
+ * 
+ * @example
+ * ```tsx
+ * <SidebarProvider>
+ *   <ResizableLeftSidebar />
+ * </SidebarProvider>
+ * ```
+ * 
+ * @see {@link https://docs/design/layout-architecture.md} - Sidebar styling
+ * @see {@link https://docs/design/ui-architecture.md} - Navigation structure
+ * @see {@link SidebarProvider} - State management
+ */
 
 import React, { useState, useEffect } from 'react'
 import {
