@@ -49,9 +49,11 @@ src/
 **Les disse FØRST:**
 1. **[Components Inventory](./components/README.md)** - Alle gjenbrukbare komponenter
 2. **[Utilities Inventory](./utilities/README.md)** - Alle utilities og helpers
-3. **[Project Overview](./gpt5-dev-kit/project-overview.md)** - Teknisk stack og guidelines
+3. **[Database Architecture](./database/README.md)** - Database-struktur, tabeller, RLS policies
+4. **[Project Overview](./gpt5-dev-kit/project-overview.md)** - Teknisk stack og guidelines
 
 **Viktige guides:**
+- **[Database Tables](./database/tables.md)** - Detaljert tabell-dokumentasjon (80+ tabeller)
 - **[StandardDataTable](./components/data-tables.md)** - Vår primære tabell-komponent (brukt 17+ steder)
 - **[File Processing](./utilities/file-processing.md)** - Excel/CSV upload-system (brukt 17+ steder)
 - **[PivotWidget](./components/pivot-widget.md)** - Interaktiv pivot-analyse
@@ -76,6 +78,8 @@ src/
 | Export til Excel | `StandardDataTable` har built-in export | [Guide](./components/data-tables.md) |
 | Export til PDF | `StandardDataTable` har built-in export | [Guide](./components/data-tables.md) |
 | Hente data fra Supabase | `useQuery` pattern | [Utilities](./utilities/README.md#api--supabase) |
+| Database queries og RLS | Se tabell-dokumentasjon | [Database](./database/README.md) |
+| Lage ny tabell | Følg migration-strategi | [Database](./database/README.md#migration-strategi) |
 | Page layout | `StandardPageLayout` | [Guide](./page-layout.md) |
 | Subheader | `GlobalSubHeader`, `ClientSubHeader` | [Guide](./page-layout.md#subheader-styling) |
 | Loading state | `Skeleton` komponent | [Components](./components/README.md) |
@@ -358,9 +362,11 @@ git push origin feature/my-feature
 - [ ] Les denne guiden
 - [ ] Les [Components Inventory](./components/README.md)
 - [ ] Les [Utilities Inventory](./utilities/README.md)
+- [ ] Les [Database Architecture](./database/README.md)
 - [ ] Utforsk kodebasen
 
 **Uke 1:**
+- [ ] Les [Database Tables](./database/tables.md) - Forstå datamodellen
 - [ ] Les [StandardDataTable Guide](./components/data-tables.md)
 - [ ] Les [File Processing Guide](./utilities/file-processing.md)
 - [ ] Les [Project Overview](./gpt5-dev-kit/project-overview.md)
