@@ -49,10 +49,12 @@ src/
 **Les disse FØRST:**
 1. **[Components Inventory](./components/README.md)** - Alle gjenbrukbare komponenter
 2. **[Utilities Inventory](./utilities/README.md)** - Alle utilities og helpers
-3. **[Database Architecture](./database/README.md)** - Database-struktur, tabeller, RLS policies
-4. **[Project Overview](./gpt5-dev-kit/project-overview.md)** - Teknisk stack og guidelines
+3. **[Hooks Library](./hooks/README.md)** - 244+ custom hooks for data & state
+4. **[Database Architecture](./database/README.md)** - Database-struktur, tabeller, RLS policies
+5. **[Project Overview](./gpt5-dev-kit/project-overview.md)** - Teknisk stack og guidelines
 
 **Viktige guides:**
+- **[Hooks Library](./hooks/README.md)** - React Query patterns, mutations, caching
 - **[Database Tables](./database/tables.md)** - Detaljert tabell-dokumentasjon (80+ tabeller)
 - **[StandardDataTable](./components/data-tables.md)** - Vår primære tabell-komponent (brukt 17+ steder)
 - **[File Processing](./utilities/file-processing.md)** - Excel/CSV upload-system (brukt 17+ steder)
@@ -77,7 +79,8 @@ src/
 | Formatere dato | `formatDate()` | [Utilities](./utilities/README.md#date--time) |
 | Export til Excel | `StandardDataTable` har built-in export | [Guide](./components/data-tables.md) |
 | Export til PDF | `StandardDataTable` har built-in export | [Guide](./components/data-tables.md) |
-| Hente data fra Supabase | `useQuery` pattern | [Utilities](./utilities/README.md#api--supabase) |
+| Hente data fra Supabase | `useQuery` pattern | [Hooks Library](./hooks/README.md#core-patterns) |
+| Lage ny hook | Følg React Query template | [Hooks Library](./hooks/README.md#hvordan-lage-nye-hooks) |
 | Database queries og RLS | Se tabell-dokumentasjon | [Database](./database/README.md) |
 | Lage ny tabell | Følg migration-strategi | [Database](./database/README.md#migration-strategi) |
 | Page layout | `StandardPageLayout` | [Guide](./page-layout.md) |
@@ -362,10 +365,12 @@ git push origin feature/my-feature
 - [ ] Les denne guiden
 - [ ] Les [Components Inventory](./components/README.md)
 - [ ] Les [Utilities Inventory](./utilities/README.md)
+- [ ] Les [Hooks Library](./hooks/README.md)
 - [ ] Les [Database Architecture](./database/README.md)
 - [ ] Utforsk kodebasen
 
 **Uke 1:**
+- [ ] Les [Hooks Library Examples](./hooks/README.md#eksempler-fra-kodebasen)
 - [ ] Les [Database Tables](./database/tables.md) - Forstå datamodellen
 - [ ] Les [StandardDataTable Guide](./components/data-tables.md)
 - [ ] Les [File Processing Guide](./utilities/file-processing.md)
