@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Client } from '@/types/revio';
 import RecentClientsCard from '@/components/Clients/RecentClientsCard';
 import ClientsTable from '@/components/Clients/ClientsTable/ClientsTable';
-
+import PageLayout from '@/components/Layout/PageLayout';
 
 import AddClientDialog from '@/components/Clients/AddClientDialog';
 import ClientBulkImporter from '@/components/Clients/ClientBulkImporter';
@@ -68,7 +68,7 @@ const ClientsOverview = () => {
   }
 
   return (
-    <div className="space-y-[var(--content-gap)] w-full">
+    <PageLayout width="full" spacing="normal">
       {/* Header with Recent Clients */}
       <div className="flex justify-between items-start">
         <div>
@@ -160,7 +160,7 @@ const ClientsOverview = () => {
         </DialogContent>
       </Dialog>
 
-    </div>
+    </PageLayout>
   );
 };
 

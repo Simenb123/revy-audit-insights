@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import AllocationImport from '@/components/ResourcePlanner/AllocationImport';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function AllocationImportPage() {
   useEffect(() => {
@@ -7,9 +8,9 @@ export default function AllocationImportPage() {
   }, []);
 
   return (
-    <main className="container mx-auto p-4">
+    <PageLayout width="medium" spacing="normal">
       <h1 className="text-2xl font-semibold mb-4">Allokeringsimport</h1>
       <AllocationImport />
-    </main>
+    </PageLayout>
   );
 }

@@ -30,6 +30,7 @@ import VesentlighetModule from '@/components/Training/VesentlighetModule';
 import SubstanstestingModule from '@/components/Training/SubstanstestingModule';
 import StructuredLearningPath from '@/components/Training/StructuredLearningPath';
 import ManagerDashboard from '@/components/Training/ManagerDashboard';
+import ResponsiveLayout from '@/components/Layout/ResponsiveLayout';
 
 const Training = () => {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
@@ -112,9 +113,9 @@ const Training = () => {
   }
 
   return (
-    <div className="h-full overflow-auto">
+    <ResponsiveLayout maxWidth="full">
       {/* Header */}
-      <div className="p-4 border-b bg-background">
+      <div className="pb-4 mb-6 border-b bg-background">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -139,196 +140,194 @@ const Training = () => {
       </div>
 
       {/* Main Content */}
-      <div className="p-4">
-        {!selectedScenario ? (
-          <Tabs defaultValue="structured-learning" className="space-y-6">
-            <TabsList className={`grid w-full ${isManager ? 'grid-cols-6' : 'grid-cols-5'}`}>
-              <TabsTrigger value="structured-learning">
-                <GraduationCap className="w-4 h-4 mr-2" />
-                Strukturert Læring
-              </TabsTrigger>
-              <TabsTrigger value="overview">Oversikt</TabsTrigger>
-              <TabsTrigger value="ai-training">🎤 AI Trening</TabsTrigger>
-              <TabsTrigger value="scenarios">Velg scenario</TabsTrigger>
-              <TabsTrigger value="progress">Min progresjon</TabsTrigger>
-              {isManager && (
-                <TabsTrigger value="manager">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Leder Dashboard
-                </TabsTrigger>
-              )}
-            </TabsList>
-            
-            <TabsContent value="structured-learning">
-              <StructuredLearningPath />
-            </TabsContent>
-            
-            <TabsContent value="overview">
-              <TrainingOverview 
-                userProgress={userProgress} 
-                userBadges={userBadges}
-              />
-            </TabsContent>
-            
-            <TabsContent value="ai-training">
-              <AICharacterSimulator />
-            </TabsContent>
-            
-            <TabsContent value="scenarios">
-              <ScenarioSelection 
-                scenarios={scenarios}
-                onScenarioSelect={handleScenarioSelect}
-              />
-            </TabsContent>
-            
-            <TabsContent value="progress">
-              <UserProgress 
-                userProgress={userProgress} 
-                userBadges={userBadges}
-              />
-            </TabsContent>
-            
+      {!selectedScenario ? (
+        <Tabs defaultValue="structured-learning" className="space-y-6">
+          <TabsList className={`grid w-full ${isManager ? 'grid-cols-6' : 'grid-cols-5'}`}>
+            <TabsTrigger value="structured-learning">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Strukturert Læring
+            </TabsTrigger>
+            <TabsTrigger value="overview">Oversikt</TabsTrigger>
+            <TabsTrigger value="ai-training">🎤 AI Trening</TabsTrigger>
+            <TabsTrigger value="scenarios">Velg scenario</TabsTrigger>
+            <TabsTrigger value="progress">Min progresjon</TabsTrigger>
             {isManager && (
-              <TabsContent value="manager">
-                <ManagerDashboard />
-              </TabsContent>
+              <TabsTrigger value="manager">
+                <Shield className="w-4 h-4 mr-2" />
+                Leder Dashboard
+              </TabsTrigger>
             )}
-          </Tabs>
-        ) : !activeModule ? (
-          <div className="space-y-6">
-            {/* Scenario Header */}
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl text-blue-900">
-                      {selectedScenarioData?.name}
-                    </CardTitle>
-                    <p className="text-blue-700 mt-2">
-                      {selectedScenarioData?.description}
-                    </p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setSelectedScenario(null)}
-                  >
-                    ← Tilbake til oversikt
-                  </Button>
+          </TabsList>
+          
+          <TabsContent value="structured-learning">
+            <StructuredLearningPath />
+          </TabsContent>
+          
+          <TabsContent value="overview">
+            <TrainingOverview 
+              userProgress={userProgress} 
+              userBadges={userBadges}
+            />
+          </TabsContent>
+          
+          <TabsContent value="ai-training">
+            <AICharacterSimulator />
+          </TabsContent>
+          
+          <TabsContent value="scenarios">
+            <ScenarioSelection 
+              scenarios={scenarios}
+              onScenarioSelect={handleScenarioSelect}
+            />
+          </TabsContent>
+          
+          <TabsContent value="progress">
+            <UserProgress 
+              userProgress={userProgress} 
+              userBadges={userBadges}
+            />
+          </TabsContent>
+          
+          {isManager && (
+            <TabsContent value="manager">
+              <ManagerDashboard />
+            </TabsContent>
+          )}
+        </Tabs>
+      ) : !activeModule ? (
+        <div className="space-y-6">
+          {/* Scenario Header */}
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl text-blue-900">
+                    {selectedScenarioData?.name}
+                  </CardTitle>
+                  <p className="text-blue-700 mt-2">
+                    {selectedScenarioData?.description}
+                  </p>
                 </div>
-              </CardHeader>
-            </Card>
-
-            {/* Module Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {modules.map((module) => {
-                const Icon = module.icon;
-                const isCompleted = userProgress?.some(p => 
-                  p.scenario_id === selectedScenario && 
-                  p.module_name === module.id && 
-                  p.completed_at
-                );
-                
-                return (
-                  <Card 
-                    key={module.id} 
-                    className={`cursor-pointer transition-all hover:shadow-lg border-2 ${
-                      module.featured ? 'border-gradient-to-r from-green-400 to-blue-500 shadow-lg' :
-                      isCompleted ? 'border-green-200 bg-green-50' : 'border-border hover:border-primary'
-                    }`}
-                    onClick={() => handleModuleSelect(module.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <Icon className={`h-8 w-8 ${
-                          module.featured ? 'text-blue-600' :
-                          isCompleted ? 'text-green-600' : 'text-primary'
-                        }`} />
-                        <div className="flex gap-1">
-                          {module.featured && (
-                            <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white text-xs">
-                              Nytt!
-                            </Badge>
-                          )}
-                          {isCompleted && (
-                            <Badge className="bg-green-100 text-green-800">
-                              Fullført
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <CardTitle className="text-lg">{module.title}</CardTitle>
-                      <p className="text-muted-foreground text-sm">{module.description}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{module.estimatedTime}</span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {module.difficulty}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Module Navigation */}
-            <div className="flex items-center justify-between">
-              <Button 
-                variant="outline" 
-                onClick={() => setActiveModule(null)}
-              >
-                ← Tilbake til moduler
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                {selectedScenarioData?.name} • {modules.find(m => m.id === activeModule)?.title}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedScenario(null)}
+                >
+                  ← Tilbake til oversikt
+                </Button>
               </div>
-            </div>
+            </CardHeader>
+          </Card>
 
-            {/* Active Module Content */}
-            {activeModule === 'ai-character' && (
-              <AICharacterSimulator />
-            )}
-            
-            {activeModule === 'voice-training' && selectedScenario && selectedScenarioData && (
-              <VoiceTrainingModule 
-                scenarioId={selectedScenario}
-                scenarioName={selectedScenarioData.name}
-                onComplete={(feedback) => {
-                  logger.log('Voice training completed:', feedback);
-                }}
-              />
-            )}
-            
-            {activeModule === 'risikovurdering' && selectedScenario && selectedScenarioData && (
-              <RiskAssessmentModule 
-                scenarioId={selectedScenario}
-                scenarioName={selectedScenarioData.name}
-              />
-            )}
-            
-            {activeModule === 'vesentlighet' && selectedScenario && selectedScenarioData && (
-              <VesentlighetModule
-                scenarioId={selectedScenario}
-                scenarioName={selectedScenarioData.name}
-              />
-            )}
-            
-            {activeModule === 'testing' && selectedScenario && selectedScenarioData && (
-              <SubstanstestingModule
-                scenarioId={selectedScenario}
-                scenarioName={selectedScenarioData.name}
-              />
-            )}
+          {/* Module Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {modules.map((module) => {
+              const Icon = module.icon;
+              const isCompleted = userProgress?.some(p => 
+                p.scenario_id === selectedScenario && 
+                p.module_name === module.id && 
+                p.completed_at
+              );
+              
+              return (
+                <Card 
+                  key={module.id} 
+                  className={`cursor-pointer transition-all hover:shadow-lg border-2 ${
+                    module.featured ? 'border-gradient-to-r from-green-400 to-blue-500 shadow-lg' :
+                    isCompleted ? 'border-green-200 bg-green-50' : 'border-border hover:border-primary'
+                  }`}
+                  onClick={() => handleModuleSelect(module.id)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <Icon className={`h-8 w-8 ${
+                        module.featured ? 'text-blue-600' :
+                        isCompleted ? 'text-green-600' : 'text-primary'
+                      }`} />
+                      <div className="flex gap-1">
+                        {module.featured && (
+                          <Badge className="bg-gradient-to-r from-green-400 to-blue-500 text-white text-xs">
+                            Nytt!
+                          </Badge>
+                        )}
+                        {isCompleted && (
+                          <Badge className="bg-green-100 text-green-800">
+                            Fullført
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg">{module.title}</CardTitle>
+                    <p className="text-muted-foreground text-sm">{module.description}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{module.estimatedTime}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {module.difficulty}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Module Navigation */}
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setActiveModule(null)}
+            >
+              ← Tilbake til moduler
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              {selectedScenarioData?.name} • {modules.find(m => m.id === activeModule)?.title}
+            </div>
+          </div>
+
+          {/* Active Module Content */}
+          {activeModule === 'ai-character' && (
+            <AICharacterSimulator />
+          )}
+          
+          {activeModule === 'voice-training' && selectedScenario && selectedScenarioData && (
+            <VoiceTrainingModule 
+              scenarioId={selectedScenario}
+              scenarioName={selectedScenarioData.name}
+              onComplete={(feedback) => {
+                logger.log('Voice training completed:', feedback);
+              }}
+            />
+          )}
+          
+          {activeModule === 'risikovurdering' && selectedScenario && selectedScenarioData && (
+            <RiskAssessmentModule 
+              scenarioId={selectedScenario}
+              scenarioName={selectedScenarioData.name}
+            />
+          )}
+          
+          {activeModule === 'vesentlighet' && selectedScenario && selectedScenarioData && (
+            <VesentlighetModule
+              scenarioId={selectedScenario}
+              scenarioName={selectedScenarioData.name}
+            />
+          )}
+          
+          {activeModule === 'testing' && selectedScenario && selectedScenarioData && (
+            <SubstanstestingModule
+              scenarioId={selectedScenario}
+              scenarioName={selectedScenarioData.name}
+            />
+          )}
+        </div>
+      )}
+    </ResponsiveLayout>
   );
 };
 

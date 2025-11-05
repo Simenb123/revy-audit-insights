@@ -84,6 +84,7 @@ src/
 | Database queries og RLS | Se tabell-dokumentasjon | [Database](./database/README.md) |
 | Lage ny tabell | Følg migration-strategi | [Database](./database/README.md#migration-strategi) |
 | Page layout | `StandardPageLayout` | [Guide](./page-layout.md) |
+| Page layout | `PageLayout`, `ResponsiveLayout` | [Layout Guide](./design/layout-architecture.md) |
 | Subheader | `GlobalSubHeader`, `ClientSubHeader` | [Guide](./page-layout.md#subheader-styling) |
 | Loading state | `Skeleton` komponent | [Components](./components/README.md) |
 | Error handling | `logger` + `useToast` | [Utilities](./utilities/README.md#logging--debugging) |
@@ -128,6 +129,27 @@ src/
 
 ### Layout Guidelines
 
+**ALLTID bruk layout-komponenter - ALDRI hardkod padding/width:**
+
+```tsx
+// ❌ FEIL - hardkodet layout
+<div className="space-y-6 p-6">
+  <h1>Min Side</h1>
+</div>
+
+// ✅ RIKTIG - bruk PageLayout
+import PageLayout from '@/components/Layout/PageLayout';
+
+<PageLayout width="wide" spacing="normal">
+  <h1>Min Side</h1>
+</PageLayout>
+```
+
+**Beslutningstre for layout:**
+1. **Klient-side?** → Bruk `StickyClientLayout`
+2. **Standard side?** → Bruk `PageLayout`
+3. **Kun bredde-kontroll?** → Bruk `ResponsiveLayout`
+
 **Subheaders MÅ bruke Revio-green:**
 ```tsx
 <GlobalSubHeader
@@ -136,18 +158,8 @@ src/
 />
 ```
 
-**Standard page layout:**
-```tsx
-import { StandardPageLayout } from '@/components/Layout/StandardPageLayout';
-
-<StandardPageLayout spacing="comfortable">
-  <Section title="Min Seksjon">
-    <p>Innhold her</p>
-  </Section>
-</StandardPageLayout>
-```
-
-**Se fullstendig guide:** [Page Layout Guide](./page-layout.md)
+**Se fullstendig guide:** [Layout Architecture](./design/layout-architecture.md)  
+**Migration guide:** [Page Migration Checklist](./design/page-migration-checklist.md)
 
 ---
 
@@ -367,6 +379,7 @@ git push origin feature/my-feature
 - [ ] Les [Utilities Inventory](./utilities/README.md)
 - [ ] Les [Hooks Library](./hooks/README.md)
 - [ ] Les [Database Architecture](./database/README.md)
+- [ ] Les [Layout Architecture](./design/layout-architecture.md) - VIKTIG for alle nye sider
 - [ ] Utforsk kodebasen
 
 **Uke 1:**
@@ -375,6 +388,7 @@ git push origin feature/my-feature
 - [ ] Les [StandardDataTable Guide](./components/data-tables.md)
 - [ ] Les [File Processing Guide](./utilities/file-processing.md)
 - [ ] Les [Project Overview](./gpt5-dev-kit/project-overview.md)
+- [ ] Les [Page Migration Checklist](./design/page-migration-checklist.md) - Før du lager nye sider
 - [ ] Gjør en liten bugfix eller feature
 - [ ] Få code review fra teamet
 

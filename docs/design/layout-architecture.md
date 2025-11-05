@@ -157,6 +157,81 @@ const ClientPage = () => {
 };
 ```
 
+## Layout Strategy for Pages
+
+### Beslutningstre: Hvilken layout skal du bruke?
+
+**Spørsmål 1: Er det en klient-spesifikk side?**
+- ✅ JA → Bruk `StickyClientLayout`
+- ❌ NEI → Gå til spørsmål 2
+
+**Spørsmål 2: Trenger siden header/footer/spacing?**
+- ✅ JA → Bruk `PageLayout`
+- ❌ NEI → Gå til spørsmål 3
+
+**Spørsmål 3: Trenger siden kun bredde-kontroll?**
+- ✅ JA → Bruk `ResponsiveLayout` (alias for `GlobalLayoutContainer`)
+- ❌ NEI → Gå til spørsmål 4
+
+**Spørsmål 4: Trenger siden finere kontroll over spacing OG bredde?**
+- ✅ JA → Bruk `ConstrainedWidth` + `StandardPageLayout`
+
+### Layout-komponenter oversikt
+
+| Komponent | Bruksområde | Width Options | Spacing |
+|-----------|-------------|---------------|---------|
+| `StickyClientLayout` | Klient-sider | N/A | Automatisk |
+| `PageLayout` | Standard sider | `narrow`, `medium`, `wide`, `full` | `compact`, `normal`, `relaxed` |
+| `ResponsiveLayout` | Kun bredde-kontroll | `narrow`, `medium`, `wide`, `full` | Ingen |
+| `ConstrainedWidth` | Kun bredde | `narrow`, `medium`, `wide`, `full` | Ingen |
+| `StandardPageLayout` | Header/footer/spacing | N/A | `compact`, `normal`, `relaxed` |
+
+### Width Token Mapping
+
+```css
+narrow:  max-w-[var(--content-narrow)]   /* ~720px */
+medium:  max-w-[var(--content-medium)]   /* ~960px */
+wide:    max-w-[var(--content-wide)]     /* ~1280px */
+full:    max-w-full                      /* 100% */
+```
+
+### Spacing Token Mapping
+
+```css
+compact:  space-y-[var(--space-4)]       /* 16px */
+normal:   space-y-[var(--content-gap)]   /* 24px */
+relaxed:  space-y-[var(--section-gap)]   /* 32px */
+```
+
+## Anti-Patterns (UNNGÅ DISSE)
+
+### ❌ Hardkodet padding
+```tsx
+// FEIL - hardkodet padding
+<div className="space-y-6 p-6">
+```
+
+### ❌ Hardkodet width
+```tsx
+// FEIL - hardkodet width
+<main className="container mx-auto p-4">
+```
+
+### ❌ Blanding av layout og content
+```tsx
+// FEIL - layout og content mixed
+<div className="p-4 md:p-6">
+  <h1>Min side</h1>
+```
+
+### ✅ Korrekt bruk av layout
+```tsx
+// RIKTIG - bruk layout-komponent
+<PageLayout width="wide" spacing="normal">
+  <h1>Min side</h1>
+</PageLayout>
+```
+
 ## Debugging
 
 ### Problemer med sticky positioning
@@ -168,3 +243,9 @@ const ClientPage = () => {
 - Sjekk at tokens er definert i `src/index.css`
 - Verifiser at `--brand-header` og `--sidebar-background` brukes konsistent
 - Se etter hardkodede hex-verdier som bør erstattes med tokens
+
+### Layout issues
+- Bruk beslutningstreet ovenfor for å velge riktig komponent
+- Unngå hardkodede `p-4`, `p-6`, `container mx-auto`
+- Bruk width og spacing props istedenfor Tailwind classes
+- Test responsivitet (mobil, tablet, desktop)

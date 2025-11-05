@@ -4,6 +4,7 @@ import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import PendingUsersManagement from '@/components/Admin/PendingUsersManagement';
+import PageLayout from '@/components/Layout/PageLayout';
 
 function useSuperAdmins(enabled: boolean) {
   return useQuery({
@@ -51,35 +52,34 @@ export default function Superadmin() {
 
   if (isLoading) {
     return (
-      <main className="container mx-auto p-4">
+      <PageLayout width="wide" spacing="normal">
         <p className="text-sm text-muted-foreground">Laster…</p>
-      </main>
+      </PageLayout>
     );
   }
 
   if (isError || !isSuperAdmin) {
     return (
-      <main className="container mx-auto p-4">
-        <header className="mb-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Superadmin</h1>
-        </header>
+      <PageLayout width="wide" spacing="normal">
+        <h1 className="text-2xl font-semibold tracking-tight mb-4">Superadmin</h1>
         <Card>
           <CardHeader>
             <CardTitle>Ingen tilgang</CardTitle>
             <CardDescription>Du må være superadministrator for å se denne siden.</CardDescription>
           </CardHeader>
         </Card>
-      </main>
+      </PageLayout>
     );
   }
 
   return (
-    <>
-      <header className="container mx-auto p-4">
+    <PageLayout width="wide" spacing="normal">
+      <div>
         <h1 className="text-3xl font-semibold tracking-tight">Superadmin</h1>
         <p className="text-sm text-muted-foreground mt-1">Systemadministrasjon og oversikt.</p>
-      </header>
-      <main className="container mx-auto p-4 grid gap-4 md:grid-cols-2">
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2">
         <section>
           <Card>
             <CardHeader>
@@ -124,12 +124,10 @@ export default function Superadmin() {
             </CardContent>
           </Card>
         </section>
-      </main>
+      </div>
 
       {/* New Pending Users Section */}
-      <main className="container mx-auto p-4">
-        <PendingUsersManagement />
-      </main>
-    </>
+      <PendingUsersManagement />
+    </PageLayout>
   );
 }

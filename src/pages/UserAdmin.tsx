@@ -19,6 +19,7 @@ import type { UserRole } from '@/types/organization';
 import EmployeesList from '@/components/Admin/EmployeesList';
 import FirmEmployeesManager from '@/components/Admin/FirmEmployeesManager';
 import FirmAccessRequests from '@/components/Admin/FirmAccessRequests';
+import PageLayout from '@/components/Layout/PageLayout';
 
 const UserAdmin = () => {
   const { data: userProfile } = useUserProfile();
@@ -156,7 +157,7 @@ const UserAdmin = () => {
 
   if (!canAccessUserAdmin) {
     return (
-      <div className="p-6">
+      <PageLayout width="wide" spacing="normal">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -168,12 +169,12 @@ const UserAdmin = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <PageLayout width="wide" spacing="normal">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Brukeradministrasjon</h1>
@@ -390,7 +391,7 @@ const UserAdmin = () => {
 
       <EmployeesList />
 
-    </div>
+    </PageLayout>
   );
 };
 
