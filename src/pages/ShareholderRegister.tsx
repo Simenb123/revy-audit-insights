@@ -8,6 +8,7 @@ import { LargeDatasetUploader, AdvancedUploadProvider } from '@/components/Uploa
 import { ShareholderAnalysis } from '@/components/Shareholders/ShareholderAnalysis'
 import { EnhancedImportMonitor } from '@/components/Shareholders/EnhancedImportMonitor'
 import { ImportVerificationDashboard } from '@/components/Shareholders/ImportVerificationDashboard'
+import PageLayout from '@/components/Layout/PageLayout'
 
 export function ShareholderRegister() {
   const [currentYear] = useState(new Date().getFullYear())
@@ -21,7 +22,7 @@ export function ShareholderRegister() {
 
   return (
     <AdvancedUploadProvider>
-      <div className="container mx-auto p-6 space-y-6">
+      <PageLayout width="wide" spacing="normal">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Aksjonærregister</h1>
@@ -131,7 +132,7 @@ export function ShareholderRegister() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </PageLayout>
     </AdvancedUploadProvider>
   )
 }

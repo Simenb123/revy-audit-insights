@@ -1,4 +1,5 @@
 import { AssetsList } from '@/components/assets/AssetsList';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function AssetManagement() {
   // For demo purposes, using a placeholder client ID
@@ -6,17 +7,15 @@ export default function AssetManagement() {
   const clientId = 'demo-client-id';
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Anleggsmiddelforvaltning</h1>
-          <p className="text-muted-foreground">
-            Administrer anleggsmidler, avskrivninger og vedlikehold
-          </p>
-        </div>
-        
-        <AssetsList clientId={clientId} />
+    <PageLayout width="wide" spacing="normal">
+      <div>
+        <h1 className="text-3xl font-bold">Anleggsmiddelforvaltning</h1>
+        <p className="text-muted-foreground">
+          Administrer anleggsmidler, avskrivninger og vedlikehold
+        </p>
       </div>
-    </div>
+      
+      <AssetsList clientId={clientId} />
+    </PageLayout>
   );
 }

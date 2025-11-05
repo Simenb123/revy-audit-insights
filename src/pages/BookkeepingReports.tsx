@@ -10,6 +10,7 @@ import { BalanceSheetReport } from '@/components/reports/BalanceSheetReport';
 import { BankReconciliationPanel } from '@/components/reconciliation/BankReconciliationPanel';
 import { useClients } from '@/hooks/useClients';
 import { CalendarIcon, FileText, TrendingUp, DollarSign, CreditCard } from 'lucide-react';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function BookkeepingReports() {
   const { clients } = useClients();
@@ -27,7 +28,7 @@ export default function BookkeepingReports() {
   const selectedClient = clients?.find((c: any) => c.id === selectedClientId);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageLayout width="wide" spacing="normal">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Regnskapsrapporter</h1>
@@ -155,6 +156,6 @@ export default function BookkeepingReports() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }

@@ -33,6 +33,7 @@ import { useInvestmentPortfolios } from '@/hooks/useInvestmentPortfolios';
 import { PortfolioForm } from '@/components/investments/PortfolioForm';
 import { HoldingForm } from '@/components/investments/HoldingForm';
 import { useClients } from '@/hooks/useClients';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function InvestmentPortfolios() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,16 +82,16 @@ export default function InvestmentPortfolios() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <PageLayout width="wide" spacing="normal">
         <div className="flex items-center justify-center h-64">
           <div className="text-muted-foreground">Laster porteføljer...</div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <PageLayout width="wide" spacing="normal">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Investeringsporteføljer</h1>
@@ -350,6 +351,6 @@ export default function InvestmentPortfolios() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }

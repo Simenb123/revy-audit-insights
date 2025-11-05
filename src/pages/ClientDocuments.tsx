@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useClientDetails } from '@/hooks/useClientDetails';
 import ClientDocumentManager from '@/components/ClientDocuments/ClientDocumentManager';
 import { logger } from '@/utils/logger';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
 
 const ClientDocuments = () => {
@@ -51,13 +51,13 @@ const ClientDocuments = () => {
   }
 
   return (
-    <StandardPageLayout className="container mx-auto p-6">
+    <PageLayout width="wide" spacing="normal">
       <ClientDocumentManager
         clientId={client.id}
         clientName={client.company_name || client.name}
         enableAI
       />
-    </StandardPageLayout>
+    </PageLayout>
   );
 };
 

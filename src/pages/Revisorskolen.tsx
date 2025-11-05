@@ -22,6 +22,7 @@ import { useTrainingSessions, useSessionProgress, useUpdateSessionProgress } fro
 import { useState } from 'react';
 import { GraduationCap, BookOpen, Trophy, Users, Settings, BarChart3, FileText, Library, Target, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function Revisorskolen() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export default function Revisorskolen() {
   const isLoading = programsLoading || sessionsLoading;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <PageLayout width="wide" spacing="normal">
       <div className="flex items-center gap-3 mb-8">
         <GraduationCap className="h-8 w-8 text-primary" />
         <div>
@@ -310,6 +311,6 @@ export default function Revisorskolen() {
           <UserPreferences />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

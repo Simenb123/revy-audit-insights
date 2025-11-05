@@ -1,4 +1,5 @@
 import { BudgetsList } from '@/components/budget/BudgetsList';
+import PageLayout from '@/components/Layout/PageLayout';
 
 export default function BudgetManagement() {
   // For demo purposes, using a placeholder client ID
@@ -6,17 +7,15 @@ export default function BudgetManagement() {
   const clientId = 'demo-client-id';
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Budsjettplanlegging</h1>
-          <p className="text-muted-foreground">
-            Opprett og administrer budsjetter, sammenlign faktiske tall og lag prognoser
-          </p>
-        </div>
-        
-        <BudgetsList clientId={clientId} />
+    <PageLayout width="wide" spacing="normal">
+      <div>
+        <h1 className="text-3xl font-bold">Budsjettplanlegging</h1>
+        <p className="text-muted-foreground">
+          Opprett og administrer budsjetter, sammenlign faktiske tall og lag prognoser
+        </p>
       </div>
-    </div>
+      
+      <BudgetsList clientId={clientId} />
+    </PageLayout>
   );
 }

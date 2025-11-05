@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Search, Filter, FileText, Eye, CheckCircle } from 'lucide-react';
-import StandardPageLayout from '@/components/Layout/StandardPageLayout';
+import PageLayout from '@/components/Layout/PageLayout';
 import { usePageTitle } from '@/components/Layout/PageTitleContext';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
@@ -99,8 +99,9 @@ const AuditLogs = () => {
   }
 
   return (
-    <StandardPageLayout
-      className="w-full px-4 py-6 md:px-6 lg:px-8"
+    <PageLayout
+      width="wide"
+      spacing="normal"
       header={
         <div className="flex items-center justify-end">
           {canReview && (
@@ -110,7 +111,6 @@ const AuditLogs = () => {
           )}
         </div>
       }
-      contentClassName="space-y-6"
     >
       {/* Stats */}
       <AuditLogStats />
@@ -244,7 +244,7 @@ const AuditLogs = () => {
           )}
         </CardContent>
       </Card>
-    </StandardPageLayout>
+    </PageLayout>
   );
 };
 

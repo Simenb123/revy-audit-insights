@@ -29,6 +29,7 @@ import { useAvailableVersions } from '@/hooks/useAvailableVersions';
 import { useGeneralLedgerCount } from '@/hooks/useGeneralLedgerCount';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import PageLayout from '@/components/Layout/PageLayout';
 
 const TransactionAnalysis = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -54,7 +55,7 @@ const TransactionAnalysis = () => {
 
   if (!clientId) {
     return (
-      <div className="container mx-auto p-6">
+      <PageLayout width="wide" spacing="normal">
         <div className="text-center">
           <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Ingen klient valgt</h2>
@@ -62,7 +63,7 @@ const TransactionAnalysis = () => {
             Velg en klient for å starte transaksjonsanalyse.
           </p>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -149,7 +150,7 @@ const TransactionAnalysis = () => {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <PageLayout width="wide" spacing="normal">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -315,7 +316,7 @@ const TransactionAnalysis = () => {
           </TabsContent>
         ))}
       </Tabs>
-    </div>
+    </PageLayout>
   );
 };
 
