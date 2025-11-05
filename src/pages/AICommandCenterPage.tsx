@@ -22,6 +22,7 @@ import {
 import AICommandCenter from '@/components/AIOrchestration/AICommandCenter';
 import { PerformanceMonitor } from '@/components/AIOrchestration/PerformanceMonitor';
 import { Client } from '@/types/revio';
+import PageLayout from '@/components/Layout/PageLayout';
 
 const AICommandCenterPage: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -76,7 +77,7 @@ const AICommandCenterPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <PageLayout width="full" spacing="normal">
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -282,7 +283,7 @@ const AICommandCenterPage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

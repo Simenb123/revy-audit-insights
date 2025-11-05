@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AICharacterSimulator from '@/components/Training/AICharacterSimulator'
 import { useTrainingProgress, useUserBadges } from '@/hooks/useTraining'
-import StandardPageLayout from '@/components/Layout/StandardPageLayout'
+import PageLayout from '@/components/Layout/PageLayout'
 import { usePageTitle } from '@/components/Layout/PageTitleContext'
 
 const Academy = () => {
@@ -95,8 +95,9 @@ const Academy = () => {
   }
 
   return (
-    <StandardPageLayout
-      contentClassName="space-y-6"
+    <PageLayout 
+      width="wide" 
+      spacing="normal"
       header={
         <div className="flex justify-end gap-2">
           <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2">
@@ -434,11 +435,11 @@ const Academy = () => {
                 </div>
                 <Button variant="outline" className="w-full mt-4">Se alle opptak</Button>
               </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </StandardPageLayout>
+          </Card>
+        </div>
+      </TabsContent>
+    </Tabs>
+    </PageLayout>
   )
 }
 

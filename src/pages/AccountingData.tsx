@@ -74,8 +74,8 @@ const AccountingData = () => {
       <div className="flex flex-col h-full">
         {/* Navigation handled by layout */}
         
-        <div className="flex-1 overflow-auto">
-          <div className="space-y-6 p-6">
+        <div className="flex-1 overflow-auto px-[var(--content-padding)]">
+          <div className="space-y-[var(--content-gap)]">
             <RegnskapsDataManager 
               clientId={client.id}
               clientName={client.name}

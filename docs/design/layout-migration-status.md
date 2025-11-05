@@ -5,21 +5,28 @@ Oversikt over layout-standardisering av alle sider i Revio.
 ## 📊 Status
 
 **Total:** ~80 sider  
-**Migrert:** 6 sider (høyprioriterte)  
-**Status:** ⏳ Pågående
+**Migrert:** 11 sider (6 batch 0 + 5 batch 1)  
+**Status:** ⏳ Pågående - Batch 1 fullført
 
 ---
 
-## ✅ Migrerte sider (Fase 2 & 3 - Ferdig)
+## ✅ Migrerte sider (Fase 2, 3 & Batch 1 - Ferdig)
 
 | Side | Før | Etter | Layout-komponent | Status |
 |------|-----|-------|------------------|--------|
+| **Batch 0 - Initial migration** |
 | `ClientsOverview.tsx` | `space-y-[var(--content-gap)] w-full` | `<PageLayout width="full" spacing="normal">` | PageLayout | ✅ Migrert |
 | `UserAdmin.tsx` | `space-y-6 p-6` | `<PageLayout width="wide" spacing="normal">` | PageLayout | ✅ Migrert |
 | `Training.tsx` | `h-full overflow-auto` + `p-4` | `<ResponsiveLayout maxWidth="full">` | ResponsiveLayout | ✅ Migrert |
 | `Reports.tsx` | `p-4 md:p-6` | `<ResponsiveLayout maxWidth="full">` | ResponsiveLayout | ✅ Migrert |
 | `Superadmin.tsx` | `container mx-auto p-4` | `<PageLayout width="wide" spacing="normal">` | PageLayout | ✅ Migrert |
 | `AllocationImport.tsx` | `container mx-auto p-4` | `<PageLayout width="medium" spacing="normal">` | PageLayout | ✅ Migrert |
+| **Batch 1 - AI & Accounting** |
+| `AICommandCenterPage.tsx` | `space-y-6` | `<PageLayout width="full" spacing="normal">` | PageLayout | ✅ Migrert |
+| `AIWelcomePage.tsx` | `space-y-8` | `<PageLayout width="full" spacing="normal">` | PageLayout | ✅ Migrert |
+| `Academy.tsx` | `StandardPageLayout` | `<PageLayout width="wide" spacing="normal">` | PageLayout | ✅ Migrert |
+| `AccountingAnalysis.tsx` | `p-4 md:p-6` | `<ResponsiveLayout maxWidth="full">` | ResponsiveLayout | ✅ Migrert |
+| `AccountingData.tsx` | `p-6` nested | CSS-variabler: `px-[var(--content-padding)]` | StickyClientLayout | ✅ Migrert |
 
 ---
 
@@ -33,29 +40,29 @@ Oversikt over layout-standardisering av alle sider i Revio.
 
 ---
 
-## 🔴 Høy prioritet (Ofte brukte sider - 15 sider)
+## 🔴 Høy prioritet (Ofte brukte sider - 9 sider gjenværende)
 
 Disse sidene brukes ofte og bør migreres først:
 
-| Side | Nåværende layout | Anbefalt løsning | Estimat |
-|------|------------------|------------------|---------|
-| `AICommandCenterPage.tsx` | `space-y-6` | `<PageLayout width="full" spacing="normal">` | 5 min |
-| `AIWelcomePage.tsx` | `space-y-8` | `<PageLayout width="wide" spacing="relaxed">` | 5 min |
-| `Academy.tsx` | `space-y-6` + nested | `<PageLayout width="wide" spacing="normal">` | 8 min |
-| `AccountingAnalysis.tsx` | `p-4 md:p-6` | `<ResponsiveLayout maxWidth="full">` | 3 min |
-| `AuditLogs.tsx` | `space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `AccountingData.tsx` | `p-6` + nested | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `AnalysisPage.tsx` | `p-6` + nested | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `BookkeepingReports.tsx` | `container mx-auto py-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `AssetManagement.tsx` | `container mx-auto py-6` | `<PageLayout width="wide" spacing="normal">` | 4 min |
-| `BudgetManagement.tsx` | `container mx-auto py-6` | `<PageLayout width="wide" spacing="normal">` | 4 min |
-| `ClientDocuments.tsx` | `container mx-auto p-6` | `<PageLayout width="wide" spacing="normal">` | 4 min |
-| `InvestmentPortfolios.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `TransactionAnalysis.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `Revisorskolen.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
-| `ShareholderRegister.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min |
+| Side | Nåværende layout | Anbefalt løsning | Estimat | Status |
+|------|------------------|------------------|---------|--------|
+| ~~`AICommandCenterPage.tsx`~~ | ~~`space-y-6`~~ | ~~`<PageLayout width="full">`~~ | ~~5 min~~ | ✅ Batch 1 |
+| ~~`AIWelcomePage.tsx`~~ | ~~`space-y-8`~~ | ~~`<PageLayout width="wide">`~~ | ~~5 min~~ | ✅ Batch 1 |
+| ~~`Academy.tsx`~~ | ~~`space-y-6`~~ | ~~`<PageLayout width="wide">`~~ | ~~8 min~~ | ✅ Batch 1 |
+| ~~`AccountingAnalysis.tsx`~~ | ~~`p-4 md:p-6`~~ | ~~`<ResponsiveLayout maxWidth="full">`~~ | ~~3 min~~ | ✅ Batch 1 |
+| ~~`AccountingData.tsx`~~ | ~~`p-6`~~ | ~~CSS-variabler~~ | ~~5 min~~ | ✅ Batch 1 |
+| ~~`AnalysisPage.tsx`~~ | ~~`p-6`~~ | ~~`<StickyClientLayout>`~~ | ~~0 min~~ | ✅ OK |
+| `AuditLogs.tsx` | `space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
+| `BookkeepingReports.tsx` | `container mx-auto py-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
+| `AssetManagement.tsx` | `container mx-auto py-6` | `<PageLayout width="wide" spacing="normal">` | 4 min | ⏳ Batch 2 |
+| `BudgetManagement.tsx` | `container mx-auto py-6` | `<PageLayout width="wide" spacing="normal">` | 4 min | ⏳ Batch 2 |
+| `ClientDocuments.tsx` | `container mx-auto p-6` | `<PageLayout width="wide" spacing="normal">` | 4 min | ⏳ Batch 2 |
+| `InvestmentPortfolios.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
+| `TransactionAnalysis.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
+| `Revisorskolen.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
+| `ShareholderRegister.tsx` | `container mx-auto p-6 space-y-6` | `<PageLayout width="wide" spacing="normal">` | 5 min | ⏳ Batch 2 |
 
-**Subtotal:** ~73 minutter (~1.2 timer)
+**Subtotal gjenværende:** ~42 minutter (~0.7 timer)
 
 ---
 
@@ -112,25 +119,25 @@ Disse sidene bruker allerede layout-komponenter korrekt:
 
 ## 📊 Oppsummering
 
-| Prioritet | Antall sider | Estimert tid |
-|-----------|--------------|--------------|
-| 🔴 Høy | 15 | ~73 min |
-| 🟡 Medium | 12 | ~45 min |
-| 🟢 Lav | 8 | ~21 min |
-| **Total** | **35 sider** | **~139 min (~2.3 timer)** |
+| Prioritet | Antall sider | Migrert | Gjenværende | Estimert tid gjenværende |
+|-----------|--------------|---------|-------------|--------------------------|
+| 🔴 Høy | 15 | 6 | 9 | ~42 min |
+| 🟡 Medium | 12 | 0 | 12 | ~45 min |
+| 🟢 Lav | 8 | 0 | 8 | ~21 min |
+| **Total** | **35 sider** | **6** | **29** | **~108 min (~1.8 timer)** |
 
 ---
 
 ## 🎯 Anbefalte neste steg
 
-**Batch 1 (Høy prioritet - dag 1):**
-1. AI-sider: `AICommandCenterPage.tsx`, `AIWelcomePage.tsx`, `Academy.tsx` (~18 min)
-2. Regnskap-sider: `AccountingAnalysis.tsx`, `AccountingData.tsx`, `AnalysisPage.tsx` (~13 min)
-3. Rapporter: `BookkeepingReports.tsx`, `AuditLogs.tsx` (~10 min)
+**✅ Batch 1 (Høy prioritet) - FULLFØRT:**
+1. ✅ AI-sider: `AICommandCenterPage.tsx`, `AIWelcomePage.tsx`, `Academy.tsx` (~18 min)
+2. ✅ Regnskap-sider: `AccountingAnalysis.tsx`, `AccountingData.tsx` (~13 min)
 
-**Batch 2 (Høy prioritet - dag 2):**
-4. Management-sider: `AssetManagement.tsx`, `BudgetManagement.tsx`, `InvestmentPortfolios.tsx` (~14 min)
-5. Dokumenter: `ClientDocuments.tsx`, `TransactionAnalysis.tsx` (~9 min)
+**⏳ Batch 2 (Høy prioritet - dag 2):**
+3. Management-sider: `AssetManagement.tsx`, `BudgetManagement.tsx`, `InvestmentPortfolios.tsx` (~13 min)
+4. Rapporter: `BookkeepingReports.tsx`, `AuditLogs.tsx` (~10 min)
+5. Dokumenter & Transaksjoner: `ClientDocuments.tsx`, `TransactionAnalysis.tsx` (~9 min)
 6. Trening: `Revisorskolen.tsx`, `ShareholderRegister.tsx` (~10 min)
 
 **Batch 3 (Medium prioritet - dag 3):**
@@ -192,5 +199,5 @@ grep -r "space-y-[0-9]" src/pages/
 ---
 
 **Sist oppdatert:** 2025-01-10  
-**Status:** Fase 2 & 3 fullført (6 høyprioriterte sider)  
-**Neste:** Fase 4 - Identifisere og migrere resterende sider
+**Status:** Batch 1 fullført (11 sider totalt migrert: 6 + 5)  
+**Neste:** Batch 2 - Høyprioriterte sider (9 gjenværende)

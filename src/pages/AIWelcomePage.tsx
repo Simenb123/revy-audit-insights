@@ -18,6 +18,7 @@ import {
   Award
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PageLayout from '@/components/Layout/PageLayout';
 
 const AIWelcomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ const AIWelcomePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <PageLayout width="full" spacing="normal">
       {/* Hero Section */}
       <div className="text-center space-y-6 py-12">
         <div className="flex items-center justify-center mb-6">
@@ -266,7 +267,7 @@ const AIWelcomePage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 };
 
