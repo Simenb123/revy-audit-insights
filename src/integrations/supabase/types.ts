@@ -8158,7 +8158,7 @@ export type Database = {
           is_primary_source: boolean | null
           issuing_authority: string | null
           publication_date: string | null
-          search_vector: unknown | null
+          search_vector: unknown
           source_url: string | null
           summary: string | null
           title: string
@@ -8177,7 +8177,7 @@ export type Database = {
           is_primary_source?: boolean | null
           issuing_authority?: string | null
           publication_date?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           source_url?: string | null
           summary?: string | null
           title: string
@@ -8196,7 +8196,7 @@ export type Database = {
           is_primary_source?: boolean | null
           issuing_authority?: string | null
           publication_date?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           source_url?: string | null
           summary?: string | null
           title?: string
@@ -8227,7 +8227,7 @@ export type Database = {
           provision_id: string | null
           provision_number: string
           provision_type: string
-          search_vector: unknown | null
+          search_vector: unknown
           sort_order: number | null
           title: string
           updated_at: string
@@ -8248,7 +8248,7 @@ export type Database = {
           provision_id?: string | null
           provision_number: string
           provision_type: string
-          search_vector?: unknown | null
+          search_vector?: unknown
           sort_order?: number | null
           title: string
           updated_at?: string
@@ -8269,7 +8269,7 @@ export type Database = {
           provision_id?: string | null
           provision_number?: string
           provision_type?: string
-          search_vector?: unknown | null
+          search_vector?: unknown
           sort_order?: number | null
           title?: string
           updated_at?: string
@@ -9991,7 +9991,7 @@ export type Database = {
           action_type: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           user_id: string | null
         }
@@ -9999,7 +9999,7 @@ export type Database = {
           action_type: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_id?: string | null
         }
@@ -10007,7 +10007,7 @@ export type Database = {
           action_type?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_id?: string | null
         }
@@ -11250,7 +11250,7 @@ export type Database = {
           description: string
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           severity: string
           user_agent: string | null
@@ -11261,7 +11261,7 @@ export type Database = {
           description: string
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           severity?: string
           user_agent?: string | null
@@ -11272,7 +11272,7 @@ export type Database = {
           description?: string
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           severity?: string
           user_agent?: string | null
@@ -13509,18 +13509,9 @@ export type Database = {
         Args: { p_firm_name?: string; p_org_number: string }
         Returns: string
       }
-      cleanup_expired_ai_analysis_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_expired_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_expired_financial_reports: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_expired_ai_analysis_cache: { Args: never; Returns: number }
+      cleanup_expired_cache: { Args: never; Returns: number }
+      cleanup_expired_financial_reports: { Args: never; Returns: number }
       clear_shareholders_staging: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -13579,18 +13570,12 @@ export type Database = {
           voucher_number: string
         }[]
       }
-      fix_norwegian_encoding_safe: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      fix_norwegian_encoding_safe: { Args: never; Returns: Json }
       generate_balance_sheet: {
         Args: { p_as_of_date: string; p_client_id: string }
         Returns: Json
       }
-      generate_certificate_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_certificate_number: { Args: never; Returns: string }
       generate_client_financial_report: {
         Args: {
           p_client_id: string
@@ -13613,10 +13598,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_asset_summary: {
-        Args: { p_client_id: string }
-        Returns: Json
-      }
+      get_asset_summary: { Args: { p_client_id: string }; Returns: Json }
       get_basic_transaction_info: {
         Args: { p_client_id: string; p_version_id: string }
         Returns: Json
@@ -13646,7 +13628,7 @@ export type Database = {
         Returns: string
       }
       get_pending_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -13666,7 +13648,7 @@ export type Database = {
         }[]
       }
       get_prioritized_import_jobs: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bucket: string
           created_at: string
@@ -13681,18 +13663,9 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_reports_summary: {
-        Args: { p_client_id: string }
-        Returns: Json
-      }
-      get_user_department: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
-      get_user_firm: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
+      get_reports_summary: { Args: { p_client_id: string }; Returns: Json }
+      get_user_department: { Args: { user_uuid: string }; Returns: string }
+      get_user_firm: { Args: { user_uuid: string }; Returns: string }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
@@ -13709,26 +13682,6 @@ export type Database = {
           team_id: string
         }[]
       }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
       increment_cache_hit: {
         Args: { hash_to_update: string }
         Returns: undefined
@@ -13737,10 +13690,7 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: undefined
       }
-      is_super_admin: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
+      is_super_admin: { Args: { user_uuid: string }; Returns: boolean }
       log_security_event: {
         Args: {
           p_description?: string
@@ -13818,7 +13768,7 @@ export type Database = {
         Returns: Json
       }
       process_existing_completed_documents: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           document_id: string
           error_message: string
@@ -13826,19 +13776,19 @@ export type Database = {
           triggered: boolean
         }[]
       }
-      process_shareholders_batch: {
-        Args:
-          | { p_job_id: number; p_limit: number }
-          | {
+      process_shareholders_batch:
+        | { Args: { p_job_id: number; p_limit: number }; Returns: Json }
+        | {
+            Args: {
               p_job_id: number
               p_limit?: number
               p_offset?: number
               p_user_id: string
             }
-        Returns: Json
-      }
+            Returns: Json
+          }
       queue_articles_for_embedding: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           content: string
           id: string
@@ -13849,10 +13799,7 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: Json
       }
-      refresh_postgrest_schema: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      refresh_postgrest_schema: { Args: never; Returns: undefined }
       reject_firm_access_request: {
         Args: { p_request_id: string }
         Returns: boolean
@@ -13874,22 +13821,9 @@ export type Database = {
         Args: { p_new_role: string; p_user_id: string }
         Returns: boolean
       }
-      set_active_version: {
-        Args: { p_version_id: string }
-        Returns: undefined
-      }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      set_active_version: { Args: { p_version_id: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       sync_budget_actuals: {
         Args: { p_budget_id: string; p_month: number; p_year: number }
         Returns: number
@@ -13914,10 +13848,7 @@ export type Database = {
         Args: { p_orgnr?: string; p_user_id?: string; p_year: number }
         Returns: undefined
       }
-      user_owns_client: {
-        Args: { client_uuid: string }
-        Returns: boolean
-      }
+      user_owns_client: { Args: { client_uuid: string }; Returns: boolean }
     }
     Enums: {
       access_request_status: "pending" | "approved" | "rejected" | "cancelled"
