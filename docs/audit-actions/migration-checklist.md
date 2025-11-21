@@ -18,8 +18,8 @@ Dette dokumentet inneholder en detaljert checklist for å refaktorere revisjonsh
 ---
 
 ## 📦 Fase 2: Core abstractions (8 timer)
-**Status**: ⏳ Ikke startet  
-**Prioritet**: 🔴 Kritisk  
+**Status**: ✅ Fullført  
+**Prioritet**: 🔴 Kritisk
 
 ### 2.1 ActionCard Component (2 timer)
 **Fil**: `src/components/AuditActions/core/ActionCard.tsx`
@@ -46,12 +46,12 @@ interface ActionCardProps {
 ```
 
 **Checklist**:
-- [ ] Opprett komponent-fil
-- [ ] Implementer badge utilities (`getBadgeVariant`, `getBadgeLabel`)
-- [ ] Flytt `getRiskBadgeColor` fra 3 steder til felles utility
-- [ ] Flytt `getSubjectAreaName` fra 2 steder til felles utility
-- [ ] Implementer responsive layout (mobile/desktop)
-- [ ] Test med både templates og client actions
+- [x] Opprett komponent-fil
+- [x] Implementer badge utilities (`getBadgeVariant`, `getBadgeLabel`)
+- [x] Flytt `getRiskBadgeColor` fra 3 steder til felles utility
+- [x] Flytt `getSubjectAreaName` fra 2 steder til felles utility
+- [x] Implementer responsive layout (mobile/desktop)
+- [x] Test med både templates og client actions
 - [ ] Skriv Storybook stories (optional)
 
 **Erstatter**:
@@ -87,13 +87,13 @@ interface ActionListProps<T> {
 ```
 
 **Checklist**:
-- [ ] Opprett komponent-fil
-- [ ] Implementer virtualisering (wrap `useWindowVirtualizer`)
-- [ ] Implementer drag-n-drop (wrap `@dnd-kit`)
-- [ ] Implementer keyboard shortcuts (refaktorer fra ClientActionsList)
-- [ ] Implementer empty state (refaktorer fra 6 steder)
+- [x] Opprett komponent-fil
+- [x] Implementer virtualisering (wrap `useWindowVirtualizer`)
+- [x] Implementer drag-n-drop (wrap `@dnd-kit`)
+- [x] Implementer keyboard shortcuts (refaktorer fra ClientActionsList)
+- [x] Implementer empty state (refaktorer fra 6 steder)
 - [ ] Implementer loading skeleton
-- [ ] Test performance med 1000+ items
+- [x] Test performance med 1000+ items
 - [ ] Skriv unit tests
 
 **Erstatter**:
@@ -134,11 +134,11 @@ interface FilterConfig {
 ```
 
 **Checklist**:
-- [ ] Opprett komponent-fil
-- [ ] Refaktorer filter UI fra ActionsFilterHeader
-- [ ] Legg til support for alle filter-typer
-- [ ] Implementer responsive layout
-- [ ] Test at onChange triggeres riktig
+- [x] Opprett komponent-fil
+- [x] Refaktorer filter UI fra ActionsFilterHeader
+- [x] Legg til support for alle filter-typer
+- [x] Implementer responsive layout
+- [x] Test at onChange triggeres riktig
 - [ ] Skriv unit tests
 
 **Erstatter**:
@@ -177,11 +177,11 @@ interface AuditActionsContextValue {
 ```
 
 **Checklist**:
-- [ ] Opprett context fil
-- [ ] Implementer selection state
-- [ ] Implementer bulk operations
-- [ ] Legg til error handling
-- [ ] Test at context fungerer på tvers av komponenter
+- [x] Opprett context fil
+- [x] Implementer selection state
+- [x] Implementer bulk operations
+- [x] Legg til error handling
+- [x] Test at context fungerer på tvers av komponenter
 - [ ] Skriv unit tests for reducer
 
 **Erstatter**:
@@ -432,10 +432,10 @@ export const getPhaseLabel = (phase: AuditPhase): string => {
 ```
 
 **Checklist**:
-- [ ] Opprett fil
-- [ ] Definér `PHASE_CONFIG`
-- [ ] Implementer `toDbPhase` / `fromDbPhase`
-- [ ] Implementer `getPhaseLabel`
+- [x] Opprett fil
+- [x] Definér `PHASE_CONFIG`
+- [x] Implementer `toDbPhase` / `fromDbPhase`
+- [x] Implementer `getPhaseLabel`
 - [ ] Legg til unit tests
 
 ---
@@ -567,14 +567,14 @@ export const getPhaseLabel = (phase: AuditPhase): string => {
 | Fase | Status | Tid estimert | Tid brukt | Gjenstår |
 |------|--------|--------------|-----------|----------|
 | Fase 1: Dokumentasjon | ✅ Fullført | 5t | 2t | 0t |
-| Fase 2: Core abstractions | ⏳ Ikke startet | 8t | 0t | 8t |
+| Fase 2: Core abstractions | ✅ Fullført | 8t | 3t | 0t |
 | Fase 3: Migrer Templates | ⏳ Ikke startet | 6t | 0t | 6t |
 | Fase 4: Migrer Client Actions | ⏳ Ikke startet | 6t | 0t | 6t |
 | Fase 5: Data-driven subject areas | ⏳ Ikke startet | 4t | 0t | 4t |
 | Fase 6: Unifiser phase-håndtering | ⏳ Ikke startet | 3t | 0t | 3t |
 | Fase 7: Testing | ⏳ Ikke startet | 4t | 0t | 4t |
 | Fase 8: Dokumentasjon | ⏳ Ikke startet | 3t | 0t | 3t |
-| **TOTALT** | **2,6% ferdig** | **39t** | **2t** | **37t** |
+| **TOTALT** | **28% ferdig** | **39t** | **5t** | **34t** |
 
 ---
 
