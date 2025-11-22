@@ -161,7 +161,7 @@ const UnifiedAnalysisPage = React.memo(() => {
 
             <AnalysisProvider clientId={client.id}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
                   Oversikt
@@ -173,6 +173,10 @@ const UnifiedAnalysisPage = React.memo(() => {
                 <TabsTrigger value="ai-insights" className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
                   AI Innsikter
+                </TabsTrigger>
+                <TabsTrigger value="comparison" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Versjonssammenligning
                 </TabsTrigger>
                 <TabsTrigger value="sampling" className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
@@ -397,11 +401,13 @@ const UnifiedAnalysisPage = React.memo(() => {
               </TabsContent>
               
               {/* Audit Sampling Tab */}
+              <TabsContent value="comparison" className="mt-6">
+                <GeneralLedgerComparison clientId={client.id} />
+              </TabsContent>
+
+              {/* Audit Sampling Tab */}
               <TabsContent value="sampling" className="mt-6">
-                <div className="space-y-6">
-                  <GeneralLedgerComparison clientId={client.id} />
-                  <AuditSampling clientId={client.id} />
-                </div>
+                <AuditSampling clientId={client.id} />
               </TabsContent>
               
               {/* Reports Tab */}

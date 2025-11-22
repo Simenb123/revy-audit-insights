@@ -70,7 +70,7 @@ const AnalysisPage = React.memo(() => {
           <div className="space-y-6 p-6">
             <AnalysisProvider clientId={client.id}>
               <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="data" className="flex items-center gap-2">
                   <Database className="h-4 w-4" />
                   Dataanalyse
@@ -78,6 +78,10 @@ const AnalysisPage = React.memo(() => {
                 <TabsTrigger value="analysis" className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
                   Avansert analyse
+                </TabsTrigger>
+                <TabsTrigger value="comparison" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Versjonssammenligning
                 </TabsTrigger>
                 <TabsTrigger value="sampling" className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
@@ -93,26 +97,27 @@ const AnalysisPage = React.memo(() => {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="data" className="mt-6" forceMount>
+              <TabsContent value="data" className="mt-6">
                 <AccountingExplorer clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="analysis" className="mt-6" forceMount>
+              <TabsContent value="analysis" className="mt-6">
                 <RegnskapsDashboard clientId={client.id} />
               </TabsContent>
-              
-              <TabsContent value="sampling" className="mt-6" forceMount>
-                <div className="space-y-6">
-                  <GeneralLedgerComparison clientId={client.id} />
-                  <AuditSampling clientId={client.id} />
-                </div>
+
+              <TabsContent value="comparison" className="mt-6">
+                <GeneralLedgerComparison clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="reports" className="mt-6" forceMount>
+              <TabsContent value="sampling" className="mt-6">
+                <AuditSampling clientId={client.id} />
+              </TabsContent>
+              
+              <TabsContent value="reports" className="mt-6">
                 <ReportBuilder clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="utils" className="mt-6" forceMount>
+              <TabsContent value="utils" className="mt-6">
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <NorwegianCharFixer />
                 </div>

@@ -1,8 +1,8 @@
 import React from 'react';
-import ConsolidatedAuditSampling from './ConsolidatedAuditSampling';
 import AuditSampleManager from './AuditSampleManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, FileCheck } from 'lucide-react';
+import { SamplingWizard } from './Sampling/SamplingWizard';
 
 interface AuditSamplingProps {
   clientId: string;
@@ -23,11 +23,11 @@ const AuditSampling: React.FC<AuditSamplingProps> = ({ clientId }) => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="generate" className="mt-6" forceMount>
-          <ConsolidatedAuditSampling clientId={clientId} />
+        <TabsContent value="generate" className="mt-6">
+          <SamplingWizard clientId={clientId} />
         </TabsContent>
         
-        <TabsContent value="review" className="mt-6" forceMount>
+        <TabsContent value="review" className="mt-6">
           <AuditSampleManager clientId={clientId} />
         </TabsContent>
       </Tabs>
