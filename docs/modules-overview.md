@@ -37,6 +37,16 @@ Database changes live in `supabase/migrations` as SQL scripts.
 - For a list of the audit phases and how templates use them see [audit-phases.md](audit-phases.md).
 - For how to manage audit actions see [manage-audit-actions.md](manage-audit-actions.md).
 - For guidelines on the form layout see [audit-action-editor-ui.md](audit-action-editor-ui.md).
+- For cleanup and refactoring documentation see [cleanup/README.md](cleanup/README.md).
+
+## Test Pages (Isolated Development)
+
+The following pages are test/sandbox environments and should remain isolated:
+- **Academy** (`/academy`) – Training materials testing
+- **Training** (`/training`) – Training features testing  
+- **Revisorskolen** (`/revisorskolen`) – Auditor school testing
+
+These pages are not part of the production workflow and should not be refactored or integrated with other modules.
 
 ## Cross-filtering in widgets
 
