@@ -28,7 +28,6 @@ import OrganizationOverview from "./pages/OrganizationOverview";
 import TeamManagement from "./pages/TeamManagement";
 import DepartmentView from "./pages/DepartmentView";
 import Communication from "./pages/Communication";
-import Collaboration from "./pages/Collaboration";
 import Training from "./pages/Training";
 import NavigationDashboard from "./pages/NavigationDashboard";
 
@@ -42,7 +41,6 @@ import AIRevyAdmin from "./pages/AIRevyAdmin";
 import StandardAccountsAdmin from "./pages/StandardAccountsAdmin";
 import RoleAccessAdmin from "./pages/RoleAccessAdmin";
 import PerformanceMonitoring from "./pages/PerformanceMonitoring";
-import Academy from "./pages/Academy";
 import AccountRelationshipsPage from "./pages/Admin/AccountRelationships";
 import AuditActionLibrary from "./pages/Admin/AuditActionLibrary";
 import GeneralLedgerUpload from "./pages/GeneralLedgerUpload";
@@ -192,7 +190,6 @@ function App() {
                   <Route path="teams" element={<TeamManagement />} />
                   <Route path="departments/:id" element={<DepartmentView />} />
                   <Route path="communication" element={<Communication />} />
-                  <Route path="collaboration" element={<Collaboration />} />
                   <Route path="training" element={<Training />} />
                   <Route path="revisorskolen" element={<ProtectedRoute><Revisorskolen /></ProtectedRoute>} />
                   
@@ -206,7 +203,6 @@ function App() {
                   <Route path="fag/*" element={<KnowledgeBase />} />
                    <Route path="admin/rag/juridisk" element={<ProtectedRoute><LegalRelationsAdmin /></ProtectedRoute>} />
                    <Route path="admin/embeddings" element={<ProtectedRoute><AdminEmbeddingsManager /></ProtectedRoute>} />
-                   <Route path="academy" element={<Academy />} />
                     <Route path="ai-revy-admin" element={isAdvancedAIEnabled() ? <AIRevyAdmin /> : <Navigate to="/clients" replace />} />
                     <Route path="ai/multi-agent-studio" element={isAdvancedAIEnabled() ? <ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute> : <Navigate to="/clients" replace />} />
                     <Route path="clients/:clientId/ai/multi-agent-studio" element={isAdvancedAIEnabled() ? <ProtectedRoute><AIMultiAgentStudio /></ProtectedRoute> : <Navigate to="/clients" replace />} />
