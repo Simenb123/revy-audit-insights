@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useSearchParams } from 'react-router-dom';
 import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X, ExternalLink } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
-import OptimizedAnalysisSummary from './OptimizedAnalysisSummary';
 
 import GLVersionSelector from './GLVersionSelector';
 import TBVersionSelector from './TBVersionSelector';
@@ -153,23 +152,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
         <div className="w-full">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {hasGLData && activeGLVersion && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <LineChart className="h-5 w-5" />
-                      Hovedbok oversikt
-                    </CardTitle>
-                    <CardDescription>
-                      Versjon {activeGLVersion.version_number} • {activeGLVersion.total_transactions} transaksjoner
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <OptimizedAnalysisSummary clientId={clientId} versionId={activeGLVersion.id} />
-                  </CardContent>
-                </Card>
-              )}
-              
               {hasTBData && selectedTBVersion && (
                 <Card>
                   <CardHeader>

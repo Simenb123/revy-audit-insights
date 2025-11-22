@@ -26,10 +26,9 @@ import {
 } from 'lucide-react';
 
 // Import existing components
-import AccountingExplorer from '@/components/DataAnalysis/AccountingExplorer';
 import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
-import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
+import { UnifiedAnalysisSummary } from '@/components/DataAnalysis/UnifiedAnalysisSummary';
 import { AnalysisProvider } from '@/components/DataAnalysis/AnalysisProvider';
 import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
@@ -188,12 +187,9 @@ const UnifiedAnalysisPage = React.memo(() => {
                 </TabsTrigger>
               </TabsList>
               
-              {/* Overview Tab - Data Analysis */}
+              {/* Overview Tab - Unified Analysis */}
               <TabsContent value="overview" className="mt-6">
-                <div className="space-y-6">
-                  <AccountingExplorer clientId={client.id} />
-                  <RegnskapsDashboard clientId={client.id} />
-                </div>
+                <UnifiedAnalysisSummary clientId={client.id} />
               </TabsContent>
               
               {/* Transaction Analysis Tab */}
