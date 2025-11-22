@@ -118,7 +118,7 @@ const AIWelcomePage: React.FC = () => {
           <Button 
             size="lg" 
             variant="outline"
-            onClick={() => navigate('/system/performance')}
+            onClick={() => navigate('/performance')}
             className="gap-2"
           >
             <Activity className="h-4 w-4" />

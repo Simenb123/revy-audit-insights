@@ -96,6 +96,7 @@ import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import ArBalances from "./pages/ArBalances";
 import ApBalances from "./pages/ApBalances";
+import AICommandCenterPage from "./pages/AICommandCenterPage";
 const queryClient = new QueryClient();
 
 function App() {
@@ -202,6 +203,7 @@ function App() {
                    <Route path="admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                    <Route path="superadmin" element={<ProtectedRoute><Superadmin /></ProtectedRoute>} />
                    <Route path="performance" element={<PerformanceMonitoring />} />
+                   <Route path="ai-command" element={<ProtectedRoute><AICommandCenterPage /></ProtectedRoute>} />
                    <Route path="resource-planner" element={<ProtectedRoute><ResourcePlanner /></ProtectedRoute>} />
                    <Route path="allocation-import" element={<ProtectedRoute><AllocationImport /></ProtectedRoute>} />
                     <Route path="sandbox" element={<ProtectedRoute><Sandbox /></ProtectedRoute>} />
