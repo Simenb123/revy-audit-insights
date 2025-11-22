@@ -37,6 +37,16 @@ Velkommen til Revio-dokumentasjonen! Her finner du alt du trenger for å komme i
 
 ---
 
+## 🔧 Cleanup og Refaktorering
+
+- **[Cleanup Prosess](./cleanup/README.md)** - Systematisk cleanup av kodebasen
+- **[Terminologi Guide](./terminology.md)** - Norsk/engelsk mapping og språkstandarder
+- **[UI Språk-audit](./cleanup/ui-language-audit.md)** - Identifiserte oversettelser
+- **[Route Standardisering](./cleanup/route-standardization.md)** - URL-struktur og redirects
+- **[Dead Code Audit](./cleanup/dead-code-audit.md)** - Identifisert død kode og overlapp
+
+---
+
 ## 🚀 Quick Links
 
 **Ny utvikler?** → [Getting Started Guide](./GETTING_STARTED.md)  
