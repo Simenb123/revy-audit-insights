@@ -10,10 +10,10 @@ import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import { AnalysisProvider } from '@/components/DataAnalysis/AnalysisProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database, Download, Brain, Target, Settings } from 'lucide-react';
+import { BarChart3, Database, Download, Target, Settings, GitCompare } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
-import { RegnskapsDashboard } from '@/components/Accounting/RegnskapsDashboard';
+import { UnifiedAnalysisSummary } from '@/components/DataAnalysis/UnifiedAnalysisSummary';
 import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
 
@@ -69,40 +69,37 @@ const AnalysisPage = React.memo(() => {
         <div className="flex-1 overflow-auto">
           <div className="space-y-6 p-6">
             <AnalysisProvider clientId={client.id}>
-              <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="data" className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  Dataanalyse
-                </TabsTrigger>
+              <Tabs defaultValue="analysis" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="analysis" className="flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  Avansert analyse
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analyse</span>
+                  <span className="sm:hidden">Analyse</span>
                 </TabsTrigger>
                 <TabsTrigger value="comparison" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Versjonssammenligning
+                  <GitCompare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Versjonssammenligning</span>
+                  <span className="sm:hidden">Versjon</span>
                 </TabsTrigger>
                 <TabsTrigger value="sampling" className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  Revisjonsutvalg
+                  <span className="hidden sm:inline">Revisjonsutvalg</span>
+                  <span className="sm:hidden">Utvalg</span>
                 </TabsTrigger>
                 <TabsTrigger value="reports" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Rapportbygger
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Rapporter</span>
+                  <span className="sm:hidden">Rapporter</span>
                 </TabsTrigger>
-                <TabsTrigger value="utils" className="flex items-center gap-2">
+                <TabsTrigger value="tools" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  Verktøy
+                  <span className="hidden sm:inline">Verktøy</span>
+                  <span className="sm:hidden">Verktøy</span>
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="data" className="mt-6">
-                <AccountingExplorer clientId={client.id} />
-              </TabsContent>
-              
               <TabsContent value="analysis" className="mt-6">
-                <RegnskapsDashboard clientId={client.id} />
+                <UnifiedAnalysisSummary clientId={client.id} />
               </TabsContent>
 
               <TabsContent value="comparison" className="mt-6">
@@ -117,7 +114,7 @@ const AnalysisPage = React.memo(() => {
                 <ReportBuilder clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="utils" className="mt-6">
+              <TabsContent value="tools" className="mt-6">
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <NorwegianCharFixer />
                 </div>
