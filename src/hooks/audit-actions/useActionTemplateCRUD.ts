@@ -5,12 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-actions';
-
-// Local mapper to normalize DB phases to UI phases
-const mapPhaseFromDb = (phase: Database['public']['Enums']['audit_phase'] | string): string => {
-  if (phase === 'conclusion') return 'completion';
-  return phase as string;
-};
+import { toDbPhase, fromDbPhase } from '@/constants/auditPhases';
+import type { AuditPhase } from '@/types/revio';
 
 export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
   return useQuery({
@@ -32,7 +28,7 @@ export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
       }
       const normalized = (data || []).map((t: any) => ({
         ...t,
-        applicable_phases: (t.applicable_phases || []).map((p: any) => mapPhaseFromDb(p))
+        applicable_phases: (t.applicable_phases || []).map((p: any) => fromDbPhase(p))
       }));
       return normalized as AuditActionTemplate[];
     }
@@ -45,12 +41,9 @@ export function useCreateAuditActionTemplate() {
   return useMutation({
     mutationFn: async (templateData: Omit<AuditActionTemplate, 'id' | 'created_at' | 'updated_at'>) => {
       // Map AuditPhase values to database enum values
-      const mappedPhases = templateData.applicable_phases.map(phase => {
-        if (phase === 'completion') return 'conclusion';
-        if (phase === 'risk_assessment') return 'planning';
-        if (phase === 'overview') return 'engagement';
-        return phase;
-      });
+      const mappedPhases = templateData.applicable_phases.map(phase => 
+        toDbPhase(phase as AuditPhase)
+      );
 
       const dataToInsert = {
         ...templateData,
@@ -89,12 +82,9 @@ export function useUpdateAuditActionTemplate() {
       // Map AuditPhase values to database enum values if applicable_phases is being updated
       let mappedPhases: Database['public']['Enums']['audit_phase'][] | undefined = undefined;
       if (updates.applicable_phases) {
-        mappedPhases = updates.applicable_phases.map(phase => {
-          if (phase === 'completion') return 'conclusion';
-          if (phase === 'risk_assessment') return 'planning';
-          if (phase === 'overview') return 'engagement';
-          return phase;
-        }) as Database['public']['Enums']['audit_phase'][];
+        mappedPhases = updates.applicable_phases.map(phase => 
+          toDbPhase(phase as AuditPhase)
+        ) as Database['public']['Enums']['audit_phase'][];
       }
 
       const { data, error } = await supabase

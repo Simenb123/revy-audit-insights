@@ -25,7 +25,7 @@ import {
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import CopyFromClientDialog from '@/components/AuditActions/CopyFromClientDialog';
-
+import { getPhaseLabel } from '@/constants/auditPhases';
 import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
 import { toast } from 'sonner';
 
@@ -68,19 +68,6 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
     } catch (error) {
       logger.error('Error copying templates:', error);
     }
-  };
-
-  const getPhaseLabel = (phase: AuditPhase): string => {
-    const labels: Record<AuditPhase, string> = {
-      overview: 'Oversikt',
-      engagement: 'Oppdragsvurdering',
-      planning: 'Planlegging',
-      risk_assessment: 'Risikovurdering',
-      execution: 'Utførelse',
-      completion: 'Avslutning',
-      reporting: 'Rapportering'
-    };
-    return labels[phase] || phase;
   };
 
   if (actionsLoading || templatesLoading) {
