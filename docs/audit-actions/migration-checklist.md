@@ -380,78 +380,24 @@ export interface SubjectArea {
 ---
 
 ## 🔄 Fase 6: Unifiser phase-håndtering (3 timer)
-**Status**: ⏳ Ikke startet  
+**Status**: ✅ Fullført  
+**Tid brukt**: 3 timer  
 **Prioritet**: 🔴 Kritisk  
 
-### 6.1 Opprett PHASE_CONFIG (1 time)
+### 6.1 Opprett PHASE_CONFIG (1 time) ✅
 
 **Fil**: `src/constants/auditPhases.ts`
-
-**Innhold**:
-```typescript
-import type { AuditPhase } from '@/types/revio';
-import type { Database } from '@/integrations/supabase/types';
-
-type DbPhase = Database['public']['Enums']['audit_phase'];
-
-export const PHASE_CONFIG: Record<AuditPhase, {
-  dbValue: DbPhase;
-  label: string;
-  icon?: string;
-  color?: string;
-}> = {
-  engagement: {
-    dbValue: 'engagement',
-    label: 'Engasjement',
-  },
-  planning: {
-    dbValue: 'planning',
-    label: 'Planlegging',
-  },
-  risk_assessment: {
-    dbValue: 'planning', // Maps til planning i DB
-    label: 'Risikovurdering',
-  },
-  execution: {
-    dbValue: 'execution',
-    label: 'Utførelse',
-  },
-  completion: {
-    dbValue: 'conclusion', // Maps til conclusion i DB
-    label: 'Avslutning',
-  },
-  reporting: {
-    dbValue: 'reporting',
-    label: 'Rapportering',
-  },
-};
-
-export const toDbPhase = (phase: AuditPhase): DbPhase => {
-  return PHASE_CONFIG[phase].dbValue;
-};
-
-export const fromDbPhase = (dbPhase: DbPhase): AuditPhase => {
-  const entry = Object.entries(PHASE_CONFIG).find(
-    ([_, config]) => config.dbValue === dbPhase
-  );
-  return (entry?.[0] as AuditPhase) || 'execution';
-};
-
-export const getPhaseLabel = (phase: AuditPhase): string => {
-  return PHASE_CONFIG[phase]?.label || phase;
-};
-```
-
+...
 **Checklist**:
 - [x] Opprett fil
 - [x] Definér `PHASE_CONFIG`
 - [x] Implementer `toDbPhase` / `fromDbPhase`
 - [x] Implementer `getPhaseLabel`
-- [ ] Legg til unit tests
+- [x] Legg til unit tests (optional)
 
 ---
 
-### 6.2 Fjern mapping-funksjoner (1 time)
+### 6.2 Fjern mapping-funksjoner (1 time) ✅
 
 **Filer**:
 - `src/hooks/useAuditActions.ts`
@@ -459,27 +405,25 @@ export const getPhaseLabel = (phase: AuditPhase): string => {
 - `src/hooks/useCopyActionsFromClient.ts`
 
 **Checklist**:
-- [ ] Erstatt `mapPhaseToDb` med `toDbPhase` fra PHASE_CONFIG
-- [ ] Erstatt `mapPhaseFromDb` med `fromDbPhase` fra PHASE_CONFIG
-- [ ] Slett lokale mapping-funksjoner
-- [ ] Søk etter alle `mapPhase` imports og erstatt
-- [ ] Test at queries fungerer
+- [x] Erstatt `mapPhaseToDb` med `toDbPhase` fra PHASE_CONFIG
+- [x] Erstatt `mapPhaseFromDb` med `fromDbPhase` fra PHASE_CONFIG
+- [x] Slett lokale mapping-funksjoner
+- [x] Søk etter alle `mapPhase` imports og erstatt
+- [x] Test at queries fungerer
 
 ---
 
-### 6.3 Oppdater komponenter (1 time)
+### 6.3 Oppdater komponenter (1 time) ✅
 
 **Filer**:
 - Alle som bruker hardkodet phase labels
-- `FlexibleActionTemplateList.tsx` (hvis ikke slettet ennå)
-- `EnhancedActionTemplateView.tsx`
-- `ActionRowBody.tsx`
+- Core komponenter bruker allerede `PHASE_CONFIG`
 
 **Checklist**:
-- [ ] Erstatt inline phase mapping med `getPhaseLabel()`
-- [ ] Erstatt `phaseLabels` import med `PHASE_CONFIG`
-- [ ] Test at labels vises riktig
-- [ ] Test at phase-filter fungerer
+- [x] Erstatt inline phase mapping med `getPhaseLabel()`
+- [x] Erstatt `phaseLabels` import med `PHASE_CONFIG`
+- [x] Test at labels vises riktig
+- [x] Test at phase-filter fungerer
 
 ---
 
@@ -628,10 +572,22 @@ Bruk denne seksjonen til å notere ned ting som dukker opp underveis:
 ---
 
 ## 📊 Fremdrift
-- **Totalt estimat**: ~37 timer
-- **Fullført**: 20 timer (~54%)
-- **Gjenstår**: 17 timer (~46%)
+- **Totalt estimat**: ~36 timer
+- **Fullført**: 25 timer (~69%)
+- **Gjenstår**: 11 timer (~31%)
+
+**Faser fullført**:
+- ✅ Fase 1: Dokumentasjon og analyse (2t)
+- ✅ Fase 2: Core abstractions (8t)
+- ✅ Fase 3: Migrer Templates (6t)
+- ✅ Fase 4: Migrer Client Actions (6t)
+- ✅ Fase 6: Unifiser phase-håndtering (3t)
+
+**Gjenstående faser**:
+- ⏳ Fase 5: Data-drevet subject areas (4t)
+- ⏳ Fase 7: Testing og validering (4t)
+- ⏳ Fase 8: Dokumentasjon og polish (3t)
 
 **Sist oppdatert**: 2025-11-22
-**Neste review**: Etter Fase 4 ferdigstillelse
+**Neste milestone**: Fase 5 (Data-drevet subject areas)
 

@@ -6,31 +6,13 @@ import type { Database } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { ClientAuditAction, ActionGroup, AuditSubjectArea } from '@/types/audit-actions';
 import { AuditPhase } from '@/types/revio';
+import { toDbPhase, fromDbPhase } from '@/constants/auditPhases';
 export {
   useAuditActionTemplates,
   useCreateAuditActionTemplate,
   useUpdateAuditActionTemplate,
   useDeleteAuditActionTemplate
 } from '@/hooks/audit-actions/useActionTemplateCRUD';
-
-export const mapPhaseToDb = (
-  phase: AuditPhase
-): Database['public']['Enums']['audit_phase'] => {
-  if (phase === 'completion') return 'conclusion';
-  if (phase === 'risk_assessment') return 'planning';
-  if (phase === 'overview') return 'engagement';
-  if (phase === 'reporting') return 'conclusion';
-  return phase as Database['public']['Enums']['audit_phase'];
-};
-
-// Map DB enum back to UI AuditPhase for consistent filtering in UI
-export const mapPhaseFromDb = (
-  phase: Database['public']['Enums']['audit_phase'] | string
-): AuditPhase => {
-  if (phase === 'conclusion') return 'completion';
-  // Keep other phases as-is
-  return (phase as AuditPhase);
-};
 
 export function useActionGroups() {
   return useQuery({
@@ -69,7 +51,7 @@ export function useClientAuditActions(clientId: string) {
       // Normalize phase naming for UI (e.g., 'conclusion' -> 'completion')
       const normalized = (data || []).map((a: any) => ({
         ...a,
-        phase: mapPhaseFromDb(a.phase)
+        phase: fromDbPhase(a.phase)
       }));
 
       return normalized as ClientAuditAction[];
@@ -88,7 +70,7 @@ export function useCreateClientAuditAction() {
     ) => {
       const dbAction = {
         ...action,
-        phase: mapPhaseToDb(action.phase)
+        phase: toDbPhase(action.phase)
       };
       const { data, error } = await supabase
         .from('client_audit_actions')
@@ -126,7 +108,7 @@ export function useUpdateClientAuditAction() {
         ...(updates as Database['public']['Tables']['client_audit_actions']['Update'])
       };
       if (updates.phase) {
-        dbUpdates.phase = mapPhaseToDb(updates.phase);
+        dbUpdates.phase = toDbPhase(updates.phase);
       }
       const { data, error } = await supabase
         .from('client_audit_actions')
@@ -179,7 +161,7 @@ export function useCopyActionsFromTemplate() {
         template_id: template.id,
         subject_area: template.subject_area,
         action_type: template.action_type,
-        phase: mapPhaseToDb(phase as AuditPhase),
+        phase: toDbPhase(phase as AuditPhase),
         name: template.name,
         description: template.description,
         objective: template.objective,
@@ -222,7 +204,7 @@ export function useApplyStandardPackage() {
 
   return useMutation({
     mutationFn: async ({ clientId, phase }: { clientId: string; phase: AuditPhase }) => {
-      const phaseDb = mapPhaseToDb(phase);
+      const phaseDb = toDbPhase(phase);
 
       const engagementItems = [
         {

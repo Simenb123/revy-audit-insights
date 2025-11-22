@@ -11,6 +11,8 @@ import TestDataBadge from "./TestDataBadge";
 import { Client } from "@/types/revio";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Upload, RefreshCw, Settings, Filter } from 'lucide-react';
+import { getPhaseLabel, PHASE_CONFIG } from '@/constants/auditPhases';
+import type { AuditPhase } from '@/types/revio';
 
 interface ClientsTableProps {
   clients: Client[];
@@ -111,17 +113,22 @@ const ClientsTable = ({
       sortAccessor: (row) => phaseOrder[row.phase as keyof typeof phaseOrder] ?? 999,
       sortable: true,
       format: (_value, row) => {
-        const map = {
-          engagement: { label: "Oppdrag", variant: "outline" },
-          planning: { label: "Planlegging", variant: "secondary" },
-          execution: { label: "Gjennomføring", variant: "default" },
-          completion: { label: "Avslutning", variant: "success" },
-          risk_assessment: { label: "Risikovurdering", variant: "warning" },
-          reporting: { label: "Rapportering", variant: "default" },
-          overview: { label: "Oversikt", variant: "secondary" },
-        } as const;
-        const info = (map as any)[row.phase] || { label: row.phase, variant: "outline" };
-        return <Badge variant={info.variant as any}>{info.label}</Badge>;
+        const label = getPhaseLabel(row.phase as AuditPhase);
+        const color = PHASE_CONFIG[row.phase as AuditPhase]?.color || 'default';
+        
+        // Map colors to badge variants
+        const variantMap: Record<string, string> = {
+          'blue': 'default',
+          'purple': 'secondary',
+          'orange': 'warning',
+          'green': 'success',
+          'teal': 'default',
+          'indigo': 'default',
+          'slate': 'secondary'
+        };
+        
+        const variant = variantMap[color] || 'outline';
+        return <Badge variant={variant as any}>{label}</Badge>;
       },
     },
     {
