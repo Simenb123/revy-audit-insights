@@ -70,11 +70,12 @@ export function useCreateClientAuditAction() {
     ) => {
       const dbAction = {
         ...action,
+        subject_area: action.subject_area as any, // Type assertion for dynamic subject areas
         phase: toDbPhase(action.phase)
       };
       const { data, error } = await supabase
         .from('client_audit_actions')
-        .insert(dbAction)
+        .insert(dbAction as any)
         .select()
         .single();
 

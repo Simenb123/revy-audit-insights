@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Search, Filter } from 'lucide-react';
 import { RiskLevel, ActionStatus, AuditSubjectArea } from '@/types/audit-actions';
 import { PHASE_CONFIG } from '@/constants/auditPhases';
+import { useSubjectAreaLabels } from '@/hooks/audit-actions/useSubjectAreaLabels';
 import type { AuditPhase } from '@/types/revio';
 
 export interface FilterConfig {

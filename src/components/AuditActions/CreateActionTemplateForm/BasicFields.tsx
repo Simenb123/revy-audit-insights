@@ -12,10 +12,8 @@ import {
   FormMessage,
   FormDescription 
 } from '@/components/ui/form';
-import { 
-  SUBJECT_AREA_LABELS,
-  ACTION_TYPE_LABELS 
-} from '@/types/audit-actions';
+import { ACTION_TYPE_LABELS } from '@/types/audit-actions';
+import { useSubjectAreaLabels } from '@/hooks/audit-actions/useSubjectAreaLabels';
 import { CreateActionTemplateFormData } from './types';
 
 interface BasicFieldsProps {
@@ -23,6 +21,8 @@ interface BasicFieldsProps {
 }
 
 const BasicFields = ({ form }: BasicFieldsProps) => {
+  const { options: subjectAreaOptions, isLoading } = useSubjectAreaLabels();
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -46,16 +46,19 @@ const BasicFields = ({ form }: BasicFieldsProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Fagområde *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Velg fagområde" />
+                    <SelectValue placeholder={isLoading ? "Laster..." : "Velg fagområde"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.entries(SUBJECT_AREA_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
+                  {subjectAreaOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        {option.icon && <span>{option.icon}</span>}
+                        <span>{option.label}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,5 +1,11 @@
+/**
+ * @deprecated Use string type directly. Subject areas are now data-driven from the database.
+ * Use useSubjectAreaLabels() hook for dynamic labels.
+ */
+export type AuditSubjectArea = string;
 
-export type AuditSubjectArea = 
+// Legacy subject area keys for backward compatibility
+export type LegacySubjectArea = 
   | 'sales'
   | 'payroll'
   | 'operating_expenses'
@@ -45,7 +51,8 @@ export interface AuditActionTemplate {
   id: string;
   audit_firm_id?: string;
   created_by?: string;
-  subject_area: AuditSubjectArea;
+  subject_area: AuditSubjectArea; // Legacy field for backward compatibility
+  subject_area_id?: string; // Preferred: References subject_areas table
   action_type: ActionType;
   is_system_template: boolean;
   is_active: boolean;
@@ -69,7 +76,8 @@ export interface ClientAuditAction {
   template_id?: string | null;
   assigned_to?: string | null;
   reviewed_by?: string | null;
-  subject_area: AuditSubjectArea;
+  subject_area: AuditSubjectArea; // Legacy field for backward compatibility
+  subject_area_id?: string | null; // Preferred: References subject_areas table
   action_type: ActionType;
   status: ActionStatus;
   phase: AuditPhase;
@@ -112,7 +120,11 @@ export interface ActionGroup {
   updated_at: string;
 }
 
-export const SUBJECT_AREA_LABELS: Record<AuditSubjectArea, string> = {
+/**
+ * @deprecated Use useSubjectAreaLabels() hook instead for dynamic, data-driven labels
+ * This is kept for backward compatibility only
+ */
+export const SUBJECT_AREA_LABELS: Record<LegacySubjectArea, string> = {
   sales: 'Salg',
   payroll: 'Lønn',
   operating_expenses: 'Driftskostnader',
@@ -125,6 +137,7 @@ export const SUBJECT_AREA_LABELS: Record<AuditSubjectArea, string> = {
   equity: 'Egenkapital',
   other: 'Annet'
 };
+
 
 export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   analytical: 'Analytisk',

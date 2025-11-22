@@ -19,7 +19,12 @@ export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
         .order('sort_order, name');
 
       if (subjectArea) {
-        query = query.eq('subject_area', subjectArea);
+        // Query by subject_area_id if it's a UUID, otherwise use legacy subject_area
+        if (subjectArea.includes('-')) {
+          query = query.eq('subject_area_id', subjectArea);
+        } else {
+          query = query.eq('subject_area', subjectArea as any);
+        }
       }
 
       const { data, error } = await query;
@@ -47,12 +52,13 @@ export function useCreateAuditActionTemplate() {
 
       const dataToInsert = {
         ...templateData,
+        subject_area: templateData.subject_area as any, // Type assertion for dynamic subject areas
         applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][]
       };
 
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .insert(dataToInsert)
+        .insert(dataToInsert as any)
         .select()
         .single();
 
@@ -87,9 +93,15 @@ export function useUpdateAuditActionTemplate() {
         ) as Database['public']['Enums']['audit_phase'][];
       }
 
+      const updateData = {
+        ...updates,
+        subject_area: updates.subject_area as any, // Type assertion for dynamic subject areas
+        applicable_phases: mappedPhases
+      };
+
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .update({ ...updates, applicable_phases: mappedPhases })
+        .update(updateData as any)
         .eq('id', id)
         .select()
         .single();

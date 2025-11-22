@@ -7,7 +7,7 @@ const AUDIT_PHASES_ARRAY = ['overview', 'engagement', 'planning', 'risk_assessme
 export const createActionTemplateFormSchema = z.object({
   name: z.string().min(1, 'Navn er påkrevd'),
   description: z.string().optional(),
-  subject_area: z.enum(['sales', 'payroll', 'operating_expenses', 'inventory', 'finance', 'banking', 'fixed_assets', 'receivables', 'payables', 'equity', 'other'] as const),
+  subject_area: z.string().min(1, 'Fagområde er påkrevd'), // Data-driven from DB
   action_type: z.enum(['analytical', 'substantive', 'control_test', 'inquiry', 'observation', 'inspection', 'recalculation', 'confirmation'] as const),
   objective: z.string().optional(),
   procedures: z.string().min(1, 'Prosedyrer er påkrevd'),
