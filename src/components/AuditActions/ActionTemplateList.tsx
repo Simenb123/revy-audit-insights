@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AuditActionTemplate } from '@/types/audit-actions';
-import FlexibleActionTemplateList from './FlexibleActionTemplateList';
+import TemplateLibrary from './TemplateLibrary';
 
 interface ActionTemplateListProps {
   templates: AuditActionTemplate[];
@@ -17,8 +17,7 @@ const ActionTemplateList = ({
   onEditTemplate
 }: ActionTemplateListProps) => {
   return (
-    <FlexibleActionTemplateList
-      templates={templates}
+    <TemplateLibrary
       phase={phase}
       onCopyToClient={onCopyToClient}
       onEditTemplate={onEditTemplate}

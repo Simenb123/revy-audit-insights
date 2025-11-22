@@ -13,12 +13,12 @@ import ActionDetailsForm from './ActionDetailsForm';
 import ActionDrawerHeader from './ActionDrawerHeader';
 import ActionDrawerFooter from './ActionDrawerFooter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { phaseLabels } from '@/constants/phaseLabels';
+import { getPhaseLabel, PHASE_CONFIG } from '@/constants/auditPhases';
 import type { AuditPhase } from '@/types/revio';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Brain } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import EnhancedActionTemplateView from './EnhancedActionTemplateView';
+import EnhancedTemplateView from './EnhancedTemplateView';
 import { toast } from 'sonner';
 
 interface ActionDetailDrawerProps {
@@ -163,9 +163,9 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                       <SelectValue placeholder="Velg fase" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(phaseLabels).map(([value, label]) => (
+                      {Object.entries(PHASE_CONFIG).map(([value, config]) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {config.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -259,7 +259,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                             </Button>
                           </div>
                           {linkedTemplate ? (
-                            <EnhancedActionTemplateView template={linkedTemplate as any} />
+                            <EnhancedTemplateView template={linkedTemplate as any} />
                           ) : (
                             <div className="text-sm text-muted-foreground">Laster mal...</div>
                           )}
