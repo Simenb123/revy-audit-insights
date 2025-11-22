@@ -135,7 +135,10 @@ function App() {
                   {isPayrollEnabled() && <Route path="clients/:clientId/payroll/a07" element={<ProtectedRoute><PayrollA07 /></ProtectedRoute>} />}
                   {isPayrollEnabled() && <Route path="clients/:clientId/payroll/analysis" element={<ProtectedRoute><PayrollAnalysis /></ProtectedRoute>} />}
                   {isPayrollEnabled() && <Route path="clients/:clientId/payroll/upload" element={<ProtectedRoute><PayrollUpload /></ProtectedRoute>} />}
-                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/kontrolloppstilling" element={<ProtectedRoute><PayrollReconciliation /></ProtectedRoute>} />}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/reconciliation" element={<ProtectedRoute><PayrollReconciliation /></ProtectedRoute>} />}
+                  
+                  {/* Legacy payroll redirects */}
+                  {isPayrollEnabled() && <Route path="clients/:clientId/payroll/kontrolloppstilling" element={<Navigate to="../reconciliation" replace />} />}
                   <Route path="clients/:clientId/investments/overview" element={<ProtectedRoute><InvestmentOverview /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/portfolios" element={<ProtectedRoute><InvestmentPortfolios /></ProtectedRoute>} />
                    <Route path="clients/:clientId/investments/transactions" element={<ProtectedRoute><InvestmentTransactions /></ProtectedRoute>} />
@@ -149,9 +152,13 @@ function App() {
                     <Route path="resources/currencies" element={<ProtectedRoute><CurrencyManagement /></ProtectedRoute>} />
                     <Route path="resources/securities/prices" element={<ProtectedRoute><InvestmentPrices /></ProtectedRoute>} />
                     <Route path="resources/securities/catalog" element={<ProtectedRoute><InvestmentSecurities /></ProtectedRoute>} />
-                    <Route path="resources/dataredigering" element={<ProtectedRoute><DataredigeringPage /></ProtectedRoute>} />
-                     <Route path="resources/pdf-creator" element={<ProtectedRoute><PdfCreatorPage /></ProtectedRoute>} />
-                     <Route path="resources/aksjonaerregister" element={<ProtectedRoute><AksjonaerregisterPage /></ProtectedRoute>} />
+                    <Route path="resources/data-editor" element={<ProtectedRoute><DataredigeringPage /></ProtectedRoute>} />
+                    <Route path="resources/pdf-creator" element={<ProtectedRoute><PdfCreatorPage /></ProtectedRoute>} />
+                    <Route path="resources/shareholders" element={<ProtectedRoute><AksjonaerregisterPage /></ProtectedRoute>} />
+                    
+                    {/* Legacy resource redirects */}
+                    <Route path="resources/dataredigering" element={<Navigate to="/resources/data-editor" replace />} />
+                    <Route path="resources/aksjonaerregister" element={<Navigate to="/resources/shareholders" replace />} />
                    <Route path="clients/:clientId/bookkeeping-journal" element={<ProtectedRoute><BookkeepingJournal /></ProtectedRoute>} />
                    <Route path="clients/:clientId/bookkeeping-reports" element={<ProtectedRoute><BookkeepingReports /></ProtectedRoute>} />
                    <Route path="clients/:clientId/assets" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
@@ -162,9 +169,12 @@ function App() {
                      {/* Redirects for backward compatibility */}
                      <Route path="clients/:clientId/transaction-analysis" element={<AnalysisRedirect />} />
                      <Route path="clients/:clientId/audit/sampling" element={<AnalysisRedirect />} />
-                   <Route path="clients/:clientId/regnskapsdata" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
+                   <Route path="clients/:clientId/accounting-data" element={<ProtectedRoute><Regnskapsdata /></ProtectedRoute>} />
                    <Route path="clients/:clientId/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                    <Route path="clients/:clientId/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                   
+                   {/* Legacy client route redirects */}
+                   <Route path="clients/:clientId/regnskapsdata" element={<Navigate to="../accounting-data" replace />} />
                    <Route path="clients/:clientId/documents" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
                   <Route path="clients/:clientId/upload-history" element={<ProtectedRoute><UploadHistory /></ProtectedRoute>} />
                   
