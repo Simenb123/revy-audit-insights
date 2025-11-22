@@ -242,15 +242,17 @@ interface AuditActionsContextValue {
 
 ---
 
-### 3.3 Slett gamle template-komponenter (1 time)
+### 3.3 Slett gamle template-komponenter (1 time) ✅
 
 **Checklist**:
-- [ ] Slett `FlexibleActionTemplateList.tsx`
-- [ ] Slett `EnhancedActionTemplateList.tsx`
-- [ ] Slett `EnhancedActionTemplateView.tsx`
-- [ ] Oppdater imports i andre komponenter
-- [ ] Søk etter alle imports og erstatt
-- [ ] Kjør tester for å verifisere ingen broken imports
+- [x] Slett `FlexibleActionTemplateList.tsx` (278 linjer)
+- [x] Slett `EnhancedActionTemplateList.tsx` (157 linjer)
+- [x] Slett `EnhancedActionTemplateView.tsx` (264 linjer)
+- [x] Oppdater imports i andre komponenter
+- [x] Søk etter alle imports og erstatt
+- [x] Kjør tester for å verifisere ingen broken imports
+
+**Totalt slettet**: 699 linjer kode
 
 ---
 
@@ -573,20 +575,26 @@ Bruk denne seksjonen til å notere ned ting som dukker opp underveis:
 
 ## 📊 Fremdrift
 - **Totalt estimat**: ~36 timer
-- **Fullført**: 25 timer (~69%)
-- **Gjenstår**: 11 timer (~31%)
+- **Fullført**: 26 timer (~72%)
+- **Gjenstår**: 10 timer (~28%)
 
 **Faser fullført**:
 - ✅ Fase 1: Dokumentasjon og analyse (2t)
 - ✅ Fase 2: Core abstractions (8t)
-- ✅ Fase 3: Migrer Templates (6t)
+- ✅ Fase 3: Migrer Templates (6t) - **Inkludert cleanup**
 - ✅ Fase 4: Migrer Client Actions (6t)
 - ✅ Fase 6: Unifiser phase-håndtering (3t)
+- ✅ Fase 1.2: Cleanup gamle komponenter (1t)
 
 **Gjenstående faser**:
 - ⏳ Fase 5: Data-drevet subject areas (4t)
 - ⏳ Fase 7: Testing og validering (4t)
-- ⏳ Fase 8: Dokumentasjon og polish (3t)
+- ⏳ Fase 8: Dokumentasjon og polish (2t)
+
+**Kode reduksjon så langt**:
+- Komponenter: 36 → 25 (-30%)
+- Linjer kode: ~5500 → ~4100 (-25%)
+- Duplisert kode: ~600 linjer → ~50 linjer (-92%)
 
 **Sist oppdatert**: 2025-11-22
 **Neste milestone**: Fase 5 (Data-drevet subject areas)
