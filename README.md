@@ -47,6 +47,8 @@ For an overview of the Revio color palette, see [docs/color-palette.md](docs/col
 For details on the page layout components and full-width defaults, see [docs/page-layout.md](docs/page-layout.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
+For cleanup and refactoring of the codebase, see [docs/cleanup/README.md](docs/cleanup/README.md).
+For terminology and language guidelines, see [docs/terminology.md](docs/terminology.md).
 
 ## Environment Setup
 
