@@ -7,33 +7,35 @@ Dette dokumentet gir en visuell oversikt over alle komponenter i revisjonshandli
 ### Fordeling etter kategori
 
 ```
-📁 src/components/AuditActions/ (36 komponenter)
+📁 src/components/AuditActions/ (32 komponenter) ✅ Refaktorert
 
 ├── 🏠 Hub (2)
 │   ├── AuditActionsManager
 │   └── AuditActionsTab
 │
-├── 📝 Templates (9)
-│   ├── FlexibleActionTemplateList ⚠️
-│   ├── EnhancedActionTemplateList ⚠️
-│   ├── EnhancedActionTemplateView
-│   ├── ActionTemplateList (wrapper)
+├── ⚡ Core (4) ✨ Nye
+│   ├── ActionCard ⭐ (Universal card)
+│   ├── ActionList ⭐ (Virtualisert liste)
+│   ├── ActionFilters ⭐ (Universal filter UI)
+│   └── badgeUtils ⭐ (Felles badge utilities)
+│
+├── 📝 Templates (6)
+│   ├── TemplateLibrary ✨ (Erstatter Flexible+Enhanced)
+│   ├── EnhancedTemplateView
+│   ├── ActionTemplateList (wrapper til TemplateLibrary)
 │   ├── CreateActionTemplateDialog
 │   ├── ImprovedCreateActionTemplateForm
 │   └── CreateActionTemplateForm/ (mappe)
 │
-├── 🎯 Client Actions (6)
-│   ├── ClientActionsList ⭐
-│   ├── ActionRowBody ⚠️
-│   ├── SortableActionRow
+├── 🎯 Client Actions (4)
+│   ├── ClientActionsList ⭐ (Refaktorert)
 │   ├── ActionDetailDrawer
 │   ├── NewActionDialog
 │   └── ActionProgressIndicator
 │
-├── 🔧 Utility (10)
-│   ├── ActionsFilterHeader
+├── 🔧 Utility (8)
 │   ├── BulkActionsToolbar
-│   ├── ActionStatusBadge ⚠️
+│   ├── ActionStatusBadge
 │   ├── ActionQuickActions
 │   ├── SubjectAreaNav
 │   ├── ActionDrawerHeader
@@ -56,14 +58,25 @@ Dette dokumentet gir en visuell oversikt over alle komponenter i revisjonshandli
 │   ├── ActionISAStandards
 │   └── ActionDocumentRequirements
 │
-└── 🗂️ Dialogs (4)
-    ├── CopyFromClientDialog
-    ├── VersionHistory
-    ├── VersionDiffDialog
-    └── VersionDiffViewer
+├── 🗂️ Dialogs (4)
+│   ├── CopyFromClientDialog
+│   ├── VersionHistory
+│   ├── VersionDiffDialog
+│   └── VersionDiffViewer
+│
+└── 🧪 Testing (1)
+    └── AuditActionsFlowTester
 
-⚠️  = Inneholder duplisert logikk
+✨ = Nye komponenter etter refaktorering
 ⭐ = Kritisk komponent
+✅ = Refaktorert og testet
+
+**Slettet etter refaktorering** (699 linjer):
+- FlexibleActionTemplateList (278 linjer)
+- EnhancedActionTemplateList (157 linjer)
+- ActionRowBody (68 linjer)
+- SortableActionRow (40 linjer)
+- ActionsFilterHeader (156 linjer)
 ```
 
 ---
@@ -134,86 +147,151 @@ interface Props {
 
 ---
 
+## ⚡ Core komponenter
+
+### ActionCard.tsx ⭐
+**Rolle**: Universal card layout for både templates og client actions.
+
+**Ansvar**:
+- Render badges (risk, status, phase, action type)
+- Multi-select checkbox support
+- Quick actions placement
+- Responsive design
+
+**Props**:
+```typescript
+interface ActionCardProps {
+  type: 'template' | 'client-action';
+  data: AuditActionTemplate | ClientAuditAction;
+  selected?: boolean;
+  onToggle?: (id: string) => void;
+  onEdit?: (data: any) => void;
+  onCopyToClient?: (id: string) => void;
+  dragHandle?: React.ReactNode;
+  showCheckbox?: boolean;
+  showQuickActions?: boolean;
+}
+```
+
+**Brukes av**: `TemplateLibrary`, `ClientActionsList`
+
+**Linjer**: ~120
+
+---
+
+### ActionList.tsx ⭐
+**Rolle**: Virtualisert liste med multi-select og drag-n-drop.
+
+**Ansvar**:
+- Virtualisering med `@tanstack/react-virtual`
+- Drag-n-drop med `@dnd-kit` (optional)
+- Keyboard shortcuts (Ctrl+A, Shift+Click, Esc)
+- Empty state rendering
+
+**Props**:
+```typescript
+interface ActionListProps<T> {
+  items: T[];
+  renderItem: (item: T) => React.ReactNode;
+  emptyState?: React.ReactNode;
+  enableDragDrop?: boolean;
+  enableVirtualization?: boolean;
+  onReorder?: (items: T[]) => void;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
+  keyboardShortcuts?: boolean;
+}
+```
+
+**Brukes av**: `TemplateLibrary`, `ClientActionsList`
+
+**Linjer**: ~180
+
+---
+
+### ActionFilters.tsx ⭐
+**Rolle**: Universal filter UI for templates og client actions.
+
+**Ansvar**:
+- Search input
+- Risk, phase, status, AI filters
+- "Select all visible" checkbox
+- Result count display
+
+**Props**:
+```typescript
+interface ActionFiltersProps {
+  filters: FilterConfig;
+  onChange: (filters: FilterConfig) => void;
+  showSelectAll?: boolean;
+  allSelected?: boolean;
+  onToggleSelectAll?: () => void;
+  resultCount?: number;
+  totalCount?: number;
+}
+```
+
+**Brukes av**: `TemplateLibrary`, `ClientActionsList`
+
+**Linjer**: ~95
+
+---
+
+### badgeUtils.ts ⭐
+**Rolle**: Felles utility-funksjoner for badge styling.
+
+**Funksjoner**:
+- `getBadgeVariant(type: string): BadgeVariant`
+- `getBadgeLabel(type: string): string`
+- `getRiskBadgeColor(level: RiskLevel): string`
+- `getStatusBadgeColor(status: ActionStatus): string`
+
+**Brukes av**: `ActionCard`, `EnhancedTemplateView`, andre komponenter
+
+**Linjer**: ~80
+
+---
+
 ## 📝 Template-komponenter
 
-### FlexibleActionTemplateList.tsx ⚠️
-**Rolle**: Hovedkomponent for å liste handlingsmaler med to visningsmoduser.
+### TemplateLibrary.tsx ✨
+**Rolle**: Erstatter FlexibleActionTemplateList og EnhancedActionTemplateList.
 
 **Ansvar**:
 - Toggle mellom 'basic' og 'enhanced' view
-- Håndtere søk og filter (via `useTemplateFilters`)
-- Multi-select med checkboxes
-- "Kopier valgte til klient"-funksjon
+- Håndtere søk og filter
+- Multi-select og bulk "copy to client"
+- Bruk core komponenter (ActionCard, ActionList, ActionFilters)
 
 **Children**:
-- `EnhancedActionTemplateList` (enhanced mode)
-- Inline card-liste (basic mode)
+- `ActionList` → `ActionCard` (basic mode)
+- `EnhancedTemplateView` (enhanced mode)
 - `CreateActionTemplateDialog`
 
 **Props**:
 ```typescript
 interface Props {
-  templates: AuditActionTemplate[];
   phase?: string;
   onCopyToClient?: (templateIds: string[]) => void;
   onEditTemplate?: (template: AuditActionTemplate) => void;
 }
 ```
 
-**State**:
-- `[selectedTemplates, setSelectedTemplates]` - Multi-select
-- `[viewMode, setViewMode]` - 'basic' | 'enhanced'
-- Filter state via `useTemplateFilters`
-
-**⚠️ Duplisert logikk**:
-- `getRiskBadgeColor()` (62-69)
-- `getSubjectAreaName()` (71-74)
-- Phase label mapping (242-246)
-- Empty state (175-188)
-
-**Linjer**: 278
-
----
-
-### EnhancedActionTemplateList.tsx ⚠️
-**Rolle**: Liste templates med enhanced features (ISA, dokumenter, AI).
-
-**Ansvar**:
-- Vise templates med AI-metadata
-- Filter på risk, phase, AI
-- Render `EnhancedActionTemplateView` for hver mal
-
-**Children**:
-- `EnhancedActionTemplateView` (for hver template)
-- `CreateActionTemplateDialog`
-
-**Props**:
-```typescript
-interface Props {
-  onCopyToClient?: (templateIds: string[]) => void;
-  onEditTemplate?: (template: EnhancedAuditActionTemplate) => void;
-  phase?: string;
-}
-```
-
 **Data dependencies**:
-- `useEnhancedAuditActionTemplates()`
-- `useTemplateFilters()`
+- `useAuditActionTemplates()` (basic mode)
+- `useEnhancedAuditActionTemplates()` (enhanced mode)
 
-**⚠️ Duplisert logikk**:
-- Filter-UI og state (identical to FlexibleActionTemplateList)
-- Empty state rendering
-
-**Linjer**: 156
+**Linjer**: ~200 (reduksjon fra 435 linjer i gamle komponenter)
 
 ---
 
-### EnhancedActionTemplateView.tsx
-**Rolle**: Detaljert visning av én template med tabs.
+### EnhancedTemplateView.tsx
+**Rolle**: Detaljert visning av én template med tabs (refaktorert).
 
 **Ansvar**:
 - 5 tabs: Oversikt, ISA-standarder, Dokumenter, Arbeidspapirer, AI
-- Badge-rendering for metadata
+- Badge-rendering via `badgeUtils`
+- Phase labels via `getPhaseLabel()` fra PHASE_CONFIG
 - "Bruk i revisjon"-knapp
 
 **Children**:
@@ -237,21 +315,16 @@ interface Props {
 - `[selectedWorkingPaperTemplate, setSelectedWorkingPaperTemplate]`
 - `[showWorkingPaperGenerator, setShowWorkingPaperGenerator]`
 
-**⚠️ Duplisert logikk**:
-- `getRiskBadgeColor()` (30-37)
-- `getComplexityBadgeColor()` (39-48)
-- Phase label mapping (175-178)
-
-**Linjer**: 263
+**Linjer**: 263 (ingen duplisert logikk etter refaktorering)
 
 ---
 
 ### ActionTemplateList.tsx
-**Rolle**: Thin wrapper som kun forwader props til `FlexibleActionTemplateList`.
+**Rolle**: Thin wrapper som forwader props til `TemplateLibrary`.
 
-**Ansvar**: Ingen (kan fjernes)
+**Ansvar**: Backward compatibility wrapper
 
-**Props**: Identisk til `FlexibleActionTemplateList`
+**Props**: Forwader til `TemplateLibrary`
 
 **Linjer**: 28
 
@@ -311,21 +384,20 @@ interface Props {
 ## 🎯 Client Actions-komponenter
 
 ### ClientActionsList.tsx ⭐
-**Rolle**: Hovedkomponent for liste over klienthandlinger.
+**Rolle**: Hovedkomponent for liste over klienthandlinger (refaktorert).
 
 **Ansvar**:
 - Drag-n-drop reorder (via `@dnd-kit`)
-- Virtualisering (via `@tanstack/react-virtual`)
+- Virtualisering (via ActionList core component)
 - Multi-select med keyboard shortcuts
-- Bulk-operasjoner
+- Bulk-operasjoner via AuditActionsContext
 - Filter og søk
 
 **Children**:
 - `ActionProgressIndicator`
-- `ActionsFilterHeader`
+- `ActionFilters` (erstatter ActionsFilterHeader)
 - `BulkActionsToolbar`
-- `SortableActionRow` (DnD mode)
-- `ActionRowBody` (virtualized mode)
+- `ActionList` → `ActionCard` (erstatter ActionRowBody)
 - `ActionDetailDrawer`
 - `NewActionDialog`
 
@@ -339,21 +411,14 @@ interface Props {
 }
 ```
 
-**State**:
-- `[searchTerm, setSearchTerm]`
-- `[statusFilter, setStatusFilter]`
-- `[selectedAction, setSelectedAction]`
-- `[drawerOpen, setDrawerOpen]`
-- `[newOpen, setNewOpen]`
-- `[selectedIds, setSelectedIds]`
-- `[confirmOpen, setConfirmOpen]`
+**State** (via AuditActionsContext):
+- `selectedIds`, `toggleSelect`, `selectAll`, `clearSelection`
+- `bulkUpdateStatus`, `bulkDelete`
 
 **Keyboard shortcuts**:
 - `Ctrl/Cmd+A` - Select all visible
 - `Delete` - Delete selected
-- `1` - Set status "not_started"
-- `2` - Set status "in_progress"
-- `3` - Set status "completed"
+- `1-5` - Set status
 - `R` - Set status "reviewed"
 - `G` - Set status "approved"
 - `Esc` - Clear selection
@@ -363,56 +428,7 @@ interface Props {
 - `useBulkUpdateClientActionsStatus()`
 - `useBulkDeleteClientActions()`
 
-**⚠️ Duplisert logikk**:
-- Filter state (45-52) - samme som useTemplateFilters
-- Selected IDs state (82-87) - samme som FlexibleActionTemplateList
-
-**Linjer**: 265
-
----
-
-### ActionRowBody.tsx ⚠️
-**Rolle**: Visning av en enkelt klienthandling (rad i liste).
-
-**Ansvar**:
-- Render checkbox, status badge, metadata
-- Kan ta `dragHandle` som prop (for SortableActionRow)
-- Click åpner drawer
-
-**Props**:
-```typescript
-interface Props {
-  action: ClientAuditAction;
-  selected: boolean;
-  onToggle: (id: string) => void;
-  onEdit: (action: ClientAuditAction) => void;
-  dragHandle?: React.ReactNode;
-}
-```
-
-**⚠️ Duplisert logikk**:
-- Badge layout og styling - samme som template cards
-- Phase label mapping (44)
-
-**Linjer**: 68
-
----
-
-### SortableActionRow.tsx
-**Rolle**: Wrapper for ActionRowBody som legger til drag-n-drop.
-
-**Ansvar**:
-- Håndtere `useSortable` fra `@dnd-kit`
-- Render drag handle
-- Forward alle props til ActionRowBody
-
-**Props**: Samme som ActionRowBody (minus dragHandle)
-
-**Dependencies**:
-- `@dnd-kit/sortable`
-- `ActionRowBody`
-
-**Linjer**: 40
+**Linjer**: ~165 (redusert fra 265 linjer)
 
 ---
 
