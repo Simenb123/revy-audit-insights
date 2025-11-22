@@ -89,7 +89,7 @@ const PayrollOverview = () => {
                   </p>
                   <div className="flex gap-2">
                     <Button asChild size="sm" variant="outline">
-                      <Link to={`/clients/${clientId}/payroll/kontrolloppstilling`}>
+                      <Link to={`/clients/${clientId}/payroll/reconciliation`}>
                         <Calculator className="h-3 w-3 mr-1" />
                         Åpne
                       </Link>

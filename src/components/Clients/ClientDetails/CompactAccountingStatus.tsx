@@ -37,7 +37,7 @@ const CompactAccountingStatus = ({ client }: CompactAccountingStatusProps) => {
     {
       label: 'Kontoplan',
       status: accountingData?.chartOfAccountsCount > 0,
-      link: `/clients/${client.id}/regnskapsdata`
+      link: `/clients/${client.id}/accounting-data`
     }
   ];
 
@@ -75,7 +75,7 @@ const CompactAccountingStatus = ({ client }: CompactAccountingStatusProps) => {
         
         <div className="pt-3 border-t">
           <Button variant="outline" size="sm" className="w-full" asChild>
-            <Link to={`/clients/${client.id}/regnskapsdata`}>
+            <Link to={`/clients/${client.id}/accounting-data`}>
               <FileText className="w-3 h-3 mr-1" />
               Administrer data
               <ExternalLink className="w-3 h-3 ml-1" />
