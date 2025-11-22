@@ -361,6 +361,145 @@ I `src/hooks/`:
 
 ---
 
+## Arkitektur-diagrammer
+
+### Komponenthierarki
+
+```mermaid
+graph TD
+    A[AuditActionsManager] --> B[ClientActionsList]
+    A --> C[TemplateLibrary]
+    
+    B --> D[ActionList Core]
+    C --> D
+    
+    B --> E[ActionCard Core]
+    C --> E
+    
+    B --> F[ActionFilters Core]
+    C --> F
+    
+    B --> G[AuditActionsContext]
+    C --> G
+    
+    B --> H[ActionDetailDrawer]
+    B --> I[NewActionDialog]
+    B --> J[BulkActionsToolbar]
+    
+    C --> K[EnhancedTemplateView]
+    K --> L[ActionISAStandards]
+    K --> M[ActionDocumentRequirements]
+    K --> N[ActionAIAssistant]
+    K --> O[WorkingPaperTemplateManager]
+    
+    style D fill:#4ade80,stroke:#16a34a,stroke-width:3px
+    style E fill:#4ade80,stroke:#16a34a,stroke-width:3px
+    style F fill:#4ade80,stroke:#16a34a,stroke-width:3px
+    style G fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+```
+
+**Forklaring:**
+- 🟢 **Grønne bokser**: Core komponenter (gjenbrukes på tvers)
+- 🟡 **Gul boks**: Context for state management
+- ⚪ **Hvite bokser**: Feature-spesifikke komponenter
+
+### Dataflyt - Template til Client Action
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant TemplateLibrary
+    participant Context as AuditActionsContext
+    participant Hook as useCreateClientAction
+    participant Supabase
+    participant ClientActionsList
+    
+    User->>TemplateLibrary: Velg template
+    TemplateLibrary->>Context: toggleSelect(templateId)
+    Context-->>TemplateLibrary: Update selectedIds
+    
+    User->>TemplateLibrary: Klikk "Kopier til klient"
+    TemplateLibrary->>Hook: createClientAction(data)
+    
+    Hook->>Supabase: INSERT INTO client_audit_actions
+    Note over Hook,Supabase: Kopierer navn, beskrivelse,<br/>procedures, risk_level, etc.
+    
+    Supabase-->>Hook: Ny action opprettet
+    Hook->>Hook: Invalidate query cache
+    Note over Hook: ['client-audit-actions', clientId]
+    
+    Hook-->>TemplateLibrary: Success
+    TemplateLibrary->>User: Toast: "Handling kopiert!"
+    TemplateLibrary->>Context: clearSelection()
+    
+    ClientActionsList->>Supabase: Refetch actions
+    Supabase-->>ClientActionsList: Oppdatert liste
+    ClientActionsList->>User: Vis ny handling
+```
+
+### Bulk Operations Workflow
+
+```mermaid
+graph LR
+    A[User velger 10 items] --> B[AuditActionsContext]
+    B --> C{Bulk Action}
+    
+    C -->|Status Update| D[useBulkUpdateStatus]
+    C -->|Delete| E[useBulkDelete]
+    C -->|Reorder| F[useReorderActions]
+    
+    D --> G[Supabase Batch Update]
+    E --> G
+    F --> G
+    
+    G --> H[Invalidate Queries]
+    H --> I[React Query Refetch]
+    I --> J[UI Updates]
+    
+    J --> K[Toast Notification]
+    K --> L[Clear Selection]
+    
+    style B fill:#fbbf24,stroke:#f59e0b,stroke-width:2px
+    style G fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style J fill:#4ade80,stroke:#16a34a,stroke-width:2px
+```
+
+**Performance notes:**
+- ✅ Batch operations (1 DB call for N items)
+- ✅ Optimistic updates via React Query
+- ✅ Automatic cache invalidation
+- ✅ Toast feedback for user confirmation
+
+### Phase Mapping Flow
+
+```mermaid
+graph TD
+    A[UI Phase Value] --> B{toDbPhase}
+    B --> C[Database Phase Value]
+    
+    D[Database Query Result] --> E{fromDbPhase}
+    E --> F[UI Phase Value]
+    
+    G[PHASE_CONFIG] --> B
+    G --> E
+    
+    B --> H{Special Cases}
+    H -->|overview| I[null]
+    H -->|completion| J[conclusion]
+    H -->|risk_assessment| K[planning]
+    
+    style G fill:#fbbf24,stroke:#f59e0b,stroke-width:3px
+    style B fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+    style E fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+```
+
+**Key mappings:**
+- `overview` (UI) ↔ `null` (DB) - Overview er ikke en faktisk fase
+- `completion` (UI) ↔ `conclusion` (DB) - Terminologi-forskjell
+- `risk_assessment` (UI) ↔ `planning` (DB) - Risikovurdering er del av planlegging
+
+---
+
 ## Identifiserte problemer
 
 ### 🔴 Kritisk
