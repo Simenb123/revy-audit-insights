@@ -213,7 +213,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
               <Button 
                 variant="outline" 
                 className="w-full gap-2"
-                onClick={() => navigate(`/klienter/${client.org_number}/regnskapsdata`)}
+                onClick={() => navigate(`/clients/${client.id}/accounting-data`)}
               >
                 <Database className="h-4 w-4" />
                 Administrer regnskapsdata
@@ -223,7 +223,7 @@ const ClientOverviewDashboard = ({ client }: ClientOverviewDashboardProps) => {
                 <Button 
                   variant="default" 
                   className="w-full gap-2"
-                  onClick={() => navigate(`/klienter/${client.org_number}/analyser`)}
+                  onClick={() => navigate(`/clients/${client.id}/analysis`)}
                 >
                   <TrendingUp className="h-4 w-4" />
                   Analyser regnskapsdata

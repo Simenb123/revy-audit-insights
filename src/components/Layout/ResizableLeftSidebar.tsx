@@ -128,12 +128,12 @@ const resourceItems = [
   },
   {
     title: 'Dataredigering',
-    url: '/resources/dataredigering',
+    url: '/resources/data-editor',
     icon: FileSpreadsheet,
   },
   {
     title: 'Aksjonærregister',
-    url: '/resources/aksjonaerregister',
+    url: '/resources/shareholders',
     icon: Users,
   },
   ...(isAdvancedAIEnabled() ? [{

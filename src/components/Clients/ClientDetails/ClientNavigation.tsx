@@ -168,7 +168,7 @@ const ClientNavigation = ({ currentPhase, selectedPhase, onPhaseSelect, clientId
               <Button
                 variant="ghost"
                 className="w-full h-auto p-4 justify-start text-left hover:bg-accent"
-                onClick={() => window.location.href = `/clients/${clientId}/regnskapsdata`}
+                onClick={() => window.location.href = `/clients/${clientId}/accounting-data`}
               >
                 <div className="flex items-start gap-4 w-full">
                   <div className={cn(

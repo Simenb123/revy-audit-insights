@@ -15,7 +15,7 @@ const AccountingDataCard = ({ client }: AccountingDataCardProps) => {
   const navigate = useNavigate();
 
   const handleUploadClick = () => {
-    navigate(`/klienter/${client.org_number}/regnskapsdata`);
+    navigate(`/clients/${client.id}/accounting-data`);
   };
 
   const formatDate = (dateString: string) => {

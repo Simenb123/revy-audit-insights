@@ -42,7 +42,7 @@ const PlanningPhase = ({ client }: PlanningPhaseProps) => {
               Vis kontoplan
             </Button>
             <Button variant="outline" className="flex items-center gap-2" asChild>
-              <Link to={`/clients/${client.id}/regnskapsdata`}>
+              <Link to={`/clients/${client.id}/accounting-data`}>
                 <FileText className="h-4 w-4" />
                 Se alle regnskapsdata
               </Link>
