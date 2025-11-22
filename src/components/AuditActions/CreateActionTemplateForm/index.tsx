@@ -26,7 +26,7 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel }: CreateA
     defaultValues: {
       name: '',
       description: '',
-      subject_area: selectedArea || 'sales',
+      subject_area: selectedArea || '',
       action_type: 'substantive',
       objective: '',
       procedures: '',
