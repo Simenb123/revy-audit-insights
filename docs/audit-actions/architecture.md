@@ -1,17 +1,17 @@
 # Revisjonshandlinger – Systemarkitektur
 
-**Status:** Fase 1 dokumentasjon ferdigstilt  
-**Dato:** 2025-11-21  
-**Versjon:** 1.0
+**Status:** ✅ Refaktorering fullført  
+**Dato:** November 2025  
+**Versjon:** 2.0 (Post-refaktorering)
 
 ## 📋 Innholdsfortegnelse
 
 1. [Oversikt](#oversikt)
-2. [Database schema](#database-schema)
-3. [Komponenthierarki](#komponenthierarki)
-4. [Dataflyt og state management](#dataflyt-og-state-management)
-5. [Identifiserte problemer](#identifiserte-problemer)
-6. [Duplisert kode](#duplisert-kode)
+2. [Ny arkitektur (Post-refaktorering)](#ny-arkitektur-post-refaktorering)
+3. [Database schema](#database-schema)
+4. [Komponenthierarki](#komponenthierarki)
+5. [Dataflyt og state management](#dataflyt-og-state-management)
+6. [Arkitektur-diagrammer](#arkitektur-diagrammer)
 
 ---
 
@@ -26,23 +26,144 @@ Revisjonshandlinger-systemet er bygget rundt to hovedkonsepter:
 ```
 AuditActionsManager (Hub)
 ├── ClientActionsList (Klienthandlinger)
-│   ├── ActionRowBody
-│   ├── SortableActionRow
+│   ├── ActionList (Core - virtualisert liste)
+│   ├── ActionCard (Core - unified card)
+│   ├── ActionFilters (Core - konsistent filtrering)
 │   ├── ActionDetailDrawer
 │   ├── NewActionDialog
-│   ├── BulkActionsToolbar
-│   └── ActionsFilterHeader
+│   └── BulkActionsToolbar
 │
-└── FlexibleActionTemplateList (Maler)
-    ├── EnhancedActionTemplateList
-    │   └── EnhancedActionTemplateView
-    │       ├── ActionISAStandards
-    │       ├── ActionDocumentRequirements
-    │       ├── ActionAIAssistant
-    │       └── WorkingPaperTemplateManager
-    │
-    └── ActionTemplateList (wrapper)
+└── TemplateLibrary (Maler)
+    ├── ActionList (Core - gjenbrukt)
+    ├── ActionCard (Core - gjenbrukt)
+    ├── ActionFilters (Core - gjenbrukt)
+    └── EnhancedTemplateView
+        ├── ActionISAStandards
+        ├── ActionDocumentRequirements
+        ├── ActionAIAssistant
+        └── WorkingPaperTemplateManager
 ```
+
+---
+
+## Ny arkitektur (Post-refaktorering)
+
+### 🎯 Design-prinsipper
+
+1. **Core Components**: 4 gjenbrukbare komponenter som brukes på tvers
+2. **Data-drevet**: Fagområder og faser fra database, ikke hardkodet
+3. **Unified Phase Handling**: Sentralisert phase-logikk i `auditPhases.ts`
+4. **Type-sikkerhet**: Full TypeScript-støtte
+5. **Performance**: Virtualisering for store lister (100+ items)
+
+### 🏗️ Core Components (4 stk)
+
+#### 1. **ActionCard** (`core/ActionCard.tsx`)
+Unified card-komponent for alle action-typer.
+
+**Features:**
+- Badge-rendering via `badgeUtils.ts`
+- Støtte for templates og client actions
+- Consistent styling og layout
+- Quick actions integration
+
+**Bruksområder:**
+- Template library
+- Client actions list
+- Search results
+- Recommendations
+
+#### 2. **ActionList** (`core/ActionList.tsx`)
+Virtualisert liste-komponent med DnD-støtte.
+
+**Features:**
+- Virtualisering for 100+ items via `@tanstack/react-virtual`
+- Drag-n-drop reordering
+- Multi-select med keyboard shortcuts
+- Empty states og loading states
+
+**Props:**
+```typescript
+interface ActionListProps<T> {
+  items: T[];
+  renderItem: (item: T) => React.ReactNode;
+  enableVirtualization?: boolean;
+  enableDragDrop?: boolean;
+  onReorder?: (items: T[]) => void;
+}
+```
+
+#### 3. **ActionFilters** (`core/ActionFilters.tsx`)
+Unified filter-komponent.
+
+**Features:**
+- Søk (navn, beskrivelse, procedures)
+- Risikonivå filter
+- Fase filter (via `PHASE_CONFIG`)
+- Subject area filter (data-drevet via `useSubjectAreas`)
+
+#### 4. **badgeUtils** (`core/badgeUtils.ts`)
+Utility-funksjoner for badges.
+
+**Functions:**
+- `getRiskBadgeVariant(riskLevel)`
+- `getRiskLabel(riskLevel)`
+- `getComplexityBadgeVariant(complexity)`
+- `getComplexityLabel(complexity)`
+- `getStatusBadgeVariant(status)`
+
+### 🔄 Unified Phase Handling
+
+**Før refaktorering:**
+- 3+ separate implementasjoner av phase-mapping
+- Inkonsistens mellom UI og database
+- Hardkodet labels spredt rundt
+
+**Etter refaktorering:**
+```typescript
+// constants/auditPhases.ts
+export const PHASE_CONFIG: Record<AuditPhase, PhaseConfig> = {
+  overview: { dbValue: null, label: 'Oversikt', ... },
+  engagement: { dbValue: 'engagement', label: 'Oppdragsvurdering', ... },
+  planning: { dbValue: 'planning', label: 'Planlegging', ... },
+  // ...
+};
+
+export const toDbPhase = (phase: AuditPhase) => PHASE_CONFIG[phase].dbValue;
+export const fromDbPhase = (dbPhase: string) => { /* ... */ };
+export const getPhaseLabel = (phase: AuditPhase) => PHASE_CONFIG[phase].label;
+```
+
+**Alle komponenter bruker nå:**
+- `toDbPhase()` / `fromDbPhase()` for database-konvertering
+- `getPhaseLabel()` for UI-visning
+- `PHASE_CONFIG` for metadata (farger, ikoner)
+
+### 📊 Data-drevne Subject Areas
+
+**Før:**
+```typescript
+// Hardkodet enum
+export type AuditSubjectArea = 'sales' | 'payroll' | ...;
+
+const SUBJECT_AREA_LABELS = {
+  sales: 'Salg',
+  payroll: 'Lønn'
+};
+```
+
+**Etter:**
+```typescript
+// Hook som henter fra database
+const { options, getLabel } = useSubjectAreaLabels();
+// options = [{ value: 'uuid', label: 'Salg', icon: '📊', color: '#...' }]
+```
+
+**Fordeler:**
+- ✅ Dynamiske fagområder per revisjonsfirma
+- ✅ Ingen hardkoding i frontend
+- ✅ Enkelt å legge til nye områder via admin
+- ✅ Ikoner og farger fra database
 
 ---
 
