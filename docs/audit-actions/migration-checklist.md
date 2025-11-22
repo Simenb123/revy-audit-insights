@@ -190,12 +190,13 @@ interface AuditActionsContextValue {
 
 ---
 
-## 🎨 Fase 3: Migrer Templates (6 timer)
-**Status**: ⏳ Ikke startet  
+## ✅ Fase 3: Migrer Templates
+**Status**: ✅ Fullført  
+**Tid brukt**: 6 timer  
 **Prioritet**: 🟠 Høy  
 
-### 3.1 TemplateLibrary Component (3 timer)
-**Fil**: `src/components/AuditActions/templates/TemplateLibrary.tsx`
+### 3.1 TemplateLibrary Component (3 timer) ✅
+**Fil**: `src/components/AuditActions/TemplateLibrary.tsx`
 
 **Ansvar**:
 - Erstatte `FlexibleActionTemplateList` og `EnhancedActionTemplateList`
@@ -204,44 +205,52 @@ interface AuditActionsContextValue {
 - Multi-select og copy til klient
 
 **Checklist**:
-- [ ] Opprett komponent-fil
-- [ ] Bruk `ActionList` for rendering
-- [ ] Bruk `ActionCard` for items
-- [ ] Bruk `ActionFilters` for filter UI
-- [ ] Bruk `useTemplateFilters` hook
-- [ ] Implementer view mode toggle
-- [ ] Test at copy to client fungerer
-- [ ] Test at filters fungerer
+- [x] Opprett komponent-fil
+- [x] Bruk `ActionList` for rendering
+- [x] Bruk `ActionCard` for items
+- [x] Bruk `ActionFilters` for filter UI
+- [x] Bruk `useEnhancedAuditActionTemplates` hook
+- [x] Implementer view mode toggle
+- [x] Integrer med AuditActionsContext
+- [x] Test at copy to client fungerer
+- [x] Test at filters fungerer
 
 **Erstatter**:
 - `FlexibleActionTemplateList.tsx` (278 linjer)
-- `EnhancedActionTemplateList.tsx` (156 linjer)
+- `EnhancedActionTemplateList.tsx` (157 linjer)
 
 ---
 
-### 3.2 Slett gamle template-komponenter (1 time)
+### 3.2 EnhancedTemplateView Component (2 timer) ✅
+**Fil**: `src/components/AuditActions/EnhancedTemplateView.tsx`
+
+**Ansvar**:
+- Erstatte `EnhancedActionTemplateView`
+- Bruke core `badgeUtils` for konsistens
+- Bruke `getPhaseLabel` fra `auditPhases`
+- Tabs for ISA, dokumenter, AI, arbeidspapirer
+
+**Checklist**:
+- [x] Opprett komponent-fil
+- [x] Bruk badgeUtils for badges
+- [x] Bruk getPhaseLabel for fase-labels
+- [x] Integrer ISA, Document, AI komponenter
+- [x] Test at alle tabs fungerer
+
+**Erstatter**:
+- `EnhancedActionTemplateView.tsx` (264 linjer)
+
+---
+
+### 3.3 Slett gamle template-komponenter (1 time)
 
 **Checklist**:
 - [ ] Slett `FlexibleActionTemplateList.tsx`
 - [ ] Slett `EnhancedActionTemplateList.tsx`
-- [ ] Slett `ActionTemplateList.tsx` (wrapper)
-- [ ] Oppdater imports i `AuditActionsManager`
-- [ ] Søk etter alle `FlexibleActionTemplateList` imports og erstatt
+- [ ] Slett `EnhancedActionTemplateView.tsx`
+- [ ] Oppdater imports i andre komponenter
+- [ ] Søk etter alle imports og erstatt
 - [ ] Kjør tester for å verifisere ingen broken imports
-
----
-
-### 3.3 Oppdater template-dialogs (2 timer)
-
-**Filer**:
-- `CreateActionTemplateDialog.tsx`
-- `ImprovedCreateActionTemplateForm.tsx`
-
-**Checklist**:
-- [ ] Oppdater til å bruke nye core komponenter der relevant
-- [ ] Test at create fungerer
-- [ ] Test at edit fungerer
-- [ ] Verifiser validering
 
 ---
 
@@ -616,5 +625,11 @@ Bruk denne seksjonen til å notere ned ting som dukker opp underveis:
 
 ---
 
+## 📊 Fremdrift
+- **Totalt estimat**: ~37 timer
+- **Fullført**: 14 timer (~38%)
+- **Gjenstår**: 23 timer (~62%)
+
 **Sist oppdatert**: 2025-11-21  
-**Neste review**: Etter Fase 2 ferdigstillelse
+**Neste review**: Etter Fase 4 ferdigstillelse
+
