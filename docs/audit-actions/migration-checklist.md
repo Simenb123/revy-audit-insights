@@ -254,11 +254,12 @@ interface AuditActionsContextValue {
 
 ---
 
-## 🎯 Fase 4: Migrer Client Actions (6 timer)
-**Status**: ⏳ Ikke startet  
+## 🎯 Fase 4: Migrer Client Actions
+**Status**: ✅ Fullført  
+**Tid brukt**: 6 timer  
 **Prioritet**: 🟠 Høy  
 
-### 4.1 Refaktorer ClientActionsList (4 timer)
+### 4.1 Refaktorer ClientActionsList (4 timer) ✅
 
 **Fil**: `src/components/AuditActions/ClientActionsList.tsx`
 
@@ -270,39 +271,40 @@ interface AuditActionsContextValue {
 - Bruk `BulkActionsToolbar` (beholdes)
 
 **Checklist**:
-- [ ] Refaktorer til å bruke `ActionList`
-- [ ] Erstatt `ActionRowBody` med `ActionCard`
-- [ ] Erstatt `ActionsFilterHeader` med `ActionFilters`
-- [ ] Koble til `AuditActionsContext`
-- [ ] Test drag-n-drop
-- [ ] Test virtualisering
-- [ ] Test keyboard shortcuts
-- [ ] Test bulk operations
-- [ ] Verifiser at all funksjonalitet fungerer
+- [x] Refaktorer til å bruke `ActionList`
+- [x] Erstatt `ActionRowBody` med `ActionCard`
+- [x] Erstatt `ActionsFilterHeader` med `ActionFilters`
+- [x] Koble til `AuditActionsContext`
+- [x] Test drag-n-drop
+- [x] Test virtualisering
+- [x] Test keyboard shortcuts
+- [x] Test bulk operations
+- [x] Verifiser at all funksjonalitet fungerer
 
-**Redusert linjekode**: 265 → ~150 (estimat)
-
----
-
-### 4.2 Slett ActionRowBody og SortableActionRow (1 time)
-
-**Checklist**:
-- [ ] Slett `ActionRowBody.tsx`
-- [ ] Slett `SortableActionRow.tsx`
-- [ ] Oppdater imports i `ClientActionsList`
-- [ ] Søk etter alle imports og erstatt
-- [ ] Kjør tester
+**Redusert linjekode**: 265 → 165 (faktisk)
 
 ---
 
-### 4.3 Test integrasjoner (1 time)
+### 4.2 Slett ActionRowBody og SortableActionRow (1 time) ✅
 
 **Checklist**:
-- [ ] Test at drawer åpning fungerer
-- [ ] Test at new action dialog fungerer
-- [ ] Test at progress indicator fungerer
-- [ ] Test copy from client dialog
-- [ ] End-to-end test av hele flyten
+- [x] Slett `ActionRowBody.tsx`
+- [x] Slett `SortableActionRow.tsx`
+- [x] Slett `ActionsFilterHeader.tsx`
+- [x] Oppdater imports i `ClientActionsList`
+- [x] Søk etter alle imports og erstatt
+- [x] Kjør tester
+
+---
+
+### 4.3 Test integrasjoner (1 time) ✅
+
+**Checklist**:
+- [x] Test at drawer åpning fungerer
+- [x] Test at new action dialog fungerer
+- [x] Test at progress indicator fungerer
+- [x] Test copy from client dialog
+- [x] End-to-end test av hele flyten
 
 ---
 
@@ -627,9 +629,9 @@ Bruk denne seksjonen til å notere ned ting som dukker opp underveis:
 
 ## 📊 Fremdrift
 - **Totalt estimat**: ~37 timer
-- **Fullført**: 14 timer (~38%)
-- **Gjenstår**: 23 timer (~62%)
+- **Fullført**: 20 timer (~54%)
+- **Gjenstår**: 17 timer (~46%)
 
-**Sist oppdatert**: 2025-11-21  
+**Sist oppdatert**: 2025-11-22
 **Neste review**: Etter Fase 4 ferdigstillelse
 
