@@ -52,3 +52,5 @@ project_id = "fxelhfwaoizqyecikscu"
     verify_jwt = false
   [functions.shareholders-import-finish-batch]
     verify_jwt = true
+  [functions.generate-audit-sample]
+    verify_jwt = true

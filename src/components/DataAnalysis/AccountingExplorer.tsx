@@ -5,7 +5,7 @@ import { useAccountingData } from '@/hooks/useAccountingData';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, Activity, BarChart2, FileText, Layers, LineChart, GitBranch, Filter, X, ExternalLink } from 'lucide-react';
+import { TrendingUp, Activity, BarChart2, Layers, LineChart, GitBranch, Filter, X, ExternalLink } from 'lucide-react';
 import DrillDownTable from './DrillDownTable';
 
 import GLVersionSelector from './GLVersionSelector';
@@ -53,7 +53,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   const tabItems = [
     { id: 'overview', label: 'Oversikt', icon: Activity },
     { id: 'statement', label: 'Regnskapsoppstilling', icon: BarChart2 },
-    { id: 'journal', label: 'Bilag', icon: FileText },
   ];
 
   React.useEffect(() => {
@@ -192,33 +191,6 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
                     <CardTitle>Ingen saldobalanse data</CardTitle>
                     <CardDescription>
                       Last opp saldobalanse for å generere regnskapsoppstilling
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </div>
-          )}
-          
-          {activeTab === 'journal' && (
-            <div className="space-y-4">
-              {hasGLData && activeGLVersion ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bilagsjournal</CardTitle>
-                    <CardDescription>
-                      Versjon {activeGLVersion.version_number} - {activeGLVersion.file_name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p>Innhold for bilagsjournal kommer her...</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ingen bilagsdata</CardTitle>
-                    <CardDescription>
-                      Last opp hovedbok for å se bilag
                     </CardDescription>
                   </CardHeader>
                 </Card>
