@@ -10,11 +10,10 @@ import AuditSampling from '@/components/DataAnalysis/AuditSampling';
 import { AnalysisProvider } from '@/components/DataAnalysis/AnalysisProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Database, Download, Target, Settings, GitCompare } from 'lucide-react';
+import { BarChart3, Database, Download, Target, GitCompare } from 'lucide-react';
 import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
 import { UnifiedAnalysisSummary } from '@/components/DataAnalysis/UnifiedAnalysisSummary';
-import { NorwegianCharFixer } from '@/components/Utils/NorwegianCharFixer';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
 
 const AnalysisPage = React.memo(() => {
@@ -70,7 +69,7 @@ const AnalysisPage = React.memo(() => {
           <div className="space-y-6 p-6">
             <AnalysisProvider clientId={client.id}>
               <Tabs defaultValue="analysis" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="analysis" className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Analyse</span>
@@ -91,11 +90,6 @@ const AnalysisPage = React.memo(() => {
                   <span className="hidden sm:inline">Rapporter</span>
                   <span className="sm:hidden">Rapporter</span>
                 </TabsTrigger>
-                <TabsTrigger value="tools" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Verktøy</span>
-                  <span className="sm:hidden">Verktøy</span>
-                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="analysis" className="mt-6">
@@ -112,12 +106,6 @@ const AnalysisPage = React.memo(() => {
               
               <TabsContent value="reports" className="mt-6">
                 <ReportBuilder clientId={client.id} />
-              </TabsContent>
-              
-              <TabsContent value="tools" className="mt-6">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  <NorwegianCharFixer />
-                </div>
               </TabsContent>
               </Tabs>
             </AnalysisProvider>
