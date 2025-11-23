@@ -68,9 +68,13 @@ export function UnifiedAnalysisSummary({ clientId }: UnifiedAnalysisSummaryProps
   const statistics = useMemo(() => {
     if (!analysis) return null;
 
-    const monthlyData = analysis.monthly_summary || [];
-    const totalDebit = monthlyData.reduce((sum, m) => sum + (m.debit || 0), 0);
-    const totalCredit = monthlyData.reduce((sum, m) => sum + (m.credit || 0), 0);
+    // Use pre-aggregated data from backend instead of client-side reduce
+    const totalDebit = analysis.overview?.total_debit 
+      ?? analysis.trial_balance_summary?.total_debit 
+      ?? 0;
+    const totalCredit = analysis.overview?.total_credit 
+      ?? analysis.trial_balance_summary?.total_credit 
+      ?? 0;
     
     return {
       totalTransactions: analysis.total_transactions,
