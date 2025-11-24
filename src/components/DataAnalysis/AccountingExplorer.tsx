@@ -74,7 +74,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   if (isLoadingGL || isLoadingTB || isLoadingAccounting) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-[var(--content-gap)]">
         <Card>
           <CardHeader>
             <CardTitle>Laster regnskapsdata...</CardTitle>
@@ -86,7 +86,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
 
   if (!hasGLData && !hasTBData) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-[var(--content-gap)]">
         <Card>
           <CardHeader>
             <CardTitle>Ingen regnskapsdata funnet</CardTitle>
@@ -100,7 +100,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--content-gap)]">
       
       
       {showVersionInfo && (
@@ -150,7 +150,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
       <div className="w-full">
         <div className="w-full">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div className="space-y-[var(--content-gap)]">
               {hasTBData && selectedTBVersion && (
                 <Card>
                   <CardHeader>
@@ -178,7 +178,7 @@ const AccountingExplorer: React.FC<AccountingExplorerProps> = ({ clientId }) => 
           
           
           {activeTab === 'statement' && (
-            <div className="space-y-4">
+            <div className="space-y-[var(--space-4)]">
               {hasTBData && selectedTBVersion ? (
                 <ClientFinancialStatementGenerator 
                   clientId={clientId} 

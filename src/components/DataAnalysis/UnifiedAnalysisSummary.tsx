@@ -89,8 +89,8 @@ export function UnifiedAnalysisSummary({ clientId }: UnifiedAnalysisSummaryProps
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-[var(--content-gap)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-4)]">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardHeader>
@@ -142,9 +142,9 @@ export function UnifiedAnalysisSummary({ clientId }: UnifiedAnalysisSummaryProps
     : { status: 'destructive', text: 'Ubalanse' };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--content-gap)]">
       {/* Header with version info and refresh */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-[var(--space-4)]">
         <div className="flex-1">
           <h2 className="text-2xl font-bold tracking-tight">Regnskapsanalyse</h2>
           <div className="flex flex-wrap items-center gap-4 mt-2 text-muted-foreground">
@@ -176,7 +176,7 @@ export function UnifiedAnalysisSummary({ clientId }: UnifiedAnalysisSummaryProps
       </div>
 
       {/* Cross-check and Trial Balance Summary Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--content-gap)]">
         <CrossCheckCard 
           crossCheck={analysis.trial_balance_crosscheck}
           isLoading={isLoading}
@@ -188,7 +188,7 @@ export function UnifiedAnalysisSummary({ clientId }: UnifiedAnalysisSummaryProps
       </div>
 
       {/* Key metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--space-4)]">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Transaksjoner</CardTitle>

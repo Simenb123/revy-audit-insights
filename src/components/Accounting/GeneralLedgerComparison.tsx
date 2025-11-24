@@ -47,7 +47,7 @@ const GeneralLedgerComparison: React.FC<GeneralLedgerComparisonProps> = ({ clien
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--content-gap)]">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -130,9 +130,9 @@ const GeneralLedgerComparison: React.FC<GeneralLedgerComparisonProps> = ({ clien
       )}
 
       {comparison && (
-        <div className="space-y-6">
+        <div className="space-y-[var(--content-gap)]">
           {/* Statistics Overview */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-[var(--space-4)] md:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
