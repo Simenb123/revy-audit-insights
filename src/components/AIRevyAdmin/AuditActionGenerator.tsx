@@ -17,7 +17,7 @@ import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAudit
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { ACTION_TYPE_LABELS, ActionType, AuditSubjectArea } from '@/types/audit-actions';
 import CreateActionTemplateForm from '@/components/AuditActions/CreateActionTemplateForm';
-import type { CreateActionTemplateFormData } from '@/components/AuditActions/CreateActionTemplateForm/types';
+import type { CreateActionTemplateFormData } from '@/components/AuditActions/CreateActionTemplateForm/schema';
 import { AuditPhase } from '@/types/revio';
 
 interface AIGeneratedData {

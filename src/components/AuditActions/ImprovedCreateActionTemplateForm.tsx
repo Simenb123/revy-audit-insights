@@ -8,10 +8,9 @@ import { Form } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuditSubjectArea } from '@/types/audit-actions';
 import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
-import { createActionTemplateFormSchema, CreateActionTemplateFormData } from './CreateActionTemplateForm/types';
+import { createActionTemplateSchema, CreateActionTemplateFormData } from './CreateActionTemplateForm/schema';
 import BasicFields from './CreateActionTemplateForm/BasicFields';
 import DetailFields from './CreateActionTemplateForm/DetailFields';
-import PhaseSelection from './CreateActionTemplateForm/PhaseSelection';
 
 interface ImprovedCreateActionTemplateFormProps {
   selectedArea?: AuditSubjectArea;

@@ -10,7 +10,6 @@ import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTem
 import { createActionTemplateSchema, CreateActionTemplateFormData } from './schema';
 import BasicFields from './BasicFields';
 import DetailFields from './DetailFields';
-import PhaseSelection from './PhaseSelection';
 import { ResponseFieldsEditor } from './ResponseFieldsEditor';
 
 interface CreateActionTemplateFormProps {
@@ -26,17 +25,11 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
   const form = useForm<CreateActionTemplateFormData>({
     resolver: zodResolver(createActionTemplateSchema),
     defaultValues: initialData || {
-      name: '',
-      description: '',
-      subject_area: selectedArea || '',
+      phase: 'execution',
       action_type: 'substantive',
-      objective: '',
+      name: '',
+      subject_area: selectedArea || '',
       procedures: '',
-      documentation_requirements: '',
-      estimated_hours: undefined,
-      risk_level: 'medium',
-      applicable_phases: ['execution'],
-      sort_order: 0,
       response_fields: []
     }
   });
@@ -46,17 +39,17 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
       // Ensure all required fields are present for the template
       const templateData = {
         name: data.name,
-        description: data.description || '',
-        subject_area: data.subject_area, // ID stored as text
-        subject_area_id: data.subject_area, // Same ID in dedicated field
+        description: '',
+        subject_area: data.subject_area,
+        subject_area_id: data.subject_area,
         action_type: data.action_type,
-        objective: data.objective || '',
+        objective: '',
         procedures: data.procedures,
-        documentation_requirements: data.documentation_requirements || '',
-        estimated_hours: data.estimated_hours,
-        risk_level: data.risk_level,
-        applicable_phases: data.applicable_phases as any,
-        sort_order: data.sort_order,
+        documentation_requirements: '',
+        estimated_hours: undefined as number | undefined,
+        risk_level: 'medium' as const,
+        applicable_phases: [data.phase] as any,
+        sort_order: 0,
         is_system_template: false,
         is_active: true,
         response_fields: data.response_fields || []
@@ -78,7 +71,6 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <BasicFields form={form} />
         <DetailFields form={form} />
-        <PhaseSelection form={form} />
         <ResponseFieldsEditor form={form} />
 
         <div className="flex justify-end space-x-2 pt-4">
