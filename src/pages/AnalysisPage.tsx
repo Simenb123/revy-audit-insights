@@ -15,6 +15,7 @@ import ReportBuilder from '@/components/ReportBuilder/ReportBuilder';
 import { Button } from '@/components/ui/button';
 import { UnifiedAnalysisSummary } from '@/components/DataAnalysis/UnifiedAnalysisSummary';
 import GeneralLedgerComparison from '@/components/Accounting/GeneralLedgerComparison';
+import ResponsiveTabs from '@/components/ui/responsive-tabs';
 
 const AnalysisPage = React.memo(() => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -35,7 +36,7 @@ const AnalysisPage = React.memo(() => {
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="space-y-6">
+        <div className="space-y-[var(--content-gap)]">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-64 w-full" />
         </div>
@@ -66,45 +67,45 @@ const AnalysisPage = React.memo(() => {
         {/* Navigation handled by layout */}
         
         <div className="flex-1 overflow-auto">
-          <div className="space-y-6 p-6">
+          <div className="space-y-[var(--content-gap)] p-6">
             <AnalysisProvider clientId={client.id}>
               <Tabs defaultValue="analysis" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="analysis" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Analyse</span>
-                  <span className="sm:hidden">Analyse</span>
-                </TabsTrigger>
-                <TabsTrigger value="comparison" className="flex items-center gap-2">
-                  <GitCompare className="h-4 w-4" />
-                  <span className="hidden sm:inline">Versjonssammenligning</span>
-                  <span className="sm:hidden">Versjon</span>
-                </TabsTrigger>
-                <TabsTrigger value="sampling" className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  <span className="hidden sm:inline">Revisjonsutvalg</span>
-                  <span className="sm:hidden">Utvalg</span>
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Rapporter</span>
-                  <span className="sm:hidden">Rapporter</span>
-                </TabsTrigger>
+              <ResponsiveTabs
+                items={[
+                  { id: 'analysis', label: 'Analyse', icon: BarChart3 },
+                  { id: 'comparison', label: 'Versjonssammenligning', icon: GitCompare },
+                  { id: 'sampling', label: 'Revisjonsutvalg', icon: Target },
+                  { id: 'reports', label: 'Rapporter', icon: Download }
+                ]}
+                activeTab="analysis"
+                onTabChange={(tab) => {
+                  const tabsEl = document.querySelector('[role="tablist"]');
+                  const trigger = tabsEl?.querySelector(`[value="${tab}"]`) as HTMLElement;
+                  trigger?.click();
+                }}
+                variant="underline"
+                sticky={false}
+              />
+              <TabsList className="hidden">
+                <TabsTrigger value="analysis">Analyse</TabsTrigger>
+                <TabsTrigger value="comparison">Versjonssammenligning</TabsTrigger>
+                <TabsTrigger value="sampling">Revisjonsutvalg</TabsTrigger>
+                <TabsTrigger value="reports">Rapporter</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="analysis" className="mt-6">
+              <TabsContent value="analysis" className="mt-[var(--content-gap)]">
                 <UnifiedAnalysisSummary clientId={client.id} />
               </TabsContent>
 
-              <TabsContent value="comparison" className="mt-6">
+              <TabsContent value="comparison" className="mt-[var(--content-gap)]">
                 <GeneralLedgerComparison clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="sampling" className="mt-6">
+              <TabsContent value="sampling" className="mt-[var(--content-gap)]">
                 <AuditSampling clientId={client.id} />
               </TabsContent>
               
-              <TabsContent value="reports" className="mt-6">
+              <TabsContent value="reports" className="mt-[var(--content-gap)]">
                 <ReportBuilder clientId={client.id} />
               </TabsContent>
               </Tabs>
