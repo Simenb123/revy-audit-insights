@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Upload, Settings, BookOpen, Users, TrendingUp } from 'lucide-react';
+import { Plus, Upload, Settings, BookOpen, Users, TrendingUp, ListChecks } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
@@ -201,7 +201,7 @@ const KnowledgeOverview = () => {
       </div>
 
       {/* Quick Navigation - Reduced spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6">
         <Link to="/fag/mine">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-3 text-center">
@@ -234,6 +234,15 @@ const KnowledgeOverview = () => {
             <CardContent className="p-3 text-center">
               <BookOpen className="w-6 h-6 mx-auto mb-2 text-primary" />
               <h3 className="font-medium text-sm">Juridisk kunnskapsbase</h3>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/admin/audit-action-library">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-3 text-center">
+              <ListChecks className="w-6 h-6 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium text-sm">Revisjonshandlinger</h3>
             </CardContent>
           </Card>
         </Link>
