@@ -564,6 +564,67 @@ export type Database = {
           },
         ]
       }
+      action_comments: {
+        Row: {
+          client_audit_action_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          parent_comment_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_audit_action_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          parent_comment_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_audit_action_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          parent_comment_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_comments_client_audit_action_id_fkey"
+            columns: ["client_audit_action_id"]
+            isOneToOne: false
+            referencedRelation: "client_audit_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "action_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_comments_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_groups: {
         Row: {
           audit_firm_id: string | null
