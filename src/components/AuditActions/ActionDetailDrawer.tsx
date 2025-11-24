@@ -20,6 +20,7 @@ import { BookOpen, FileText, Brain } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import EnhancedTemplateView from './EnhancedTemplateView';
 import { toast } from 'sonner';
+import ActionComments from './Comments/ActionComments';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -123,6 +124,13 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
 
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
+              {/* Comments Section */}
+              {action && (
+                <ActionComments actionId={action.id} />
+              )}
+
+              <Separator />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ActionDetailsForm
                   name={name}

@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Clock, BookOpen, FileText, Brain } from 'lucide-react';
+import { Clock, BookOpen, FileText, Brain, MessageCircle } from 'lucide-react';
 import { AuditActionTemplate, ClientAuditAction } from '@/types/audit-actions';
 import { getRiskBadgeVariant, getRiskLabel } from './badgeUtils';
 import ActionStatusBadge from '../ActionStatusBadge';
@@ -10,6 +10,7 @@ import ActionQuickActions from '../ActionQuickActions';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { PHASE_CONFIG } from '@/constants/auditPhases';
 import type { AuditPhase } from '@/types/revio';
+import { useActionComments } from '@/hooks/audit-actions/useActionComments';
 
 interface ActionCardProps {
   type: 'template' | 'client-action';
@@ -45,6 +46,22 @@ const ActionCard = ({
   const isClientAction = type === 'client-action';
   const clientAction = isClientAction ? (data as ClientAuditAction) : null;
   const template = !isClientAction ? (data as AuditActionTemplate) : null;
+
+  const { data: comments = [] } = useActionComments(isClientAction ? data.id : undefined);
+  
+  const unresolvedCommentCount = React.useMemo(() => {
+    if (!isClientAction) return 0;
+    const countUnresolved = (comments: any[]): number => {
+      return comments.reduce((count, comment) => {
+        let total = comment.is_resolved ? 0 : 1;
+        if (comment.replies) {
+          total += countUnresolved(comment.replies);
+        }
+        return count + total;
+      }, 0);
+    };
+    return countUnresolved(comments);
+  }, [comments, isClientAction]);
 
   const getSubjectAreaName = (areaKey: string): string => {
     const area = subjectAreas?.find((a) => a.name === areaKey);
@@ -148,6 +165,13 @@ const ActionCard = ({
                 <span className="flex items-center gap-1">
                   <Brain size={12} />
                   AI
+                </span>
+              )}
+
+              {isClientAction && unresolvedCommentCount > 0 && (
+                <span className="flex items-center gap-1 text-primary">
+                  <MessageCircle size={12} />
+                  {unresolvedCommentCount}
                 </span>
               )}
             </div>
