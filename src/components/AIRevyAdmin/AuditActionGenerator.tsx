@@ -50,23 +50,9 @@ const AuditActionGenerator = () => {
       label
     }));
 
-  // Map subject area names to the correct enum values used in the database
-  const getSubjectAreaEnumValue = (subjectAreaName: string): AuditSubjectArea => {
-    const mapping: Record<string, AuditSubjectArea> = {
-      'Inntekter/Salg': 'sales',
-      'Lønn': 'payroll',
-      'Andre driftskostnader': 'operating_expenses',
-      'Varelager': 'inventory',
-      'Finans': 'finance',
-      'Banktransaksjoner': 'banking',
-      'Investeringer/Anleggsmidler': 'fixed_assets',
-      'Kundefordringer': 'receivables',
-      'Leverandørgjeld': 'payables',
-      'Egenkapital': 'equity',
-      'Nærstående transaksjoner': 'other'
-    };
-
-    return mapping[subjectAreaName] || 'other';
+  // Get subject area ID from name for database storage
+  const getSubjectAreaId = (subjectAreaName: string): string | undefined => {
+    return subjectAreas?.find(area => area.display_name === subjectAreaName)?.id;
   };
 
   const handleGenerateWithAI = async () => {
@@ -81,38 +67,83 @@ const AuditActionGenerator = () => {
 
     setIsGenerating(true);
     try {
-      const prompt = `Lag et forslag til revisjonshandling for fagområdet "${selectedSubjectArea}" ` +
-        `og handlingstypen "${selectedActionType}". ` +
-        `Svar i JSON-format med feltene name, description, objective, procedures, ` +
-        `documentation_requirements, estimated_hours og risk_level.`;
+      const actionTypeLabel = actionTypes.find(t => t.value === selectedActionType)?.label || selectedActionType;
+      
+      // Enhanced prompt with detailed context and structure
+      const prompt = `Du er en ekspert revisor som lager revisjonshandlinger i henhold til ISA-standarder.
+
+Lag en detaljert revisjonshandling for:
+- Fagområde: ${selectedSubjectArea}
+- Handlingstype: ${actionTypeLabel}
+
+Revisjonshandlingen skal:
+1. Ha et konkret og beskrivende navn
+2. Inkludere tydelig formål knyttet til revisjonsrisikoer
+3. Inneholde spesifikke, steg-for-steg prosedyrer som kan følges
+4. Definere nøyaktige dokumentasjonskrav
+5. Estimere realistisk tidsbruk i timer
+6. Vurdere risikonivå (low/medium/high)
+7. Angi hvilke revisjonsfaser handlingen er relevant for
+
+Tenk på:
+- ISA 500 (Revisjonsbevis) - hvilke bevis trengs?
+- ISA 315 (Risikovurdering) - hvilke risikoer adresseres?
+- ISA 330 (Revisors reaksjoner på vurderte risikoer)
+
+Svar BARE med et JSON-objekt i følgende format:
+{
+  "name": "Kort, beskrivende navn på revisjonshandlingen",
+  "description": "1-2 setninger om hva handlingen omfatter",
+  "objective": "Tydelig formål - hva skal verifiseres/testes/dokumenteres",
+  "procedures": "Detaljerte steg-for-steg prosedyrer nummerert 1, 2, 3 osv. Vær spesifikk.",
+  "documentation_requirements": "Nøyaktig hvilke dokumenter/bevis som skal innhentes og dokumenteres",
+  "estimated_hours": <tall>,
+  "risk_level": "low|medium|high",
+  "applicable_phases": ["engagement", "planning", "risk_assessment", "execution", "completion", "reporting"]
+}`;
 
       const aiResponse = await generateEnhancedAIResponseWithVariant(
         prompt,
         'audit-actions',
-        [], // history
-        undefined, // clientData
-        'employee', // userRole
-        undefined, // sessionId
-        undefined // selectedVariant
+        [],
+        undefined,
+        'employee',
+        undefined,
+        undefined
       );
 
       let parsed: any;
       try {
-        parsed = JSON.parse(aiResponse);
+        // Try to extract JSON from markdown code blocks if present
+        const jsonMatch = aiResponse.match(/```json?\s*([\s\S]*?)\s*```/) || 
+                         aiResponse.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiResponse;
+        parsed = JSON.parse(jsonStr);
       } catch (parseError) {
         logger.error('Failed to parse AI response:', parseError, aiResponse);
-        throw new Error('Kunne ikke tolke AI-responsen');
+        throw new Error('Kunne ikke tolke AI-responsen. Prøv igjen.');
+      }
+
+      // Validate required fields
+      if (!parsed.name || !parsed.procedures) {
+        throw new Error('AI-responsen mangler obligatoriske felt. Prøv igjen.');
       }
 
       const aiSuggestion: AIGeneratedData = {
-        name: parsed.name || '',
+        name: parsed.name,
         description: parsed.description || '',
         objective: parsed.objective || '',
-        procedures: parsed.procedures || '',
+        procedures: parsed.procedures,
         documentation_requirements: parsed.documentation_requirements || '',
-        estimated_hours: parsed.estimated_hours || 0,
-        risk_level: (parsed.risk_level as 'low' | 'medium' | 'high') || 'medium',
-        applicable_phases: parsed.applicable_phases || ['execution']
+        estimated_hours: Number(parsed.estimated_hours) || 2,
+        risk_level: (['low', 'medium', 'high'].includes(parsed.risk_level) 
+          ? parsed.risk_level 
+          : 'medium') as 'low' | 'medium' | 'high',
+        applicable_phases: Array.isArray(parsed.applicable_phases) && parsed.applicable_phases.length > 0
+          ? parsed.applicable_phases.filter((p: string) => 
+              ['overview', 'engagement', 'planning', 'risk_assessment', 'execution', 'completion', 'reporting'].includes(p)
+            )
+          : ['execution']
       };
 
       setAiGeneratedData(aiSuggestion);
@@ -120,10 +151,11 @@ const AuditActionGenerator = () => {
 
       toast({
         title: "AI-forslag generert",
-        description: "Handlingen er generert med AI. Du kan nå redigere og lagre den.",
+        description: "Handlingen er generert med AI. Gjennomgå og tilpass før lagring.",
       });
     } catch (error: any) {
       const message = error instanceof Error ? error.message : 'Kunne ikke generere handling med AI';
+      logger.error('AI generation error:', error);
       toast({
         title: "Feil ved AI-generering",
         description: message,
@@ -153,13 +185,13 @@ const AuditActionGenerator = () => {
   }
 
   if (showCreateForm) {
-    const enumSubjectArea = selectedSubjectArea ? getSubjectAreaEnumValue(selectedSubjectArea) : undefined;
+    const subjectAreaId = selectedSubjectArea ? getSubjectAreaId(selectedSubjectArea) : undefined;
     
     const initialData: Partial<CreateActionTemplateFormData> = aiGeneratedData 
       ? {
           name: aiGeneratedData.name || '',
           description: aiGeneratedData.description || '',
-          subject_area: enumSubjectArea || 'other',
+          subject_area: subjectAreaId || '',
           action_type: selectedActionType,
           objective: aiGeneratedData.objective || '',
           procedures: aiGeneratedData.procedures || '',
@@ -170,7 +202,7 @@ const AuditActionGenerator = () => {
           sort_order: 0
         }
       : {
-          subject_area: enumSubjectArea || 'other',
+          subject_area: subjectAreaId || '',
           action_type: selectedActionType,
           risk_level: 'medium',
           applicable_phases: ['execution'],
@@ -186,8 +218,19 @@ const AuditActionGenerator = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {aiGeneratedData && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+              <h3 className="font-medium mb-2 flex items-center gap-2">
+                <Brain className="w-4 h-4" />
+                AI-generert forslag
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Gjennomgå og tilpass handlingen før du lagrer. Du kan endre alle felt.
+              </p>
+            </div>
+          )}
           <CreateActionTemplateForm
-            selectedArea={enumSubjectArea}
+            selectedArea={subjectAreaId}
             onSuccess={() => {
               setShowCreateForm(false);
               setAiGeneratedData(null);

@@ -50,9 +50,21 @@ export function useCreateAuditActionTemplate() {
         toDbPhase(phase as AuditPhase)
       );
 
+      // Validate subject_area if subject_area_id is provided
+      if (templateData.subject_area_id) {
+        const { data: subjectArea, error: subjectAreaError } = await supabase
+          .from('subject_areas')
+          .select('name')
+          .eq('id', templateData.subject_area_id)
+          .single();
+        
+        if (subjectAreaError || !subjectArea) {
+          throw new Error('Ugyldig fagområde valgt');
+        }
+      }
+
       const dataToInsert = {
         ...templateData,
-        subject_area: templateData.subject_area as any, // Type assertion for dynamic subject areas
         applicable_phases: mappedPhases as Database['public']['Enums']['audit_phase'][]
       };
 
@@ -71,6 +83,8 @@ export function useCreateAuditActionTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-action-template-count'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-action-templates-by-subject-area'] });
       toast.success('Handlingsmal opprettet');
     },
     onError: (error: any) => {
@@ -93,9 +107,21 @@ export function useUpdateAuditActionTemplate() {
         ) as Database['public']['Enums']['audit_phase'][];
       }
 
+      // Validate subject_area if subject_area_id is being updated
+      if (updates.subject_area_id) {
+        const { data: subjectArea, error: subjectAreaError } = await supabase
+          .from('subject_areas')
+          .select('name')
+          .eq('id', updates.subject_area_id)
+          .single();
+        
+        if (subjectAreaError || !subjectArea) {
+          throw new Error('Ugyldig fagområde valgt');
+        }
+      }
+
       const updateData = {
         ...updates,
-        subject_area: updates.subject_area as any, // Type assertion for dynamic subject areas
         applicable_phases: mappedPhases
       };
 
@@ -115,6 +141,8 @@ export function useUpdateAuditActionTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-action-template-count'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-action-templates-by-subject-area'] });
       toast.success('Handlingsmal oppdatert');
     },
     onError: (error: any) => {
