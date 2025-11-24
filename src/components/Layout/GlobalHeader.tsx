@@ -28,7 +28,8 @@ import {
   UserCog,
   Brain,
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  ListChecks
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
@@ -108,6 +109,12 @@ const GlobalHeader = () => {
       url: '/ai-revy-admin',
       icon: Brain,
       roles: ['admin'] as const,
+    },
+    {
+      title: 'Revisjonshandlinger',
+      url: '/admin/audit-action-library',
+      icon: ListChecks,
+      roles: ['admin', 'partner', 'manager'] as const,
     },
   ];
 
