@@ -16,8 +16,11 @@ import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 import { useAuditActionTemplatesBySubjectArea } from '@/hooks/knowledge/useAuditActionTemplates';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { ACTION_TYPE_LABELS, ActionType, AuditSubjectArea } from '@/types/audit-actions';
+import CreateActionTemplateForm from '@/components/AuditActions/CreateActionTemplateForm';
+import type { CreateActionTemplateFormData } from '@/components/AuditActions/CreateActionTemplateForm/types';
+import { AuditPhase } from '@/types/revio';
 
-interface FormData {
+interface AIGeneratedData {
   name: string;
   description: string;
   objective: string;
@@ -25,6 +28,7 @@ interface FormData {
   documentation_requirements: string;
   estimated_hours: number;
   risk_level: 'low' | 'medium' | 'high';
+  applicable_phases?: AuditPhase[];
 }
 
 const AuditActionGenerator = () => {
@@ -35,20 +39,10 @@ const AuditActionGenerator = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiGeneratedData, setAiGeneratedData] = useState<Partial<AIGeneratedData> | null>(null);
   
-  const createTemplate = useCreateAuditActionTemplate();
   const { data: subjectAreas, isLoading: subjectAreasLoading } = useSubjectAreas();
   const { data: previewTemplates, isLoading: templatesLoading } = useAuditActionTemplatesBySubjectArea();
-
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    description: '',
-    objective: '',
-    procedures: '',
-    documentation_requirements: '',
-    estimated_hours: 0,
-    risk_level: 'medium'
-  });
 
   const actionTypes: { value: ActionType; label: string }[] =
     Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => ({
@@ -110,17 +104,18 @@ const AuditActionGenerator = () => {
         throw new Error('Kunne ikke tolke AI-responsen');
       }
 
-      const aiSuggestion: FormData = {
+      const aiSuggestion: AIGeneratedData = {
         name: parsed.name || '',
         description: parsed.description || '',
         objective: parsed.objective || '',
         procedures: parsed.procedures || '',
         documentation_requirements: parsed.documentation_requirements || '',
         estimated_hours: parsed.estimated_hours || 0,
-        risk_level: (parsed.risk_level as 'low' | 'medium' | 'high') || 'medium'
+        risk_level: (parsed.risk_level as 'low' | 'medium' | 'high') || 'medium',
+        applicable_phases: parsed.applicable_phases || ['execution']
       };
 
-      setFormData(aiSuggestion);
+      setAiGeneratedData(aiSuggestion);
       setShowCreateForm(true);
 
       toast({
@@ -140,80 +135,8 @@ const AuditActionGenerator = () => {
   };
 
   const handleCreateManual = () => {
-    setFormData({
-      name: '',
-      description: '',
-      objective: '',
-      procedures: '',
-      documentation_requirements: '',
-      estimated_hours: 0,
-      risk_level: 'medium'
-    });
+    setAiGeneratedData(null);
     setShowCreateForm(true);
-  };
-
-  const handleSave = async () => {
-    if (!selectedSubjectArea) {
-      toast({
-        title: "Velg fagområde",
-        description: "Du må velge et fagområde før du kan lagre handlingen.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!session?.user?.id) {
-      toast({
-        title: "Ikke autentisert",
-        description: "Du må være logget inn for å lagre handlinger.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Convert the selected subject area to the correct enum value
-      const enumSubjectArea = getSubjectAreaEnumValue(selectedSubjectArea);
-      
-      logger.log('Creating action with enum value:', {
-        ...formData,
-        subject_area: enumSubjectArea,
-        action_type: selectedActionType,
-        phase: 'execution',
-        applicable_phases: ['execution'],
-        created_by: session.user.id
-      });
-
-      await createTemplate.mutateAsync({
-        name: formData.name,
-        description: formData.description,
-        subject_area: enumSubjectArea,
-        action_type: selectedActionType,
-        objective: formData.objective,
-        procedures: formData.procedures,
-        documentation_requirements: formData.documentation_requirements,
-        estimated_hours: formData.estimated_hours,
-        risk_level: formData.risk_level,
-        applicable_phases: ['execution'],
-        sort_order: 0,
-        is_system_template: false,
-        is_active: true,
-        created_by: session.user.id
-      });
-
-      setShowCreateForm(false);
-      setFormData({
-        name: '',
-        description: '',
-        objective: '',
-        procedures: '',
-        documentation_requirements: '',
-        estimated_hours: 0,
-        risk_level: 'medium'
-      });
-    } catch (error) {
-      logger.error('Error creating action:', error);
-    }
   };
 
   if (subjectAreasLoading) {
@@ -230,6 +153,30 @@ const AuditActionGenerator = () => {
   }
 
   if (showCreateForm) {
+    const enumSubjectArea = selectedSubjectArea ? getSubjectAreaEnumValue(selectedSubjectArea) : undefined;
+    
+    const initialData: Partial<CreateActionTemplateFormData> = aiGeneratedData 
+      ? {
+          name: aiGeneratedData.name || '',
+          description: aiGeneratedData.description || '',
+          subject_area: enumSubjectArea || 'other',
+          action_type: selectedActionType,
+          objective: aiGeneratedData.objective || '',
+          procedures: aiGeneratedData.procedures || '',
+          documentation_requirements: aiGeneratedData.documentation_requirements || '',
+          estimated_hours: aiGeneratedData.estimated_hours || 0,
+          risk_level: aiGeneratedData.risk_level || 'medium',
+          applicable_phases: aiGeneratedData.applicable_phases || ['execution'],
+          sort_order: 0
+        }
+      : {
+          subject_area: enumSubjectArea || 'other',
+          action_type: selectedActionType,
+          risk_level: 'medium',
+          applicable_phases: ['execution'],
+          sort_order: 0
+        };
+
     return (
       <Card>
         <CardHeader>
@@ -238,104 +185,23 @@ const AuditActionGenerator = () => {
             Opprett ny revisjonshandling
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Navn</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Navn på handlingen"
-              />
-            </div>
-            <div>
-              <Label htmlFor="estimated_hours">Estimerte timer</Label>
-              <Input
-                id="estimated_hours"
-                type="number"
-                value={formData.estimated_hours}
-                onChange={(e) => setFormData(prev => ({ ...prev, estimated_hours: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="description">Beskrivelse</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Kort beskrivelse av handlingen"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="objective">Formål</Label>
-            <Textarea
-              id="objective"
-              value={formData.objective}
-              onChange={(e) => setFormData(prev => ({ ...prev, objective: e.target.value }))}
-              placeholder="Hva er formålet med denne handlingen?"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="procedures">Prosedyrer</Label>
-            <Textarea
-              id="procedures"
-              value={formData.procedures}
-              onChange={(e) => setFormData(prev => ({ ...prev, procedures: e.target.value }))}
-              placeholder="Detaljerte prosedyrer for gjennomføring"
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="documentation">Dokumentasjonskrav</Label>
-            <Textarea
-              id="documentation"
-              value={formData.documentation_requirements}
-              onChange={(e) => setFormData(prev => ({ ...prev, documentation_requirements: e.target.value }))}
-              placeholder="Hvilke dokumenter trengs?"
-            />
-          </div>
-
-          <div>
-            <Label>Risikonivå</Label>
-            <Select 
-              value={formData.risk_level} 
-              onValueChange={(value: 'low' | 'medium' | 'high') => 
-                setFormData(prev => ({ ...prev, risk_level: value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Lav risiko</SelectItem>
-                <SelectItem value="medium">Medium risiko</SelectItem>
-                <SelectItem value="high">Høy risiko</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button 
-              onClick={handleSave}
-              disabled={createTemplate.isPending || !formData.name || !formData.procedures}
-            >
-              {createTemplate.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Lagre handling
-            </Button>
-            <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-              Avbryt
-            </Button>
-          </div>
+        <CardContent>
+          <CreateActionTemplateForm
+            selectedArea={enumSubjectArea}
+            onSuccess={() => {
+              setShowCreateForm(false);
+              setAiGeneratedData(null);
+              toast({
+                title: "Handling opprettet",
+                description: "Den nye revisjonshandlingen er nå tilgjengelig i biblioteket.",
+              });
+            }}
+            onCancel={() => {
+              setShowCreateForm(false);
+              setAiGeneratedData(null);
+            }}
+            initialData={initialData}
+          />
         </CardContent>
       </Card>
     );

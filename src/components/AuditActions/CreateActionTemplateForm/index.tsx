@@ -16,14 +16,15 @@ interface CreateActionTemplateFormProps {
   selectedArea?: AuditSubjectArea;
   onSuccess?: () => void;
   onCancel?: () => void;
+  initialData?: Partial<CreateActionTemplateFormData>;
 }
 
-const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel }: CreateActionTemplateFormProps) => {
+const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialData }: CreateActionTemplateFormProps) => {
   const createTemplate = useCreateAuditActionTemplate();
 
   const form = useForm<CreateActionTemplateFormData>({
     resolver: zodResolver(createActionTemplateFormSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: '',
       description: '',
       subject_area: selectedArea || '',

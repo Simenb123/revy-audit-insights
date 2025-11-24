@@ -1,0 +1,180 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Edit, Trash2, Search } from 'lucide-react';
+import { useAuditActionTemplates, useDeleteAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
+import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
+import EditActionTemplateDialog from '@/components/AuditActions/EditActionTemplateDialog';
+import { toast } from '@/hooks/use-toast';
+import { getPhaseLabel } from '@/constants/auditPhases';
+import type { AuditSubjectArea } from '@/types/audit-actions';
+
+const ActionTemplatesList = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubjectArea, setSelectedSubjectArea] = useState<AuditSubjectArea | 'all'>('all');
+  const [selectedRiskLevel, setSelectedRiskLevel] = useState<'low' | 'medium' | 'high' | 'all'>('all');
+
+  const { data: templates, isLoading } = useAuditActionTemplates();
+  const { data: subjectAreas } = useSubjectAreas();
+  const deleteTemplate = useDeleteAuditActionTemplate();
+
+  const handleDelete = async (templateId: string, templateName: string) => {
+    if (!confirm(`Er du sikker på at du vil slette "${templateName}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteTemplate.mutateAsync(templateId);
+      toast({
+        title: "Mal slettet",
+        description: "Revisjonshandlingsmalen er slettet.",
+      });
+    } catch (error) {
+      toast({
+        title: "Feil ved sletting",
+        description: "Kunne ikke slette malen. Prøv igjen.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredTemplates = templates?.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubjectArea = selectedSubjectArea === 'all' || template.subject_area === selectedSubjectArea;
+    const matchesRiskLevel = selectedRiskLevel === 'all' || template.risk_level === selectedRiskLevel;
+    
+    return matchesSearch && matchesSubjectArea && matchesRiskLevel;
+  });
+
+  if (isLoading) {
+    return <div>Laster maler...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Revisjonshandlingsmaler</CardTitle>
+        <CardDescription>
+          Administrer og rediger eksisterende handlingsmaler
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Filters */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Søk i maler..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <Select value={selectedSubjectArea} onValueChange={(value) => setSelectedSubjectArea(value as AuditSubjectArea | 'all')}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Alle fagområder" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle fagområder</SelectItem>
+              {subjectAreas?.map((area) => (
+                <SelectItem key={area.id} value={area.name as AuditSubjectArea}>
+                  {area.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedRiskLevel} onValueChange={(value) => setSelectedRiskLevel(value as 'low' | 'medium' | 'high' | 'all')}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Alle risikonivå" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle risikonivå</SelectItem>
+              <SelectItem value="low">Lav</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">Høy</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Templates List */}
+        <div className="space-y-2">
+          {filteredTemplates && filteredTemplates.length > 0 ? (
+            filteredTemplates.map((template) => (
+              <div key={template.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium">{template.name}</h4>
+                    {template.is_system_template && (
+                      <Badge variant="outline" className="text-xs">System</Badge>
+                    )}
+                  </div>
+                  {template.description && (
+                    <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="secondary" className="text-xs">
+                      {template.action_type}
+                    </Badge>
+                    <Badge 
+                      variant={
+                        template.risk_level === 'high' ? 'destructive' : 
+                        template.risk_level === 'medium' ? 'default' : 'secondary'
+                      }
+                      className="text-xs"
+                    >
+                      {template.risk_level === 'high' ? 'Høy risiko' : 
+                       template.risk_level === 'medium' ? 'Medium risiko' : 'Lav risiko'}
+                    </Badge>
+                    {template.applicable_phases && template.applicable_phases.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {template.applicable_phases.map(p => getPhaseLabel(p)).join(', ')}
+                      </Badge>
+                    )}
+                    {template.estimated_hours && template.estimated_hours > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {template.estimated_hours}t
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <EditActionTemplateDialog 
+                    template={template}
+                    trigger={
+                      <Button variant="ghost" size="sm">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    }
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleDelete(template.id, template.name)}
+                    disabled={deleteTemplate.isPending}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm || selectedSubjectArea !== 'all' || selectedRiskLevel !== 'all' 
+                ? 'Ingen maler funnet med valgte filtre'
+                : 'Ingen maler funnet. Opprett din første mal!'
+              }
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ActionTemplatesList;
