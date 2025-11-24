@@ -66,6 +66,14 @@ export interface AuditActionTemplate {
   estimated_hours?: number;
   risk_level: string;
   applicable_phases: AuditPhase[];
+  response_fields?: Array<{
+    id: string;
+    label: string;
+    type: 'text' | 'textarea' | 'select' | 'checkbox' | 'checkbox_group';
+    required: boolean;
+    placeholder?: string;
+    options?: string[];
+  }>;
   created_at: string;
   updated_at: string;
 }

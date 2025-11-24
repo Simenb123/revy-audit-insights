@@ -50,7 +50,7 @@ export function useCreateAuditActionTemplate() {
         toDbPhase(phase as AuditPhase)
       );
 
-      // Validate subject_area if subject_area_id is provided
+      // Validate subject_area_id if provided (new preferred method)
       if (templateData.subject_area_id) {
         const { data: subjectArea, error: subjectAreaError } = await supabase
           .from('subject_areas')
@@ -107,7 +107,7 @@ export function useUpdateAuditActionTemplate() {
         ) as Database['public']['Enums']['audit_phase'][];
       }
 
-      // Validate subject_area if subject_area_id is being updated
+      // Validate subject_area_id if being updated
       if (updates.subject_area_id) {
         const { data: subjectArea, error: subjectAreaError } = await supabase
           .from('subject_areas')

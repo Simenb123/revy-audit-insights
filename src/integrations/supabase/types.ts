@@ -2381,6 +2381,7 @@ export type Database = {
           name: string
           objective: string | null
           procedures: string
+          response_fields: Json | null
           risk_level: string | null
           sort_order: number | null
           subject_area: string | null
@@ -2405,6 +2406,7 @@ export type Database = {
           name: string
           objective?: string | null
           procedures: string
+          response_fields?: Json | null
           risk_level?: string | null
           sort_order?: number | null
           subject_area?: string | null
@@ -2429,6 +2431,7 @@ export type Database = {
           name?: string
           objective?: string | null
           procedures?: string
+          response_fields?: Json | null
           risk_level?: string | null
           sort_order?: number | null
           subject_area?: string | null

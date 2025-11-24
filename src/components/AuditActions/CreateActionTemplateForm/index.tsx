@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { AuditSubjectArea } from '@/types/audit-actions';
 import { useCreateAuditActionTemplate } from '@/hooks/audit-actions/useActionTemplateCRUD';
-import { createActionTemplateFormSchema, CreateActionTemplateFormData } from './types';
+import { createActionTemplateSchema, CreateActionTemplateFormData } from './schema';
 import BasicFields from './BasicFields';
 import DetailFields from './DetailFields';
 import PhaseSelection from './PhaseSelection';
+import { ResponseFieldsEditor } from './ResponseFieldsEditor';
 
 interface CreateActionTemplateFormProps {
   selectedArea?: AuditSubjectArea;
@@ -23,7 +24,7 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
   const createTemplate = useCreateAuditActionTemplate();
 
   const form = useForm<CreateActionTemplateFormData>({
-    resolver: zodResolver(createActionTemplateFormSchema),
+    resolver: zodResolver(createActionTemplateSchema),
     defaultValues: initialData || {
       name: '',
       description: '',
@@ -35,7 +36,8 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
       estimated_hours: undefined,
       risk_level: 'medium',
       applicable_phases: ['execution'],
-      sort_order: 0
+      sort_order: 0,
+      response_fields: []
     }
   });
 
@@ -45,17 +47,19 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
       const templateData = {
         name: data.name,
         description: data.description || '',
-        subject_area: data.subject_area,
+        subject_area: data.subject_area, // ID stored as text
+        subject_area_id: data.subject_area, // Same ID in dedicated field
         action_type: data.action_type,
         objective: data.objective || '',
         procedures: data.procedures,
         documentation_requirements: data.documentation_requirements || '',
         estimated_hours: data.estimated_hours,
         risk_level: data.risk_level,
-        applicable_phases: data.applicable_phases as any, // Type assertion for compatibility
+        applicable_phases: data.applicable_phases as any,
         sort_order: data.sort_order,
         is_system_template: false,
-        is_active: true
+        is_active: true,
+        response_fields: data.response_fields || []
       };
       
       await createTemplate.mutateAsync(templateData);
@@ -75,6 +79,7 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
         <BasicFields form={form} />
         <DetailFields form={form} />
         <PhaseSelection form={form} />
+        <ResponseFieldsEditor form={form} />
 
         <div className="flex justify-end space-x-2 pt-4">
           {onCancel && (
