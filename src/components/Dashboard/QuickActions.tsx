@@ -48,7 +48,6 @@ const QuickActions = () => {
   const secondaryActions = [
     { title: 'Klientoversikt', icon: Users, href: '/clients' },
     { title: 'Rapporter', icon: BarChart3, href: '/reports' },
-    { title: 'Kommunikasjon', icon: MessageSquare, href: '/communication' },
     { title: 'Dokumenter', icon: FileText, href: '/documents' }
   ];
 

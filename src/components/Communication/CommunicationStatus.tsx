@@ -6,7 +6,6 @@ import { useChatRooms } from '@/hooks/useChatRooms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Users, MessageSquare, Building2 } from 'lucide-react';
-import CreateTestDataButton from './CreateTestDataButton';
 
 const CommunicationStatus = () => {
   const { data: userProfile, isLoading: profileLoading, error: profileError } = useUserProfile();
@@ -107,23 +106,20 @@ const CommunicationStatus = () => {
             </div>
           </div>
 
-          {!isFullyConfigured && (
-            <div className="pt-4 border-t">
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-muted-foreground">
-                  For å teste kommunikasjonssystemet trenger du testdata. Klikk knappen under for å opprette automatisk.
-                </p>
-                <CreateTestDataButton />
-              </div>
-            </div>
-          )}
-
           {isFullyConfigured && (
             <div className="pt-4 border-t">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Kommunikasjonssystemet er klart for bruk!</span>
               </div>
+            </div>
+          )}
+          
+          {!isFullyConfigured && (
+            <div className="pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Sett opp revisjonsfirma og avdeling i <strong>Innstillinger</strong> for å aktivere kommunikasjon.
+              </p>
             </div>
           )}
         </CardContent>

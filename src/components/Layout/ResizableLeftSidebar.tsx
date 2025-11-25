@@ -122,11 +122,6 @@ const resourceItems = [
     icon: BookOpen,
   },
   {
-    title: 'Kommunikasjon',
-    url: '/communication',
-    icon: MessageSquare,
-  },
-  {
     title: 'Dataredigering',
     url: '/resources/data-editor',
     icon: FileSpreadsheet,
@@ -142,6 +137,25 @@ const resourceItems = [
     icon: Brain,
     showBeta: isAdvancedAIInBeta(),
   }] : []),
+]
+
+// Innstillinger & Verktøy
+const settingsItems = [
+  {
+    title: 'Organisasjon',
+    url: '/organization',
+    icon: Building,
+  },
+  {
+    title: 'Kommunikasjon',
+    url: '/communication',
+    icon: MessageSquare,
+  },
+  {
+    title: 'Innstillinger',
+    url: '/organization/settings',
+    icon: Settings,
+  },
 ]
 
 const ResizableLeftSidebar = () => {
@@ -503,6 +517,53 @@ const ResizableLeftSidebar = () => {
                                 {item.showBeta && <BetaBadge className="text-xs px-1 py-0.5" />}
                               </div>
                             )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+
+        {/* Innstillinger & Verktøy seksjon */}
+        <Collapsible 
+          open={!collapsedSections['settings']} 
+          onOpenChange={() => toggleSection('settings')}
+        >
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                {!isCollapsed && (
+                  <>
+                    <span>Innstillinger & Verktøy</span>
+                    {collapsedSections['settings'] ? 
+                      <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                      <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                    }
+                  </>
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  {settingsItems.map((item) => {
+                    const isItemActive = isActive(item.url)
+                    
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isItemActive}
+                          className={isCollapsed ? "justify-center p-2" : "justify-start pl-2 pr-2"}
+                          tooltip={isCollapsed ? item.title : undefined}
+                        >
+                          <Link to={item.url} className={isCollapsed ? "flex items-center justify-center w-full h-full" : "flex items-center gap-2 w-full"}>
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            {!isCollapsed && <span className="text-xs truncate">{item.title}</span>}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
