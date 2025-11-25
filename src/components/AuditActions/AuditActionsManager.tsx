@@ -15,6 +15,7 @@ import {
 import ActionTemplateList from './ActionTemplateList';
 import ClientActionsList from './ClientActionsList';
 import CopyFromClientDialog from './CopyFromClientDialog';
+import AddActionsDialog from './AddActionsDialog';
 import ActionProgressIndicator from './ActionProgressIndicator';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -26,6 +27,7 @@ interface AuditActionsManagerProps {
 
 const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsManagerProps) => {
   
+  const [addActionsOpen, setAddActionsOpen] = useState(false);
   const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('client-actions');
   const [helpDismissed, setHelpDismissed] = useLocalStorage<boolean>('audit-actions-help-dismissed', false);
@@ -136,13 +138,13 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
               </Button>
             )}
             <Button
-              onClick={() => setCopyFromClientOpen(true)}
+              onClick={() => setAddActionsOpen(true)}
               variant="outline"
               size="sm"
               className="gap-2"
             >
-              <Copy size={16} />
-              Kopier fra annen klient
+              <Plus size={16} />
+              Legg til handlinger
             </Button>
           </div>
           
@@ -162,6 +164,13 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
           />
         </TabsContent>
       </Tabs>
+
+      <AddActionsDialog
+        open={addActionsOpen}
+        onOpenChange={setAddActionsOpen}
+        onSelectFromTemplates={() => setActiveTab('templates')}
+        onCopyFromClient={() => setCopyFromClientOpen(true)}
+      />
 
       <CopyFromClientDialog
         open={copyFromClientOpen}
