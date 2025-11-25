@@ -29,7 +29,9 @@ import {
   Brain,
   BarChart3,
   LayoutDashboard,
-  ListChecks
+  ListChecks,
+  TrendingUp,
+  ArrowRightLeft
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import { usePageTitle } from './PageTitleContext';
@@ -250,6 +252,36 @@ const GlobalHeader = () => {
               <DropdownMenuItem onClick={() => handleSettingsItemClick('/learning')}>
                 <BookOpen className="mr-2 h-4 w-4" />
                 Læring
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-2">
+                Under utvikling
+                <Badge variant="outline" className="text-xs">BETA</Badge>
+              </DropdownMenuLabel>
+              
+              {/* Investeringer */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resources/investments')}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Investeringsoversikt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resources/portfolios')}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Porteføljer
+              </DropdownMenuItem>
+              
+              {/* Globale ressurser */}
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resources/securities/catalog')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Verdipapirkatalog
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resources/securities/prices')}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Historiske kurser
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSettingsItemClick('/resources/currencies')}>
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Valutakurser
               </DropdownMenuItem>
               
               {/* Superadmin - kun synlig for super_admin */}
