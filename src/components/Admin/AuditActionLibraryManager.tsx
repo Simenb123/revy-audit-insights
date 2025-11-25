@@ -32,20 +32,6 @@ const AuditActionLibraryManager = () => {
   const createRiskMapping = useCreateAuditActionRiskMapping();
   const { toast } = useToast();
 
-  // Mock data for areas and risks (replace with actual hooks)
-  const auditAreas = [
-    { id: '1', name: 'Kundefordringer', audit_number: 1500 },
-    { id: '2', name: 'Varelager', audit_number: 1200 },
-    { id: '3', name: 'Salgsinntekter', audit_number: 1400 },
-    { id: '4', name: 'Lønn', audit_number: 2600 },
-  ];
-
-  const riskFactors = [
-    { id: '1', name: 'Høy kundekonsentrasjon', category: 'operational' },
-    { id: '2', name: 'Svak internkontroll', category: 'control' },
-    { id: '3', name: 'Komplekse transaksjoner', category: 'transaction' },
-  ];
-
   const handleCreateMapping = () => {
     // Placeholder for creating new mappings
     toast({
@@ -196,22 +182,8 @@ const AuditActionLibraryManager = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {auditAreas.map((area) => {
-                    const areaActionCount = areaMappings?.filter(m => m.audit_area_id === area.id).length || 0;
-                    return (
-                      <div key={area.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{area.name}</p>
-                          <p className="text-sm text-muted-foreground">#{area.audit_number}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{areaActionCount} handlinger</Badge>
-                          {areaActionCount > 0 && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="text-center py-8 text-muted-foreground">
+                  Områdedekning vil vises når revisjonsområder er konfigurert
                 </div>
               </CardContent>
             </Card>
@@ -228,22 +200,8 @@ const AuditActionLibraryManager = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {riskFactors.map((risk) => {
-                    const riskActionCount = riskMappings?.filter(m => m.risk_factor_id === risk.id).length || 0;
-                    return (
-                      <div key={risk.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{risk.name}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{risk.category}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{riskActionCount} handlinger</Badge>
-                          {riskActionCount > 0 && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="text-center py-8 text-muted-foreground">
+                  Risikodekning vil vises når risikofaktorer er konfigurert
                 </div>
               </CardContent>
             </Card>
@@ -260,22 +218,6 @@ const AuditActionLibraryManager = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Filters */}
-                <div className="flex gap-4">
-                  <Select value={selectedArea} onValueChange={setSelectedArea}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Velg område" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle områder</SelectItem>
-                      {auditAreas.map((area) => (
-                        <SelectItem key={area.id} value={area.id}>
-                          {area.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 {/* Area Mappings List */}
                 <div className="space-y-2">
@@ -322,22 +264,6 @@ const AuditActionLibraryManager = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Filters */}
-                <div className="flex gap-4">
-                  <Select value={selectedRisk} onValueChange={setSelectedRisk}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Velg risikofaktor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle risikofaktorer</SelectItem>
-                      {riskFactors.map((risk) => (
-                        <SelectItem key={risk.id} value={risk.id}>
-                          {risk.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 {/* Risk Mappings List */}
                 <div className="space-y-2">
