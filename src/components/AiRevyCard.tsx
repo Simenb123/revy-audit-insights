@@ -4,7 +4,7 @@ import SmartReviAssistant from '@/components/Revy/SmartReviAssistant'
 import { cn } from '@/lib/utils'
 import { RevyContext } from '@/types/revio'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import GroupChatSidebar from '@/components/Communication/GroupChatSidebar'
+import SimpleChatPanel from '@/components/Communication/SimpleChatPanel'
 
 export type AiRevyVariant =
   | 'dashboard'
@@ -77,7 +77,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
                 userRole={userRole}
               />
             ) : (
-              <GroupChatSidebar />
+              <SimpleChatPanel />
             )}
           </div>
         ) : (
@@ -98,7 +98,7 @@ const AiRevyCard: React.FC<AiRevyCardProps> = ({
               />
             </TabsContent>
             <TabsContent value="chat" className="flex-1 min-h-0 flex flex-col">
-              <GroupChatSidebar />
+              <SimpleChatPanel />
             </TabsContent>
           </Tabs>
         )}
