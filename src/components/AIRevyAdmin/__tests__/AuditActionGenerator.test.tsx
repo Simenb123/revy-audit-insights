@@ -44,7 +44,7 @@ vi.mock('@/components/Auth/AuthProvider', () => ({
 }));
 
 import AuditActionGenerator from '../AuditActionGenerator';
-import { createActionTemplateFormSchema } from '@/components/AuditActions/CreateActionTemplateForm/types';
+import { createActionTemplateSchema } from '@/components/AuditActions/CreateActionTemplateForm/schema';
 
 
 
@@ -72,15 +72,13 @@ describe('AuditActionGenerator', () => {
   });
 
   it('rejects invalid action types', () => {
-    const result = createActionTemplateFormSchema.safeParse({
+    const result = createActionTemplateSchema.safeParse({
+      phase: 'execution',
       name: 'Test',
       subject_area: 'sales',
       action_type: 'invalid',
-      procedures: 'p',
-      risk_level: 'low',
-      applicable_phases: ['execution'],
-      sort_order: 0
-    } as any);
+      procedures: 'p'
+    });
     expect(result.success).toBe(false);
   });
 });

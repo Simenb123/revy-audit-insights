@@ -23,19 +23,14 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
   const updateTemplate = useUpdateAuditActionTemplate();
   
   const form = useForm<CreateActionTemplateFormData>({
-    resolver: zodResolver(createActionTemplateFormSchema),
+    resolver: zodResolver(createActionTemplateSchema),
     defaultValues: {
+      phase: (template.applicable_phases?.[0] || 'execution') as any,
       name: template.name,
-      description: template.description || '',
       subject_area: template.subject_area,
       action_type: template.action_type,
-      objective: template.objective || '',
       procedures: template.procedures,
-      documentation_requirements: template.documentation_requirements || '',
-      estimated_hours: template.estimated_hours || 0,
-      risk_level: template.risk_level as 'low' | 'medium' | 'high',
-      applicable_phases: template.applicable_phases || ['execution'],
-      sort_order: template.sort_order || 0
+      response_fields: template.response_fields || []
     }
   });
 
@@ -43,7 +38,18 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
     try {
       await updateTemplate.mutateAsync({
         id: template.id,
-        ...data
+        name: data.name,
+        subject_area: data.subject_area,
+        action_type: data.action_type,
+        procedures: data.procedures,
+        applicable_phases: [data.phase],
+        response_fields: data.response_fields || [],
+        description: '',
+        objective: '',
+        documentation_requirements: '',
+        risk_level: 'medium',
+        estimated_hours: template.estimated_hours,
+        sort_order: template.sort_order || 0
       });
       
       setOpen(false);
@@ -80,7 +86,6 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <BasicFields form={form} />
             <DetailFields form={form} />
-            <PhaseSelection form={form} />
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button

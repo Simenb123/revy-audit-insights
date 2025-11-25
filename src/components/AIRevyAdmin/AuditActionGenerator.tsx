@@ -189,24 +189,19 @@ Svar BARE med et JSON-objekt i følgende format:
     
     const initialData: Partial<CreateActionTemplateFormData> = aiGeneratedData 
       ? {
+          phase: 'execution',
           name: aiGeneratedData.name || '',
-          description: aiGeneratedData.description || '',
           subject_area: subjectAreaId || '',
           action_type: selectedActionType,
-          objective: aiGeneratedData.objective || '',
           procedures: aiGeneratedData.procedures || '',
-          documentation_requirements: aiGeneratedData.documentation_requirements || '',
-          estimated_hours: aiGeneratedData.estimated_hours || 0,
-          risk_level: aiGeneratedData.risk_level || 'medium',
-          applicable_phases: aiGeneratedData.applicable_phases || ['execution'],
-          sort_order: 0
+          response_fields: []
         }
       : {
+          phase: 'execution',
           subject_area: subjectAreaId || '',
           action_type: selectedActionType,
-          risk_level: 'medium',
-          applicable_phases: ['execution'],
-          sort_order: 0
+          procedures: '',
+          response_fields: []
         };
 
     return (

@@ -26,19 +26,14 @@ const ImprovedCreateActionTemplateForm = ({
   const createTemplate = useCreateAuditActionTemplate();
 
   const form = useForm<CreateActionTemplateFormData>({
-    resolver: zodResolver(createActionTemplateFormSchema),
+    resolver: zodResolver(createActionTemplateSchema),
     defaultValues: {
+      phase: 'execution',
       name: '',
-      description: '',
       subject_area: selectedArea || '',
       action_type: 'substantive',
-      objective: '',
       procedures: '',
-      documentation_requirements: '',
-      estimated_hours: undefined,
-      risk_level: 'medium',
-      applicable_phases: ['execution'],
-      sort_order: 0
+      response_fields: []
     }
   });
 
@@ -49,18 +44,19 @@ const ImprovedCreateActionTemplateForm = ({
       // Ensure all required fields are present for the template
       const templateData = {
         name: data.name.trim(),
-        description: data.description?.trim() || '',
+        description: '',
         subject_area: data.subject_area,
         action_type: data.action_type,
-        objective: data.objective?.trim() || '',
+        objective: '',
         procedures: data.procedures.trim(),
-        documentation_requirements: data.documentation_requirements?.trim() || '',
-        estimated_hours: data.estimated_hours,
-        risk_level: data.risk_level,
-        applicable_phases: data.applicable_phases as any, // Type assertion for compatibility
-        sort_order: data.sort_order,
+        documentation_requirements: '',
+        estimated_hours: undefined as number | undefined,
+        risk_level: 'medium' as const,
+        applicable_phases: [data.phase] as any,
+        sort_order: 0,
         is_system_template: false,
-        is_active: true
+        is_active: true,
+        response_fields: data.response_fields || []
       };
       
       logger.log('📝 Template data to submit:', templateData);
@@ -86,7 +82,6 @@ const ImprovedCreateActionTemplateForm = ({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <BasicFields form={form} />
             <DetailFields form={form} />
-            <PhaseSelection form={form} />
 
             <div className="flex justify-end space-x-2 pt-4">
               {onCancel && (
