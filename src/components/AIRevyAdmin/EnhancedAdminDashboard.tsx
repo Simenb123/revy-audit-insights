@@ -26,7 +26,6 @@ import UsageAnalytics from './UsageAnalytics';
 import TestInterface from './TestInterface';
 import CategoryAdmin from './CategoryAdmin';
 import DocumentTypeManager from './DocumentTypeManager';
-import AuditActionGenerator from './AuditActionGenerator';
 import DatabaseTools from './DatabaseTools';
 import WorkflowManager from './WorkflowManager';
 import TagManager from './TagManager';
@@ -53,7 +52,7 @@ const EnhancedAdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="subject-areas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="subject-areas" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Emner
@@ -69,10 +68,6 @@ const EnhancedAdminDashboard = () => {
           <TabsTrigger value="document-types" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Dok.typer
-          </TabsTrigger>
-          <TabsTrigger value="audit-actions" className="flex items-center gap-2">
-            <ListChecks className="h-4 w-4" />
-            Handlinger
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <FolderTree className="h-4 w-4" />
@@ -141,10 +136,6 @@ const EnhancedAdminDashboard = () => {
 
         <TabsContent value="document-types">
           <DocumentTypeManager />
-        </TabsContent>
-
-        <TabsContent value="audit-actions">
-          <AuditActionGenerator />
         </TabsContent>
 
         <TabsContent value="categories">

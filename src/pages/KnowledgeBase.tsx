@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import GlobalLayoutContainer from '@/components/Layout/GlobalLayoutContainer';
@@ -12,7 +11,6 @@ import SearchResults from '@/components/Knowledge/SearchResults';
 import PDFUploadManager from '@/components/Knowledge/PDFUploadManager';
 import KnowledgeAdminPanel from '@/components/Knowledge/KnowledgeAdminPanel';
 import SecretTrainingArea from '@/components/Knowledge/SecretTrainingArea';
-import AuditActionGenerator from '@/components/AIRevyAdmin/AuditActionGenerator';
 import { LegalKnowledgeManager } from '@/components/Knowledge/LegalKnowledge/LegalKnowledgeManager';
 
 const KnowledgeBase = () => {
@@ -33,7 +31,6 @@ const KnowledgeBase = () => {
         <Route path="admin" element={<KnowledgeAdminPanel showAdvanced={showAdvanced} />} />
         <Route path="juridisk" element={<LegalKnowledgeManager />} />
         <Route path="hemmelig-ai-trening" element={<SecretTrainingArea />} />
-        <Route path="revisjonshandlinger" element={<AuditActionGenerator />} />
       </Routes>
     </GlobalLayoutContainer>
   );

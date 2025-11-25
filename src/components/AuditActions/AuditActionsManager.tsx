@@ -28,7 +28,6 @@ interface AuditActionsManagerProps {
 const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsManagerProps) => {
   
   const [addActionsOpen, setAddActionsOpen] = useState(false);
-  const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('client-actions');
   const [helpDismissed, setHelpDismissed] = useLocalStorage<boolean>('audit-actions-help-dismissed', false);
   
@@ -169,14 +168,6 @@ const AuditActionsManager = ({ clientId, phase = 'execution' }: AuditActionsMana
         open={addActionsOpen}
         onOpenChange={setAddActionsOpen}
         onSelectFromTemplates={() => setActiveTab('templates')}
-        onCopyFromClient={() => setCopyFromClientOpen(true)}
-      />
-
-      <CopyFromClientDialog
-        open={copyFromClientOpen}
-        onOpenChange={setCopyFromClientOpen}
-        targetClientId={clientId}
-        phase={phase}
       />
     </div>
   );
