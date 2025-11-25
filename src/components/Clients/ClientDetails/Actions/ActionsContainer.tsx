@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Target, 
   Plus, 
-  Copy, 
   Library,
   CheckCircle,
   Clock,
@@ -24,9 +23,9 @@ import {
 } from '@/hooks/useAuditActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
-import CopyFromClientDialog from '@/components/AuditActions/CopyFromClientDialog';
 import { getPhaseLabel } from '@/constants/auditPhases';
 import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
+import { AuditActionsProvider } from '@/contexts/AuditActionsContext';
 import { toast } from 'sonner';
 
 interface ActionsContainerProps {
@@ -35,8 +34,6 @@ interface ActionsContainerProps {
 }
 
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
-  const [copyFromClientOpen, setCopyFromClientOpen] = useState(false);
-  
   const [activeTab, setActiveTab] = useState<string>('actions');
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
@@ -82,7 +79,8 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
   }
 
   return (
-    <div className="space-y-6">
+    <AuditActionsProvider>
+      <div className="space-y-6">
       {/* Phase Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -184,15 +182,6 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
                     Legg til standardpakke
                   </Button>
                 )}
-                <Button
-                  onClick={() => setCopyFromClientOpen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  Kopier fra annen klient
-                </Button>
               </div>
 
               {phaseActions.length === 0 ? (
@@ -203,14 +192,14 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
                       Ingen handlinger for {getPhaseLabel(phase).toLowerCase()}
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Legg til handlinger fra maler eller kopier fra en annen klient
+                      Legg til handlinger fra malbiblioteket
                     </p>
                     <Button 
-                      onClick={() => setCopyFromClientOpen(true)}
+                      onClick={() => setActiveTab('templates')}
                       className="gap-2"
                     >
-                      <Plus className="w-4 h-4" />
-                      Legg til handlinger
+                      <Library className="w-4 h-4" />
+                      Se tilgjengelige maler
                     </Button>
                   </CardContent>
                 </Card>
@@ -256,14 +245,8 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
           </Tabs>
         </CardContent>
       </Card>
-
-      <CopyFromClientDialog
-        open={copyFromClientOpen}
-        onOpenChange={setCopyFromClientOpen}
-        targetClientId={clientId}
-        phase={phase}
-      />
-    </div>
+      </div>
+    </AuditActionsProvider>
   );
 };
 
