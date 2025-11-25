@@ -1,10 +1,11 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useChatRooms } from '@/hooks/useChatRooms';
 import CommunicationStatus from '@/components/Communication/CommunicationStatus';
 import OnlineUsers from '@/components/Communication/OnlineUsers';
 import ChatRoom from '@/components/Communication/ChatRoom';
+import ChatRoomList from '@/components/Communication/ChatRoomList';
 import EmptyState from '@/components/Communication/EmptyState';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from 'lucide-react';
@@ -16,10 +17,17 @@ const Communication = () => {
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const { data: chatRooms = [], isLoading: roomsLoading } = useChatRooms();
   const { setPageTitle } = usePageTitle();
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     setPageTitle('Kommunikasjon');
   }, [setPageTitle]);
+
+  useEffect(() => {
+    if (chatRooms.length > 0 && !activeRoomId) {
+      setActiveRoomId(chatRooms[0].id);
+    }
+  }, [chatRooms, activeRoomId]);
 
   if (profileLoading || roomsLoading) {
     return (
@@ -52,16 +60,23 @@ const Communication = () => {
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
+        <div>
+          <ChatRoomList
+            chatRooms={chatRooms}
+            activeRoomId={activeRoomId}
+            onRoomSelect={setActiveRoomId}
+          />
+        </div>
+
+        <div className="lg:col-span-2">
           {chatRooms.length === 0 ? (
             <EmptyState />
-          ) : (
-            <div className="space-y-4">
-              {chatRooms.map((room) => (
-                <ChatRoom key={room.id} roomId={room.id} roomName={room.name} />
-              ))}
-            </div>
-          )}
+          ) : activeRoomId ? (
+            <ChatRoom 
+              roomId={activeRoomId}
+              roomName={chatRooms.find(r => r.id === activeRoomId)?.name || 'Chat'}
+            />
+          ) : null}
         </div>
 
         <div className="space-y-4">
