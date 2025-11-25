@@ -56,7 +56,6 @@ const NavigationDashboard = () => {
       items: [
         { name: 'Organisasjon', href: '/organization', icon: Building2, description: 'Firmainnstillinger og struktur', color: 'bg-gray-500' },
         { name: 'Teams', href: '/teams', icon: UserCog, description: 'Teamadministrasjon', color: 'bg-indigo-500' },
-        { name: 'Kommunikasjon', href: '/communication', icon: MessageSquare, description: 'Chat og meldinger', color: 'bg-teal-500' },
         { name: 'Opplæring', href: '/training', icon: GraduationCap, description: 'Kurs og sertifisering', color: 'bg-amber-500' }
       ]
     },
