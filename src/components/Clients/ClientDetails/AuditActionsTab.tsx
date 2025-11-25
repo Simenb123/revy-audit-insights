@@ -5,6 +5,7 @@ import AIEnabledActionEditor from '@/components/AuditActions/AIEnabledActionEdit
 import IntelligentDocumentLinker from '@/components/ClientDocuments/IntelligentDocumentLinker';
 import AuditActionsFlowTester from '@/components/AuditActions/AuditActionsFlowTester';
 import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
+import { AuditActionsProvider } from '@/contexts/AuditActionsContext';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +28,8 @@ const AuditActionsTab = ({ clientId, phase }: AuditActionsTabProps) => {
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <div className="space-y-6">
+    <AuditActionsProvider>
+      <div className="space-y-6">
       <SeoHead title="Revisjonshandlinger – AI-verktøy og maler" description="Administrer revisjonshandlinger, AI-forslag, dokumentkobling og testing for klient." />
       <h1 className="sr-only">Revisjonshandlinger</h1>
       {/* Header med fase-info */}
@@ -127,7 +129,8 @@ const AuditActionsTab = ({ clientId, phase }: AuditActionsTabProps) => {
           <AuditActionsFlowTester clientId={clientId} />
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AuditActionsProvider>
   );
 };
 
