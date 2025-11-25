@@ -11,6 +11,8 @@ import { createActionTemplateSchema, CreateActionTemplateFormData } from './sche
 import BasicFields from './BasicFields';
 import DetailFields from './DetailFields';
 import { ResponseFieldsEditor } from './ResponseFieldsEditor';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface CreateActionTemplateFormProps {
   selectedArea?: AuditSubjectArea;
@@ -36,6 +38,25 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
 
   const onSubmit = async (data: CreateActionTemplateFormData) => {
     try {
+      // Get current user and firm ID for RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Du må være logget inn for å opprette handlingsmaler');
+        return;
+      }
+
+      // Get user's firm ID
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('audit_firm_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.audit_firm_id) {
+        toast.error('Kunne ikke finne revisjonsfirma for brukeren');
+        return;
+      }
+
       // Ensure all required fields are present for the template
       const templateData = {
         name: data.name,
@@ -52,7 +73,9 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
         sort_order: 0,
         is_system_template: false,
         is_active: true,
-        response_fields: data.response_fields || []
+        response_fields: data.response_fields || [],
+        created_by: user.id,
+        audit_firm_id: profile.audit_firm_id
       };
       
       await createTemplate.mutateAsync(templateData);

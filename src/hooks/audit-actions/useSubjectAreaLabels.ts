@@ -24,7 +24,7 @@ export function useSubjectAreaLabels() {
       .filter(area => area.is_active)
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       .map(area => ({
-        value: area.name,
+        value: area.id,
         label: area.display_name,
         icon: area.icon,
         color: area.color
