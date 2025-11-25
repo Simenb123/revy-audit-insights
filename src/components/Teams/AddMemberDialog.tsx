@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -29,9 +28,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAddTeamMember } from '@/hooks/useAddTeamMember';
+import { useEmployees } from '@/hooks/useEmployees';
 
 const memberSchema = z.object({
-  userId: z.string().min(1, 'Bruker-ID er påkrevd'),
+  userId: z.string().min(1, 'Ansatt er påkrevd'),
   role: z.string().min(1, 'Rolle er påkrevd'),
 });
 
@@ -46,6 +46,7 @@ interface AddMemberDialogProps {
 
 const AddMemberDialog = ({ open, onOpenChange, teamId, onMemberAdded }: AddMemberDialogProps) => {
   const addMemberMutation = useAddTeamMember();
+  const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees();
 
   const form = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
@@ -88,10 +89,34 @@ const AddMemberDialog = ({ open, onOpenChange, teamId, onMemberAdded }: AddMembe
               name="userId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bruker-ID</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Skriv inn bruker-ID..." {...field} />
-                  </FormControl>
+                  <FormLabel>Ansatt</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    disabled={isLoadingEmployees}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingEmployees ? "Laster..." : "Velg ansatt"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {employees
+                        .filter(emp => emp.is_active)
+                        .map((employee) => {
+                          const displayName = employee.first_name && employee.last_name
+                            ? `${employee.first_name} ${employee.last_name}`
+                            : employee.email || 'Ukjent';
+                          const roleText = employee.user_role ? ` (${employee.user_role})` : '';
+                          
+                          return (
+                            <SelectItem key={employee.id} value={employee.id}>
+                              {displayName}{roleText}
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -102,7 +127,7 @@ const AddMemberDialog = ({ open, onOpenChange, teamId, onMemberAdded }: AddMembe
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rolle</FormLabel>
+                  <FormLabel>Teamrolle</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
