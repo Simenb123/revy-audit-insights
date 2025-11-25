@@ -43,10 +43,9 @@ const EmptyState = () => {
             </div>
           </div>
 
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Opprett ny samtale
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Chat-rom opprettes automatisk for team, avdelinger og firma.
+          </p>
         </CardContent>
       </Card>
 
