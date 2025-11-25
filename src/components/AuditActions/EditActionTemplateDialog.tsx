@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import BasicFields from '@/components/AuditActions/CreateActionTemplateForm/BasicFields';
 import DetailFields from '@/components/AuditActions/CreateActionTemplateForm/DetailFields';
+import { ResponseFieldsEditor } from '@/components/AuditActions/CreateActionTemplateForm/ResponseFieldsEditor';
 import { createActionTemplateSchema, type CreateActionTemplateFormData } from '@/components/AuditActions/CreateActionTemplateForm/schema';
 import { toast } from '@/hooks/use-toast';
 import type { AuditActionTemplate } from '@/types/audit-actions';
@@ -86,6 +87,7 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <BasicFields form={form} />
             <DetailFields form={form} />
+            <ResponseFieldsEditor form={form} />
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button

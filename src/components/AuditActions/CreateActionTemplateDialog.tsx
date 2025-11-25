@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import CreateActionTemplateForm from '@/components/AuditActions/CreateActionTemplateForm';
 
 interface CreateActionTemplateDialogProps {
   selectedArea?: string;
@@ -8,25 +9,22 @@ interface CreateActionTemplateDialogProps {
 }
 
 const CreateActionTemplateDialog = ({ selectedArea, trigger }: CreateActionTemplateDialogProps) => {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Opprett ny handlingsmal</DialogTitle>
         </DialogHeader>
-        <div className="p-4">
-          <p className="text-sm text-muted-foreground">
-            Funksjonalitet for å opprette nye handlingsmaler kommer snart.
-          </p>
-          {selectedArea && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Område: {selectedArea}
-            </p>
-          )}
-        </div>
+        <CreateActionTemplateForm
+          selectedArea={selectedArea}
+          onSuccess={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
