@@ -68,6 +68,15 @@ export const toDbPhase = (phase: AuditPhase): DbPhase => {
  * Convert database enum to UI phase
  */
 export const fromDbPhase = (dbPhase: DbPhase): AuditPhase => {
+  // First, try to find an exact match (where key === dbValue)
+  const exactMatch = Object.entries(PHASE_CONFIG).find(
+    ([key, config]) => key === dbPhase && config.dbValue === dbPhase
+  );
+  if (exactMatch) {
+    return exactMatch[0] as AuditPhase;
+  }
+  
+  // Fallback to first match (for alias phases like overview, risk_assessment, etc.)
   const entry = Object.entries(PHASE_CONFIG).find(
     ([_, config]) => config.dbValue === dbPhase
   );
