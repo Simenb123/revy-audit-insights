@@ -236,7 +236,7 @@ useEffect(() => {
   // Mobile version
   if (isMobile) {
     return (
-      <Drawer>
+      <Drawer shouldScaleBackground={false}>
         <DrawerTrigger asChild>
           <Button
             variant="ghost"
