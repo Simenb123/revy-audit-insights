@@ -131,35 +131,10 @@ const ActionTemplatesList = () => {
                     {phaseTemplates.map((template) => (
                       <div key={template.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors ml-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{template.name}</h4>
-                            {template.is_system_template && (
-                              <Badge variant="outline" className="text-xs">System</Badge>
-                            )}
-                          </div>
+                          <h4 className="font-medium mb-1">{template.name}</h4>
                           {template.description && (
-                            <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                            <p className="text-sm text-muted-foreground">{template.description}</p>
                           )}
-                          <div className="flex gap-2 flex-wrap">
-                            <Badge variant="secondary" className="text-xs">
-                              {template.action_type}
-                            </Badge>
-                            <Badge 
-                              variant={
-                                template.risk_level === 'high' ? 'destructive' : 
-                                template.risk_level === 'medium' ? 'default' : 'secondary'
-                              }
-                              className="text-xs"
-                            >
-                              {template.risk_level === 'high' ? 'Høy risiko' : 
-                               template.risk_level === 'medium' ? 'Medium risiko' : 'Lav risiko'}
-                            </Badge>
-                            {template.estimated_hours && template.estimated_hours > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {template.estimated_hours}t
-                              </Badge>
-                            )}
-                          </div>
                         </div>
                         <div className="flex gap-2 ml-4">
                           <EditActionTemplateDialog 
