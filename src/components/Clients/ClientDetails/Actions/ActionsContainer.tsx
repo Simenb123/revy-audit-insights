@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import {
   useAuditActionTemplates,
   useCopyActionsFromTemplate
 } from '@/hooks/useAuditActions';
+import { useDeleteOldClientActions } from '@/hooks/useDeleteOldClientActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import { getPhaseLabel } from '@/constants/auditPhases';
@@ -38,6 +39,15 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const copyActionsMutation = useCopyActionsFromTemplate();
+  const deleteOldActions = useDeleteOldClientActions();
+
+  // Auto-cleanup: delete old actions without template_id on mount
+  useEffect(() => {
+    const hasOldActions = clientActions.some(action => !action.template_id);
+    if (hasOldActions && !deleteOldActions.isPending) {
+      deleteOldActions.mutate(clientId);
+    }
+  }, [clientActions, clientId, deleteOldActions]);
 
   // Filter actions for current phase
   const phaseActions = clientActions.filter(action => action.phase === phase);
