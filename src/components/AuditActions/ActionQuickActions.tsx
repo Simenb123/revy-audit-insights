@@ -9,10 +9,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Play, Square, CheckCircle, Clock, Edit } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { MoreHorizontal, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
 import { useStartTimeTracking } from '@/hooks/useStartTimeTracking';
 import { useCompleteAction } from '@/hooks/useCompleteAction';
+import { useDeleteClientAction } from '@/hooks/audit-actions/useDeleteClientAction';
 import { ClientAuditAction } from '@/types/audit-actions';
 
 interface ActionQuickActionsProps {
@@ -21,9 +32,11 @@ interface ActionQuickActionsProps {
 }
 
 const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const updateMutation = useUpdateClientAuditAction();
   const startTrackingMutation = useStartTimeTracking();
   const completeMutation = useCompleteAction();
+  const deleteMutation = useDeleteClientAction();
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -48,63 +61,95 @@ const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
     }
   };
 
-  const isLoading = updateMutation.isPending || startTrackingMutation.isPending || completeMutation.isPending;
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({
+        actionId: action.id,
+        clientId: action.client_id
+      });
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      logger.error('Error deleting action:', error);
+    }
+  };
+
+  const isLoading = updateMutation.isPending || startTrackingMutation.isPending || 
+                    completeMutation.isPending || deleteMutation.isPending;
+
+  // Determine primary action based on status
+  const getPrimaryAction = () => {
+    switch (action.status) {
+      case 'not_started':
+      case 'in_progress':
+        return { label: 'Marker som fullført', status: 'completed' };
+      case 'completed':
+        return { label: 'Marker som gjennomgått', status: 'reviewed' };
+      case 'reviewed':
+        return { label: 'Godkjenn', status: 'approved' };
+      default:
+        return null;
+    }
+  };
+
+  const primaryAction = getPrimaryAction();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" disabled={isLoading}>
-          <MoreHorizontal size={16} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        {action.status === 'not_started' && (
-          <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-            <Play size={16} className="mr-2" />
-            Start arbeid
-          </DropdownMenuItem>
-        )}
-        
-        {action.status === 'in_progress' && (
-          <>
-            <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" disabled={isLoading}>
+            <MoreHorizontal size={16} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {primaryAction && (
+            <DropdownMenuItem onClick={() => handleStatusChange(primaryAction.status)}>
               <CheckCircle size={16} className="mr-2" />
-              Marker som fullført
+              {primaryAction.label}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange('not_started')}>
-              <Square size={16} className="mr-2" />
-              Stopp arbeid
-            </DropdownMenuItem>
-          </>
-        )}
-        
-        {action.status === 'completed' && (
-          <>
-            <DropdownMenuItem onClick={() => handleStatusChange('reviewed')}>
-              <Clock size={16} className="mr-2" />
-              Send til gjennomgang
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
-              <Play size={16} className="mr-2" />
-              Gjenåpne
-            </DropdownMenuItem>
-          </>
-        )}
+          )}
 
-        {action.status === 'reviewed' && (
-          <DropdownMenuItem onClick={() => handleStatusChange('approved')}>
-            <CheckCircle size={16} className="mr-2" />
-            Godkjenn
+          {onEdit && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit size={16} className="mr-2" />
+                Rediger detaljer
+              </DropdownMenuItem>
+            </>
+          )}
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={() => setDeleteDialogOpen(true)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 size={16} className="mr-2" />
+            Slett handling
           </DropdownMenuItem>
-        )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onEdit}>
-          <Edit size={16} className="mr-2" />
-          Rediger detaljer
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Slette handling?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dette kan ikke angres. Handlingen vil bli permanent fjernet.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Bekreft sletting
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
