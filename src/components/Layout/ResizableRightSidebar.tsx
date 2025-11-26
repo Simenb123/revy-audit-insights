@@ -74,7 +74,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Drawer, DrawerTrigger, DrawerContent, DrawerClose } from '@/components/ui/drawer';
+import { Sheet, SheetTrigger, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, X, ChevronLeft, ChevronRight, Bot, BarChart2, Database } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -236,8 +236,8 @@ useEffect(() => {
   // Mobile version
   if (isMobile) {
     return (
-      <Drawer shouldScaleBackground={false}>
-        <DrawerTrigger asChild>
+      <Sheet>
+        <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
@@ -245,26 +245,26 @@ useEffect(() => {
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
-        </DrawerTrigger>
-        <DrawerContent className="h-[85vh] p-0">
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-xl">
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4">
               <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
-              <DrawerClose asChild>
+              <SheetClose asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                 >
                   <X className="h-4 w-4" />
                 </Button>
-              </DrawerClose>
+              </SheetClose>
             </div>
             <ScrollArea className="flex-1">
               {renderContent()}
             </ScrollArea>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     );
   }
 
