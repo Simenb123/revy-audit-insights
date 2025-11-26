@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
 const Drawer = ({
-  shouldScaleBackground = true,
+  shouldScaleBackground = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
   <DrawerPrimitive.Root
