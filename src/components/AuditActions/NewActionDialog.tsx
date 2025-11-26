@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { AuditPhase } from '@/types/revio';
 import { ActionType, ACTION_TYPE_LABELS, RiskLevel, ClientAuditAction, AuditSubjectArea } from '@/types/audit-actions';
 import { useCreateClientAuditAction } from '@/hooks/useAuditActions';
+import { RISK_LEVEL_CONFIG, ACTION_TYPE_CONFIG } from '@/constants/actionConfig';
 
 interface NewActionDialogProps {
   open: boolean;
@@ -127,20 +128,9 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
             <div className="space-y-2">
               <label className="text-sm">Metodikk</label>
               <select {...register('action_type', { required: true })} className="px-3 py-2 border rounded-md bg-background w-full">
-                {(
-                  [
-                    'analytical',
-                    'substantive',
-                    'control_test',
-                    'inquiry',
-                    'observation',
-                    'inspection',
-                    'recalculation',
-                    'confirmation',
-                  ] as ActionType[]
-                ).map((t) => (
+                {(Object.keys(ACTION_TYPE_CONFIG) as ActionType[]).map((t) => (
                   <option key={t} value={t}>
-                    {ACTION_TYPE_LABELS[t]}
+                    {ACTION_TYPE_CONFIG[t] || ACTION_TYPE_LABELS[t]}
                   </option>
                 ))}
               </select>
@@ -149,9 +139,9 @@ const NewActionDialog: React.FC<NewActionDialogProps> = ({
             <div className="space-y-2">
               <label className="text-sm">Risikograd</label>
               <select {...register('risk_level', { required: true })} className="px-3 py-2 border rounded-md bg-background w-full">
-                {(['low', 'medium', 'high'] as RiskLevel[]).map((r) => (
+                {(Object.keys(RISK_LEVEL_CONFIG) as RiskLevel[]).map((r) => (
                   <option key={r} value={r}>
-                    {r === 'low' ? 'Lav' : r === 'medium' ? 'Medium' : 'Høy'}
+                    {RISK_LEVEL_CONFIG[r].label}
                   </option>
                 ))}
               </select>
