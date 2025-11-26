@@ -239,11 +239,11 @@ useEffect(() => {
       <Drawer>
         <DrawerTrigger asChild>
           <Button
-            variant="default"
+            variant="ghost"
             size="icon"
-            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+            className="fixed bottom-3 right-3 z-50 h-9 w-9 rounded-full shadow-sm bg-background/80 backdrop-blur-sm border"
           >
-            <MessageSquare className="h-5 w-5" />
+            <MessageSquare className="h-4 w-4" />
           </Button>
         </DrawerTrigger>
         <DrawerContent className="h-[85vh] p-0">
