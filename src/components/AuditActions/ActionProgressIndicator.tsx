@@ -2,6 +2,7 @@
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { ClientAuditAction } from '@/types/audit-actions';
+import { ACTION_STATUS_CONFIG } from '@/constants/actionConfig';
 
 interface ActionProgressIndicatorProps {
   actions: ClientAuditAction[];
@@ -12,6 +13,7 @@ const ActionProgressIndicator = ({ actions }: ActionProgressIndicatorProps) => {
   const completedActions = actions.filter(action => action.status === 'completed').length;
   const inProgressActions = actions.filter(action => action.status === 'in_progress').length;
   const reviewedActions = actions.filter(action => action.status === 'reviewed').length;
+  const notStartedActions = actions.filter(action => action.status === 'not_started').length;
   
   const progressPercentage = totalActions > 0 ? (completedActions / totalActions) * 100 : 0;
 
@@ -36,20 +38,20 @@ const ActionProgressIndicator = ({ actions }: ActionProgressIndicatorProps) => {
       
       <div className="grid grid-cols-4 gap-2 text-xs">
         <div className="text-center">
-          <div className="font-medium">{actions.filter(a => a.status === 'not_started').length}</div>
-          <div className="text-muted-foreground">Ikke startet</div>
+          <div className={`font-medium ${ACTION_STATUS_CONFIG.not_started.color}`}>{notStartedActions}</div>
+          <div className="text-muted-foreground">{ACTION_STATUS_CONFIG.not_started.label}</div>
         </div>
         <div className="text-center">
-          <div className="font-medium text-blue-600">{inProgressActions}</div>
-          <div className="text-muted-foreground">Pågående</div>
+          <div className={`font-medium ${ACTION_STATUS_CONFIG.in_progress.color}`}>{inProgressActions}</div>
+          <div className="text-muted-foreground">{ACTION_STATUS_CONFIG.in_progress.label}</div>
         </div>
         <div className="text-center">
-          <div className="font-medium text-orange-600">{reviewedActions}</div>
-          <div className="text-muted-foreground">Gjennomgang</div>
+          <div className={`font-medium ${ACTION_STATUS_CONFIG.reviewed.color}`}>{reviewedActions}</div>
+          <div className="text-muted-foreground">{ACTION_STATUS_CONFIG.reviewed.label}</div>
         </div>
         <div className="text-center">
-          <div className="font-medium text-green-600">{completedActions}</div>
-          <div className="text-muted-foreground">Fullført</div>
+          <div className={`font-medium ${ACTION_STATUS_CONFIG.completed.color}`}>{completedActions}</div>
+          <div className="text-muted-foreground">{ACTION_STATUS_CONFIG.completed.label}</div>
         </div>
       </div>
     </div>
