@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Plus, ChevronDown } from 'lucide-react';
 import { ClientAuditAction } from '@/types/audit-actions';
 import ActionProgressIndicator from './ActionProgressIndicator';
-import ActionDetailDrawer from './ActionDetailDrawer';
 import NewActionDialog from './NewActionDialog';
+import AddActionsDialog from './AddActionsDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useReorderClientAuditActions } from '@/hooks/audit-actions/useClientActionBulk';
+import { useCopyActionsFromTemplate } from '@/hooks/useAuditActions';
 import BulkActionsToolbar from '@/components/AuditActions/BulkActionsToolbar';
 import ActionList from './core/ActionList';
-import ActionCard from './core/ActionCard';
+import ExpandableActionCard from './core/ExpandableActionCard';
 import ActionFilters from './core/ActionFilters';
 import { useAuditActionsContext } from '@/contexts/AuditActionsContext';
 import type { FilterConfig } from './core/ActionFilters';
@@ -29,10 +30,11 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
     search: '',
     status: 'all',
   });
-  const [selectedAction, setSelectedAction] = useState<ClientAuditAction | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [addFromTemplatesOpen, setAddFromTemplatesOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  
+  const copyActionsMutation = useCopyActionsFromTemplate();
 
   const { 
     selectedIds, 
@@ -55,13 +57,22 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
     });
   }, [actions, filters]);
 
-  const handleEdit = (action: ClientAuditAction) => {
-    setSelectedAction(action);
-    setDrawerOpen(true);
-  };
-
   const handleReorder = (updates: Array<{ id: string; sort_order: number }>) => {
     reorderMutation.mutate({ clientId, updates });
+  };
+
+  const handleCopyFromTemplates = async (templateIds: string[]) => {
+    try {
+      await copyActionsMutation.mutateAsync({
+        clientId,
+        templateIds,
+        phase
+      });
+      toast.success('Maler kopiert til klienten');
+      setAddFromTemplatesOpen(false);
+    } catch (error) {
+      toast.error('Kunne ikke kopiere maler');
+    }
   };
 
   const visibleIds = useMemo(() => filteredActions.map(a => a.id), [filteredActions]);
@@ -125,10 +136,9 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setNewOpen(true)}>Fra blank</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (onOpenTemplates) onOpenTemplates();
-                    else toast('Bytt til fanen Handlingsmaler for å velge maler.');
-                  }}>Fra mal</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setAddFromTemplatesOpen(true)}>
+                    Fra mal
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -165,15 +175,12 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
           <ActionList
             items={filteredActions}
             renderItem={(action, { selected, onToggle, dragHandle }) => (
-              <ActionCard
-                type="client-action"
-                data={action as ClientAuditAction}
+              <ExpandableActionCard
+                action={action as ClientAuditAction}
                 selected={selected}
                 onToggle={onToggle}
-                onEdit={handleEdit}
                 dragHandle={dragHandle}
                 showCheckbox={true}
-                showQuickActions={true}
               />
             )}
             enableDragDrop={filters.search === '' && filters.status === 'all'}
@@ -191,10 +198,7 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
                         <Plus size={16} />
                         Ny handling
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => { 
-                        if (onOpenTemplates) onOpenTemplates(); 
-                        else toast('Bytt til fanen Handlingsmaler for å velge maler.'); 
-                      }}>
+                      <Button size="sm" variant="outline" onClick={() => setAddFromTemplatesOpen(true)}>
                         Fra mal
                       </Button>
                     </div>
@@ -208,12 +212,6 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
         </CardContent>
       </Card>
 
-      <ActionDetailDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        action={selectedAction}
-      />
-
       {(() => {
         const maxSort = actions.length ? Math.max(...actions.map(a => a.sort_order || 0)) : 0;
         const nextSortOrder = maxSort + 1;
@@ -224,10 +222,18 @@ const ClientActionsList = ({ actions, clientId, phase, onOpenTemplates }: Client
             clientId={clientId}
             phase={phase}
             nextSortOrder={nextSortOrder}
-            onCreated={(created) => { setSelectedAction(created); setDrawerOpen(true); }}
+            onCreated={() => {}}
           />
         );
       })()}
+
+      <AddActionsDialog
+        open={addFromTemplatesOpen}
+        onOpenChange={setAddFromTemplatesOpen}
+        clientId={clientId}
+        phase={phase}
+        onCopyToClient={handleCopyFromTemplates}
+      />
     </div>
   );
 };

@@ -18,8 +18,7 @@ import { AuditPhase } from '@/types/revio';
 import { 
   useClientAuditActions, 
   useAuditActionTemplates,
-  useCopyActionsFromTemplate,
-  useApplyStandardPackage 
+  useCopyActionsFromTemplate
 } from '@/hooks/useAuditActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
@@ -39,7 +38,6 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
   const copyActionsMutation = useCopyActionsFromTemplate();
-  const applyStandardMutation = useApplyStandardPackage();
 
   // Filter actions for current phase
   const phaseActions = clientActions.filter(action => action.phase === phase);
@@ -145,14 +143,10 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="actions" className="gap-2">
                 <Target className="w-4 h-4" />
                 Mine handlinger ({phaseActions.length})
-              </TabsTrigger>
-              <TabsTrigger value="templates" className="gap-2">
-                <Library className="w-4 h-4" />
-                Tilgjengelige maler ({phaseTemplates.length})
               </TabsTrigger>
               <TabsTrigger value="recommendations" className="gap-2">
                 <Lightbulb className="w-4 h-4" />
@@ -161,29 +155,6 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
             </TabsList>
 
             <TabsContent value="actions" className="space-y-4">
-              <div className="flex justify-end gap-2">
-                {['engagement', 'planning'].includes(phase) && (
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const inserted = await applyStandardMutation.mutateAsync({ clientId, phase });
-                        setActiveTab('actions');
-                        toast.success('Standardpakke lagt til');
-                      } catch (e) {
-                        logger.error('Failed to apply standard package', e);
-                        toast.error('Kunne ikke legge til standardpakke');
-                      }
-                    }}
-                    size="sm"
-                    className="gap-2"
-                    disabled={applyStandardMutation.isPending}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Legg til standardpakke
-                  </Button>
-                )}
-              </div>
-
               {phaseActions.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
@@ -194,13 +165,6 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
                     <p className="text-muted-foreground mb-4">
                       Legg til handlinger fra malbiblioteket
                     </p>
-                    <Button 
-                      onClick={() => setActiveTab('templates')}
-                      className="gap-2"
-                    >
-                      <Library className="w-4 h-4" />
-                      Se tilgjengelige maler
-                    </Button>
                   </CardContent>
                 </Card>
               ) : (
@@ -208,29 +172,7 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
                   actions={phaseActions}
                   clientId={clientId}
                   phase={phase}
-                  onOpenTemplates={() => setActiveTab('templates')}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="templates" className="space-y-4">
-              {phaseTemplates.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Library className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      Ingen maler tilgjengelig
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Det finnes ingen handlingsmaler for {getPhaseLabel(phase).toLowerCase()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <ActionTemplateList
-                  templates={phaseTemplates}
-                  phase={phase}
-                  onCopyToClient={handleCopyTemplates}
+                  onOpenTemplates={() => {}}
                 />
               )}
             </TabsContent>
