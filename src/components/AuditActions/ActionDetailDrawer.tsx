@@ -18,8 +18,8 @@ import type { AuditPhase } from '@/types/revio';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import EnhancedTemplateView from './EnhancedTemplateView';
 import { toast } from 'sonner';
+import { ACTION_TYPE_CONFIG } from '@/constants/actionConfig';
 import ActionComments from './Comments/ActionComments';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -196,9 +196,11 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold">{action?.name || 'Handling'}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {action?.subject_area} · {action?.action_type}
-                </p>
+                {action?.action_type && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {ACTION_TYPE_CONFIG[action.action_type as keyof typeof ACTION_TYPE_CONFIG] || action.action_type}
+                  </p>
+                )}
               </div>
               {action && (
                 <Badge variant="outline">
@@ -329,22 +331,23 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <JsonEditor
-                        value={wpJson}
-                        error={jsonError}
-                        show={true}
-                        onToggleShow={() => {}}
-                        onChange={(val) => setWpJson(val)}
-                      />
-                    </div>
-
-                    {Object.keys(autoMetrics).length > 0 && (
-                      <>
-                        <Separator />
-                        <AutoMetricsViewer metrics={autoMetrics} />
-                      </>
-                    )}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-between">
+                          <span className="text-sm">Arbeidsnotat (JSON)</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <JsonEditor
+                          value={wpJson}
+                          error={jsonError}
+                          show={true}
+                          onToggleShow={() => {}}
+                          onChange={(val) => setWpJson(val)}
+                        />
+                      </CollapsibleContent>
+                    </Collapsible>
 
                     {templateId && (
                       <>
@@ -407,36 +410,48 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
 
                         <Dialog open={showTemplate} onOpenChange={setShowTemplate}>
                           <DialogContent className="max-w-4xl">
-                            <div className="flex items-center justify-between">
-                              <DialogTitle>Mal</DialogTitle>
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const tpl = (linkedTemplate as any)?.working_paper_template;
-                                  if (tpl?.id) {
-                                    setSelectedTemplateId(tpl.id);
-                                    if (tpl.template_structure) {
-                                      try {
-                                        setWpJson(JSON.stringify(tpl.template_structure, null, 2));
-                                        setJsonError(null);
-                                      } catch {}
-                                    }
-                                    setShowTemplate(false);
-                                    toast.success('Mal anvendt på handlingen');
+                            <DialogTitle>Mal detaljer</DialogTitle>
+                            <ScrollArea className="max-h-[70vh]">
+                              <div className="space-y-4">
+                                <div>
+                                  <h3 className="font-semibold mb-2">Navn</h3>
+                                  <p>{linkedTemplate?.name || actionTemplate?.name || 'Ingen mal valgt'}</p>
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold mb-2">Beskrivelse</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {linkedTemplate?.description || actionTemplate?.description || 'Ingen beskrivelse'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold mb-2">Prosedyrer</h3>
+                                  <pre className="text-sm whitespace-pre-wrap bg-muted p-3 rounded">
+                                    {linkedTemplate?.procedures || actionTemplate?.procedures || 'Ingen prosedyrer'}
+                                  </pre>
+                                </div>
+                              </div>
+                            </ScrollArea>
+                            <Button
+                              onClick={() => {
+                                const tpl = (linkedTemplate as any)?.working_paper_template;
+                                if (tpl?.id) {
+                                  setSelectedTemplateId(tpl.id);
+                                  if (tpl.template_structure) {
+                                    try {
+                                      setWpJson(JSON.stringify(tpl.template_structure, null, 2));
+                                      setJsonError(null);
+                                    } catch {}
                                   }
-                                }}
-                                disabled={
-                                  !linkedTemplate || !(linkedTemplate as any)?.working_paper_template
+                                  setShowTemplate(false);
+                                  toast.success('Mal anvendt på handlingen');
                                 }
-                              >
-                                Bruk på handling
-                              </Button>
-                            </div>
-                            {linkedTemplate ? (
-                              <EnhancedTemplateView template={linkedTemplate as any} />
-                            ) : (
-                              <div className="text-sm text-muted-foreground">Laster mal...</div>
-                            )}
+                              }}
+                              disabled={
+                                !linkedTemplate || !(linkedTemplate as any)?.working_paper_template
+                              }
+                            >
+                              Bruk på handling
+                            </Button>
                           </DialogContent>
                         </Dialog>
                       </>

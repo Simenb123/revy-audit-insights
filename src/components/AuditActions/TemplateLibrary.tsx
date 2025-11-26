@@ -24,9 +24,7 @@ const TemplateLibrary = ({
 }: TemplateLibraryProps) => {
   const [filters, setFilters] = useState<FilterConfig>({
     search: '',
-    risk: 'all',
     phase: (phase as any) || 'all',
-    aiEnabled: 'all',
   });
 
   const { data: templates = [], isLoading } = useEnhancedAuditActionTemplates();
@@ -40,13 +38,9 @@ const TemplateLibrary = ({
         template.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
         template.procedures.toLowerCase().includes(filters.search.toLowerCase());
       
-      const matchesRisk = filters.risk === 'all' || template.risk_level === filters.risk;
       const matchesPhase = filters.phase === 'all' || template.applicable_phases.includes(filters.phase as any);
-      const matchesAI = filters.aiEnabled === 'all' ||
-        (filters.aiEnabled === 'with_ai' && template.ai_metadata) ||
-        (filters.aiEnabled === 'without_ai' && !template.ai_metadata);
 
-      return matchesSearch && matchesRisk && matchesPhase && matchesAI;
+      return matchesSearch && matchesPhase;
     });
   }, [templates, filters]);
 
@@ -111,9 +105,7 @@ const TemplateLibrary = ({
             totalCount={templates.length}
             enabledFilters={{
               search: true,
-              risk: true,
               phase: true,
-              ai: true,
             }}
           />
         </CardContent>
