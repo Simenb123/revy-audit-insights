@@ -160,11 +160,6 @@ const TemplateLibrary = ({
               onCopyToClient={onCopyToClient ? (id) => onCopyToClient([id]) : undefined}
               showCheckbox={onCopyToClient !== undefined}
               showQuickActions={false}
-              enhancedMetadata={{
-                isaCount: template.isa_mappings?.length || 0,
-                documentCount: template.document_mappings?.length || 0,
-                hasAI: !!template.ai_metadata,
-              }}
             />
           )}
           emptyState={
