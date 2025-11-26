@@ -12,8 +12,10 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Lightbulb
+  Lightbulb,
+  Sparkles
 } from 'lucide-react';
+import AddActionsDialog from '@/components/AuditActions/AddActionsDialog';
 import { AuditPhase } from '@/types/revio';
 import { 
   useClientAuditActions, 
@@ -35,6 +37,7 @@ interface ActionsContainerProps {
 
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const [activeTab, setActiveTab] = useState<string>('actions');
+  const [addFromTemplatesOpen, setAddFromTemplatesOpen] = useState(false);
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
@@ -69,10 +72,23 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
         phase
       });
       setActiveTab('actions');
+      setAddFromTemplatesOpen(false);
       toast.success('Maler kopiert til klienten');
     } catch (error) {
       logger.error('Error copying templates:', error);
     }
+  };
+
+  const handleQuickStart = async () => {
+    // Copy all system templates for this phase
+    const systemTemplates = phaseTemplates.filter(t => t.is_system_template);
+    if (systemTemplates.length === 0) {
+      toast.error('Ingen standardmaler funnet for denne fasen');
+      return;
+    }
+    
+    const templateIds = systemTemplates.map(t => t.id);
+    await handleCopyTemplates(templateIds);
   };
 
   if (actionsLoading || templatesLoading) {
@@ -167,14 +183,38 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
             <TabsContent value="actions" className="space-y-4">
               {phaseActions.length === 0 ? (
                 <Card>
-                  <CardContent className="p-8 text-center">
-                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      Ingen handlinger for {getPhaseLabel(phase).toLowerCase()}
-                    </h3>
-                    <p className="text-muted-foreground mb-4">
-                      Legg til handlinger fra malbiblioteket
-                    </p>
+                  <CardContent className="p-8 text-center space-y-6">
+                    <div>
+                      <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        Ingen handlinger for {getPhaseLabel(phase).toLowerCase()}
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Det finnes <strong>{phaseTemplates.length} maler</strong> tilgjengelig for denne fasen
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                      <Button 
+                        onClick={() => setAddFromTemplatesOpen(true)}
+                        size="lg"
+                      >
+                        <Library className="w-4 h-4 mr-2" />
+                        Legg til fra maler
+                      </Button>
+                      
+                      {phaseTemplates.some(t => t.is_system_template) && (
+                        <Button 
+                          onClick={handleQuickStart}
+                          variant="outline"
+                          size="lg"
+                          disabled={copyActionsMutation.isPending}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Hurtigstart med standardmaler
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
@@ -197,6 +237,15 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Add Actions Dialog */}
+      <AddActionsDialog
+        open={addFromTemplatesOpen}
+        onOpenChange={setAddFromTemplatesOpen}
+        clientId={clientId}
+        phase={phase}
+        onCopyToClient={handleCopyTemplates}
+      />
       </div>
     </AuditActionsProvider>
   );
