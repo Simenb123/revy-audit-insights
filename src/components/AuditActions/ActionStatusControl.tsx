@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Play, Pause, Award } from 'lucide-react';
 import type { ActionStatus } from '@/types/audit-actions';
+import { ACTION_STATUS_CONFIG } from '@/constants/actionConfig';
 
 interface ActionStatusControlProps {
   currentStatus: ActionStatus;
@@ -9,42 +9,13 @@ interface ActionStatusControlProps {
   completionPercentage?: number;
 }
 
-const statusConfig = {
-  not_started: {
-    label: 'Ikke startet',
-    icon: Pause,
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
-    nextStatus: 'in_progress' as ActionStatus
-  },
-  in_progress: {
-    label: 'Pågående',
-    icon: Play,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-100 dark:bg-blue-900',
-    nextStatus: 'completed' as ActionStatus
-  },
-  completed: {
-    label: 'Fullført',
-    icon: CheckCircle,
-    color: 'text-green-500',
-    bgColor: 'bg-green-100 dark:bg-green-900',
-    nextStatus: 'reviewed' as ActionStatus
-  },
-  reviewed: {
-    label: 'Under gjennomgang',
-    icon: Clock,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-100 dark:bg-orange-900',
-    nextStatus: 'approved' as ActionStatus
-  },
-  approved: {
-    label: 'Godkjent',
-    icon: Award,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100 dark:bg-green-900',
-    nextStatus: 'approved' as ActionStatus
-  }
+// Map nextStatus for workflow progression
+const statusFlow: Record<ActionStatus, ActionStatus> = {
+  not_started: 'in_progress',
+  in_progress: 'completed',
+  completed: 'reviewed',
+  reviewed: 'approved',
+  approved: 'approved'
 };
 
 export const ActionStatusControl: React.FC<ActionStatusControlProps> = ({
@@ -52,8 +23,9 @@ export const ActionStatusControl: React.FC<ActionStatusControlProps> = ({
   onStatusChange,
   completionPercentage = 0
 }) => {
-  const config = statusConfig[currentStatus];
+  const config = ACTION_STATUS_CONFIG[currentStatus];
   const Icon = config.icon;
+  const nextStatus = statusFlow[currentStatus];
 
   const getNextStatusLabel = () => {
     if (currentStatus === 'not_started') return 'Start arbeid';
@@ -69,7 +41,7 @@ export const ActionStatusControl: React.FC<ActionStatusControlProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${config.bgColor}`}>
+          <div className="p-2 rounded-lg bg-muted">
             <Icon className={`w-5 h-5 ${config.color}`} />
           </div>
           <div>
@@ -84,7 +56,7 @@ export const ActionStatusControl: React.FC<ActionStatusControlProps> = ({
 
         {canProgress && (
           <Button
-            onClick={() => onStatusChange(config.nextStatus)}
+            onClick={() => onStatusChange(nextStatus)}
             size="sm"
             variant={currentStatus === 'in_progress' ? 'default' : 'outline'}
           >
@@ -105,18 +77,16 @@ export const ActionStatusControl: React.FC<ActionStatusControlProps> = ({
 
       {/* Status timeline */}
       <div className="flex items-center gap-2 pt-2">
-        {Object.entries(statusConfig).map(([status, cfg]) => {
+        {(Object.keys(ACTION_STATUS_CONFIG) as ActionStatus[]).map((status) => {
           const isActive = status === currentStatus;
-          const isPast = ['not_started', 'in_progress', 'completed', 'reviewed', 'approved']
-            .indexOf(status as ActionStatus) <
-            ['not_started', 'in_progress', 'completed', 'reviewed', 'approved']
-            .indexOf(currentStatus);
+          const statusOrder = ['not_started', 'in_progress', 'completed', 'reviewed', 'approved'];
+          const isPast = statusOrder.indexOf(status) < statusOrder.indexOf(currentStatus);
           
           return (
             <div
               key={status}
               className={`flex-1 h-1 rounded-full transition-all ${
-                isActive ? cfg.bgColor : isPast ? 'bg-muted-foreground' : 'bg-muted'
+                isActive ? 'bg-primary' : isPast ? 'bg-muted-foreground' : 'bg-muted'
               }`}
             />
           );
