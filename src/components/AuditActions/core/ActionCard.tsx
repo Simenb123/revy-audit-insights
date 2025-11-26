@@ -5,6 +5,7 @@ import { Calendar, CheckCircle } from 'lucide-react';
 import { AuditActionTemplate, ClientAuditAction } from '@/types/audit-actions';
 import ActionStatusBadge from '../ActionStatusBadge';
 import ActionQuickActions from '../ActionQuickActions';
+import { ACTION_STATUS_CONFIG } from '@/constants/actionConfig';
 
 interface ActionCardProps {
   type: 'template' | 'client-action';
@@ -90,8 +91,8 @@ const ActionCard = ({
                 )}
                 {clientAction.completed_at && (
                   <div className="flex items-center gap-1">
-                    <CheckCircle size={14} className="text-green-600" />
-                    <span>Fullført {new Date(clientAction.completed_at).toLocaleDateString('no-NO')}</span>
+                    <CheckCircle size={14} className={ACTION_STATUS_CONFIG.completed.color} />
+                    <span>{ACTION_STATUS_CONFIG.completed.label} {new Date(clientAction.completed_at).toLocaleDateString('no-NO')}</span>
                   </div>
                 )}
               </div>

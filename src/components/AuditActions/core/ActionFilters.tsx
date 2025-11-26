@@ -8,6 +8,7 @@ import { RiskLevel, ActionStatus, AuditSubjectArea } from '@/types/audit-actions
 import { PHASE_CONFIG } from '@/constants/auditPhases';
 import { useSubjectAreaLabels } from '@/hooks/audit-actions/useSubjectAreaLabels';
 import type { AuditPhase } from '@/types/revio';
+import { ACTION_STATUS_CONFIG, RISK_LEVEL_CONFIG } from '@/constants/actionConfig';
 
 export interface FilterConfig {
   search?: string;
@@ -104,10 +105,10 @@ const ActionFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle risikonivå</SelectItem>
-                <SelectItem value="critical">Kritisk risiko</SelectItem>
-                <SelectItem value="high">Høy risiko</SelectItem>
-                <SelectItem value="medium">Medium risiko</SelectItem>
-                <SelectItem value="low">Lav risiko</SelectItem>
+                <SelectItem value="critical">{RISK_LEVEL_CONFIG.critical.label}</SelectItem>
+                <SelectItem value="high">{RISK_LEVEL_CONFIG.high.label}</SelectItem>
+                <SelectItem value="medium">{RISK_LEVEL_CONFIG.medium.label}</SelectItem>
+                <SelectItem value="low">{RISK_LEVEL_CONFIG.low.label}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -143,11 +144,11 @@ const ActionFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle statuser</SelectItem>
-                <SelectItem value="not_started">Ikke startet</SelectItem>
-                <SelectItem value="in_progress">Pågår</SelectItem>
-                <SelectItem value="completed">Fullført</SelectItem>
-                <SelectItem value="reviewed">Gjennomgått</SelectItem>
-                <SelectItem value="approved">Godkjent</SelectItem>
+                <SelectItem value="not_started">{ACTION_STATUS_CONFIG.not_started.label}</SelectItem>
+                <SelectItem value="in_progress">{ACTION_STATUS_CONFIG.in_progress.label}</SelectItem>
+                <SelectItem value="completed">{ACTION_STATUS_CONFIG.completed.label}</SelectItem>
+                <SelectItem value="reviewed">{ACTION_STATUS_CONFIG.reviewed.label}</SelectItem>
+                <SelectItem value="approved">{ACTION_STATUS_CONFIG.approved.label}</SelectItem>
               </SelectContent>
             </Select>
           </div>
