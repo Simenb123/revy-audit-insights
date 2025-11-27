@@ -3,7 +3,6 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { 
   Target, 
@@ -11,9 +10,7 @@ import {
   Library,
   CheckCircle,
   Clock,
-  AlertCircle,
-  Lightbulb,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import AddActionsDialog from '@/components/AuditActions/AddActionsDialog';
 import { AuditPhase } from '@/types/revio';
@@ -26,7 +23,6 @@ import { useDeleteOldClientActions } from '@/hooks/useDeleteOldClientActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import { getPhaseLabel } from '@/constants/auditPhases';
-import SmartActionRecommendations from '@/components/AuditActions/SmartActionRecommendations';
 import { AuditActionsProvider } from '@/contexts/AuditActionsContext';
 import { toast } from 'sonner';
 
@@ -36,8 +32,8 @@ interface ActionsContainerProps {
 }
 
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
-  const [activeTab, setActiveTab] = useState<string>('actions');
   const [addFromTemplatesOpen, setAddFromTemplatesOpen] = useState(false);
+  const [autoCreatingActions, setAutoCreatingActions] = useState(false);
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
@@ -58,6 +54,47 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     template.applicable_phases.includes(phase)
   );
 
+  // Auto-create system templates when phase has no actions
+  useEffect(() => {
+    // Wait for data to load
+    if (actionsLoading || templatesLoading || autoCreatingActions) return;
+    
+    // Check if this phase already has actions
+    if (phaseActions.length > 0) return;
+    
+    // Find system templates for this phase
+    const systemTemplates = phaseTemplates.filter(t => t.is_system_template);
+    
+    // If no system templates exist, nothing to auto-create
+    if (systemTemplates.length === 0) return;
+    
+    // Check if any system templates are missing (haven't been copied yet)
+    const existingTemplateIds = clientActions
+      .filter(a => a.template_id)
+      .map(a => a.template_id);
+    
+    const missingSystemTemplates = systemTemplates.filter(
+      t => !existingTemplateIds.includes(t.id)
+    );
+    
+    // Auto-copy missing system templates
+    if (missingSystemTemplates.length > 0) {
+      setAutoCreatingActions(true);
+      copyActionsMutation.mutateAsync({
+        clientId,
+        templateIds: missingSystemTemplates.map(t => t.id),
+        phase
+      }).then(() => {
+        toast.success(`${missingSystemTemplates.length} standard handlinger lagt til automatisk`);
+        setAutoCreatingActions(false);
+      }).catch((error) => {
+        logger.error('Error auto-creating system templates:', error);
+        toast.error('Kunne ikke legge til standard handlinger');
+        setAutoCreatingActions(false);
+      });
+    }
+  }, [actionsLoading, templatesLoading, phaseActions, phaseTemplates, clientActions, clientId, phase, copyActionsMutation, autoCreatingActions]);
+
 
 const completedActions = phaseActions.filter(action => action.status === 'completed');
 const inProgressActions = phaseActions.filter(action => action.status === 'in_progress');
@@ -66,12 +103,11 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
 
   const handleCopyTemplates = async (templateIds: string[]) => {
     try {
-      const inserted = await copyActionsMutation.mutateAsync({
+      await copyActionsMutation.mutateAsync({
         clientId,
         templateIds,
         phase
       });
-      setActiveTab('actions');
       setAddFromTemplatesOpen(false);
       toast.success('Maler kopiert til klienten');
     } catch (error) {
@@ -79,24 +115,12 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
     }
   };
 
-  const handleQuickStart = async () => {
-    // Copy all system templates for this phase
-    const systemTemplates = phaseTemplates.filter(t => t.is_system_template);
-    if (systemTemplates.length === 0) {
-      toast.error('Ingen standardmaler funnet for denne fasen');
-      return;
-    }
-    
-    const templateIds = systemTemplates.map(t => t.id);
-    await handleCopyTemplates(templateIds);
-  };
-
-  if (actionsLoading || templatesLoading) {
+  if (actionsLoading || templatesLoading || autoCreatingActions) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          Laster handlinger...
+          {autoCreatingActions ? 'Legger til standard handlinger...' : 'Laster handlinger...'}
         </CardContent>
       </Card>
     );
@@ -159,82 +183,49 @@ const notStartedActions = phaseActions.filter(action => action.status === 'not_s
       {/* Main Content */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Revisjonshandlinger - {getPhaseLabel(phase)}
-            <Badge variant="secondary">
-              {phaseActions.length} handlinger
-            </Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Revisjonshandlinger - {getPhaseLabel(phase)}
+              <Badge variant="secondary">
+                {phaseActions.length} handlinger
+              </Badge>
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setAddFromTemplatesOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Library className="w-4 h-4 mr-2" />
+                Legg til fra maler
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="actions" className="gap-2">
-                <Target className="w-4 h-4" />
-                Mine handlinger ({phaseActions.length})
-              </TabsTrigger>
-              <TabsTrigger value="recommendations" className="gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Anbefalinger
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="actions" className="space-y-4">
-              {phaseActions.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center space-y-6">
-                    <div>
-                      <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        Ingen handlinger for {getPhaseLabel(phase).toLowerCase()}
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Det finnes <strong>{phaseTemplates.length} maler</strong> tilgjengelig for denne fasen
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                      <Button 
-                        onClick={() => setAddFromTemplatesOpen(true)}
-                        size="lg"
-                      >
-                        <Library className="w-4 h-4 mr-2" />
-                        Legg til fra maler
-                      </Button>
-                      
-                      {phaseTemplates.some(t => t.is_system_template) && (
-                        <Button 
-                          onClick={handleQuickStart}
-                          variant="outline"
-                          size="lg"
-                          disabled={copyActionsMutation.isPending}
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Hurtigstart med standardmaler
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <ClientActionsList
-                  actions={phaseActions}
-                  clientId={clientId}
-                  phase={phase}
-                  onOpenTemplates={() => {}}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="recommendations" className="space-y-4">
-              <Card>
-                <CardContent className="p-6">
-                  <SmartActionRecommendations clientId={clientId} phase={phase} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {phaseActions.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center space-y-4">
+                <div>
+                  <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    Ingen handlinger for {getPhaseLabel(phase).toLowerCase()}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Standard handlinger vil bli lagt til automatisk når du besøker denne fasen
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ClientActionsList
+              actions={phaseActions}
+              clientId={clientId}
+              phase={phase}
+              onOpenTemplates={() => {}}
+            />
+          )}
         </CardContent>
       </Card>
 
