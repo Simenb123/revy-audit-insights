@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Calendar, CheckCircle, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { Calendar, CheckCircle, ChevronDown, ChevronUp, Save, Lock } from 'lucide-react';
 import { ClientAuditAction, ActionStatus } from '@/types/audit-actions';
 import ActionStatusBadge from '../ActionStatusBadge';
 import ActionQuickActions from '../ActionQuickActions';
@@ -184,6 +185,12 @@ const ExpandableActionCard = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium text-base">{action.name}</h3>
+                        {actionTemplate?.is_system_template && (
+                          <Badge variant="secondary" className="gap-1 text-xs">
+                            <Lock size={12} />
+                            Obligatorisk
+                          </Badge>
+                        )}
                         {isOpen ? (
                           <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         ) : (
@@ -303,7 +310,11 @@ const ExpandableActionCard = ({
 
             {/* Quick Actions */}
             <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
-              <ActionQuickActions action={action} onEdit={() => setIsOpen(true)} />
+              <ActionQuickActions 
+                action={action} 
+                onEdit={() => setIsOpen(true)}
+                isSystemTemplate={actionTemplate?.is_system_template ?? false}
+              />
             </div>
           </div>
         </CardContent>

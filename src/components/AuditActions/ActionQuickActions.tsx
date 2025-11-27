@@ -29,9 +29,10 @@ import { ClientAuditAction } from '@/types/audit-actions';
 interface ActionQuickActionsProps {
   action: ClientAuditAction;
   onEdit?: () => void;
+  isSystemTemplate?: boolean;
 }
 
-const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
+const ActionQuickActions = ({ action, onEdit, isSystemTemplate = false }: ActionQuickActionsProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const updateMutation = useUpdateClientAuditAction();
   const startTrackingMutation = useStartTimeTracking();
@@ -119,14 +120,18 @@ const ActionQuickActions = ({ action, onEdit }: ActionQuickActionsProps) => {
             </>
           )}
 
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={() => setDeleteDialogOpen(true)}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 size={16} className="mr-2" />
-            Slett handling
-          </DropdownMenuItem>
+          {!isSystemTemplate && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setDeleteDialogOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Slett handling
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
