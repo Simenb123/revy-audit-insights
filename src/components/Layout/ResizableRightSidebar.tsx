@@ -233,39 +233,9 @@ useEffect(() => {
     );
   };
 
-  // Mobile version
+  // Mobile version - hidden (users can use desktop for AI chat)
   if (isMobile) {
-    return (
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="fixed bottom-3 right-3 z-50 h-9 w-9 rounded-full shadow-sm bg-background/80 backdrop-blur-sm border"
-          >
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-xl">
-          <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-4">
-              <h3 className="text-lg font-semibold">{getPageTitle()}</h3>
-              <SheetClose asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </SheetClose>
-            </div>
-            <ScrollArea className="flex-1">
-              {renderContent()}
-            </ScrollArea>
-          </div>
-        </SheetContent>
-      </Sheet>
-    );
+    return null;
   }
 
   return (
