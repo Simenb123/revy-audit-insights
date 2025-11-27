@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ interface ActionsContainerProps {
 const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
   const [addFromTemplatesOpen, setAddFromTemplatesOpen] = useState(false);
   const [autoCreatingActions, setAutoCreatingActions] = useState(false);
+  const isCreatingRef = useRef(false);
   
   const { data: clientActions = [], isLoading: actionsLoading } = useClientAuditActions(clientId);
   const { data: templates = [], isLoading: templatesLoading } = useAuditActionTemplates();
@@ -56,8 +57,8 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
 
   // Auto-create system templates when phase has no actions
   useEffect(() => {
-    // Wait for data to load
-    if (actionsLoading || templatesLoading || autoCreatingActions) return;
+    // Wait for data to load or if already creating
+    if (actionsLoading || templatesLoading || autoCreatingActions || isCreatingRef.current) return;
     
     // Find system templates for this phase
     const systemTemplates = phaseTemplates.filter(t => t.is_system_template);
@@ -76,6 +77,7 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     
     // Auto-copy missing system templates
     if (missingSystemTemplates.length > 0) {
+      isCreatingRef.current = true; // Block immediately to prevent race conditions
       setAutoCreatingActions(true);
       copyActionsMutation.mutateAsync({
         clientId,
@@ -83,10 +85,11 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
         phase
       }).then(() => {
         toast.success(`${missingSystemTemplates.length} standard handlinger lagt til automatisk`);
-        setAutoCreatingActions(false);
       }).catch((error) => {
         logger.error('Error auto-creating system templates:', error);
         toast.error('Kunne ikke legge til standard handlinger');
+      }).finally(() => {
+        isCreatingRef.current = false;
         setAutoCreatingActions(false);
       });
     }

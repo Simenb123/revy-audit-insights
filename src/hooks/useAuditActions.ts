@@ -148,7 +148,23 @@ export function useCopyActionsFromTemplate() {
       templateIds: string[];
       phase: string;
     }) => {
-      // Fetch templates with subject_area name from subject_areas table
+      // First, check which templates already exist for this client
+      const { data: existingActions } = await supabase
+        .from('client_audit_actions')
+        .select('template_id')
+        .eq('client_id', clientId)
+        .in('template_id', templateIds);
+
+      // Filter out templates that already exist
+      const existingTemplateIds = new Set(existingActions?.map(a => a.template_id).filter(Boolean));
+      const newTemplateIds = templateIds.filter(id => !existingTemplateIds.has(id));
+
+      // If all templates already exist, return empty array
+      if (newTemplateIds.length === 0) {
+        return [];
+      }
+
+      // Fetch only the new templates with subject_area name from subject_areas table
       const { data: templates, error: templatesError } = await supabase
         .from('audit_action_templates')
         .select(`
@@ -158,7 +174,7 @@ export function useCopyActionsFromTemplate() {
             display_name
           )
         `)
-        .in('id', templateIds);
+        .in('id', newTemplateIds);
 
       if (templatesError) throw templatesError;
 
@@ -181,13 +197,17 @@ export function useCopyActionsFromTemplate() {
         status: 'not_started' as const
       }));
 
+      // Use upsert with onConflict to handle any edge cases with duplicates
       const { data, error } = await supabase
         .from('client_audit_actions')
-        .insert(clientActions)
+        .upsert(clientActions, { 
+          onConflict: 'client_id,template_id',
+          ignoreDuplicates: true 
+        })
         .select();
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client-audit-actions', variables.clientId] });
