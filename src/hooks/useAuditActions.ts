@@ -148,19 +148,26 @@ export function useCopyActionsFromTemplate() {
       templateIds: string[];
       phase: string;
     }) => {
-      // First fetch the templates
+      // Fetch templates with subject_area name from subject_areas table
       const { data: templates, error: templatesError } = await supabase
         .from('audit_action_templates')
-        .select('*')
+        .select(`
+          *,
+          subject_areas:subject_area_id (
+            name,
+            display_name
+          )
+        `)
         .in('id', templateIds);
 
       if (templatesError) throw templatesError;
 
       // Convert templates to client actions
-      const clientActions = templates.map(template => ({
+      const clientActions = templates.map((template: any) => ({
         client_id: clientId,
         template_id: template.id,
-        subject_area: template.subject_area,
+        // Use subject_area if set, otherwise get from subject_areas table
+        subject_area: template.subject_area || template.subject_areas?.name || 'general',
         action_type: template.action_type,
         phase: toDbPhase(phase as AuditPhase),
         name: template.name,
