@@ -1,7 +1,7 @@
-
 import React from 'react';
 import AuditActionsManager from '@/components/AuditActions/AuditActionsManager';
 import { AuditActionsProvider } from '@/contexts/AuditActionsContext';
+import { useClientAuditActions } from '@/hooks/useAuditActions';
 import SeoHead from '@/components/SEO/SeoHead';
 
 interface AuditActionsTabProps {
@@ -10,9 +10,10 @@ interface AuditActionsTabProps {
 }
 
 const AuditActionsTab = ({ clientId, phase }: AuditActionsTabProps) => {
+  const { data: clientActions = [] } = useClientAuditActions(clientId);
 
   return (
-    <AuditActionsProvider>
+    <AuditActionsProvider actions={clientActions}>
       <div className="space-y-6">
         <SeoHead title="Revisjonshandlinger" description="Administrer revisjonshandlinger for klient." />
         <h1 className="sr-only">Revisjonshandlinger</h1>

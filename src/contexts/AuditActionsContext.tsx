@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { toast } from 'sonner';
 import { ActionStatus } from '@/types/audit-actions';
 import { useBulkUpdateClientActionsStatus, useBulkDeleteClientActions } from '@/hooks/audit-actions/useClientActionBulk';
+import { useAuditActionTemplates } from '@/hooks/audit-actions/useActionTemplateCRUD';
 
 interface AuditActionsContextValue {
   // Selection state
@@ -32,11 +33,13 @@ export const useAuditActionsContext = () => {
 
 interface AuditActionsProviderProps {
   children: ReactNode;
+  actions?: any[];
 }
 
-export const AuditActionsProvider = ({ children }: AuditActionsProviderProps) => {
+export const AuditActionsProvider = ({ children, actions = [] }: AuditActionsProviderProps) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState<Error | null>(null);
+  const { data: actionTemplates = [] } = useAuditActionTemplates();
 
   const bulkStatusMutation = useBulkUpdateClientActionsStatus();
   const bulkDeleteMutation = useBulkDeleteClientActions();
@@ -94,13 +97,36 @@ export const AuditActionsProvider = ({ children }: AuditActionsProviderProps) =>
         return;
       }
 
+      // Filter out system template actions
+      const systemTemplateIds = new Set(
+        actionTemplates
+          .filter((t: any) => t.is_system_template)
+          .map((t: any) => t.id)
+      );
+      
+      const selectedActions = actions.filter((a: any) => selectedIds.includes(a.id));
+      const deletableIds = selectedActions
+        .filter((a: any) => !a.template_id || !systemTemplateIds.has(a.template_id))
+        .map((a: any) => a.id);
+      
+      const mandatoryCount = selectedIds.length - deletableIds.length;
+      
+      if (mandatoryCount > 0) {
+        toast.error(`${mandatoryCount} obligatorisk${mandatoryCount > 1 ? 'e' : ''} handling${mandatoryCount > 1 ? 'er' : ''} kan ikke slettes`);
+      }
+      
+      if (deletableIds.length === 0) {
+        clearSelection();
+        return;
+      }
+
       try {
         setError(null);
         await bulkDeleteMutation.mutateAsync({
           clientId,
-          ids: selectedIds,
+          ids: deletableIds,
         });
-        toast.success(`${selectedIds.length} handling(er) slettet`);
+        toast.success(`${deletableIds.length} handling(er) slettet`);
         clearSelection();
       } catch (err) {
         const error = err as Error;
@@ -108,7 +134,7 @@ export const AuditActionsProvider = ({ children }: AuditActionsProviderProps) =>
         toast.error('Kunne ikke slette handlinger');
       }
     },
-    [selectedIds, bulkDeleteMutation, clearSelection]
+    [selectedIds, bulkDeleteMutation, clearSelection, actionTemplates, actions]
   );
 
   const value: AuditActionsContextValue = {
