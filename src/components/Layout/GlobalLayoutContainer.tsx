@@ -24,7 +24,7 @@ const GlobalLayoutContainer: React.FC<GlobalLayoutContainerProps> = ({
   return (
     <main 
       className={cn(
-        'min-h-0',
+        'min-h-0 flex-1',
         'w-full mx-auto px-4 lg:pr-6 min-w-0 overflow-x-hidden overflow-y-auto',
         'pb-8', // Add bottom padding for scroll buffer
         maxWidthClasses[maxWidth],
