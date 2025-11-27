@@ -87,7 +87,8 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
       )}
       style={{
         gridTemplateColumns: getGridTemplateColumns(),
-        display: isMobile ? 'block' : 'grid',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
         height: computedHeight
       }}
     >
