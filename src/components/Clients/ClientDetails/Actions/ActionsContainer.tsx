@@ -59,9 +59,6 @@ const ActionsContainer = ({ clientId, phase }: ActionsContainerProps) => {
     // Wait for data to load
     if (actionsLoading || templatesLoading || autoCreatingActions) return;
     
-    // Check if this phase already has actions
-    if (phaseActions.length > 0) return;
-    
     // Find system templates for this phase
     const systemTemplates = phaseTemplates.filter(t => t.is_system_template);
     

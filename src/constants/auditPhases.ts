@@ -21,7 +21,7 @@ export const PHASE_CONFIG: Record<AuditPhase, {
   },
   engagement: {
     dbValue: 'engagement',
-    label: 'Engasjement',
+    label: 'Oppdragsvurdering',
     icon: '🤝',
     color: 'blue',
   },
