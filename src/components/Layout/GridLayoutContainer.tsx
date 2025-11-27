@@ -82,7 +82,6 @@ const GridLayoutContainer: React.FC<GridLayoutContainerProps> = ({
       className={cn(
         'w-full app-grid transition-[grid-template-columns] duration-300 ease-in-out',
         'min-h-0 overflow-hidden',
-        isMobile && 'block',
         className
       )}
       style={{

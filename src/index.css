@@ -174,9 +174,10 @@
   }
 
   /* Mobile Layout - Show only main content properly */
-  @media (max-width: 767px) {
+  @media (max-width: 768px) {
     .app-grid {
-      display: block !important;
+      display: flex !important;
+      flex-direction: column !important;
       min-height: calc(100vh - var(--global-header-current-height));
     }
     
@@ -186,9 +187,10 @@
     }
     
     .app-grid > *:nth-child(2) {
-      display: block !important;
+      display: flex !important;
+      flex: 1 !important;
       width: 100% !important;
-      min-height: calc(100vh - var(--global-header-current-height));
+      min-height: 0;
       overflow: auto;
     }
   }
