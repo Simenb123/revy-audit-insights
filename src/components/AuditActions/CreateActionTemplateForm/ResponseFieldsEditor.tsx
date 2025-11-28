@@ -91,6 +91,36 @@ export function ResponseFieldsEditor({ form }: ResponseFieldsEditorProps) {
         </Button>
       </div>
 
+      {/* Configuration switches */}
+      <Card className="p-4 bg-muted/30">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Inkluder standard kommentarfelt</Label>
+              <p className="text-xs text-muted-foreground">
+                Legger automatisk til et tekstfelt for kommentarer
+              </p>
+            </div>
+            <Switch
+              checked={form.watch('include_comment_field') ?? true}
+              onCheckedChange={(checked) => form.setValue('include_comment_field', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Vis team-kommentarer</Label>
+              <p className="text-xs text-muted-foreground">
+                Viser kommentarseksjon for team-diskusjoner
+              </p>
+            </div>
+            <Switch
+              checked={form.watch('show_team_comments') ?? true}
+              onCheckedChange={(checked) => form.setValue('show_team_comments', checked)}
+            />
+          </div>
+        </div>
+      </Card>
+
       {fields.length === 0 ? (
         <Card className="p-6 text-center text-muted-foreground">
           <p>Ingen resultatfelter definert ennå.</p>

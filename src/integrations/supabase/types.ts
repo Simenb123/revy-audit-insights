@@ -2376,6 +2376,7 @@ export type Database = {
           estimated_hours: number | null
           group_id: string | null
           id: string
+          include_comment_field: boolean | null
           is_active: boolean | null
           is_system_template: boolean | null
           name: string
@@ -2383,6 +2384,7 @@ export type Database = {
           procedures: string
           response_fields: Json | null
           risk_level: string | null
+          show_team_comments: boolean | null
           sort_order: number | null
           subject_area: string | null
           subject_area_id: string | null
@@ -2401,6 +2403,7 @@ export type Database = {
           estimated_hours?: number | null
           group_id?: string | null
           id?: string
+          include_comment_field?: boolean | null
           is_active?: boolean | null
           is_system_template?: boolean | null
           name: string
@@ -2408,6 +2411,7 @@ export type Database = {
           procedures: string
           response_fields?: Json | null
           risk_level?: string | null
+          show_team_comments?: boolean | null
           sort_order?: number | null
           subject_area?: string | null
           subject_area_id?: string | null
@@ -2426,6 +2430,7 @@ export type Database = {
           estimated_hours?: number | null
           group_id?: string | null
           id?: string
+          include_comment_field?: boolean | null
           is_active?: boolean | null
           is_system_template?: boolean | null
           name?: string
@@ -2433,6 +2438,7 @@ export type Database = {
           procedures?: string
           response_fields?: Json | null
           risk_level?: string | null
+          show_team_comments?: boolean | null
           sort_order?: number | null
           subject_area?: string | null
           subject_area_id?: string | null
