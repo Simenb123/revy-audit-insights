@@ -37,8 +37,6 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   const updateMutation = useUpdateClientAuditAction();
 
   const [status, setStatus] = useState<ActionStatus>('not_started');
-  const [findings, setFindings] = useState('');
-  const [conclusion, setConclusion] = useState('');
   const [responseFieldValues, setResponseFieldValues] = useState<Record<string, any>>({});
   const [responseFieldErrors, setResponseFieldErrors] = useState<Record<string, string>>({});
   const [wpJson, setWpJson] = useState<string>('{}');
@@ -65,8 +63,6 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   useEffect(() => {
     if (action) {
       setStatus(action.status);
-      setFindings(action.findings || '');
-      setConclusion(action.conclusion || '');
       
       // Load response field values from working_paper_data
       try {
@@ -152,8 +148,6 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
       id: action.id,
       updates: {
         status,
-        findings,
-        conclusion,
         working_paper_data: parsed,
         working_paper_template_id: selectedTemplateId ?? null,
         ...(phase ? { phase } : {}),
@@ -239,32 +233,6 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                 />
               )}
 
-              {/* Findings and Conclusion */}
-              <Card className="p-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="findings">Funn / Observasjoner</Label>
-                    <Textarea
-                      id="findings"
-                      value={findings}
-                      onChange={(e) => setFindings(e.target.value)}
-                      placeholder="Beskriv observasjoner og funn..."
-                      rows={4}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="conclusion">Konklusjon</Label>
-                    <Textarea
-                      id="conclusion"
-                      value={conclusion}
-                      onChange={(e) => setConclusion(e.target.value)}
-                      placeholder="Oppsummer konklusjon..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </Card>
-
               {/* Documents Section - Placeholder */}
               <Card className="p-4">
                 <div className="space-y-2">
@@ -275,8 +243,8 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
                 </div>
               </Card>
 
-              {/* Comments */}
-              {action && (
+              {/* Team Comments - only if enabled in template */}
+              {action && (actionTemplate?.show_team_comments ?? true) && (
                 <>
                   <Separator />
                   <ActionComments actionId={action.id} />

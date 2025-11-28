@@ -38,8 +38,6 @@ const ExpandableActionCard = ({
   const { data: actionTemplates = [] } = useAuditActionTemplates();
   
   const [status, setStatus] = useState<ActionStatus>(action.status);
-  const [findings, setFindings] = useState(action.findings || '');
-  const [conclusion, setConclusion] = useState(action.conclusion || '');
   const [responseFieldValues, setResponseFieldValues] = useState<Record<string, any>>({});
   const [responseFieldErrors, setResponseFieldErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -52,8 +50,6 @@ const ExpandableActionCard = ({
 
   useEffect(() => {
     setStatus(action.status);
-    setFindings(action.findings || '');
-    setConclusion(action.conclusion || '');
     
     try {
       const wpData = (action as any).working_paper_data ?? {};
@@ -118,8 +114,6 @@ const ExpandableActionCard = ({
         id: action.id,
         updates: {
           status,
-          findings,
-          conclusion,
           working_paper_data: updatedWpData,
         } as any,
       });
@@ -251,36 +245,6 @@ const ExpandableActionCard = ({
                   />
                 )}
 
-                {/* Findings and Conclusion */}
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor={`findings-${action.id}`}>Funn / Observasjoner</Label>
-                    <Textarea
-                      id={`findings-${action.id}`}
-                      value={findings}
-                      onChange={(e) => {
-                        setFindings(e.target.value);
-                        setHasChanges(true);
-                      }}
-                      placeholder="Beskriv observasjoner og funn..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`conclusion-${action.id}`}>Konklusjon</Label>
-                    <Textarea
-                      id={`conclusion-${action.id}`}
-                      value={conclusion}
-                      onChange={(e) => {
-                        setConclusion(e.target.value);
-                        setHasChanges(true);
-                      }}
-                      placeholder="Oppsummer konklusjon..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-
                 {/* Documents placeholder */}
                 <div className="bg-muted/30 rounded-lg p-3">
                   <Label className="text-sm font-semibold">Dokumenter</Label>
@@ -289,8 +253,10 @@ const ExpandableActionCard = ({
                   </p>
                 </div>
 
-                {/* Comments */}
-                <ActionComments actionId={action.id} />
+                {/* Team Comments - only if enabled in template */}
+                {(actionTemplate?.show_team_comments ?? true) && (
+                  <ActionComments actionId={action.id} />
+                )}
 
                 {/* Save button */}
                 {hasChanges && (

@@ -33,7 +33,9 @@ const ImprovedCreateActionTemplateForm = ({
       subject_area: selectedArea || '',
       action_type: 'substantive',
       procedures: '',
-      response_fields: []
+      response_fields: [],
+      include_comment_field: true,
+      show_team_comments: true
     }
   });
 
@@ -56,7 +58,9 @@ const ImprovedCreateActionTemplateForm = ({
         sort_order: 0,
         is_system_template: false,
         is_active: true,
-        response_fields: data.response_fields || []
+        response_fields: data.response_fields || [],
+        include_comment_field: data.include_comment_field ?? true,
+        show_team_comments: data.show_team_comments ?? true
       };
       
       logger.log('📝 Template data to submit:', templateData);

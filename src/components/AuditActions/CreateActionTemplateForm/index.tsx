@@ -32,7 +32,9 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
       name: '',
       subject_area: selectedArea || '',
       procedures: '',
-      response_fields: []
+      response_fields: [],
+      include_comment_field: true,
+      show_team_comments: true
     }
   });
 
@@ -74,6 +76,8 @@ const CreateActionTemplateForm = ({ selectedArea, onSuccess, onCancel, initialDa
         is_system_template: false,
         is_active: true,
         response_fields: data.response_fields || [],
+        include_comment_field: data.include_comment_field ?? true,
+        show_team_comments: data.show_team_comments ?? true,
         created_by: user.id,
         audit_firm_id: profile.audit_firm_id
       };

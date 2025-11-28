@@ -31,7 +31,9 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
       subject_area: template.subject_area,
       action_type: template.action_type,
       procedures: template.procedures,
-      response_fields: template.response_fields || []
+      response_fields: template.response_fields || [],
+      include_comment_field: (template as any).include_comment_field ?? true,
+      show_team_comments: (template as any).show_team_comments ?? true
     }
   });
 
@@ -45,6 +47,8 @@ const EditActionTemplateDialog = ({ template, trigger }: EditActionTemplateDialo
         procedures: data.procedures,
         applicable_phases: [data.phase],
         response_fields: data.response_fields || [],
+        include_comment_field: data.include_comment_field ?? true,
+        show_team_comments: data.show_team_comments ?? true,
         description: '',
         objective: '',
         documentation_requirements: '',

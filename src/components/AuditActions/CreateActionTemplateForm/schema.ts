@@ -13,7 +13,9 @@ export const createActionTemplateSchema = z.object({
     required: z.boolean(),
     placeholder: z.string().optional(),
     options: z.array(z.string()).optional()
-  })).optional()
+  })).optional(),
+  include_comment_field: z.boolean().optional(),
+  show_team_comments: z.boolean().optional()
 });
 
 export type CreateActionTemplateFormData = z.infer<typeof createActionTemplateSchema>;

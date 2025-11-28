@@ -74,6 +74,8 @@ export interface AuditActionTemplate {
     placeholder?: string;
     options?: string[];
   }>;
+  include_comment_field?: boolean;
+  show_team_comments?: boolean;
   created_at: string;
   updated_at: string;
 }
