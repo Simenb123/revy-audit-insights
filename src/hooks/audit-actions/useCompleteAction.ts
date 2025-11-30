@@ -8,15 +8,13 @@ interface CompleteActionParams {
   actionId: string;
   clientId: string;
   actualHours?: number;
-  findings?: string;
-  conclusion?: string;
 }
 
 export function useCompleteAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ actionId, clientId, actualHours, findings, conclusion }: CompleteActionParams) => {
+    mutationFn: async ({ actionId, clientId, actualHours }: CompleteActionParams) => {
       const updates: any = {
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -24,8 +22,6 @@ export function useCompleteAction() {
       };
 
       if (actualHours !== undefined) updates.actual_hours = actualHours;
-      if (findings) updates.findings = findings;
-      if (conclusion) updates.conclusion = conclusion;
 
       const { data, error } = await supabase
         .from('client_audit_actions')

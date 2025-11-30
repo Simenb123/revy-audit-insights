@@ -19,7 +19,7 @@ import {
   useAuditActionTemplates,
   useCopyActionsFromTemplate
 } from '@/hooks/useAuditActions';
-import { useDeleteOldClientActions } from '@/hooks/useDeleteOldClientActions';
+import { useDeleteOldClientActions } from '@/hooks/audit-actions/useDeleteOldClientActions';
 import ClientActionsList from '@/components/AuditActions/ClientActionsList';
 import ActionTemplateList from '@/components/AuditActions/ActionTemplateList';
 import { getPhaseLabel } from '@/constants/auditPhases';

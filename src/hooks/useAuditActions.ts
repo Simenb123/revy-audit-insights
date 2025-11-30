@@ -14,6 +14,22 @@ export {
   useDeleteAuditActionTemplate
 } from '@/hooks/audit-actions/useActionTemplateCRUD';
 
+export {
+  useCompleteAction
+} from '@/hooks/audit-actions/useCompleteAction';
+
+export {
+  useStartTimeTracking
+} from '@/hooks/audit-actions/useStartTimeTracking';
+
+export {
+  useCopyActionsFromClient
+} from '@/hooks/audit-actions/useCopyActionsFromClient';
+
+export {
+  useDeleteOldClientActions
+} from '@/hooks/audit-actions/useDeleteOldClientActions';
+
 export function useActionGroups() {
   return useQuery({
     queryKey: ['action-groups'],
