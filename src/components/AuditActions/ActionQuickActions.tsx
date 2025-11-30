@@ -21,8 +21,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MoreHorizontal, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
-import { useStartTimeTracking } from '@/hooks/useStartTimeTracking';
-import { useCompleteAction } from '@/hooks/useCompleteAction';
+import { useStartTimeTracking } from '@/hooks/audit-actions/useStartTimeTracking';
+import { useCompleteAction } from '@/hooks/audit-actions/useCompleteAction';
 import { useDeleteClientAction } from '@/hooks/audit-actions/useDeleteClientAction';
 import { ClientAuditAction } from '@/types/audit-actions';
 

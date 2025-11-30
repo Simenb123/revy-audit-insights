@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { validateResponseFields, calculateCompletionPercentage } from '@/hooks/audit-actions/useResponseFieldValidation';
 
 interface ActionDetailDrawerProps {
   open: boolean;
@@ -89,47 +90,27 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
     }
   }, [action]);
 
-  const validateResponseFields = (): boolean => {
-    if (!actionTemplate?.response_fields) return true;
-    
-    const errors: Record<string, string> = {};
-    let hasErrors = false;
-
-    actionTemplate.response_fields.forEach((field: any) => {
-      if (field.required) {
-        const value = responseFieldValues[field.id];
-        if (!value || (Array.isArray(value) && value.length === 0)) {
-          errors[field.id] = 'Dette feltet er obligatorisk';
-          hasErrors = true;
-        }
-      }
-    });
-
+  const handleValidateFields = (): boolean => {
+    const { isValid, errors } = validateResponseFields(
+      actionTemplate?.response_fields,
+      responseFieldValues
+    );
     setResponseFieldErrors(errors);
-    return !hasErrors;
+    return isValid;
   };
 
-  const calculateCompletionPercentage = (): number => {
-    if (!actionTemplate?.response_fields || actionTemplate.response_fields.length === 0) {
-      return 0;
-    }
-
-    const requiredFields = actionTemplate.response_fields.filter((f: any) => f.required);
-    if (requiredFields.length === 0) return 100;
-
-    const completedFields = requiredFields.filter((f: any) => {
-      const value = responseFieldValues[f.id];
-      return value && (!Array.isArray(value) || value.length > 0);
-    });
-
-    return Math.round((completedFields.length / requiredFields.length) * 100);
+  const getCompletionPercentage = (): number => {
+    return calculateCompletionPercentage(
+      actionTemplate?.response_fields,
+      responseFieldValues
+    );
   };
 
   const handleSave = async () => {
     if (!action) return;
     
     // Validate required fields before saving
-    if (!validateResponseFields()) {
+    if (!handleValidateFields()) {
       toast.error('Vennligst fyll ut alle obligatoriske felter');
       return;
     }
@@ -159,7 +140,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
   };
 
   const handleStatusChange = (newStatus: ActionStatus) => {
-    if (newStatus === 'completed' && !validateResponseFields()) {
+    if (newStatus === 'completed' && !handleValidateFields()) {
       toast.error('Fyll ut alle obligatoriske felter før du fullfører handlingen');
       return;
     }
@@ -210,7 +191,7 @@ const ActionDetailDrawer: React.FC<ActionDetailDrawerProps> = ({ open, onOpenCha
               <ActionStatusControl
                 currentStatus={status}
                 onStatusChange={handleStatusChange}
-                completionPercentage={calculateCompletionPercentage()}
+                completionPercentage={getCompletionPercentage()}
               />
 
               <Separator />
