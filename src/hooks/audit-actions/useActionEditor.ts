@@ -1,12 +1,30 @@
 import { useState, useEffect } from 'react';
 import { ActionStatus, ClientAuditAction } from '@/types/audit-actions';
+import type { WorkingPaperData, WorkingPaperResponseData } from '@/types/working-paper';
 import { useUpdateClientAuditAction } from '@/hooks/useAuditActions';
 import { validateResponseFields, calculateCompletionPercentage, ResponseField } from './useResponseFieldValidation';
 import { toast } from 'sonner';
 
 /**
- * Hook for managing action editing state and operations
- * Consolidates logic previously duplicated in ExpandableActionCard and ActionDetailDrawer
+ * Hook for managing action editing state and operations.
+ * Consolidates logic previously duplicated in ExpandableActionCard and ActionDetailDrawer.
+ * 
+ * @param action - The client audit action to edit
+ * @param responseFields - Optional array of response field definitions from the template
+ * @returns Object containing state and handlers for editing the action
+ * 
+ * @example
+ * ```tsx
+ * const {
+ *   status,
+ *   responseFieldValues,
+ *   hasChanges,
+ *   handleStatusChange,
+ *   handleResponseFieldChange,
+ *   handleSave,
+ *   getCompletionPercentage,
+ * } = useActionEditor(action, template?.response_fields);
+ * ```
  */
 export function useActionEditor(
   action: ClientAuditAction,
@@ -15,7 +33,7 @@ export function useActionEditor(
   const updateMutation = useUpdateClientAuditAction();
   
   const [status, setStatus] = useState<ActionStatus>(action.status);
-  const [responseFieldValues, setResponseFieldValues] = useState<Record<string, any>>({});
+  const [responseFieldValues, setResponseFieldValues] = useState<WorkingPaperResponseData>({});
   const [responseFieldErrors, setResponseFieldErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -23,13 +41,9 @@ export function useActionEditor(
   useEffect(() => {
     setStatus(action.status);
     
-    try {
-      const wpData = (action as any).working_paper_data ?? {};
-      const responseData = wpData.response_data || {};
-      setResponseFieldValues(responseData);
-    } catch {
-      setResponseFieldValues({});
-    }
+    const wpData: WorkingPaperData = action.working_paper_data ?? {};
+    const responseData = wpData.response_data || {};
+    setResponseFieldValues(responseData);
     setHasChanges(false);
   }, [action]);
 
@@ -56,8 +70,8 @@ export function useActionEditor(
     }
 
     try {
-      const wpData = (action as any).working_paper_data ?? {};
-      const updatedWpData = {
+      const wpData: WorkingPaperData = action.working_paper_data ?? {};
+      const updatedWpData: WorkingPaperData = {
         ...wpData,
         response_data: responseFieldValues
       };
@@ -67,7 +81,7 @@ export function useActionEditor(
         updates: {
           status,
           working_paper_data: updatedWpData,
-        } as any,
+        },
       });
 
       toast.success('Handlingen er oppdatert');
@@ -88,7 +102,7 @@ export function useActionEditor(
     setHasChanges(true);
   };
 
-  const handleResponseFieldChange = (fieldId: string, value: any) => {
+  const handleResponseFieldChange = (fieldId: string, value: string | number | boolean | string[] | null) => {
     setResponseFieldValues((prev) => ({
       ...prev,
       [fieldId]: value
