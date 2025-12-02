@@ -46,6 +46,7 @@ export type ActionStatus =
   | 'approved';
 
 import type { AuditPhase } from './revio';
+import type { WorkingPaperData, AutoMetrics } from './working-paper';
 
 export interface AuditActionTemplate {
   id: string;
@@ -108,8 +109,8 @@ export interface ClientAuditAction {
   work_notes?: string | null;
   // Newly supported working paper fields
   working_paper_template_id?: string | null;
-  working_paper_data?: any;
-  auto_metrics?: any;
+  working_paper_data?: WorkingPaperData | null;
+  auto_metrics?: AutoMetrics | null;
   created_at: string;
   updated_at: string;
   copied_from_client_id?: string | null;

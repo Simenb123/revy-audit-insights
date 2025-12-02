@@ -1,6 +1,10 @@
 /**
- * Hook for validering og beregning av completionPercentage for responsfelter
- * Konsoliderer logikk som tidligere var duplisert i ExpandableActionCard og ActionDetailDrawer
+ * Validation and completion percentage utilities for response fields.
+ * 
+ * These functions validate that required response fields are filled out
+ * and calculate the completion percentage of required fields.
+ * 
+ * @module useResponseFieldValidation
  */
 
 export interface ResponseField {
