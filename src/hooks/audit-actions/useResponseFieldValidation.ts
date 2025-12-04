@@ -10,7 +10,10 @@
 export interface ResponseField {
   id: string;
   required?: boolean;
-  [key: string]: any;
+  label?: string;
+  type?: string;
+  options?: string[];
+  placeholder?: string;
 }
 
 /**

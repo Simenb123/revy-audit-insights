@@ -2,8 +2,16 @@ import { useMemo } from 'react';
 import { useSubjectAreas } from '@/hooks/knowledge/useSubjectAreas';
 
 /**
- * Hook for getting dynamic subject area labels from the database
- * Replaces hardcoded SUBJECT_AREA_LABELS
+ * Hook for getting dynamic subject area labels from the database.
+ * Replaces hardcoded SUBJECT_AREA_LABELS with database-driven values.
+ * 
+ * @example
+ * ```tsx
+ * const { getLabel, options, isLoading } = useSubjectAreaLabels();
+ * console.log(getLabel('revenue')); // "Salgsinntekter"
+ * ```
+ * 
+ * @returns Object with labelMap, options for select dropdowns, getLabel function, and loading state
  */
 export function useSubjectAreaLabels() {
   const { data: subjectAreas, isLoading } = useSubjectAreas();

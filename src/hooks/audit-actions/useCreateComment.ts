@@ -8,6 +8,22 @@ interface CreateCommentParams {
   parent_comment_id?: string | null;
 }
 
+/**
+ * Hook for creating a new comment on an audit action.
+ * Supports threaded comments via parent_comment_id.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: createComment } = useCreateComment();
+ * createComment({
+ *   client_audit_action_id: 'action-id',
+ *   content: 'Review comment',
+ *   parent_comment_id: null // or 'parent-id' for replies
+ * });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
 
