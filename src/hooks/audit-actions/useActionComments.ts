@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * Represents a comment on an audit action with threading support.
+ */
 export interface ActionComment {
   id: string;
   client_audit_action_id: string;
@@ -22,9 +25,22 @@ export interface ActionComment {
     email: string;
     full_name: string | null;
   };
+  /** Nested replies to this comment */
   replies?: ActionComment[];
 }
 
+/**
+ * Hook for fetching comments on an audit action.
+ * Returns comments in a threaded structure with replies nested under parent comments.
+ * 
+ * @example
+ * ```tsx
+ * const { data: comments, isLoading } = useActionComments(actionId);
+ * ```
+ * 
+ * @param actionId - The ID of the audit action to fetch comments for
+ * @returns Query result with threaded comments
+ */
 export const useActionComments = (actionId: string | undefined) => {
   return useQuery({
     queryKey: ['action-comments', actionId],
@@ -47,12 +63,18 @@ export const useActionComments = (actionId: string | undefined) => {
       const commentsMap = new Map<string, ActionComment>();
       const rootComments: ActionComment[] = [];
 
-      data?.forEach((comment: any) => {
-        const commentWithReplies = { ...comment, replies: [] };
+      // Type the raw data from Supabase
+      type RawComment = typeof data extends (infer T)[] ? T : never;
+
+      data?.forEach((comment: RawComment) => {
+        const commentWithReplies: ActionComment = { 
+          ...(comment as unknown as ActionComment), 
+          replies: [] 
+        };
         commentsMap.set(comment.id, commentWithReplies);
       });
 
-      data?.forEach((comment: any) => {
+      data?.forEach((comment: RawComment) => {
         const commentObj = commentsMap.get(comment.id)!;
         if (comment.parent_comment_id) {
           const parent = commentsMap.get(comment.parent_comment_id);

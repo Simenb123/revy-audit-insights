@@ -2,6 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
+interface MutationError {
+  message?: string;
+}
+
 /**
  * Hook to delete old client audit actions without template_id
  * Used for cleanup of hardcoded actions
@@ -28,7 +32,7 @@ export function useDeleteOldClientActions() {
         description: `${data?.length || 0} utdaterte handlinger ble fjernet.`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       toast({
         title: 'Kunne ikke slette handlinger',
         description: error?.message || 'Ukjent feil',

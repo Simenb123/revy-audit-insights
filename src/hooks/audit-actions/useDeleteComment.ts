@@ -7,6 +7,17 @@ interface DeleteCommentParams {
   actionId: string;
 }
 
+/**
+ * Hook for deleting a comment from an audit action.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: deleteComment } = useDeleteComment();
+ * deleteComment({ commentId: 'comment-id', actionId: 'action-id' });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
 

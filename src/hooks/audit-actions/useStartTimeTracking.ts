@@ -9,6 +9,18 @@ interface StartTimeTrackingParams {
   clientId: string;
 }
 
+/**
+ * Hook for starting time tracking on an audit action.
+ * Updates the action status to 'in_progress' and records the start timestamp.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: startTracking } = useStartTimeTracking();
+ * startTracking({ actionId: 'xxx', clientId: 'yyy' });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export function useStartTimeTracking() {
   const queryClient = useQueryClient();
 

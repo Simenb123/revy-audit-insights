@@ -8,6 +8,13 @@ import type { AuditActionTemplate, AuditSubjectArea } from '@/types/audit-action
 import { toDbPhase, fromDbPhase } from '@/constants/auditPhases';
 import type { AuditPhase } from '@/types/revio';
 
+type DbAuditActionTemplate = Database['public']['Tables']['audit_action_templates']['Row'];
+type DbAuditPhase = Database['public']['Enums']['audit_phase'];
+
+interface MutationError {
+  message: string;
+}
+
 export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
   return useQuery({
     queryKey: ['audit-action-templates', subjectArea],
@@ -23,7 +30,7 @@ export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
         if (subjectArea.includes('-')) {
           query = query.eq('subject_area_id', subjectArea);
         } else {
-          query = query.eq('subject_area', subjectArea as any);
+          query = query.eq('subject_area', subjectArea);
         }
       }
 
@@ -31,9 +38,9 @@ export function useAuditActionTemplates(subjectArea?: AuditSubjectArea) {
       if (error) {
         throw error;
       }
-      const normalized = (data || []).map((t: any) => ({
+      const normalized = (data || []).map((t: DbAuditActionTemplate) => ({
         ...t,
-        applicable_phases: (t.applicable_phases || []).map((p: any) => fromDbPhase(p))
+        applicable_phases: (t.applicable_phases || []).map((p: DbAuditPhase) => fromDbPhase(p))
       }));
       return normalized as AuditActionTemplate[];
     }
@@ -70,7 +77,7 @@ export function useCreateAuditActionTemplate() {
 
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .insert(dataToInsert as any)
+        .insert(dataToInsert)
         .select()
         .single();
 
@@ -87,7 +94,7 @@ export function useCreateAuditActionTemplate() {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates-by-subject-area'] });
       toast.success('Handlingsmal opprettet');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       logger.error('Failed to create audit action template:', error);
       toast.error('Feil ved opprettelse av handlingsmal: ' + error.message);
     }
@@ -127,7 +134,7 @@ export function useUpdateAuditActionTemplate() {
 
       const { data, error } = await supabase
         .from('audit_action_templates')
-        .update(updateData as any)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -145,7 +152,7 @@ export function useUpdateAuditActionTemplate() {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates-by-subject-area'] });
       toast.success('Handlingsmal oppdatert');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       logger.error('Failed to update audit action template:', error);
       toast.error('Feil ved oppdatering av handlingsmal: ' + error.message);
     }
@@ -171,7 +178,7 @@ export function useDeleteAuditActionTemplate() {
       queryClient.invalidateQueries({ queryKey: ['audit-action-templates'] });
       toast.success('Handlingsmal slettet');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       logger.error('Failed to delete audit action template:', error);
       toast.error('Feil ved sletting av handlingsmal: ' + error.message);
     }

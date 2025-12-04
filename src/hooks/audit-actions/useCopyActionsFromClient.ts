@@ -14,6 +14,23 @@ interface CopyActionsFromClientParams {
   phase: string;
 }
 
+/**
+ * Hook for copying audit actions from one client to another.
+ * Useful for reusing audit programs across similar clients.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: copyActions } = useCopyActionsFromClient();
+ * copyActions({
+ *   sourceClientId: 'source-client-id',
+ *   targetClientId: 'target-client-id',
+ *   actionIds: ['action-1', 'action-2'],
+ *   phase: 'planning'
+ * });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export function useCopyActionsFromClient() {
   const queryClient = useQueryClient();
 

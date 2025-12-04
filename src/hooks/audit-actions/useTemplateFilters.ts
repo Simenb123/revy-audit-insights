@@ -12,11 +12,33 @@ interface TemplateBase {
 }
 
 interface Options {
+  /** Pre-filter by subject area */
   selectedArea?: string;
+  /** Include AI filter options */
   includeAI?: boolean;
+  /** Initial phase filter value */
   initialPhase?: string;
 }
 
+/**
+ * Hook for filtering audit action templates.
+ * Provides search, risk level, phase, and AI filtering capabilities.
+ * 
+ * @example
+ * ```tsx
+ * const {
+ *   searchTerm,
+ *   setSearchTerm,
+ *   riskFilter,
+ *   setRiskFilter,
+ *   filteredTemplates
+ * } = useTemplateFilters(templates, { selectedArea: 'revenue' });
+ * ```
+ * 
+ * @param templates - Array of templates to filter
+ * @param options - Filter options
+ * @returns Filter state and filtered templates
+ */
 export function useTemplateFilters<T extends TemplateBase>(templates: T[], options: Options = {}) {
   const { selectedArea, includeAI } = options;
   const [searchTerm, setSearchTerm] = useState('');

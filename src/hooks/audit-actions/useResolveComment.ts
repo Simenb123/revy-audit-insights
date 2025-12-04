@@ -8,6 +8,20 @@ interface ResolveCommentParams {
   isResolved: boolean;
 }
 
+/**
+ * Hook for marking a comment as resolved or reopening it.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: resolveComment } = useResolveComment();
+ * // Mark as resolved
+ * resolveComment({ commentId: 'xxx', actionId: 'yyy', isResolved: true });
+ * // Reopen
+ * resolveComment({ commentId: 'xxx', actionId: 'yyy', isResolved: false });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export const useResolveComment = () => {
   const queryClient = useQueryClient();
 

@@ -7,6 +7,17 @@ interface DeleteClientActionParams {
   clientId: string;
 }
 
+/**
+ * Hook for deleting a single client audit action.
+ * 
+ * @example
+ * ```tsx
+ * const { mutate: deleteAction } = useDeleteClientAction();
+ * deleteAction({ actionId: 'xxx', clientId: 'yyy' });
+ * ```
+ * 
+ * @returns A mutation hook with loading states and mutate function
+ */
 export const useDeleteClientAction = () => {
   const queryClient = useQueryClient();
 
