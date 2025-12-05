@@ -92,16 +92,7 @@ import { useUserProfile } from '@/hooks/useUserProfile'
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin'
 import { isAdvancedAIEnabled, isReportBuilderEnabled, isPayrollEnabled, isPayrollInBeta, isAdvancedAIInBeta, isReportBuilderInBeta } from '@/lib/featureFlags'
 import { BetaBadge } from '@/components/ui/BetaBadge'
-
-// Static non-client specific items
-const generalWorkItems = [
-  {
-    title: 'Regnskap',
-    url: '/accounting',
-    icon: Database,
-  },
-]
-
+import { getNavigationContext } from '@/components/Layout/pageDetectionHelpers'
 
 // Ressurser - tilgjengelig for alle (med feature flags)
 const resourceItems = [
@@ -255,7 +246,9 @@ const ResizableLeftSidebar = () => {
   // Costs sub-items (removed as requested)  
   const costItems: any[] = []
 
-  const clientWorkItems = clientId ? clientMainItems : generalWorkItems
+  // Determine navigation context - show client work section only when on client-specific pages
+  const navContext = getNavigationContext(location.pathname, clientId)
+  const showClientWorkSection = navContext === 'client-specific'
 
   const isActive = (url: string) => {
     if (url === '/') {
@@ -289,29 +282,30 @@ const ResizableLeftSidebar = () => {
       </SidebarHeader>
       
       <SidebarContent>
-        {/* Klientarbeid seksjon */}
-        <Collapsible 
-          open={!collapsedSections['klientarbeid']} 
-          onOpenChange={() => toggleSection('klientarbeid')}
-        >
-          <SidebarGroup>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
-                {!isCollapsed && (
-                  <>
-                    <span>Klientarbeid</span>
-                    {collapsedSections['klientarbeid'] ? 
-                      <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
-                      <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
-                    }
-                  </>
-                )}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
-                  {clientWorkItems.map((item) => {
+        {/* Klientarbeid seksjon - kun synlig på klientspesifikke sider */}
+        {showClientWorkSection && (
+          <Collapsible 
+            open={!collapsedSections['klientarbeid']} 
+            onOpenChange={() => toggleSection('klientarbeid')}
+          >
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between group">
+                  {!isCollapsed && (
+                    <>
+                      <span>Klientarbeid</span>
+                      {collapsedSections['klientarbeid'] ? 
+                        <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100" /> : 
+                        <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                      }
+                    </>
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="space-y-1">
+                    {clientMainItems.map((item) => {
                     const isItemActive = isActive(item.url)
                     
                     return (
@@ -475,6 +469,7 @@ const ResizableLeftSidebar = () => {
              </CollapsibleContent>
            </SidebarGroup>
          </Collapsible>
+        )}
 
         {/* Ressurser seksjon */}
         <Collapsible 
