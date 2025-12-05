@@ -243,8 +243,8 @@ useEffect(() => {
       data-testid="right-sidebar"
       className="fixed bg-background flex flex-col h-full z-10 overflow-hidden"
       style={{
-        top: 'calc(var(--global-header-current-height, 60px) + var(--sub-header-current-height, 0px))',
-        height: 'calc(100dvh - (var(--global-header-current-height, 60px) + var(--sub-header-current-height, 0px)))',
+        top: 'calc(var(--global-header-current-height, 45px) + var(--sub-header-current-height, 30px))',
+        height: 'calc(100dvh - (var(--global-header-current-height, 45px) + var(--sub-header-current-height, 30px)))',
         right: 0
       }}
       animate={{ width: isCollapsed ? COLLAPSED_WIDTH : width }}
