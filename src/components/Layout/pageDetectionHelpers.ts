@@ -16,6 +16,27 @@ export const detectPageType = (pathname: string) => {
   return 'general';
 };
 
+/**
+ * Navigation context for sidebar rendering
+ * Determines which navigation sections to show based on current route
+ */
+export type NavigationContext = 
+  | 'client-specific'    // /clients/:clientId/* - show client work section
+  | 'client-list'        // /clients - show only resources/tools
+  | 'global';            // /fag, /organization, etc - show only resources/tools
+
+export const getNavigationContext = (pathname: string, clientId?: string): NavigationContext => {
+  // If we have clientId from route params, it's client-specific
+  if (clientId) return 'client-specific';
+  
+  // /clients without clientId = client list
+  if (pathname === '/clients' || pathname === '/' || pathname === '/klienter') {
+    return 'client-list';
+  }
+  
+  return 'global';
+};
+
 export const extractClientId = (pathname: string): string => {
   const segments = pathname.split('/').filter(Boolean);
 
