@@ -11,29 +11,80 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Download, Search } from 'lucide-react';
-import { ArBalance } from '@/hooks/useArApBalances';
 import * as XLSX from 'xlsx';
 
-interface ArBalanceTableProps {
-  data: ArBalance[];
+export interface BalanceItem {
+  id: string;
+  name: string | null;
+  saldo: number;
+  tx_count: number;
+  updated_at: string;
+}
+
+export type BalanceType = 'ar' | 'ap';
+
+interface BalanceTableConfig {
+  title: string;
+  idLabel: string;
+  nameLabel: string;
+  searchPlaceholder: string;
+  unknownName: string;
+  countLabel: string;
+  sheetName: string;
+  filePrefix: string;
+  exportIdLabel: string;
+  exportNameLabel: string;
+}
+
+const CONFIG: Record<BalanceType, BalanceTableConfig> = {
+  ar: {
+    title: 'Kundesaldo (AR)',
+    idLabel: 'Kunde ID',
+    nameLabel: 'Kundenavn',
+    searchPlaceholder: 'Søk etter kunde...',
+    unknownName: 'Ukjent kunde',
+    countLabel: 'kunder',
+    sheetName: 'Kundesaldo',
+    filePrefix: 'AR_Balances',
+    exportIdLabel: 'Kunde ID',
+    exportNameLabel: 'Kundenavn',
+  },
+  ap: {
+    title: 'Leverandørsaldo (AP)',
+    idLabel: 'Leverandør ID',
+    nameLabel: 'Leverandørnavn',
+    searchPlaceholder: 'Søk etter leverandør...',
+    unknownName: 'Ukjent leverandør',
+    countLabel: 'leverandører',
+    sheetName: 'Leverandørsaldo',
+    filePrefix: 'AP_Balances',
+    exportIdLabel: 'Leverandør ID',
+    exportNameLabel: 'Leverandørnavn',
+  },
+};
+
+interface BalanceTableProps {
+  data: BalanceItem[];
   clientName: string;
+  type: BalanceType;
   isLoading?: boolean;
 }
 
-const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) => {
+const BalanceTable = ({ data, clientName, type, isLoading }: BalanceTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const config = CONFIG[type];
 
   const filteredData = data.filter(balance =>
-    balance.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    balance.customer_id.toLowerCase().includes(searchTerm.toLowerCase())
+    balance.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    balance.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalSaldo = filteredData.reduce((sum, item) => sum + item.saldo, 0);
 
   const handleExport = () => {
     const exportData = filteredData.map(balance => ({
-      'Kunde ID': balance.customer_id,
-      'Kundenavn': balance.customer_name || 'Ukjent',
+      [config.exportIdLabel]: balance.id,
+      [config.exportNameLabel]: balance.name || 'Ukjent',
       'Saldo': balance.saldo,
       'Antall transaksjoner': balance.tx_count,
       'Sist oppdatert': new Date(balance.updated_at).toLocaleDateString('nb-NO')
@@ -41,9 +92,9 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Kundesaldo');
+    XLSX.utils.book_append_sheet(wb, ws, config.sheetName);
     
-    const fileName = `AR_Balances_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `${config.filePrefix}_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -51,7 +102,7 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Kundesaldo (AR)</CardTitle>
+          <CardTitle>{config.title}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
@@ -66,7 +117,7 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Kundesaldo (AR)</span>
+          <span>{config.title}</span>
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Eksporter
@@ -78,7 +129,7 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Søk etter kunde..."
+              placeholder={config.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -89,17 +140,17 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kunde ID</TableHead>
-                  <TableHead>Kundenavn</TableHead>
+                  <TableHead>{config.idLabel}</TableHead>
+                  <TableHead>{config.nameLabel}</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
                   <TableHead className="text-right">Transaksjoner</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.map((balance) => (
-                  <TableRow key={balance.customer_id}>
-                    <TableCell className="font-mono">{balance.customer_id}</TableCell>
-                    <TableCell>{balance.customer_name || 'Ukjent kunde'}</TableCell>
+                  <TableRow key={balance.id}>
+                    <TableCell className="font-mono">{balance.id}</TableCell>
+                    <TableCell>{balance.name || config.unknownName}</TableCell>
                     <TableCell className="text-right font-mono">
                       {balance.saldo.toLocaleString('nb-NO', {
                         style: 'currency',
@@ -122,7 +173,7 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
 
           <div className="flex justify-between items-center pt-4 border-t">
             <span className="text-sm text-muted-foreground">
-              {filteredData.length} kunder totalt
+              {filteredData.length} {config.countLabel} totalt
             </span>
             <div className="text-right">
               <div className="text-sm text-muted-foreground">Total saldo</div>
@@ -140,4 +191,4 @@ const ArBalanceTable = ({ data, clientName, isLoading }: ArBalanceTableProps) =>
   );
 };
 
-export default ArBalanceTable;
+export default BalanceTable;
