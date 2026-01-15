@@ -125,15 +125,4 @@ export type SamplingResult = {
   };
 };
 
-export type AuditSubjectArea =
-  | 'sales'
-  | 'payroll'
-  | 'operating_expenses'
-  | 'inventory'
-  | 'finance'
-  | 'banking'
-  | 'fixed_assets'
-  | 'receivables'
-  | 'payables'
-  | 'equity'
-  | 'other';
+// AuditSubjectArea is now defined in audit-actions.ts as string (data-driven)

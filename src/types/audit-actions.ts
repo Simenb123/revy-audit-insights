@@ -131,23 +131,7 @@ export interface ActionGroup {
   updated_at: string;
 }
 
-/**
- * @deprecated Use useSubjectAreaLabels() hook instead for dynamic, data-driven labels
- * This is kept for backward compatibility only
- */
-export const SUBJECT_AREA_LABELS: Record<LegacySubjectArea, string> = {
-  sales: 'Salg',
-  payroll: 'Lønn',
-  operating_expenses: 'Driftskostnader',
-  inventory: 'Varelager',
-  finance: 'Finans',
-  banking: 'Bank',
-  fixed_assets: 'Anleggsmidler',
-  receivables: 'Kundefordringer',
-  payables: 'Leverandørgjeld',
-  equity: 'Egenkapital',
-  other: 'Annet'
-};
+// SUBJECT_AREA_LABELS removed - use useSubjectAreaLabels() hook instead
 
 
 export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
