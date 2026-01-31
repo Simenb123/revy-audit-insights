@@ -9,3 +9,5 @@ The accounting modules handle chart of accounts, general ledger and trial balanc
 3. **Trial Balance** – `TrialBalanceUploader` imports period balances from Excel, CSV or SAF‑T. If no chart of accounts exists, missing accounts are created automatically.
 
 Progress bars show upload status and results are written to `upload_batches` for traceability. Column mappings are saved in `upload_column_mappings` so later uploads can reuse the same structure.
+
+For a detailed explanation of general ledger uploads see [general-ledger-upload.md](general-ledger-upload.md).
