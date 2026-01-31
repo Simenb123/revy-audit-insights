@@ -46,9 +46,19 @@ For ledger upload column mappings, see [docs/upload-column-mappings.md](docs/upl
 For an overview of the Revio color palette, see [docs/color-palette.md](docs/color-palette.md).
 For details on the page layout components and full-width defaults, see [docs/page-layout.md](docs/page-layout.md).
 For running tests in CI see [docs/testing-ci.md](docs/testing-ci.md).
+
 For an overview of the database structure see [docs/database-overview.md](docs/database-overview.md).
 For cleanup and refactoring of the codebase, see [docs/cleanup/README.md](docs/cleanup/README.md).
 For terminology and language guidelines, see [docs/terminology.md](docs/terminology.md).
+
+## Database Migrations
+
+The entire database schema is versioned in [`supabase/migrations`](supabase/migrations).
+There are 55 timestamped SQL scripts that create enum types, tables, triggers and
+row level security policies. Applying these migrations ensures all environments
+start with the same structure. See
+[docs/database-overview.md](docs/database-overview.md) for the most important
+tables and policies.
 
 ## Environment Setup
 
